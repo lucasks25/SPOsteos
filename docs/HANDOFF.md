@@ -220,10 +220,10 @@ Revisão de código e segurança, achados e o que foi ou não testado: **`docs/R
 - Nenhum arquivo foi validado com o Itaú ainda. Ver `docs/REVISAO.md`, seção "Integração bancária".
 
 ### Dados de teste no banco local
-Criados durante os testes de 13/10: CIR-2 ("Paciente Teste E2E"), REM-1, PV-2 (NF 998877), ORC-1, conta "Itaú c/c 12345-6", PC-1 (lote `LT-TESTE-01` em quarentena), PV-1 (NF 12345), títulos e lançamentos de teste, extratos OFX/CNAB e remessas SISPAG #1 e #2. Apagar antes de demonstrar.
+Em 14/10 foram apagados os dados de teste do financeiro (conta bancária, lançamentos, extratos, remessas SISPAG, PC-1, PV-1, CIR-1, lote `LT-TESTE-01`) e os dados bancários dos fornecedores. **Restaram** `CIR-2` ("Paciente Teste E2E"), `PV-2` (NF 998877) e a conta a receber do PV-2, criados por outro teste de faturamento ponta a ponta que não é desta sessão.
 
 ### Git
-Ainda não há commit do trabalho (só o commit inicial do create-next-app).
+Primeiro commit do trabalho: `2c83ff6` (14/10/2026). Ficam fora do git, por `.gitignore`: `.env*`, `storage/` (anexos), arquivos de ferramentas de agentes (`.claude-flow`, `.swarm`, `.agents`, bancos do ruflo) e `.claude/*` exceto `.claude/agents/`.
 
 ---
 
