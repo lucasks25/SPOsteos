@@ -51,6 +51,7 @@ export const NAV: NavGroup[] = [
     label: "Financeiro",
     perfis: ["FINANCEIRO"],
     items: [
+      { href: "/financeiro", label: "Visão geral" },
       { href: "/financeiro/receber", label: "Contas a receber" },
       { href: "/financeiro/pagar", label: "Contas a pagar" },
       { href: "/financeiro/fluxo", label: "Fluxo de caixa" },

@@ -7,7 +7,13 @@ import { cx } from "@/components/ui";
 
 export function Sidebar({ groups }: { groups: NavGroup[] }) {
   const pathname = usePathname();
-  const active = (href: string) => (href === "/" ? pathname === "/" : pathname === href || pathname.startsWith(href + "/"));
+  // um item cujo href é prefixo de outro item (ex.: "/financeiro" e "/financeiro/receber") só vale na rota exata
+  const hrefs = groups.flatMap((g) => g.items.map((i) => i.href));
+  const active = (href: string) => {
+    if (href === "/") return pathname === "/";
+    if (hrefs.some((h) => h !== href && h.startsWith(href + "/"))) return pathname === href;
+    return pathname === href || pathname.startsWith(href + "/");
+  };
   return (
     <nav className="space-y-5 px-3 py-4 text-sm">
       {groups.map((g) => (

@@ -5,6 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { Card, PageHeader, StatusBadge, Table, Td, cx } from "@/components/ui";
 import { dateTime, diasAtras, money, num, toNumber } from "@/lib/format";
 import type { Perfil } from "@/generated/prisma/client";
+import { hojeUTC } from "./financeiro/_lib/datas";
+import { faixasAbertas } from "./financeiro/_lib/painel";
 
 const DIA = 24 * 60 * 60 * 1000;
 
@@ -30,6 +32,7 @@ export default async function Painel() {
   const user = await requireUser();
   const p = user.perfil;
   const hoje = hojeSP();
+  const hojeFin = hojeUTC(); // dia de hoje como o financeiro o usa (meia-noite UTC do dia em Brasília)
   const amanha = new Date(hoje.getTime() + DIA);
   const em7 = new Date(hoje.getTime() + 7 * DIA);
   const em30 = new Date(hoje.getTime() + 30 * DIA);
@@ -38,14 +41,14 @@ export default async function Painel() {
   const seisMeses = diasAtras(186);
 
   const [
-    cirHoje, cir7, aFaturar, vendasMes, recVencidos, pagar7, quarentena, lotesVencendo, produtos, saldosLib, registros, remessasPend, proximas, vendas6m,
+    cirHoje, cir7, aFaturar, vendasMes, recFaixas, pagFaixas, quarentena, lotesVencendo, produtos, saldosLib, registros, remessasPend, proximas, vendas6m,
   ] = await Promise.all([
     db.cirurgia.count({ where: { dataHora: { gte: hoje, lt: amanha }, status: { not: "CANCELADA" } } }),
     db.cirurgia.count({ where: { dataHora: { gte: hoje, lt: em7 }, status: { not: "CANCELADA" } } }),
     db.cirurgia.count({ where: { status: "REALIZADA" } }),
     db.pedidoVenda.aggregate({ where: { status: "FATURADO", faturadoEm: { gte: inicioMes } }, _sum: { total: true, custoTotal: true }, _count: true }),
-    db.contaReceber.aggregate({ where: { status: "ABERTO", vencimento: { lt: hoje } }, _sum: { valor: true }, _count: true }),
-    db.contaPagar.aggregate({ where: { status: "ABERTO", vencimento: { lt: em7 } }, _sum: { valor: true }, _count: true }),
+    faixasAbertas("receber", hojeFin),
+    faixasAbertas("pagar", hojeFin),
     db.lote.count({ where: { status: "QUARENTENA", saldos: { some: { quantidade: { gt: 0 } } } } }),
     db.lote.count({ where: { validade: { lt: em30 }, saldos: { some: { quantidade: { gt: 0 } } } } }),
     db.produto.findMany({ where: { ativo: true, estoqueMinimo: { gt: 0 } }, select: { id: true, estoqueMinimo: true } }),
@@ -61,6 +64,8 @@ export default async function Painel() {
     db.pedidoVenda.findMany({ where: { status: "FATURADO", faturadoEm: { gte: seisMeses } }, select: { faturadoEm: true, total: true, custoTotal: true } }),
   ]);
 
+  const pagar7Valor = pagFaixas.vencido.valor + pagFaixas.hoje.valor + pagFaixas.ate7.valor;
+  const pagar7Qtd = pagFaixas.vencido.qtd + pagFaixas.hoje.qtd + pagFaixas.ate7.qtd;
   const saldoMap = new Map(saldosLib.map((s) => [s.produtoId, s._sum.quantidade ?? 0]));
   const abaixoMin = produtos.filter((x) => (saldoMap.get(x.id) ?? 0) < x.estoqueMinimo).length;
   const vendidoMes = toNumber(vendasMes._sum.total);
@@ -102,8 +107,8 @@ export default async function Painel() {
         )}
         {financeiro && (
           <>
-            <Tile href="/financeiro/receber?vencidos=1" label="A receber vencido" value={money(recVencidos._sum.valor)} tone={recVencidos._count ? "danger" : "default"} hint={`${recVencidos._count} título(s)`} />
-            <Tile href="/financeiro/pagar" label="A pagar em 7 dias" value={money(pagar7._sum.valor)} tone={pagar7._count ? "warn" : "default"} hint={`${pagar7._count} título(s), incluindo atrasados`} />
+            <Tile href="/financeiro/receber?vencidos=1" label="A receber vencido" value={money(recFaixas.vencido.valor)} tone={recFaixas.vencido.qtd ? "danger" : "default"} hint={`${recFaixas.vencido.qtd} título(s), já descontadas baixas parciais`} />
+            <Tile href="/financeiro/pagar" label="A pagar em 7 dias" value={money(pagar7Valor)} tone={pagar7Qtd ? "warn" : "default"} hint={`${pagar7Qtd} título(s), incluindo atrasados`} />
           </>
         )}
         {estoque && (
