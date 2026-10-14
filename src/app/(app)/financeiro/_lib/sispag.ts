@@ -325,6 +325,10 @@ export const OCORRENCIAS: Record<string, string> = {
   LC: "Lote de pagamentos cancelado", NA: "Cancelado por falta de autorização", NR: "Operação não realizada",
   RJ: "Registro rejeitado", SS: "Cancelado por saldo insuficiente / limite diário excedido",
   TA: "Lote não aceito: totais com diferença", TI: "Titularidade inválida",
+  // marcas do sistema (não vêm do banco)
+  DUP: "PAGO EM DUPLICIDADE: o título já estava quitado; peça a devolução",
+  CAN: "Remessa cancelada no sistema, mas o banco pagou: o dinheiro saiu",
+  DIV: "Valor pago diferente do saldo do título: concilie pelo extrato",
 };
 
 export const descreverOcorrencias = (codigos: string[]) => codigos.map((c) => `${c} — ${OCORRENCIAS[c] ?? "ver nota 8 do manual SISPAG"}`).join("; ");

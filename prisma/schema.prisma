@@ -697,15 +697,17 @@ model ExtratoLinha {
 
 // Remessa de pagamentos SISPAG (Itaú). Um arquivo por remessa; Pix sempre em arquivo separado.
 model RemessaPagamento {
-  id        Int                    @id @default(autoincrement())
-  contaId   String
-  conta     ContaBancaria          @relation(fields: [contaId], references: [id])
-  modo      String // TED_BOLETO | PIX
-  dataPagto DateTime
-  conteudo  String // arquivo CNAB 240 gerado
-  criadoEm  DateTime               @default(now())
-  retornoEm DateTime?
-  itens     RemessaPagamentoItem[]
+  id              Int                    @id @default(autoincrement())
+  contaId         String
+  conta           ContaBancaria          @relation(fields: [contaId], references: [id])
+  modo            String // TED_BOLETO | PIX
+  dataPagto       DateTime
+  conteudo        String // arquivo CNAB 240 gerado
+  criadoEm        DateTime               @default(now())
+  retornoEm       DateTime?
+  canceladaEm     DateTime?
+  canceladaMotivo String?
+  itens           RemessaPagamentoItem[]
 }
 
 enum StatusPagamentoBanco {
@@ -713,6 +715,7 @@ enum StatusPagamentoBanco {
   AGENDADO
   PAGO
   REJEITADO
+  CANCELADO // remessa cancelada antes do envio: o título volta a poder entrar em outra remessa
 }
 
 // Um pagamento dentro da remessa. `id` vira o "seu número" (SP<id>) que volta no retorno.

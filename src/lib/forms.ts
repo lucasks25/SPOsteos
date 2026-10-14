@@ -5,7 +5,7 @@ import { db } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 
 /** Estado padrão retornado por Server Actions usadas com useActionState. */
-export type ActionState = { ok?: boolean; error?: string; fieldErrors?: Record<string, string> } | undefined;
+export type ActionState = { ok?: boolean; aviso?: string; error?: string; fieldErrors?: Record<string, string> } | undefined;
 
 /** Converte FormData em objeto simples (strings vazias viram undefined). */
 export function formToObject(fd: FormData) {

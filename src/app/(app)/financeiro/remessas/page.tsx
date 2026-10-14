@@ -137,6 +137,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
                   <Td>{r.itens.length}</Td>
                   <Td className="text-right tabular-nums">{money(total)}</Td>
                   <Td className="space-x-1">
+                    {r.canceladaEm && <Badge color="gray">cancelada</Badge>}
                     {conta("PAGO") > 0 && <Badge color="green">{conta("PAGO")} pago(s)</Badge>}
                     {conta("AGENDADO") > 0 && <Badge color="blue">{conta("AGENDADO")} agendado(s)</Badge>}
                     {conta("REJEITADO") > 0 && <Badge color="red">{conta("REJEITADO")} rejeitado(s)</Badge>}

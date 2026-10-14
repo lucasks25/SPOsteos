@@ -5,7 +5,7 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { btn, cx } from "@/components/ui";
 
-export type ActionState = { ok?: boolean; error?: string; fieldErrors?: Record<string, string> } | undefined;
+export type ActionState = { ok?: boolean; aviso?: string; error?: string; fieldErrors?: Record<string, string> } | undefined;
 type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
 
 const ErrorsCtx = createContext<Record<string, string>>({});
@@ -57,7 +57,8 @@ export function Form({
           {state?.error && (
             <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</div>
           )}
-          {state?.ok && !redirectTo && (
+          {state?.ok && state.aviso && <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">{state.aviso}</div>}
+          {state?.ok && !state.aviso && !redirectTo && (
             <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Salvo com sucesso.</div>
           )}
           {children}

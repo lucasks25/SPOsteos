@@ -1,0 +1,132 @@
+import "server-only";
+import { Prisma, type FormaPagamento } from "@/generated/prisma/client";
+import type { Tx } from "@/lib/db";
+import { ErroNegocio } from "@/lib/erros";
+import { toNumber } from "@/lib/format";
+import { gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPagamento } from "./sispag";
+import { formaPrevista, type ModoRemessa } from "./sispag-regras";
+import { registrarBaixa, saldoTitulo } from "./titulos";
+
+/** Regras de remessa e retorno do SISPAG que mexem no banco. Ficam fora de "use server" para serem testadas sem login. */
+const ATIVOS = ["ENVIADO", "AGENDADO"] as const;
+const r2 = (n: number) => Math.round(n * 100) / 100;
+const FORMA_BAIXA: Record<string, FormaPagamento> = { "45": "PIX", "30": "BOLETO", "31": "BOLETO", "01": "TED", "41": "TED" };
+
+export type Contagem = { pagos: number; agendados: number; rejeitados: number; ignorados: number; jaBaixados: number; divergentes: number; canceladasPagas: number };
+export const contagemVazia = (): Contagem => ({ pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0, divergentes: 0, canceladasPagas: 0 });
+
+type ContaRemessa = { titularCnpj: string | null; titularNome: string | null; agencia: string | null };
+
+/** Gera a remessa. Trava os títulos e confere dentro da transação, então dois pedidos simultâneos não pagam o mesmo título duas vezes. */
+export async function gerarRemessaTx(
+  tx: Tx,
+  a: { conta: ContaRemessa & { id?: string }; cd: { conta: string; dac: string }; modo: ModoRemessa; dataPagto: Date; ids: string[]; contaId?: string },
+) {
+  const { conta, cd, modo, dataPagto, ids } = a;
+  const contaId = a.contaId ?? conta.id!;
+  // Trava os títulos até o fim da transação e só então confere: dois cliques ou dois usuários ao mesmo tempo
+  // não geram dois arquivos com o mesmo título (o segundo espera e encontra o pagamento já ativo).
+  await tx.$queryRaw`SELECT id FROM "ContaPagar" WHERE id IN (${Prisma.join(ids)}) ORDER BY id FOR UPDATE`;
+  const titulos = await tx.contaPagar.findMany({
+    where: { id: { in: ids } },
+    include: { fornecedor: true, pagamentos: { where: { status: { in: [...ATIVOS] } }, select: { id: true } } },
+  });
+  if (titulos.length !== ids.length) throw new ErroNegocio("Algum título selecionado não existe mais. Recarregue a página.");
+
+  const erros: string[] = [];
+  const planos = titulos.map((t) => {
+    const saldo = r2(toNumber(t.valor) - toNumber(t.valorBaixado));
+    const f = formaPrevista(t, t.fornecedor, modo);
+    if (t.status !== "ABERTO") erros.push(`${t.descricao}: não está em aberto`);
+    else if (t.pagamentos.length) erros.push(`${t.descricao}: já está em outra remessa`);
+    else if (saldo <= 0) erros.push(`${t.descricao}: sem saldo a pagar`);
+    else if ("erro" in f) erros.push(`${t.descricao}: ${f.erro}`);
+    return { t, saldo, forma: "forma" in f ? f.forma : null };
+  });
+  if (erros.length) throw new ErroNegocio(`Corrija antes de gerar: ${erros.slice(0, 5).join("; ")}${erros.length > 5 ? ` (+${erros.length - 5})` : ""}.`);
+
+  const rem = await tx.remessaPagamento.create({ data: { contaId, modo, dataPagto, conteudo: "" } });
+  const pagamentos: Pagamento[] = [];
+  for (const { t, saldo, forma } of planos) {
+    const item = await tx.remessaPagamentoItem.create({ data: { remessaId: rem.id, contaPagarId: t.id, forma: forma!, valor: saldo } });
+    const f = t.fornecedor!;
+    const favorecido = { nome: f.razaoSocial, documento: f.cnpj, banco: f.bancoCodigo, agencia: f.agencia, conta: f.conta, digito: f.contaDigito, chavePix: f.chavePix };
+    const seuNumero = `SP${item.id}`;
+    if (forma === "30" || forma === "31") {
+      const valorBarras = Number(t.codigoBarras!.slice(9, 19)) / 100;
+      pagamentos.push({ forma, seuNumero, data: dataPagto, valor: saldo, codigoBarras: t.codigoBarras!, vencimento: t.vencimento, valorTitulo: valorBarras || saldo, favorecido });
+    } else {
+      pagamentos.push({ forma: forma as "01" | "41" | "45", seuNumero, data: dataPagto, valor: saldo, favorecido });
+    }
+  }
+  const conteudo = gerarRemessaSispag({ cnpj: conta.titularCnpj!, nome: conta.titularNome!, agencia: conta.agencia!, conta: cd.conta, dac: cd.dac }, pagamentos, new Date());
+  await tx.remessaPagamento.update({ where: { id: rem.id }, data: { conteudo } });
+  return { remessaId: rem.id, qtd: planos.length, total: planos.reduce((x, p) => x + p.saldo, 0) };
+}
+
+/** Aplica o resultado do retorno: atualiza cada item, baixa os pagos e marca duplicidade (DUP), divergência (DIV) e remessa cancelada paga (CAN). */
+export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[], cont: Contagem): Promise<Set<number>> {
+  const remessas = new Set<number>();
+  for (const r of resultados) {
+    const m = /^SP(\d+)$/.exec(r.seuNumero);
+    const item = m ? await tx.remessaPagamentoItem.findUnique({ where: { id: Number(m[1]) }, include: { remessa: true, contaPagar: { select: { status: true, valor: true, valorBaixado: true } } } }) : null;
+    if (!item) {
+      cont.ignorados++;
+      continue;
+    }
+    remessas.add(item.remessaId);
+    if (item.status === "PAGO") continue; // retorno reprocessado: não baixa de novo
+    const status = situacaoRetorno(r.ocorrencias);
+    // CAN: o banco pagou um item de remessa que foi cancelada aqui (o arquivo chegou a ser enviado): o dinheiro saiu de verdade
+    const flags = item.status === "CANCELADO" && status === "PAGO" ? ["CAN"] : [];
+    if (flags.length) cont.canceladasPagas++;
+    await tx.remessaPagamentoItem.update({
+      where: { id: item.id },
+      data: { status, ocorrencias: [...r.ocorrencias, ...flags].join(",") || null, nossoNumero: r.nossoNumero || item.nossoNumero },
+    });
+    if (status === "PAGO") {
+      cont.pagos++;
+      if (item.contaPagar.status === "ABERTO") {
+        const saldoAtual = saldoTitulo(toNumber(item.contaPagar.valor), toNumber(item.contaPagar.valorBaixado));
+        const pago = r.valorEfetivo || toNumber(item.valor);
+        const dif = r2(pago - saldoAtual);
+        const intocado = Math.abs(saldoAtual - toNumber(item.valor)) < 0.005; // ninguém mexeu no título desde a remessa
+        if (dif > 0.004 && !intocado) {
+          // pagou acima do saldo e o título mudou depois da remessa: não dá para saber o que é juros. Fica para a conciliação.
+          await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...r.ocorrencias, "DIV"].join(",") } });
+          cont.divergentes++;
+        } else {
+          await registrarBaixa(tx, {
+            tipo: "pagar",
+            tituloId: item.contaPagarId,
+            contaId: item.remessa.contaId,
+            data: r.dataEfetiva ?? item.remessa.dataPagto,
+            valor: pago,
+            juros: dif > 0.004 ? dif : 0, // acima do saldo: o excedente é juros/encargo cobrado pelo banco/fornecedor
+            forma: FORMA_BAIXA[item.forma],
+          });
+        }
+      } else {
+        // O banco pagou um título que já estava quitado/cancelado aqui: o dinheiro saiu duas vezes. Alerta na remessa e no log.
+        cont.jaBaixados++;
+        await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...r.ocorrencias, ...flags, "DUP"].join(",") } });
+      }
+    } else if (status === "AGENDADO") cont.agendados++;
+    else cont.rejeitados++;
+  }
+  for (const id of remessas) await tx.remessaPagamento.update({ where: { id }, data: { retornoEm: new Date() } });
+  return remessas;
+}
+
+/** Cancela remessa não enviada/recusada e libera os títulos. Recusa se houver item pago ou agendado. */
+export async function cancelarRemessaTx(tx: Tx, remessaId: number, motivo: string) {
+  await tx.$queryRaw`SELECT id FROM "RemessaPagamento" WHERE id = ${remessaId} FOR UPDATE`;
+  const r = await tx.remessaPagamento.findUnique({ where: { id: remessaId }, include: { itens: { select: { id: true, status: true } } } });
+  if (!r) throw new ErroNegocio("Remessa não encontrada.");
+  if (r.canceladaEm) throw new ErroNegocio("Esta remessa já foi cancelada.");
+  if (r.itens.some((i) => i.status === "PAGO" || i.status === "AGENDADO")) {
+    throw new ErroNegocio("Esta remessa já tem pagamentos confirmados ou agendados pelo banco e não pode ser cancelada. Cancele o agendamento no Itaú Empresas.");
+  }
+  await tx.remessaPagamentoItem.updateMany({ where: { remessaId, status: "ENVIADO" }, data: { status: "CANCELADO" } });
+  await tx.remessaPagamento.update({ where: { id: remessaId }, data: { canceladaEm: new Date(), canceladaMotivo: motivo } });
+}

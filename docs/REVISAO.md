@@ -174,3 +174,15 @@ Desenho feito pelo agente `arquiteto` (Opus), implementado e conferido por teste
 - Fechamento de período (bloquear estorno e edição em meses fechados): não existe; estornar uma baixa muda o DRE do mês antigo.
 - Drill-down da linha do DRE até o documento: hoje só até a conta do plano.
 - Lançamento avulso antigo sem conta do plano permanece "Não classificado" até alguém classificar (não há tela de classificação em lote).
+
+## 8. Correções da revisão do CNAB (14/10/2026)
+
+Itens 1, 2 e 3 da revisão do `arquiteto` (migration `20261014190000_remessa_cancelar_e_trava`):
+
+1. **Pagar duas vezes (alta):** a geração da remessa agora trava os títulos (`SELECT … FOR UPDATE`) e confere "já está em outra remessa" **dentro** da transação (`sispag-servico.ts`, `gerarRemessaTx`). Defesa extra no banco: índice único parcial `RemessaPagamentoItem_titulo_ativo_key` (um item ENVIADO/AGENDADO por título). O Prisma não declara índice parcial: ao gerar migrations com `migrate diff`, apagar o `DROP INDEX` dele.
+2. **Cancelar remessa (alta):** ação "Cancelar remessa" na tela da remessa, com motivo obrigatório e auditoria. Libera os títulos (itens ficam CANCELADO). Recusa se houver item pago ou agendado. O download do arquivo de remessa cancelada é bloqueado (409).
+3. **Pagamento em duplicidade (média):** o retorno marca no item `DUP` (banco pagou título já quitado, não baixa de novo), `CAN` (banco pagou item de remessa cancelada: a baixa é feita porque o dinheiro saiu) e `DIV` (valor diferente do saldo). Aparecem em faixa vermelha na remessa, e um aviso na tela do retorno.
+
+Testes: `tests/financeiro-db/remessa.test.ts` (5: concorrência com dois pedidos simultâneos, índice único, cancelar/liberar, DUP, CAN).
+
+**Ainda abertos da revisão (itens 4 a 10):** OFX e CNAB do mesmo período duplicam o extrato; boleto vencido sai pelo valor original; mesmo arquivo pode ser enviado duas vezes ao banco; data do arquivo em UTC (depois das 21h de Brasília sai com a data do dia seguinte); numeração das linhas J/J-52 a confirmar com o validador do Itaú; retorno não confere agência/conta; dois envios simultâneos do mesmo retorno podem dar baixa parcial dupla. Limite conhecido da nova trava: se o banco agendar um item de remessa já cancelada enquanto o título está em outra remessa ativa, o retorno falha pelo índice único (aparece como erro, nada é gravado pela metade).
