@@ -9,7 +9,8 @@ import { cancelarTitulo, estornarBaixaAction } from "./actions";
 import { hojeUTC } from "./datas";
 import { opcoesContas } from "./contas";
 import { listarParceiros, obterTitulo } from "./queries";
-import { BaixaForm, TituloForm } from "./titulo-form";
+import { opcoesClassificacao } from "./plano";
+import { BaixaForm, ClassificarForm, TituloForm } from "./titulo-form";
 import { SituacaoTitulo } from "./titulos-view";
 
 const formaLabel = (f: string | null) => FORMAS_PAGAMENTO.find((x) => x.value === f)?.label ?? "—";
@@ -20,7 +21,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
   const hoje = hojeUTC();
   const titulo = await obterTitulo(tipo, id);
   if (!titulo) notFound();
-  const [baixas, contas, parceiros] = await Promise.all([
+  const [baixas, contas, parceiros, { planos, centros }] = await Promise.all([
     db.lancamento.findMany({
       where: tipo === "receber" ? { contaReceberId: id } : { contaPagarId: id },
       orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
@@ -28,6 +29,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
     }),
     opcoesContas(),
     listarParceiros(tipo, titulo.parceiroId),
+    opcoesClassificacao(db, [titulo.planoContaId, titulo.centroCustoId]),
   ]);
   const semBaixas = baixas.length === 0;
   const editavel = titulo.status === "ABERTO" && semBaixas;
@@ -40,7 +42,13 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         actions={
           <>
             <SituacaoTitulo t={titulo} hoje={hoje} />
-            {editavel && (
+            {titulo.status !== "CANCELADO" && !editavel && (
+          <Card title="Classificação (DRE)">
+            <ClassificarForm tipo={tipo} titulo={titulo} planos={planos} centros={centros} />
+          </Card>
+        )}
+
+        {editavel && (
               <ActionButton action={cancelarTitulo.bind(null, tipo)} hidden={{ id }} variant="danger" confirm="Cancelar este título?">
                 Cancelar título
               </ActionButton>
@@ -64,7 +72,9 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           <Dl
             items={[
               [cfg.parceiro, titulo.parceiroNome],
-              ...(tipo === "pagar" ? ([["Categoria", titulo.categoria]] as [string, string | null][]) : []),
+              ["Conta do plano", titulo.categoria ?? "Não classificado"],
+              ["Centro de custo", titulo.centroNome],
+              ["Competência", date(titulo.competencia)],
               [
                 "Origem",
                 titulo.pedidoId ? (
@@ -121,9 +131,15 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           </Card>
         )}
 
+        {titulo.status !== "CANCELADO" && !editavel && (
+          <Card title="Classificação (DRE)">
+            <ClassificarForm tipo={tipo} titulo={titulo} planos={planos} centros={centros} />
+          </Card>
+        )}
+
         {editavel && (
           <Card title="Editar título">
-            <TituloForm tipo={tipo} titulo={titulo} parceiros={parceiros} />
+            <TituloForm tipo={tipo} titulo={titulo} parceiros={parceiros} planos={planos} centros={centros} hoje={hoje} />
           </Card>
         )}
       </div>

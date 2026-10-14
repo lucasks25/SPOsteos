@@ -5,10 +5,10 @@ import { Badge, Card, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
-import { CATEGORIAS_AVULSO } from "../../_lib/config";
 import { alternarAtivoConta, estornarTransferenciaAction, excluirAvulso, lancarAvulso } from "../../_lib/contas-actions";
 import { listarContas } from "../../_lib/contas";
 import { hojeUTC, ymd } from "../../_lib/datas";
+import { opcoesClassificacao } from "../../_lib/plano";
 import { ContaForm } from "../conta-form";
 
 export default async function ContaPage({ params }: { params: Promise<{ id: string }> }) {
@@ -23,6 +23,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
     include: { extrato: { select: { id: true } }, contaReceber: { select: { id: true } }, contaPagar: { select: { id: true } } },
   });
   const hoje = hojeUTC();
+  const { planos, centros } = await opcoesClassificacao(db);
 
   return (
     <>
@@ -99,7 +100,8 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                   required
                 />
                 <Field label="Descrição *" name="descricao" required maxLength={200} className="sm:col-span-2" />
-                <Select label="Categoria" name="categoria" options={CATEGORIAS_AVULSO.map((c) => ({ value: c, label: c }))} placeholder="(sem categoria)" />
+                <Select label="Conta do plano *" name="planoContaId" options={planos} placeholder="Selecione..." required />
+                <Select label="Centro de custo" name="centroCustoId" options={centros} placeholder="(nenhum)" />
                 <Field label="Valor (R$) *" name="valor" type="number" step="0.01" min="0.01" required />
                 <Field label="Data *" name="data" type="date" defaultValue={ymd(hoje)} max={ymd(hoje)} required />
               </Grid>

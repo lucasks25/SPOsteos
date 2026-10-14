@@ -77,7 +77,7 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
   const pagoPeriodo = `${date(totais.pago.de)} a ${date(totais.pago.ate)}`;
   const totalLista = rows.reduce((s, r) => s + (r.status === "PAGO" ? (r.valorPago ?? 0) : r.saldo || r.valor), 0);
 
-  const head = ["Vencimento", "Descrição", cfg.parceiro, ...(tipo === "pagar" ? ["Categoria"] : []), "Valor", "Situação", cfg.pagoLabel, "Origem", ""];
+  const head = ["Vencimento", "Descrição", cfg.parceiro, "Conta do plano", "Valor", "Situação", cfg.pagoLabel, "Origem", ""];
 
   return (
     <>
@@ -104,7 +104,7 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
               </Link>
             </Td>
             <Td className="max-w-[14rem] truncate">{t.parceiroNome ?? "—"}</Td>
-            {tipo === "pagar" && <Td>{t.categoria ?? "—"}</Td>}
+            <Td className="max-w-[12rem] truncate">{t.categoria ?? <span className="text-amber-700">Não classificado</span>}</Td>
             <Td className="text-right tabular-nums">{money(t.valor)}</Td>
             <Td>
               <SituacaoTitulo t={t} hoje={hoje} />

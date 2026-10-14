@@ -481,6 +481,8 @@ model PedidoVenda {
   comissao        Decimal           @default(0) @db.Decimal(14, 2)
   criadoEm        DateTime          @default(now())
   faturadoEm      DateTime?
+  centroCustoId   String?
+  centroCusto     CentroCusto?      @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
   itens           PedidoVendaItem[]
   contasReceber   ContaReceber[]
 }
@@ -541,40 +543,50 @@ enum StatusTitulo {
 }
 
 model ContaReceber {
-  id           String       @id @default(cuid())
-  descricao    String
-  hospitalId   String?
-  hospital     Hospital?    @relation(fields: [hospitalId], references: [id])
-  pedidoId     Int?
-  pedido       PedidoVenda? @relation(fields: [pedidoId], references: [id])
-  valor        Decimal      @db.Decimal(14, 2)
-  vencimento   DateTime
-  status       StatusTitulo @default(ABERTO)
-  valorPago    Decimal?     @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
-  pagoEm       DateTime? // data da última baixa
-  valorBaixado Decimal?     @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
-  criadoEm     DateTime     @default(now())
-  lancamentos  Lancamento[]
+  id            String       @id @default(cuid())
+  descricao     String
+  hospitalId    String?
+  hospital      Hospital?    @relation(fields: [hospitalId], references: [id])
+  pedidoId      Int?
+  pedido        PedidoVenda? @relation(fields: [pedidoId], references: [id])
+  valor         Decimal      @db.Decimal(14, 2)
+  vencimento    DateTime
+  status        StatusTitulo @default(ABERTO)
+  valorPago     Decimal?     @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm        DateTime? // data da última baixa
+  valorBaixado  Decimal?     @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
+  criadoEm      DateTime     @default(now())
+  lancamentos   Lancamento[]
+  planoContaId  String?
+  planoConta    PlanoConta?  @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
+  centroCustoId String?
+  centroCusto   CentroCusto? @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
+  competencia   DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
 }
 
 model ContaPagar {
-  id           String                 @id @default(cuid())
-  descricao    String
-  fornecedorId String?
-  fornecedor   Fornecedor?            @relation(fields: [fornecedorId], references: [id])
-  pedidoId     Int?
-  pedido       PedidoCompra?          @relation(fields: [pedidoId], references: [id])
-  categoria    String?
-  codigoBarras String? // boleto do fornecedor: 44 dígitos do código de barras
-  valor        Decimal                @db.Decimal(14, 2)
-  vencimento   DateTime
-  status       StatusTitulo           @default(ABERTO)
-  valorPago    Decimal?               @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
-  pagoEm       DateTime? // data da última baixa
-  valorBaixado Decimal?               @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
-  criadoEm     DateTime               @default(now())
-  lancamentos  Lancamento[]
-  pagamentos   RemessaPagamentoItem[]
+  id            String                 @id @default(cuid())
+  descricao     String
+  fornecedorId  String?
+  fornecedor    Fornecedor?            @relation(fields: [fornecedorId], references: [id])
+  pedidoId      Int?
+  pedido        PedidoCompra?          @relation(fields: [pedidoId], references: [id])
+  categoria     String?
+  codigoBarras  String? // boleto do fornecedor: 44 dígitos do código de barras
+  valor         Decimal                @db.Decimal(14, 2)
+  vencimento    DateTime
+  status        StatusTitulo           @default(ABERTO)
+  valorPago     Decimal?               @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm        DateTime? // data da última baixa
+  valorBaixado  Decimal?               @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
+  criadoEm      DateTime               @default(now())
+  lancamentos   Lancamento[]
+  pagamentos    RemessaPagamentoItem[]
+  planoContaId  String?
+  planoConta    PlanoConta?            @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
+  centroCustoId String?
+  centroCusto   CentroCusto?           @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
+  competencia   DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
 }
 
 enum TipoConta {
@@ -638,6 +650,11 @@ model Lancamento {
   desconto        Decimal           @default(0) @db.Decimal(14, 2)
   transferenciaId String?
   transferencia   Transferencia?    @relation(fields: [transferenciaId], references: [id], onDelete: Restrict)
+  // Classificação do lançamento AVULSO (baixa herda do título; transferência não tem). CHECK no banco.
+  planoContaId    String?
+  planoConta      PlanoConta?       @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
+  centroCustoId   String?
+  centroCusto     CentroCusto?      @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
   extrato         ExtratoLinha?
   criadoEm        DateTime          @default(now())
 
@@ -712,4 +729,48 @@ model RemessaPagamentoItem {
   nossoNumero  String?
 
   @@index([contaPagarId])
+}
+
+// ───────────── Plano de contas e centros de custo (DRE gerencial) ─────────────
+
+enum TipoPlano {
+  RECEITA
+  DEDUCAO
+  CUSTO
+  DESPESA
+  RECEITA_FINANCEIRA
+  DESPESA_FINANCEIRA
+  IMPOSTO_LUCRO
+  NAO_RESULTADO // estoque, empréstimo, aporte, distribuição de lucro: fora do DRE
+}
+
+model PlanoConta {
+  id           String       @id @default(cuid())
+  codigo       String       @unique // "3.1.01"
+  nome         String
+  tipo         TipoPlano // o filho tem o mesmo tipo do pai (regra do app)
+  paiId        String?
+  pai          PlanoConta?  @relation("arvore", fields: [paiId], references: [id], onDelete: Restrict)
+  filhos       PlanoConta[] @relation("arvore")
+  analitica    Boolean      @default(true) // só a analítica recebe título ou lançamento
+  chaveSistema String?      @unique // contas que o sistema usa sozinho (RECEITA_VENDA, ESTOQUE, JUROS_PAGOS...)
+  ativo        Boolean      @default(true)
+  criadoEm     DateTime     @default(now())
+
+  contasReceber ContaReceber[]
+  contasPagar   ContaPagar[]
+  lancamentos   Lancamento[]
+}
+
+model CentroCusto {
+  id       String   @id @default(cuid())
+  codigo   String   @unique
+  nome     String
+  ativo    Boolean  @default(true)
+  criadoEm DateTime @default(now())
+
+  contasReceber ContaReceber[]
+  contasPagar   ContaPagar[]
+  lancamentos   Lancamento[]
+  pedidosVenda  PedidoVenda[]
 }

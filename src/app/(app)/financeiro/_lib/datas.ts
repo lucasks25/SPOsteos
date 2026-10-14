@@ -6,15 +6,20 @@
 
 const DIA_MS = 24 * 60 * 60 * 1000;
 
-/** Meia-noite UTC do dia corrente em America/Sao_Paulo. */
-export function hojeUTC(): Date {
+/** Meia-noite UTC do dia (em America/Sao_Paulo) em que cai o instante `d`. */
+export function diaBrasilia(d: Date): Date {
   const ymd = new Intl.DateTimeFormat("en-CA", {
     timeZone: "America/Sao_Paulo",
     year: "numeric",
     month: "2-digit",
     day: "2-digit",
-  }).format(new Date());
+  }).format(d);
   return new Date(`${ymd}T00:00:00Z`);
+}
+
+/** Meia-noite UTC do dia corrente em America/Sao_Paulo. */
+export function hojeUTC(): Date {
+  return diaBrasilia(new Date());
 }
 
 export function addDias(d: Date, n: number) {

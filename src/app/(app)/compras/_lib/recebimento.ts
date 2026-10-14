@@ -2,6 +2,7 @@ import "server-only";
 import type { Tx } from "@/lib/db";
 import { LOCAIS, movimentar } from "@/lib/estoque";
 import { documentoPedido, hojeUTC } from "./perfis";
+import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
 import { ErroNegocio } from "@/lib/erros";
 
 export type RecebimentoInput = {
@@ -102,6 +103,8 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
         pedidoId: pedido.id,
         categoria: "Compra de mercadoria",
         valor,
+        competencia: hojeUTC(),
+        planoContaId: await planoPorChave(tx, "ESTOQUE"),
         vencimento: new Date(hojeUTC().getTime() + 30 * 24 * 60 * 60 * 1000),
       },
     });

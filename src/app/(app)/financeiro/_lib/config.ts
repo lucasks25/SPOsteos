@@ -2,8 +2,6 @@
 
 export type Tipo = "receber" | "pagar";
 
-export const CATEGORIAS_PAGAR = ["Fornecedores", "Impostos", "Folha", "Aluguel", "Logística", "Serviços", "Outros"] as const;
-
 export const STATUS_TITULO = ["ABERTO", "PAGO", "CANCELADO"] as const;
 
 export const FORMAS_PAGAMENTO = [
@@ -18,7 +16,6 @@ export const FORMAS_PAGAMENTO = [
 export const FORMAS = FORMAS_PAGAMENTO.map((f) => f.value);
 
 /** Categorias de lançamentos avulsos (o que aparece no extrato sem título). */
-export const CATEGORIAS_AVULSO = ["Tarifa bancária", "Juros / multa", "Rendimento", "Impostos", "Outros"] as const;
 export type StatusTitulo = (typeof STATUS_TITULO)[number];
 
 export const TIPOS = {
@@ -59,7 +56,11 @@ export type TituloRow = {
   parceiroId: string | null;
   parceiroNome: string | null;
   pedidoId: number | null;
-  categoria: string | null;
+  planoContaId: string | null;
+  categoria: string | null; // rótulo da conta do plano ("4.02 — Ocupação")
+  centroCustoId: string | null;
+  centroNome: string | null;
+  competencia: Date;
   codigoBarras: string | null;
   valor: number;
   vencimento: Date;

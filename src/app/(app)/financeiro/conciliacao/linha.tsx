@@ -1,12 +1,12 @@
+import type { Opcao } from "../_lib/plano";
 import { ActionButton, Field, Form, Select } from "@/components/form";
 import { Badge } from "@/components/ui";
 import { date, money } from "@/lib/format";
-import { CATEGORIAS_AVULSO } from "../_lib/config";
 import { avulsoEConciliar, baixarEConciliar, conciliarComLancamento, excluirLinhaExtrato } from "../_lib/conciliacao-actions";
 import type { LinhaView, OpcaoTitulo, SugestaoLancamento } from "../_lib/conciliacao";
 
 /** Uma linha pendente do extrato, com as formas de conciliar. */
-export function LinhaPendente({ linha, sugLanc, exatos, titulos }: { linha: LinhaView; sugLanc: SugestaoLancamento[]; exatos: OpcaoTitulo[]; titulos: OpcaoTitulo[] }) {
+export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros }: { linha: LinhaView; sugLanc: SugestaoLancamento[]; exatos: OpcaoTitulo[]; titulos: OpcaoTitulo[]; planos: Opcao[]; centros: Opcao[] }) {
   const entrada = linha.valor > 0;
   const opcoesTitulo = titulos.map((t) => ({ value: t.id, label: `${t.label} — saldo ${money(t.saldo)}` }));
   return (
@@ -63,7 +63,8 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos }: { linha: Linh
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Lançamento avulso (tarifa, rendimento...)</h3>
             <Form action={avulsoEConciliar.bind(null, linha.id)} submitLabel="Lançar e conciliar">
               <Field label="Descrição" name="descricao" defaultValue={linha.descricao} required maxLength={200} />
-              <Select label="Categoria" name="categoria" options={CATEGORIAS_AVULSO.map((c) => ({ value: c, label: c }))} placeholder="(sem categoria)" />
+              <Select label="Conta do plano *" name="planoContaId" options={planos} placeholder="Selecione..." required />
+              <Select label="Centro de custo" name="centroCustoId" options={centros} placeholder="(nenhum)" />
             </Form>
           </div>
         </div>

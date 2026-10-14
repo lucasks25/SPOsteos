@@ -18,8 +18,8 @@ let contaA: string, contaB: string, hospitalId: string, fornecedorId: string;
 
 const titulo = (tipo: "receber" | "pagar", valor: number, venc = 10) =>
   tipo === "receber"
-    ? db.contaReceber.create({ data: { descricao: "TESTEDB receber", valor, vencimento: addDias(hoje, venc), hospitalId } })
-    : db.contaPagar.create({ data: { descricao: "TESTEDB pagar", valor, vencimento: addDias(hoje, venc), fornecedorId } });
+    ? db.contaReceber.create({ data: { descricao: "TESTEDB receber", valor, vencimento: addDias(hoje, venc), competencia: hoje, hospitalId } })
+    : db.contaPagar.create({ data: { descricao: "TESTEDB pagar", valor, vencimento: addDias(hoje, venc), competencia: hoje, fornecedorId } });
 const lerTitulo = (tipo: "receber" | "pagar", id: string) => (tipo === "receber" ? db.contaReceber.findUniqueOrThrow({ where: { id } }) : db.contaPagar.findUniqueOrThrow({ where: { id } }));
 const baixar = (tipo: "receber" | "pagar", id: string, extra: { valor: number; juros?: number; multa?: number; desconto?: number }) =>
   db.$transaction((tx) => registrarBaixa(tx, { tipo, tituloId: id, contaId: contaA, data: hoje, ...extra }));

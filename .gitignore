@@ -48,7 +48,7 @@ next-env.d.ts
 /public/uploads
 
 # ferramentas de agentes (geradas localmente, não fazem parte do produto)
-/.claude-flow
+.claude-flow/
 /.swarm
 /.agents
 /.windsurf

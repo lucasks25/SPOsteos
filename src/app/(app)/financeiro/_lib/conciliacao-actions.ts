@@ -1,5 +1,6 @@
 "use server";
 
+import { validarClassificacao } from "./plano";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
@@ -138,7 +139,7 @@ export async function baixarEConciliar(linhaId: string, _: ActionState, fd: Form
   return { ok: true };
 }
 
-const schemaAvulso = z.object({ descricao: zf.text(), categoria: zf.optText() });
+const schemaAvulso = z.object({ descricao: zf.text(), planoContaId: zf.text("Escolha a conta do plano"), centroCustoId: zf.optText() });
 
 /** Cria um lançamento avulso (tarifa, rendimento...) com os dados do extrato e concilia. */
 export async function avulsoEConciliar(linhaId: string, _: ActionState, fd: FormData): Promise<ActionState> {
@@ -147,6 +148,7 @@ export async function avulsoEConciliar(linhaId: string, _: ActionState, fd: Form
   if (!parsed.success) return parsed.state;
   try {
     await db.$transaction(async (tx) => {
+      await validarClassificacao(tx, parsed.data.planoContaId, parsed.data.centroCustoId);
       const l = await linhaPendente(tx, linhaId);
       const lan = await tx.lancamento.create({
         data: {
@@ -155,7 +157,8 @@ export async function avulsoEConciliar(linhaId: string, _: ActionState, fd: Form
           sentido: l.valor > 0 ? "ENTRADA" : "SAIDA",
           valor: Math.abs(l.valor),
           descricao: parsed.data.descricao,
-          categoria: parsed.data.categoria,
+          planoContaId: parsed.data.planoContaId,
+          centroCustoId: parsed.data.centroCustoId,
         },
       });
       await ligar(tx, linhaId, lan.id);

@@ -76,9 +76,14 @@ type Raw = {
   valorBaixado: unknown;
   pagoEm: Date | null;
   criadoEm: Date;
+  planoContaId: string | null;
+  planoConta: { codigo: string; nome: string } | null;
+  centroCustoId: string | null;
+  centroCusto: { nome: string } | null;
+  competencia: Date;
 };
 
-function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | null, categoria: string | null, codigoBarras: string | null = null): TituloRow {
+function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | null, codigoBarras: string | null = null): TituloRow {
   const valor = toNumber(r.valor as string);
   const pago = r.valorPago === null || r.valorPago === undefined ? null : toNumber(r.valorPago as string);
   const baixado = toNumber(r.valorBaixado as string);
@@ -88,7 +93,11 @@ function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | nu
     parceiroId,
     parceiroNome,
     pedidoId: r.pedidoId,
-    categoria,
+    planoContaId: r.planoContaId,
+    categoria: r.planoConta ? `${r.planoConta.codigo} — ${r.planoConta.nome}` : null,
+    centroCustoId: r.centroCustoId,
+    centroNome: r.centroCusto?.nome ?? null,
+    competencia: r.competencia,
     codigoBarras,
     valor,
     vencimento: r.vencimento,
@@ -101,6 +110,7 @@ function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | nu
   };
 }
 
+const classSel = { planoConta: { select: { codigo: true, nome: true } }, centroCusto: { select: { nome: true } } } as const;
 const parceiroSel = { select: { razaoSocial: true, nomeFantasia: true } } as const;
 
 export async function listarTitulos(tipo: Tipo, f: Filtros, hoje: Date): Promise<{ rows: TituloRow[]; totais: Totais }> {
@@ -118,13 +128,13 @@ export async function listarTitulos(tipo: Tipo, f: Filtros, hoje: Date): Promise
   if (tipo === "receber") {
     const p = f.parceiroId ? { hospitalId: f.parceiroId } : {};
     const [rows, ab, ve, pg] = await Promise.all([
-      db.contaReceber.findMany({ where: { ...p, ...lista }, include: { hospital: parceiroSel }, orderBy, take: 500 }),
+      db.contaReceber.findMany({ where: { ...p, ...lista }, include: { hospital: parceiroSel, ...classSel }, orderBy, take: 500 }),
       db.contaReceber.aggregate({ where: { ...p, ...whereAberto }, _sum: { valor: true, valorBaixado: true }, _count: true }),
       db.contaReceber.aggregate({ where: { ...p, ...whereVencido }, _sum: { valor: true, valorBaixado: true }, _count: true }),
       db.lancamento.aggregate({ where: { ...wherePago, contaReceber: { is: { ...busca, ...p } } }, _sum: { valor: true }, _count: true }),
     ]);
     return {
-      rows: rows.map((r) => normalizar(r, r.hospitalId, nomeHospital(r.hospital), null)),
+      rows: rows.map((r) => normalizar(r, r.hospitalId, nomeHospital(r.hospital))),
       totais: {
         aberto: { valor: emAberto(ab._sum), qtd: ab._count },
         vencido: { valor: emAberto(ve._sum), qtd: ve._count },
@@ -135,13 +145,13 @@ export async function listarTitulos(tipo: Tipo, f: Filtros, hoje: Date): Promise
 
   const p = f.parceiroId ? { fornecedorId: f.parceiroId } : {};
   const [rows, ab, ve, pg] = await Promise.all([
-    db.contaPagar.findMany({ where: { ...p, ...lista }, include: { fornecedor: parceiroSel }, orderBy, take: 500 }),
+    db.contaPagar.findMany({ where: { ...p, ...lista }, include: { fornecedor: parceiroSel, ...classSel }, orderBy, take: 500 }),
     db.contaPagar.aggregate({ where: { ...p, ...whereAberto }, _sum: { valor: true, valorBaixado: true }, _count: true }),
     db.contaPagar.aggregate({ where: { ...p, ...whereVencido }, _sum: { valor: true, valorBaixado: true }, _count: true }),
     db.lancamento.aggregate({ where: { ...wherePago, contaPagar: { is: { ...busca, ...p } } }, _sum: { valor: true }, _count: true }),
   ]);
   return {
-    rows: rows.map((r) => normalizar(r, r.fornecedorId, nomeHospital(r.fornecedor), r.categoria)),
+    rows: rows.map((r) => normalizar(r, r.fornecedorId, nomeHospital(r.fornecedor))),
     totais: {
       aberto: { valor: emAberto(ab._sum), qtd: ab._count },
       vencido: { valor: emAberto(ve._sum), qtd: ve._count },
@@ -152,11 +162,11 @@ export async function listarTitulos(tipo: Tipo, f: Filtros, hoje: Date): Promise
 
 export async function obterTitulo(tipo: Tipo, id: string): Promise<TituloRow | null> {
   if (tipo === "receber") {
-    const r = await db.contaReceber.findUnique({ where: { id }, include: { hospital: parceiroSel } });
-    return r ? normalizar(r, r.hospitalId, nomeHospital(r.hospital), null) : null;
+    const r = await db.contaReceber.findUnique({ where: { id }, include: { hospital: parceiroSel, ...classSel } });
+    return r ? normalizar(r, r.hospitalId, nomeHospital(r.hospital)) : null;
   }
-  const r = await db.contaPagar.findUnique({ where: { id }, include: { fornecedor: parceiroSel } });
-  return r ? normalizar(r, r.fornecedorId, nomeHospital(r.fornecedor), r.categoria, r.codigoBarras) : null;
+  const r = await db.contaPagar.findUnique({ where: { id }, include: { fornecedor: parceiroSel, ...classSel } });
+  return r ? normalizar(r, r.fornecedorId, nomeHospital(r.fornecedor), r.codigoBarras) : null;
 }
 
 /** Hospitais ou fornecedores para selects (ativos + o já vinculado). */

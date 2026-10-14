@@ -1,16 +1,28 @@
 import { Field, Form, Grid, Select } from "@/components/form";
 import { inputDate, money } from "@/lib/format";
-import { CATEGORIAS_PAGAR, FORMAS_PAGAMENTO, TIPOS, type Tipo, type TituloRow } from "./config";
-import { baixarTitulo, salvarTitulo } from "./actions";
+import { FORMAS_PAGAMENTO, TIPOS, type Tipo, type TituloRow } from "./config";
+import { baixarTitulo, classificarTitulo, salvarTitulo } from "./actions";
 import { linhaDigitavel } from "./boleto";
 import { ymd } from "./datas";
 
 /** Formulário de criação/edição manual de título (somente em aberto). */
-export function TituloForm({ tipo, titulo, parceiros }: { tipo: Tipo; titulo?: TituloRow; parceiros: { value: string; label: string }[] }) {
+export function TituloForm({
+  tipo,
+  titulo,
+  parceiros,
+  planos,
+  centros,
+  hoje,
+}: {
+  tipo: Tipo;
+  titulo?: TituloRow;
+  parceiros: { value: string; label: string }[];
+  planos: { value: string; label: string }[];
+  centros: { value: string; label: string }[];
+  hoje: Date;
+}) {
   const cfg = TIPOS[tipo];
   const t = titulo;
-  const categorias: string[] = [...CATEGORIAS_PAGAR];
-  if (t?.categoria && !categorias.includes(t.categoria)) categorias.push(t.categoria);
   return (
     <Form action={salvarTitulo.bind(null, tipo, t?.id ?? null)} submitLabel={t ? "Salvar alterações" : "Criar título"}>
       <Grid cols={3}>
@@ -22,9 +34,9 @@ export function TituloForm({ tipo, titulo, parceiros }: { tipo: Tipo; titulo?: T
           options={parceiros}
           placeholder="(nenhum)"
         />
-        {tipo === "pagar" && (
-          <Select label="Categoria" name="categoria" defaultValue={t?.categoria ?? ""} options={categorias.map((c) => ({ value: c, label: c }))} placeholder="(sem categoria)" />
-        )}
+        <Select label="Conta do plano *" name="planoContaId" defaultValue={t?.planoContaId ?? ""} options={planos} placeholder="Selecione..." required />
+        <Select label="Centro de custo" name="centroCustoId" defaultValue={t?.centroCustoId ?? ""} options={centros} placeholder="(nenhum)" />
+        <Field label="Competência *" name="competencia" type="date" defaultValue={inputDate(t?.competencia ?? hoje)} required hint="Dia a que a receita ou despesa pertence (o DRE usa esta data, não o vencimento)." />
         <Field label="Valor (R$) *" name="valor" type="number" step="0.01" min="0.01" defaultValue={t ? t.valor.toFixed(2) : ""} required />
         <Field label="Vencimento *" name="vencimento" type="date" defaultValue={inputDate(t?.vencimento)} required />
         {tipo === "pagar" && (
@@ -69,6 +81,29 @@ export function BaixaForm({ tipo, titulo, hoje, contas }: { tipo: Tipo; titulo: 
           required
         />
         <Select label="Forma" name="forma" options={FORMAS_PAGAMENTO.map((f) => ({ value: f.value, label: f.label }))} placeholder="(não informada)" />
+      </Grid>
+    </Form>
+  );
+}
+
+/** Classificação do título para o DRE (conta do plano, centro de custo e competência); vale em qualquer situação. */
+export function ClassificarForm({
+  tipo,
+  titulo,
+  planos,
+  centros,
+}: {
+  tipo: Tipo;
+  titulo: TituloRow;
+  planos: { value: string; label: string }[];
+  centros: { value: string; label: string }[];
+}) {
+  return (
+    <Form action={classificarTitulo.bind(null, tipo, titulo.id)} submitLabel="Salvar classificação">
+      <Grid cols={3}>
+        <Select label="Conta do plano *" name="planoContaId" defaultValue={titulo.planoContaId ?? ""} options={planos} placeholder="Selecione..." required />
+        <Select label="Centro de custo" name="centroCustoId" defaultValue={titulo.centroCustoId ?? ""} options={centros} placeholder="(nenhum)" />
+        <Field label="Competência *" name="competencia" type="date" defaultValue={inputDate(titulo.competencia)} required />
       </Grid>
     </Form>
   );

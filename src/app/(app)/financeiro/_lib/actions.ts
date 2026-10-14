@@ -11,6 +11,7 @@ import type { FormaPagamento } from "@/generated/prisma/client";
 import { FORMAS, TIPOS, isTipo, type Tipo } from "./config";
 import { addDias, hojeUTC } from "./datas";
 import { lerBoleto } from "./boleto";
+import { validarClassificacao } from "./plano";
 import { estornarBaixa, registrarBaixa } from "./titulos";
 import { ErroNegocio } from "@/lib/erros";
 
@@ -19,6 +20,9 @@ const positivo = () => zf.money().refine((v) => v > 0, "Informe um valor maior q
 const schemaReceber = z.object({
   descricao: zf.text(),
   hospitalId: zf.optText(),
+  planoContaId: zf.text("Escolha a conta do plano"),
+  centroCustoId: zf.optText(),
+  competencia: zf.date("Informe a competência"),
   valor: positivo(),
   vencimento: zf.date("Informe o vencimento"),
 });
@@ -26,8 +30,9 @@ const schemaReceber = z.object({
 const schemaPagar = z.object({
   descricao: zf.text(),
   fornecedorId: zf.optText(),
-  // categorias padrão no select; aceita também a categoria já gravada por outro módulo
-  categoria: z.string().max(60, "Categoria muito longa").optional().transform((v) => v ?? null),
+  planoContaId: zf.text("Escolha a conta do plano"),
+  centroCustoId: zf.optText(),
+  competencia: zf.date("Informe a competência"),
   // boleto do fornecedor: aceita linha digitável ou código de barras; grava os 44 dígitos validados
   codigoBarras: z
     .string()
@@ -85,6 +90,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const parsed = parseForm(schemaReceber, fd);
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
+      await validarClassificacao(db, data.planoContaId, data.centroCustoId);
       if (id) {
         const r = await db.contaReceber.updateMany({ where: { id, status: "ABERTO", valorPago: null }, data });
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
@@ -97,6 +103,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const parsed = parseForm(schemaPagar, fd);
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
+      await validarClassificacao(db, data.planoContaId, data.centroCustoId);
       if (id) {
         const r = await db.contaPagar.updateMany({ where: { id, status: "ABERTO", valorPago: null }, data });
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
@@ -157,6 +164,11 @@ export async function cancelarTitulo(tipoArg: Tipo, _: ActionState, fd: FormData
   const { id } = parsed.data;
   const data = { status: "CANCELADO" as const };
   try {
+    if (tipo === "receber") {
+      // Cancelar a receita de uma NF emitida tiraria a venda do DRE e deixaria o custo (CMV): precisa de cancelamento de NF/devolução.
+      const t = await db.contaReceber.findUnique({ where: { id }, select: { pedido: { select: { status: true } } } });
+      if (t?.pedido?.status === "FATURADO") return { error: "Este título vem de uma NF emitida. Para desfazê-lo é preciso cancelar a NF ou registrar uma devolução." };
+    }
     const where = { id, status: "ABERTO" as const, valorPago: null };
     const r = tipo === "receber" ? await db.contaReceber.updateMany({ where, data }) : await db.contaPagar.updateMany({ where, data });
     if (r.count === 0) return { error: "Só é possível cancelar títulos em aberto e sem baixas. Estorne as baixas antes." };
@@ -165,5 +177,27 @@ export async function cancelarTitulo(tipoArg: Tipo, _: ActionState, fd: FormData
     return { error: errorMessage(e) };
   }
   revalidar(tipo, id);
+  return { ok: true };
+}
+
+const schemaClassificar = z.object({ planoContaId: zf.text("Escolha a conta do plano"), centroCustoId: zf.optText(), competencia: zf.date("Informe a competência") });
+
+/** Classifica (ou reclassifica) um título em qualquer situação: não mexe em valor nem em baixas. */
+export async function classificarTitulo(tipoArg: Tipo, id: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser(["FINANCEIRO"]);
+  const tipo = checkTipo(tipoArg);
+  const parsed = parseForm(schemaClassificar, fd);
+  if (!parsed.success) return parsed.state;
+  const data = parsed.data;
+  try {
+    await validarClassificacao(db, data.planoContaId, data.centroCustoId);
+    const r = tipo === "receber" ? await db.contaReceber.updateMany({ where: { id }, data }) : await db.contaPagar.updateMany({ where: { id }, data });
+    if (r.count === 0) return { error: "Título não encontrado." };
+    await audit(user.id, "classificar", TIPOS[tipo].entidade, id);
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
+  revalidar(tipo, id);
+  revalidatePath("/financeiro/dre");
   return { ok: true };
 }

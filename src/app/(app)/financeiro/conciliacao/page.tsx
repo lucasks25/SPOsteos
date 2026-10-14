@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, num } from "@/lib/format";
 import { carregarConciliacao } from "../_lib/conciliacao";
+import { opcoesClassificacao } from "../_lib/plano";
 import { desfazerConciliacao, importarExtrato } from "../_lib/conciliacao-actions";
 import { LinhaPendente } from "./linha";
 
@@ -32,6 +33,7 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
   }
 
   const d = await carregarConciliacao(escolhida.id);
+  const { planos, centros } = await opcoesClassificacao(db);
   return (
     <>
       <PageHeader title="Conciliação bancária" subtitle="Importe o extrato do banco (OFX ou CNAB 240) e case cada linha com uma baixa, um título ou um lançamento avulso." />
@@ -73,7 +75,7 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
           ) : (
             <div className="space-y-3">
               {d.pendentes.map((p) => (
-                <LinhaPendente key={p.linha.id} linha={p.linha} sugLanc={p.sugLanc} exatos={p.exatos} titulos={p.titulos} />
+                <LinhaPendente key={p.linha.id} linha={p.linha} sugLanc={p.sugLanc} exatos={p.exatos} titulos={p.titulos} planos={planos} centros={centros} />
               ))}
             </div>
           )}

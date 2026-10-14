@@ -148,3 +148,29 @@ Pontos para revisão:
 - Conta com saldo diferente de zero não pode ser inativada (senão painel e fluxo deixam de fechar).
 - Não testado: a conciliação com juros/multa/desconto pela tela do extrato (testada só a lógica e a baixa pela tela do título).
 
+
+## 7. Plano de contas, centros de custo e DRE gerencial (14/10/2026)
+
+Desenho feito pelo agente `arquiteto` (Opus), implementado e conferido por testes. Migration `20261014160000_plano_contas_dre`.
+
+**Modelo.** `PlanoConta` (árvore; só conta analítica e ativa recebe título/lançamento; `chaveSistema` marca as contas que o sistema usa sozinho: RECEITA_VENDA, ESTOQUE, CMV, PERDA_ESTOQUE, GLOSA, JUROS_RECEBIDOS/PAGOS, DESCONTO_OBTIDO/CONCEDIDO), `CentroCusto`, e em `ContaReceber`/`ContaPagar` os campos `planoContaId`, `centroCustoId` e `competencia` (obrigatória; o DRE usa essa data, não o vencimento). `Lancamento` avulso também leva plano e centro; baixa herda do título. CHECK no banco impede plano/centro em baixa ou transferência. O plano padrão é semeado na migration (editável na tela).
+
+**Regras do DRE** (`financeiro/_lib/dre.ts`, parte pura; `dre-dados.ts` lê o banco):
+- Título (não cancelado) entra pelo valor inteiro na competência; pagamento parcial não muda receita nem despesa.
+- Juros/multa e desconto de cada baixa vão ao resultado financeiro na data da baixa (receber: juros +, desconto −; pagar: juros −, desconto +). Pagar 2.700 + 300 de desconto num título de 3.000 dá despesa −3.000, financeiro +300, efeito líquido −2.700 = caixa.
+- CMV = `PedidoVenda.custoTotal` na data do faturamento (fronteira de Brasília). Compra de mercadoria vai para a conta ESTOQUE (fora do resultado).
+- Perdas e ajustes de estoque: saída (só origem) = custo, entrada (só destino) = ganho, valor = quantidade × custoUnit.
+- Transferências, contas "Fora do resultado" e títulos cancelados ficam de fora. Sem classificação aparece em "Não classificado" e soma no resultado.
+
+**Travas novas:** cancelar a conta a receber de pedido FATURADO é recusado (tiraria a receita e deixaria o CMV). Contas do sistema não podem ser inativadas.
+
+**Testes:** `tests/financeiro/dre.test.ts` (14: exemplo completo conferido à mão, sinais, reembolso, não classificado, meses, regras da árvore) e `tests/financeiro-db/dre.test.ts` (3: cenário real no banco isolado por centro de custo, CHECKs).
+
+**Pendências / não verificado:**
+- `custoUnit` da compra: não foi conferido se está em reais ou na moeda da invoice (importação). O CMV depende disso.
+- Custos de importação (frete, II, IPI) entram como custo no mês em que ocorrem, não no custo médio.
+- Centro de custo do pedido de venda (para filtrar o CMV) ainda não tem campo na tela de pedido; hoje o CMV só aparece sem filtro de centro.
+- Glosa: conta GLOSA existe, mas o registro de glosa (extingue título sem dinheiro, vai para Deduções) ainda não foi feito.
+- Fechamento de período (bloquear estorno e edição em meses fechados): não existe; estornar uma baixa muda o DRE do mês antigo.
+- Drill-down da linha do DRE até o documento: hoje só até a conta do plano.
+- Lançamento avulso antigo sem conta do plano permanece "Não classificado" até alguém classificar (não há tela de classificação em lote).

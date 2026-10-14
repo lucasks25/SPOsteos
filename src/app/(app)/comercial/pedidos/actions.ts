@@ -6,6 +6,8 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { money, toNumber } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
+import { diaBrasilia } from "@/app/(app)/financeiro/_lib/datas";
+import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
 import { ErroNegocio } from "@/lib/erros";
 
 const PERFIS = ["COMERCIAL", "FINANCEIRO"] as const;
@@ -29,7 +31,8 @@ export async function registrarNf(pedidoId: number, _: ActionState, fd: FormData
     await db.$transaction(async (tx) => {
       const pedido = await tx.pedidoVenda.findUnique({ where: { id: pedidoId }, include: { hospital: { select: { razaoSocial: true, nomeFantasia: true } } } });
       if (!pedido) throw new ErroNegocio("Pedido não encontrado.");
-      const r = await tx.pedidoVenda.updateMany({ where: { id: pedidoId, status: "ABERTO" }, data: { status: "FATURADO", numeroNf, faturadoEm: new Date() } });
+      const faturadoEm = new Date();
+      const r = await tx.pedidoVenda.updateMany({ where: { id: pedidoId, status: "ABERTO" }, data: { status: "FATURADO", numeroNf, faturadoEm } });
       if (r.count === 0) throw new ErroNegocio("Só é possível registrar NF em pedidos abertos.");
       const total = toNumber(pedido.total);
       if (total <= 0) throw new ErroNegocio("O pedido tem valor zero. Confira os preços da tabela do hospital antes de faturar.");
@@ -40,6 +43,9 @@ export async function registrarNf(pedidoId: number, _: ActionState, fd: FormData
           pedidoId,
           valor: total,
           vencimento,
+          competencia: diaBrasilia(faturadoEm),
+          planoContaId: await planoPorChave(tx, "RECEITA_VENDA"),
+          centroCustoId: pedido.centroCustoId,
         },
       });
     });

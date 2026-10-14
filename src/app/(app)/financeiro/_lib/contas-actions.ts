@@ -11,6 +11,7 @@ import { checarCnpj } from "../../cadastros/_lib/documentos";
 import { ErroNegocio } from "@/lib/erros";
 import { listarContas } from "./contas";
 import { addDias, hojeUTC } from "./datas";
+import { validarClassificacao } from "./plano";
 import { estornarTransferencia, transferir } from "./titulos";
 
 const schemaConta = z.object({
@@ -70,7 +71,8 @@ export async function alternarAtivoConta(id: string): Promise<ActionState> {
 const schemaAvulso = z.object({
   sentido: z.enum(["ENTRADA", "SAIDA"], { error: "Escolha entrada ou saída" }),
   descricao: zf.text(),
-  categoria: zf.optText(),
+  planoContaId: zf.text("Escolha a conta do plano"),
+  centroCustoId: zf.optText(),
   valor: zf.money().refine((v) => v > 0, "Informe um valor maior que zero"),
   data: zf.date("Informe a data"),
 });
@@ -85,6 +87,7 @@ export async function lancarAvulso(contaId: string, _: ActionState, fd: FormData
   try {
     const conta = await db.contaBancaria.findUnique({ where: { id: contaId }, select: { ativo: true } });
     if (!conta?.ativo) return { error: "Conta inexistente ou inativa." };
+    await validarClassificacao(db, d.planoContaId, d.centroCustoId);
     const l = await db.lancamento.create({ data: { contaId, ...d } });
     await audit(user.id, "lançar", "Lancamento", l.id, `${d.sentido} ${money(d.valor)} — ${d.descricao}`);
   } catch (e) {
