@@ -53,9 +53,12 @@ export function BaixaForm({ tipo, titulo, hoje, contas }: { tipo: Tipo; titulo: 
           step="0.01"
           min="0.01"
           defaultValue={titulo.saldo.toFixed(2)}
-          hint={`Saldo: ${money(titulo.saldo)}. Valor menor = baixa parcial.`}
+          hint={`Dinheiro que ${tipo === "receber" ? "entra" : "sai"} na conta. Saldo do título: ${money(titulo.saldo)}. Menor que o saldo = baixa parcial.`}
           required
         />
+        <Field label="Juros (R$)" name="juros" type="number" step="0.01" min="0" hint="Incluído no valor acima" />
+        <Field label="Multa (R$)" name="multa" type="number" step="0.01" min="0" hint="Incluída no valor acima" />
+        <Field label="Desconto (R$)" name="desconto" type="number" step="0.01" min="0" hint="Quita parte do título sem dinheiro" />
         <Field label="Data *" name="data" type="date" defaultValue={ymd(hoje)} max={ymd(hoje)} required />
         <Select
           label="Conta *"

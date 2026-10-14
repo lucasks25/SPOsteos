@@ -1,9 +1,9 @@
 import "server-only";
 import type { FormaPagamento } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
-import { toNumber } from "@/lib/format";
-import type { Tipo } from "./config";
 import { ErroNegocio } from "@/lib/erros";
+import { money, toNumber } from "@/lib/format";
+import type { Tipo } from "./config";
 
 /** Regra de negócio violada (mensagem já amigável para o usuário). */
 export class FinanceiroError extends ErroNegocio {}
@@ -11,35 +11,85 @@ export class FinanceiroError extends ErroNegocio {}
 const cent = (n: number) => Math.round(n * 100);
 export const arredondar = (n: number) => cent(n) / 100;
 
-type TituloBasico = { id: string; descricao: string; valor: number; status: "ABERTO" | "PAGO" | "CANCELADO" };
+// ───────────── regras puras (testadas sem banco) ─────────────
 
-async function carregar(tx: Tx, tipo: Tipo, id: string): Promise<TituloBasico> {
-  const t =
-    tipo === "receber"
-      ? await tx.contaReceber.findUnique({ where: { id }, select: { id: true, descricao: true, valor: true, status: true } })
-      : await tx.contaPagar.findUnique({ where: { id }, select: { id: true, descricao: true, valor: true, status: true } });
+/** Saldo em aberto do título: o que falta extinguir. `valorBaixado` = Σ(principal + desconto) das baixas. */
+export function saldoTitulo(valor: number, valorBaixado: number | null | undefined): number {
+  return Math.max(0, arredondar(valor - (valorBaixado ?? 0)));
+}
+
+/** PAGO quando o que foi extinto (principal + desconto) cobre o valor do título. */
+export function situacaoTitulo(valor: number, valorBaixado: number): "PAGO" | "ABERTO" {
+  return cent(valorBaixado) >= cent(valor) ? "PAGO" : "ABERTO";
+}
+
+export type EntradaBaixa = { valor: number; juros?: number; multa?: number; desconto?: number };
+export type BaixaCalculada = { valor: number; principal: number; juros: number; multa: number; desconto: number };
+
+/**
+ * Calcula uma baixa. `valor` é o dinheiro que move a conta (inclui juros e multa, não inclui desconto).
+ *   principal = valor − juros − multa      (o dinheiro que abate o título)
+ *   extinto   = principal + desconto       (o quanto do título sai do saldo)
+ * Ex.: título 1000 pago com 980 e 20 de desconto → principal 980, extinto 1000.
+ * O extinto não pode passar do saldo do título (sem "juros implícito").
+ */
+export function calcularBaixa(e: EntradaBaixa, saldoAntes: number): BaixaCalculada {
+  const juros = arredondar(e.juros ?? 0);
+  const multa = arredondar(e.multa ?? 0);
+  const desconto = arredondar(e.desconto ?? 0);
+  const valor = arredondar(e.valor);
+  if (![valor, juros, multa, desconto].every(Number.isFinite)) throw new FinanceiroError("Valor inválido.");
+  if (juros < 0 || multa < 0 || desconto < 0) throw new FinanceiroError("Juros, multa e desconto não podem ser negativos.");
+  if (!(cent(valor) > 0)) throw new FinanceiroError("Informe um valor maior que zero.");
+  const principal = arredondar(valor - juros - multa);
+  if (principal < 0) throw new FinanceiroError("Juros e multa não podem ser maiores que o valor movimentado.");
+  const extinto = arredondar(principal + desconto);
+  if (!(cent(extinto) > 0)) throw new FinanceiroError("A baixa precisa abater alguma parte do título.");
+  if (cent(extinto) > cent(saldoAntes)) {
+    if (cent(juros + multa + desconto) === 0) {
+      throw new FinanceiroError(`O valor (${money(valor)}) é maior que o saldo do título (${money(saldoAntes)}). Para pagar acima do saldo, informe os juros ou a multa.`);
+    }
+    throw new FinanceiroError(`A baixa abate ${money(extinto)} do título, mas o saldo é ${money(saldoAntes)}.`);
+  }
+  return { valor, principal, juros, multa, desconto };
+}
+
+// ───────────── acesso ao banco ─────────────
+
+type TituloBasico = { id: string; descricao: string; valor: number; valorBaixado: number; status: "ABERTO" | "PAGO" | "CANCELADO" };
+
+/** Lê o título; com `travar`, bloqueia a linha até o fim da transação (impede duas baixas simultâneas). */
+async function carregar(tx: Tx, tipo: Tipo, id: string, travar = false): Promise<TituloBasico> {
+  if (travar) {
+    if (tipo === "receber") await tx.$queryRaw`SELECT id FROM "ContaReceber" WHERE id = ${id} FOR UPDATE`;
+    else await tx.$queryRaw`SELECT id FROM "ContaPagar" WHERE id = ${id} FOR UPDATE`;
+  }
+  const sel = { id: true, descricao: true, valor: true, valorBaixado: true, status: true } as const;
+  const t = tipo === "receber" ? await tx.contaReceber.findUnique({ where: { id }, select: sel }) : await tx.contaPagar.findUnique({ where: { id }, select: sel });
   if (!t) throw new FinanceiroError("Título não encontrado.");
-  return { ...t, valor: toNumber(t.valor) };
+  return { ...t, valor: toNumber(t.valor), valorBaixado: toNumber(t.valorBaixado) };
 }
 
 const filtroLancamentos = (tipo: Tipo, id: string) => (tipo === "receber" ? { contaReceberId: id } : { contaPagarId: id });
 
 /**
- * Recalcula valorPago, pagoEm e status do título a partir dos lançamentos (baixas).
- * É o único lugar que escreve esses três campos, para o título nunca divergir do caixa.
+ * Recalcula valorPago (dinheiro), valorBaixado (principal + desconto), pagoEm e status do título
+ * a partir dos lançamentos. É o único lugar que escreve esses campos, para o título nunca divergir do caixa.
  */
 export async function recalcularTitulo(tx: Tx, tipo: Tipo, id: string) {
   const titulo = await carregar(tx, tipo, id);
-  const soma = await tx.lancamento.aggregate({ where: filtroLancamentos(tipo, id), _sum: { valor: true }, _max: { data: true } });
-  const pago = toNumber(soma._sum.valor);
+  const s = await tx.lancamento.aggregate({ where: filtroLancamentos(tipo, id), _sum: { valor: true, principal: true, desconto: true }, _max: { data: true }, _count: true });
+  const pago = toNumber(s._sum.valor);
+  const baixado = arredondar(toNumber(s._sum.principal) + toNumber(s._sum.desconto));
   const data = {
-    valorPago: pago > 0 ? pago : null,
-    pagoEm: soma._max.data ?? null,
-    status: (cent(pago) >= cent(titulo.valor) ? "PAGO" : "ABERTO") as "PAGO" | "ABERTO",
+    valorPago: s._count > 0 ? pago : null,
+    valorBaixado: s._count > 0 ? baixado : null,
+    pagoEm: s._max.data ?? null,
+    status: situacaoTitulo(titulo.valor, baixado),
   };
   if (tipo === "receber") await tx.contaReceber.update({ where: { id }, data });
   else await tx.contaPagar.update({ where: { id }, data });
-  return { ...data, valorPago: pago };
+  return data;
 }
 
 export type BaixaInput = {
@@ -48,15 +98,18 @@ export type BaixaInput = {
   contaId: string;
   data: Date;
   valor: number;
+  juros?: number;
+  multa?: number;
+  desconto?: number;
   forma?: FormaPagamento | null;
 };
 
-/** Registra um pagamento/recebimento (total ou parcial) e atualiza o título. */
+/** Registra um pagamento/recebimento (total ou parcial, com juros, multa e desconto) e atualiza o título. */
 export async function registrarBaixa(tx: Tx, input: BaixaInput) {
-  const { tipo, tituloId, contaId, data, valor, forma } = input;
-  if (!(cent(valor) > 0)) throw new FinanceiroError("Informe um valor maior que zero.");
-  const titulo = await carregar(tx, tipo, tituloId);
+  const { tipo, tituloId, contaId, data, forma } = input;
+  const titulo = await carregar(tx, tipo, tituloId, true);
   if (titulo.status !== "ABERTO") throw new FinanceiroError("O título não está em aberto.");
+  const b = calcularBaixa(input, saldoTitulo(titulo.valor, titulo.valorBaixado));
   const conta = await tx.contaBancaria.findUnique({ where: { id: contaId }, select: { ativo: true } });
   if (!conta) throw new FinanceiroError("Conta bancária não encontrada.");
   if (!conta.ativo) throw new FinanceiroError("A conta bancária está inativa.");
@@ -65,7 +118,11 @@ export async function registrarBaixa(tx: Tx, input: BaixaInput) {
     data: {
       contaId,
       data,
-      valor,
+      valor: b.valor,
+      principal: b.principal,
+      juros: b.juros,
+      multa: b.multa,
+      desconto: b.desconto,
       forma: forma ?? null,
       descricao: titulo.descricao,
       sentido: tipo === "receber" ? "ENTRADA" : "SAIDA",
@@ -85,7 +142,40 @@ export async function estornarBaixa(tx: Tx, tipo: Tipo, lancamentoId: string) {
   const tituloId = tipo === "receber" ? l?.contaReceberId : l?.contaPagarId;
   if (!l || !tituloId) throw new FinanceiroError("Baixa não encontrada.");
   if (l.extrato) throw new FinanceiroError("Esta baixa está conciliada com o extrato. Desfaça a conciliação antes de estornar.");
+  await carregar(tx, tipo, tituloId, true);
   await tx.lancamento.delete({ where: { id: lancamentoId } });
   await recalcularTitulo(tx, tipo, tituloId);
   return tituloId;
+}
+
+// ───────────── transferência entre contas ─────────────
+
+export type TransferenciaInput = { origemId: string; destinoId: string; valor: number; data: Date; descricao: string };
+
+/** Cria a transferência: SAIDA na origem e ENTRADA no destino, ligadas por `Transferencia`. */
+export async function transferir(tx: Tx, input: TransferenciaInput) {
+  const { origemId, destinoId, data } = input;
+  const valor = arredondar(input.valor);
+  if (origemId === destinoId) throw new FinanceiroError("Origem e destino precisam ser contas diferentes.");
+  if (!(cent(valor) > 0)) throw new FinanceiroError("Informe um valor maior que zero.");
+  const contas = await tx.contaBancaria.findMany({ where: { id: { in: [origemId, destinoId] } }, select: { id: true, nome: true, ativo: true } });
+  if (contas.length !== 2) throw new FinanceiroError("Conta de origem ou destino não encontrada.");
+  const inativa = contas.find((c) => !c.ativo);
+  if (inativa) throw new FinanceiroError(`A conta ${inativa.nome} está inativa.`);
+  const nome = (id: string) => contas.find((c) => c.id === id)!.nome;
+
+  const t = await tx.transferencia.create({ data: { data, valor, descricao: input.descricao } });
+  const base = { data, valor, transferenciaId: t.id, categoria: "Transferência" };
+  await tx.lancamento.create({ data: { ...base, contaId: origemId, sentido: "SAIDA", descricao: `${input.descricao} → ${nome(destinoId)}` } });
+  await tx.lancamento.create({ data: { ...base, contaId: destinoId, sentido: "ENTRADA", descricao: `${input.descricao} ← ${nome(origemId)}` } });
+  return t;
+}
+
+/** Estorna a transferência inteira (as duas pernas). Bloqueado se alguma perna já foi conciliada com o extrato. */
+export async function estornarTransferencia(tx: Tx, transferenciaId: string) {
+  const pernas = await tx.lancamento.findMany({ where: { transferenciaId }, select: { id: true, extrato: { select: { id: true } } } });
+  if (pernas.length === 0) throw new FinanceiroError("Transferência não encontrada.");
+  if (pernas.some((p) => p.extrato)) throw new FinanceiroError("Uma das pernas da transferência está conciliada com o extrato. Desfaça a conciliação antes de estornar.");
+  await tx.lancamento.deleteMany({ where: { transferenciaId } });
+  await tx.transferencia.delete({ where: { id: transferenciaId } });
 }

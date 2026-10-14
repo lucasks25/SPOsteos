@@ -38,10 +38,11 @@
 - Atenuante: `getUser()` recusa usuário inativo a cada requisição.
 - Correção: tabela de sessões (ou `tokenVersion` no usuário) para invalidar no logout e na troca de senha. Avaliar prazo menor.
 
-**1.6 Concorrência em baixas e recebimentos**
+**1.6 Concorrência em baixas e recebimentos — ✅ baixas CORRIGIDO em 14/10; recebimento de compra ainda aberto**
 - Onde: `financeiro/_lib/titulos.ts` (`registrarBaixa`), `compras/_lib/recebimento.ts`.
 - Risco: duas baixas simultâneas do mesmo título podem somar mais que o valor, porque não há trava de linha. No recebimento, a checagem `recebido > quantidade` depois do incremento atômico protege a quantidade, mas não a conta a pagar duplicada em corrida.
-- Correção: `SELECT ... FOR UPDATE` no título ou item dentro da transação, ou `isolationLevel: "Serializable"` com nova tentativa.
+- Baixas: `registrarBaixa` e `estornarBaixa` travam a linha do título com `SELECT … FOR UPDATE`. Teste de banco: duas baixas simultâneas de 600 num título de 1000, só uma passa.
+- Falta: aplicar a mesma trava em `compras/_lib/recebimento.ts` (item do pedido) e na geração de remessa SISPAG (item já em outra remessa).
 
 ### P3 — melhorias
 
@@ -90,7 +91,7 @@ Regras implementadas que um revisor deve conferir:
 
 | # | Achado | Onde | Sugestão |
 |---|---|---|---|
-| 3.1 | Testes automatizados só para os leitores e geradores puros (16 testes) | `tests/financeiro/` (`npm test`) | Adicionar testes com banco para `titulos.ts`, `recebimento.ts`, `faturamento.ts`, `estoque.ts` (`movimentar`) e `remessas.ts`. Usar um banco de teste separado |
+| 3.1 | Testes automatizados do financeiro: 24 unitários (`npm test`) e 7 de banco (`npm run test:db`, usa o `DATABASE_URL`, cria e apaga os próprios dados). Faltam testes de `recebimento.ts`, `faturamento.ts`, `estoque.ts` e das Server Actions | `tests/financeiro/`, `tests/financeiro-db/` | Adicionar testes com banco para `titulos.ts`, `recebimento.ts`, `faturamento.ts`, `estoque.ts` (`movimentar`) e `remessas.ts`. Usar um banco de teste separado |
 | 3.2 | 1 erro de lint antigo: `Date.now()` durante o render | `estoque/remessas/nova/page.tsx:11` | Calcular a data fora do componente ou usar `hojeUTC()` |
 | 3.3 | Dois `hojeUTC()` com semânticas diferentes | `compras/_lib/perfis.ts` (dia em UTC) vs `financeiro/_lib/datas.ts` (dia em Brasília) | Após as 21h de Brasília, o de compras já é o dia seguinte. Unificar num helper só em `src/lib/` |
 | 3.4 | Listas sem paginação (até 200–500 linhas) | listas do financeiro, compras e pedidos | Paginação por `?page=` como especificado para auditoria |
@@ -133,3 +134,17 @@ npm test                                         # testes dos leitores/geradores
 npx tsc --noEmit && npm run lint && npm run build
 ```
 Usuários de demonstração: `prisma/seed.ts` (senha padrão no próprio seed).
+
+---
+
+## 6. Baixa com juros, multa e desconto; transferência entre contas (14/10/2026)
+
+Desenho feito pelo agente `arquiteto` (Opus) e implementado depois. **Um erro do desenho foi pego pelos testes:** a fórmula escrita (`valor = principal + juros + multa − desconto`) contradizia a própria tabela de exemplos (título 1000 pago com 980 e 20 de desconto). Vale a tabela: o dinheiro abate `principal`, o desconto extingue o resto sem dinheiro, `valor = principal + juros + multa` e extinto = `principal + desconto`. A trava CHECK foi corrigida numa migration à parte (`..._corrige_check_valor_baixa`); a anterior ficou como está para não alterar migration já aplicada.
+
+Pontos para revisão:
+- ~15 lugares calculavam saldo com `valorPago`; todos passaram a `valor − valorBaixado`. Critério de aceite: `grep -rn valorPago src` só deve achar exibição de dinheiro movimentado.
+- Retorno SISPAG (`sispag-actions.ts`): valor efetivo acima do saldo e título intocado desde a remessa vira **juros**; título mexido depois da remessa **não é baixado** (ocorrência `DIV`, aparece no log de auditoria) e deve ser conciliado pelo extrato. Não conferi no manual v085 se o segmento J do retorno traz desconto/acréscimo nas posições 115–144; hoje a diferença de valor é a única fonte.
+- Glosa (redução do recebível sem caixa, comum em OPME) **não está coberta**: desconto exige dinheiro > 0 na baixa. Precisa de um modelo próprio de abatimento.
+- Conta com saldo diferente de zero não pode ser inativada (senão painel e fluxo deixam de fechar).
+- Não testado: a conciliação com juros/multa/desconto pela tela do extrato (testada só a lógica e a baixa pela tela do título).
+

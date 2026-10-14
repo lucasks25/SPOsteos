@@ -49,8 +49,15 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos }: { linha: Linh
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Baixar um título {entrada ? "a receber" : "a pagar"}</h3>
             <Form action={baixarEConciliar.bind(null, linha.id)} submitLabel="Baixar e conciliar">
               <Select label="Título" name="tituloId" options={opcoesTitulo} placeholder={opcoesTitulo.length ? "Selecione..." : "Nenhum título em aberto"} required />
+              <div className="grid grid-cols-3 gap-3">
+                <Field label="Juros" name="juros" type="number" step="0.01" min="0" />
+                <Field label="Multa" name="multa" type="number" step="0.01" min="0" />
+                <Field label="Desconto" name="desconto" type="number" step="0.01" min="0" />
+              </div>
             </Form>
-            <p className="mt-1 text-xs text-slate-400">A baixa usa o valor e a data do extrato. Valor menor que o saldo vira baixa parcial.</p>
+            <p className="mt-1 text-xs text-slate-400">
+              A baixa usa o valor e a data do extrato. Extrato menor que o saldo: parcial, ou informe o desconto para quitar. Extrato maior: informe os juros ou a multa que explicam a diferença.
+            </p>
           </div>
           <div>
             <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Lançamento avulso (tarifa, rendimento...)</h3>

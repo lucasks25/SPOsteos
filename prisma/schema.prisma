@@ -541,19 +541,20 @@ enum StatusTitulo {
 }
 
 model ContaReceber {
-  id          String       @id @default(cuid())
-  descricao   String
-  hospitalId  String?
-  hospital    Hospital?    @relation(fields: [hospitalId], references: [id])
-  pedidoId    Int?
-  pedido      PedidoVenda? @relation(fields: [pedidoId], references: [id])
-  valor       Decimal      @db.Decimal(14, 2)
-  vencimento  DateTime
-  status      StatusTitulo @default(ABERTO)
-  valorPago   Decimal?     @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
-  pagoEm      DateTime? // data da última baixa
-  criadoEm    DateTime     @default(now())
-  lancamentos Lancamento[]
+  id           String       @id @default(cuid())
+  descricao    String
+  hospitalId   String?
+  hospital     Hospital?    @relation(fields: [hospitalId], references: [id])
+  pedidoId     Int?
+  pedido       PedidoVenda? @relation(fields: [pedidoId], references: [id])
+  valor        Decimal      @db.Decimal(14, 2)
+  vencimento   DateTime
+  status       StatusTitulo @default(ABERTO)
+  valorPago    Decimal?     @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm       DateTime? // data da última baixa
+  valorBaixado Decimal?     @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
+  criadoEm     DateTime     @default(now())
+  lancamentos  Lancamento[]
 }
 
 model ContaPagar {
@@ -570,6 +571,7 @@ model ContaPagar {
   status       StatusTitulo           @default(ABERTO)
   valorPago    Decimal?               @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
   pagoEm       DateTime? // data da última baixa
+  valorBaixado Decimal?               @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
   criadoEm     DateTime               @default(now())
   lancamentos  Lancamento[]
   pagamentos   RemessaPagamentoItem[]
@@ -616,25 +618,44 @@ model ContaBancaria {
 // Movimento real de dinheiro numa conta (baixa de título ou lançamento avulso).
 // `valor` é sempre positivo; o sentido define se entra ou sai.
 model Lancamento {
-  id             String            @id @default(cuid())
-  contaId        String
-  conta          ContaBancaria     @relation(fields: [contaId], references: [id])
-  data           DateTime
-  sentido        SentidoLancamento
-  valor          Decimal           @db.Decimal(14, 2)
-  descricao      String
-  forma          FormaPagamento?
-  categoria      String? // só para lançamentos avulsos (tarifa, rendimento, transferência...)
-  contaReceberId String?
-  contaReceber   ContaReceber?     @relation(fields: [contaReceberId], references: [id], onDelete: Restrict)
-  contaPagarId   String?
-  contaPagar     ContaPagar?       @relation(fields: [contaPagarId], references: [id], onDelete: Restrict)
-  extrato        ExtratoLinha?
-  criadoEm       DateTime          @default(now())
+  id              String            @id @default(cuid())
+  contaId         String
+  conta           ContaBancaria     @relation(fields: [contaId], references: [id])
+  data            DateTime
+  sentido         SentidoLancamento
+  valor           Decimal           @db.Decimal(14, 2)
+  descricao       String
+  forma           FormaPagamento?
+  categoria       String? // só para lançamentos avulsos (tarifa, rendimento, transferência...)
+  contaReceberId  String?
+  contaReceber    ContaReceber?     @relation(fields: [contaReceberId], references: [id], onDelete: Restrict)
+  contaPagarId    String?
+  contaPagar      ContaPagar?       @relation(fields: [contaPagarId], references: [id], onDelete: Restrict)
+  // Baixa de título: valor (dinheiro) = principal + juros + multa; o desconto extingue título sem dinheiro (CHECK no banco). Em avulso/transferência principal é null.
+  principal       Decimal?          @db.Decimal(14, 2)
+  juros           Decimal           @default(0) @db.Decimal(14, 2)
+  multa           Decimal           @default(0) @db.Decimal(14, 2)
+  desconto        Decimal           @default(0) @db.Decimal(14, 2)
+  transferenciaId String?
+  transferencia   Transferencia?    @relation(fields: [transferenciaId], references: [id], onDelete: Restrict)
+  extrato         ExtratoLinha?
+  criadoEm        DateTime          @default(now())
 
   @@index([contaId, data])
   @@index([contaReceberId])
   @@index([contaPagarId])
+  @@index([transferenciaId])
+}
+
+// Transferência entre contas próprias: par de lançamentos (SAIDA na origem, ENTRADA no destino).
+// Não conta como entrada/saída do mês no painel nem como realizado do fluxo; conta no saldo de cada conta.
+model Transferencia {
+  id          String       @id @default(cuid())
+  data        DateTime
+  valor       Decimal      @db.Decimal(14, 2)
+  descricao   String
+  criadoEm    DateTime     @default(now())
+  lancamentos Lancamento[]
 }
 
 // Linha do extrato bancário importado (OFX). `valor` é assinado: crédito > 0, débito < 0.

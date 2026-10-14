@@ -11,7 +11,7 @@ import { addDias, hojeUTC, parseDia } from "./datas";
 import { decodificarOfx, OFX_MAX_BYTES } from "./ofx";
 import { gerarRemessaSispag, lerRetornoSispag, situacaoRetorno, type Pagamento } from "./sispag";
 import { contaEDac, formaPrevista, type ModoRemessa } from "./sispag-regras";
-import { registrarBaixa } from "./titulos";
+import { registrarBaixa, saldoTitulo } from "./titulos";
 
 const ATIVOS = ["ENVIADO", "AGENDADO"] as const;
 const r2 = (n: number) => Math.round(n * 100) / 100;
@@ -50,7 +50,7 @@ export async function gerarRemessaPagamentos(_: ActionState, fd: FormData): Prom
 
     const erros: string[] = [];
     const planos = titulos.map((t) => {
-      const saldo = r2(toNumber(t.valor) - toNumber(t.valorPago));
+      const saldo = r2(toNumber(t.valor) - toNumber(t.valorBaixado));
       const f = formaPrevista(t, t.fornecedor, modo);
       if (t.status !== "ABERTO") erros.push(`${t.descricao}: não está em aberto`);
       else if (t.pagamentos.length) erros.push(`${t.descricao}: já está em outra remessa`);
@@ -96,7 +96,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
   const file = fd.get("arquivo");
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione o arquivo de retorno." };
   if (file.size > OFX_MAX_BYTES) return { error: "Arquivo maior que 5 MB." };
-  const cont = { pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0 };
+  const cont = { pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0, divergentes: 0 };
   const remessas = new Set<number>();
   try {
     const resultados = lerRetornoSispag(decodificarOfx(new Uint8Array(await file.arrayBuffer())));
@@ -104,7 +104,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
     await db.$transaction(async (tx) => {
       for (const r of resultados) {
         const m = /^SP(\d+)$/.exec(r.seuNumero);
-        const item = m ? await tx.remessaPagamentoItem.findUnique({ where: { id: Number(m[1]) }, include: { remessa: true, contaPagar: { select: { status: true } } } }) : null;
+        const item = m ? await tx.remessaPagamentoItem.findUnique({ where: { id: Number(m[1]) }, include: { remessa: true, contaPagar: { select: { status: true, valor: true, valorBaixado: true } } } }) : null;
         if (!item) {
           cont.ignorados++;
           continue;
@@ -119,14 +119,25 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
         if (status === "PAGO") {
           cont.pagos++;
           if (item.contaPagar.status === "ABERTO") {
-            await registrarBaixa(tx, {
-              tipo: "pagar",
-              tituloId: item.contaPagarId,
-              contaId: item.remessa.contaId,
-              data: r.dataEfetiva ?? item.remessa.dataPagto,
-              valor: r.valorEfetivo || toNumber(item.valor),
-              forma: FORMA_BAIXA[item.forma],
-            });
+            const saldoAtual = saldoTitulo(toNumber(item.contaPagar.valor), toNumber(item.contaPagar.valorBaixado));
+            const pago = r.valorEfetivo || toNumber(item.valor);
+            const dif = r2(pago - saldoAtual);
+            const intocado = Math.abs(saldoAtual - toNumber(item.valor)) < 0.005; // ninguém mexeu no título desde a remessa
+            if (dif > 0.004 && !intocado) {
+              // pagou acima do saldo e o título mudou depois da remessa: não dá para saber o que é juros. Fica para a conciliação.
+              await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...r.ocorrencias, "DIV"].join(",") } });
+              cont.divergentes++;
+            } else {
+              await registrarBaixa(tx, {
+                tipo: "pagar",
+                tituloId: item.contaPagarId,
+                contaId: item.remessa.contaId,
+                data: r.dataEfetiva ?? item.remessa.dataPagto,
+                valor: pago,
+                juros: dif > 0.004 ? dif : 0, // acima do saldo: o excedente é juros/encargo cobrado pelo banco/fornecedor
+                forma: FORMA_BAIXA[item.forma],
+              });
+            }
           } else cont.jaBaixados++;
         } else if (status === "AGENDADO") cont.agendados++;
         else cont.rejeitados++;
@@ -138,7 +149,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
       "processar retorno SISPAG",
       "RemessaPagamento",
       [...remessas].join(","),
-      `pagos ${cont.pagos} (já baixados antes: ${cont.jaBaixados}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}`,
+      `pagos ${cont.pagos} (já baixados antes: ${cont.jaBaixados}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}`,
     );
   } catch (e) {
     return { error: errorMessage(e) };

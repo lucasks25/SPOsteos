@@ -103,7 +103,12 @@ export async function conciliarComLancamento(linhaId: string, lancamentoId: stri
   return { ok: true };
 }
 
-const schemaTitulo = z.object({ tituloId: zf.text("Escolha o título") });
+const schemaTitulo = z.object({
+  tituloId: zf.text("Escolha o título"),
+  juros: zf.money().default(0),
+  multa: zf.money().default(0),
+  desconto: zf.money().default(0),
+});
 
 /** Baixa um título com o valor e a data do extrato e já concilia. Crédito = a receber; débito = a pagar. */
 export async function baixarEConciliar(linhaId: string, _: ActionState, fd: FormData): Promise<ActionState> {
@@ -118,7 +123,10 @@ export async function baixarEConciliar(linhaId: string, _: ActionState, fd: Form
         tituloId: parsed.data.tituloId,
         contaId: l.contaId,
         data: l.data,
-        valor: Math.abs(l.valor),
+        valor: Math.abs(l.valor), // o extrato é o dinheiro que moveu a conta
+        juros: parsed.data.juros,
+        multa: parsed.data.multa,
+        desconto: parsed.data.desconto,
       });
       await ligar(tx, linhaId, lan.id);
     });

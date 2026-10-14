@@ -8,6 +8,15 @@
       "lastAccessed": "2026-10-13T19:52:00.392Z",
       "accessCount": 0,
       "expiresAt": "2026-11-12T19:52:00.392Z"
+    },
+    "cmd-1791984404870": {
+      "key": "cmd-1791984404870",
+      "value": "{\"command\":\"cd \\\"/Users/lucas/Desktop/IA Brazil/OPME/src/app/(app)/financeiro\\\" && python3 - <<'EOF'\\ndef edit(p, pairs):\\n    s=open(p,encoding=\\\"utf-8\\\").read()\\n    for a,b in pairs:\\n        assert a in s, (p, a[:60])\\n        s=s.replace(a,b,1)\\n    open(p,\\\"w\\\",encoding=\\\"utf-8\\\").write(s)\\n\\n# painel e fluxo: transferência entre contas próprias não é entrada/saída de caixa\\nedit(\\\"_lib/painel.ts\\\",[('db.lancamento.groupBy({ by: [\\\"sentido\\\"], where: { data: { gte: mes, lt: addDias(hoje, 1) }, conta: { ativo: true } }','db.lancamento.groupBy({ by: [\\\"sentido\\\"], where: { data: { gte: mes, lt: addDias(hoje, 1) }, conta: { ativo: true }, transferenciaId: null }')])\\nedit(\\\"_lib/fluxo.ts\\\",[('db.lancamento.findMany({ where: { conta: { ativo: true }, data: { gte: de, lt: fim } }','db.lancamento.findMany({ where: { conta: { ativo: true }, data: { gte: de, lt: fim }, transferenciaId: null }')])\\n\\n# categorias de avulso: transferência agora tem fluxo próprio\\nedit(\\\"_lib/config.ts\\\",[('\\\"Rendimento\\\", \\\"Transferência entre contas\\\", \\\"Impostos\\\"','\\\"Rendimento\\\", \\\"Impostos\\\"')])\\n\\n# ações de baixa: juros, multa, desconto\\nedit(\\\"_lib/actions.ts\\\",[\\n('''const schemaBaixa = z.object({\\n  contaId: zf.text(\\\"Escolha a conta\\\"),\\n  valor: positivo(),\\n  data: zf.date(\\\"Informe a data\\\"),''','''const schemaBaixa = z.object({\\n  contaId: zf.text(\\\"Escolha a conta\\\"),\\n  valor: positivo(),\\n  juros: zf.money().default(0),\\n  multa: zf.money().default(0),\\n  desconto: zf.money().default(0),\\n  data: zf.date(\\\"Informe a data\\\"),'''),\\n('''  const { contaId, valor, data, forma } = parsed.data;''','''  const { contaId, valor, juros, multa, desconto, data, forma } = parsed.data;'''),\\n('''registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, forma })''','''registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, juros, multa, desconto, forma })'''),\\n])\\nEOF\\ngrep -n \\\"valor, forma\\\\|juros\\\" _lib/actions.ts | head; sed -n '/export async function baixarTitulo/,/^}/p' _lib/actions.ts | head -25\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-14T13:26:44.870Z",
+      "lastAccessed": "2026-10-14T13:26:44.870Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-13T13:26:44.870Z"
     }
   },
   "version": "3.0.0"

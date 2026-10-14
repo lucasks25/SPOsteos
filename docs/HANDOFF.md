@@ -136,9 +136,10 @@ src/app/(app)/<modulo>/...  telas de cada módulo
 - **Estoque:** `LocalEstoque` (DEPOSITO, HOSPITAL, QUARENTENA ou NAO_CONFORME), `Saldo` (lote+local único), `Movimento` (kardex: ENTRADA, REMESSA, RETORNO, CONSUMO, TRANSFERENCIA, AJUSTE ou PERDA), `Kit`/`KitItem`, `Remessa` (id inteiro, mostrado como REM-n; status ABERTA, ENVIADA, CONFERIDA ou CANCELADA) com `RemessaItem` (quantidade, devolvido, consumido).
 - **Comercial:** `TabelaPreco`/`TabelaPrecoItem`, `Cirurgia` (numero autoincrement; status AGENDADA, CONFIRMADA, REALIZADA, FATURADA ou CANCELADA; flag SUS), `CirurgiaConsumo` (produto+lote+qtd), `Anexo`, `Orcamento`/`OrcamentoItem`, `PedidoVenda` (1:1 opcional com cirurgia; total, custoTotal, comissao, numeroNf)/`PedidoVendaItem`.
 - **Compras:** `PedidoCompra` (importação: invoice e DI) com `PedidoCompraItem` (quantidade, recebido, custoUnit).
-- **Financeiro:** `ContaReceber` e `ContaPagar` (status ABERTO, PAGO ou CANCELADO; `valorPago` = soma das baixas, `pagoEm` = última baixa; `ContaPagar.codigoBarras` = boleto do fornecedor, 44 dígitos).
+- **Financeiro:** `ContaReceber` e `ContaPagar` (status ABERTO, PAGO ou CANCELADO; `valorPago` = dinheiro movimentado nas baixas (inclui juros e multa, exclui desconto), `valorBaixado` = Σ(principal + desconto) = quanto do título foi extinto, `pagoEm` = última baixa. **Saldo do título = `valor − valorBaixado`**, sempre via `saldoTitulo()`; `ContaPagar.codigoBarras` = boleto do fornecedor, 44 dígitos).
   - `ContaBancaria` (BANCO ou CAIXA; agência, número com dígito, saldo inicial, titular CNPJ/razão social para o SISPAG).
-  - `Lancamento`: dinheiro que entrou/saiu de uma conta (baixa de título ou avulso: tarifa, rendimento...). Valor sempre positivo + `sentido` ENTRADA/SAIDA.
+  - `Lancamento`: dinheiro que entrou/saiu de uma conta (baixa de título, avulso ou perna de transferência). `valor` sempre positivo + `sentido` ENTRADA/SAIDA. Em baixa de título: `valor = principal + juros + multa` (o `desconto` extingue título sem dinheiro). Travas CHECK no banco garantem isso (ficam só no SQL das migrations; o Prisma as ignora).
+  - `Transferencia`: liga as duas pernas (SAIDA na origem, ENTRADA no destino). Muda o saldo de cada conta, mas **não é entrada/saída do mês no painel nem realizado do fluxo** (filtro `transferenciaId: null`).
   - `ExtratoLinha`: linha do extrato do banco (OFX ou CNAB 240), valor assinado; conciliada quando aponta para um `Lancamento`. Única por (conta, `fitid`), o que impede importar duas vezes.
   - `RemessaPagamento` / `RemessaPagamentoItem`: arquivos SISPAG gerados e a situação de cada pagamento no banco (ENVIADO, AGENDADO, PAGO, REJEITADO). O id do item vira o "seu número" `SP<id>` que volta no retorno.
 - **Fornecedor** ganhou dados para pagamento: `bancoCodigo`, `agencia`, `conta`, `contaDigito`, `chavePix`.
@@ -165,7 +166,8 @@ Remessa / vale (REM-n): ABERTA → Enviar (REMESSA depósito → consignado do h
 Faturar cirurgia → PedidoVenda (preço da tabela do hospital, custo médio, comissão) → cirurgia FATURADA
 Pedido de venda → registrar NF (manual por enquanto) → FATURADO + ContaReceber (vencimento = prazo do hospital)
 Financeiro:
-  baixa (total ou PARCIAL) = Lancamento numa conta → recalcularTitulo() atualiza valorPago/pagoEm/status
+  baixa (total, PARCIAL, com juros/multa/desconto) = Lancamento numa conta → recalcularTitulo() atualiza valorPago/valorBaixado/pagoEm/status
+  (a linha do título é travada com SELECT … FOR UPDATE: duas baixas simultâneas não passam do saldo)
   extrato (OFX ou CNAB 240 Itaú) → ExtratoLinha → conciliar com lançamento, baixar título ou lançar avulso
   contas a pagar → remessa SISPAG (TED/crédito Itaú/boleto ou Pix em arquivo separado) → envio manual no Itaú Empresas
        → retorno SISPAG → ocorrência 00 baixa a conta a pagar automaticamente
@@ -279,12 +281,14 @@ Para cada cadastro: lista com busca, novo, editar, e ativar/inativar quando houv
 
 ### 9.6 Financeiro — `src/app/(app)/financeiro/*` (FINANCEIRO) + Painel
 > **Implementado** (exceto o Painel). Código em `financeiro/_lib/`:
-> - `titulos.ts`: `registrarBaixa`, `estornarBaixa`, `recalcularTitulo` (único lugar que grava valorPago/pagoEm/status).
+> - `titulos.ts`: `calcularBaixa`/`saldoTitulo`/`situacaoTitulo` (regras puras), `registrarBaixa`, `estornarBaixa`, `recalcularTitulo` (único lugar que grava valorPago/valorBaixado/pagoEm/status), `transferir`, `estornarTransferencia`.
+> - `painel.ts`: números de `/financeiro` e do painel principal (`faixasAbertas`).
+> - Regra de ouro: **nunca calcule saldo de título com `valorPago`**; use `valor − valorBaixado` (`saldoTitulo`).
 > - `ofx.ts`, `cnab240-extrato.ts`: leitores de extrato (puros).
 > - `boleto.ts`: linha digitável ↔ código de barras, DVs do Anexo A do SISPAG.
 > - `sispag.ts`: gera remessa e lê retorno (puro); `sispag-regras.ts`: escolhe a forma de pagamento.
 > - `*-actions.ts`: Server Actions; `conciliacao.ts`, `contas.ts`, `fluxo.ts`, `queries.ts`: consultas.
-> Telas extras além da especificação abaixo: `/financeiro/contas`, `/financeiro/conciliacao`, `/financeiro/remessas`.
+> Telas extras além da especificação abaixo: `/financeiro` (visão geral), `/financeiro/contas` (com transferência entre contas), `/financeiro/conciliacao`, `/financeiro/remessas`.
 1. **receber**: filtros (status, hospital, período, vencidos), totais, lançamento manual, baixa (valor e data), estorno, cancelamento, link para o pedido.
 2. **pagar**: o mesmo, com fornecedor e categoria (Fornecedores, Impostos, Folha, Aluguel, Logística, Serviços, Outros) e link para o PC.
 3. **fluxo**: período (padrão: próximos 90 dias) e granularidade semana/mês. Entradas e saídas previstas, realizado, saldo do período e acumulado, faixa de atrasados, barras em CSS.

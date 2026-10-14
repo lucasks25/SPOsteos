@@ -18,7 +18,7 @@ export const FORMAS_PAGAMENTO = [
 export const FORMAS = FORMAS_PAGAMENTO.map((f) => f.value);
 
 /** Categorias de lançamentos avulsos (o que aparece no extrato sem título). */
-export const CATEGORIAS_AVULSO = ["Tarifa bancária", "Juros / multa", "Rendimento", "Transferência entre contas", "Impostos", "Outros"] as const;
+export const CATEGORIAS_AVULSO = ["Tarifa bancária", "Juros / multa", "Rendimento", "Impostos", "Outros"] as const;
 export type StatusTitulo = (typeof STATUS_TITULO)[number];
 
 export const TIPOS = {
@@ -64,8 +64,9 @@ export type TituloRow = {
   valor: number;
   vencimento: Date;
   status: StatusTitulo;
-  valorPago: number | null; // acumulado das baixas
-  saldo: number; // valor - valorPago (0 quando quitado ou cancelado)
+  valorPago: number | null; // dinheiro movimentado nas baixas (inclui juros e multa, exclui desconto)
+  valorBaixado: number; // Σ(principal + desconto): quanto do título já foi extinto
+  saldo: number; // valor - valorBaixado (0 quando quitado ou cancelado)
   pagoEm: Date | null; // última baixa
   criadoEm: Date;
 };

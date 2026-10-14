@@ -21,8 +21,8 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
     }),
     db.tabelaPreco.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
     carregarConsignado(id),
-    db.contaReceber.aggregate({ where: { hospitalId: id, status: "ABERTO" }, _sum: { valor: true, valorPago: true }, _count: true }),
-    db.contaReceber.aggregate({ where: { hospitalId: id, status: "ABERTO", vencimento: { lt: new Date() } }, _sum: { valor: true, valorPago: true }, _count: true }),
+    db.contaReceber.aggregate({ where: { hospitalId: id, status: "ABERTO" }, _sum: { valor: true, valorBaixado: true }, _count: true }),
+    db.contaReceber.aggregate({ where: { hospitalId: id, status: "ABERTO", vencimento: { lt: new Date() } }, _sum: { valor: true, valorBaixado: true }, _count: true }),
   ]);
   if (!hospital) notFound();
   const totalConsignado = saldos.reduce((s, x) => s + x.quantidade, 0);
@@ -51,10 +51,10 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Itens consignados" value={num(totalConsignado)} hint={`${produtosConsignados} produto(s)`} />
         <Stat label="Cirurgias" value={num(c.cirurgias)} />
-        <Stat label="A receber (aberto)" value={money(toNumber(receber._sum.valor) - toNumber(receber._sum.valorPago))} hint={`${receber._count} título(s)`} />
+        <Stat label="A receber (aberto)" value={money(toNumber(receber._sum.valor) - toNumber(receber._sum.valorBaixado))} hint={`${receber._count} título(s)`} />
         <Stat
           label="Vencido"
-          value={money(toNumber(vencidas._sum.valor) - toNumber(vencidas._sum.valorPago))}
+          value={money(toNumber(vencidas._sum.valor) - toNumber(vencidas._sum.valorBaixado))}
           hint={`${vencidas._count} título(s)`}
           tone={vencidas._count > 0 ? "danger" : "default"}
         />

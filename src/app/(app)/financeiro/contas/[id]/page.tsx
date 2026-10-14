@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { CATEGORIAS_AVULSO } from "../../_lib/config";
-import { alternarAtivoConta, excluirAvulso, lancarAvulso } from "../../_lib/contas-actions";
+import { alternarAtivoConta, estornarTransferenciaAction, excluirAvulso, lancarAvulso } from "../../_lib/contas-actions";
 import { listarContas } from "../../_lib/contas";
 import { hojeUTC, ymd } from "../../_lib/datas";
 import { ContaForm } from "../conta-form";
@@ -57,6 +57,8 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                       <Link href={tituloHref} className="text-teal-700 hover:underline">
                         título
                       </Link>
+                    ) : m.transferenciaId ? (
+                      "transferência"
                     ) : (
                       (m.categoria ?? "avulso")
                     )}
@@ -65,7 +67,12 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                   <Td className="text-right tabular-nums text-rose-700">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
                   <Td>{m.extrato ? <Badge color="green">conciliado</Badge> : <Badge>pendente</Badge>}</Td>
                   <Td>
-                    {!tituloHref && !m.extrato && (
+                    {m.transferenciaId && (
+                      <ActionButton action={estornarTransferenciaAction} hidden={{ id: m.transferenciaId }} confirm="Estornar a transferência inteira (as duas contas)?">
+                        Estornar
+                      </ActionButton>
+                    )}
+                    {!tituloHref && !m.transferenciaId && !m.extrato && (
                       <ActionButton action={excluirAvulso} hidden={{ id: m.id }} confirm="Excluir este lançamento?">
                         Excluir
                       </ActionButton>

@@ -50,7 +50,11 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
       />
       <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
         <Stat label="Valor" value={money(titulo.valor)} />
-        <Stat label={cfg.pagoLabel} value={money(titulo.valorPago ?? 0)} hint={titulo.pagoEm ? `última baixa em ${date(titulo.pagoEm)}` : undefined} />
+        <Stat
+          label={cfg.pagoLabel}
+          value={money(titulo.valorPago ?? 0)}
+          hint={titulo.pagoEm ? `dinheiro movimentado; última baixa em ${date(titulo.pagoEm)}` : undefined}
+        />
         <Stat label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
         <Stat label="Vencimento" value={date(titulo.vencimento)} />
       </div>
@@ -77,11 +81,15 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         </Card>
 
         <Card title={`Baixas (${baixas.length})`}>
-          <Table head={["Data", "Valor", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas}>
+          <Table head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas}>
             {baixas.map((b) => (
               <tr key={b.id}>
                 <Td>{date(b.data)}</Td>
                 <Td className="tabular-nums">{money(toNumber(b.valor))}</Td>
+                <Td className="tabular-nums">{money(toNumber(b.principal))}</Td>
+                <Td className="tabular-nums">{toNumber(b.juros) ? money(toNumber(b.juros)) : "—"}</Td>
+                <Td className="tabular-nums">{toNumber(b.multa) ? money(toNumber(b.multa)) : "—"}</Td>
+                <Td className="tabular-nums">{toNumber(b.desconto) ? money(toNumber(b.desconto)) : "—"}</Td>
                 <Td>{b.conta.nome}</Td>
                 <Td>{formaLabel(b.forma)}</Td>
                 <Td>{b.extrato ? <Badge color="green">conciliada</Badge> : <Badge>pendente</Badge>}</Td>

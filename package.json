@@ -11,7 +11,8 @@
     "db:migrate": "prisma migrate dev",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
-    "test": "tsx --test \"tests/**/*.test.ts\""
+    "test": "tsx --conditions=react-server --test \"tests/financeiro/*.test.ts\"",
+    "test:db": "tsx --conditions=react-server --test --test-concurrency=1 \"tests/financeiro-db/*.test.ts\""
   },
   "dependencies": {
     "@prisma/adapter-pg": "^7.10.0",

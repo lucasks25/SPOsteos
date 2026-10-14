@@ -3,6 +3,7 @@ import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 import { STATUS_TITULO, type StatusTitulo, type Tipo, type TituloRow } from "./config";
 import { addDias, inicioMes, parseDia } from "./datas";
+import { saldoTitulo } from "./titulos";
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -60,7 +61,7 @@ export type Totais = {
 };
 
 /** Saldo em aberto = valor dos títulos - o que já foi baixado parcialmente. */
-const emAberto = (s: { valor: unknown; valorPago: unknown }) => toNumber(s.valor as string) - toNumber(s.valorPago as string);
+const emAberto = (s: { valor: unknown; valorBaixado: unknown }) => toNumber(s.valor as string) - toNumber(s.valorBaixado as string);
 
 const nomeHospital = (h: { razaoSocial: string; nomeFantasia: string | null } | null) => (h ? h.nomeFantasia || h.razaoSocial : null);
 
@@ -72,6 +73,7 @@ type Raw = {
   vencimento: Date;
   status: StatusTitulo;
   valorPago: unknown;
+  valorBaixado: unknown;
   pagoEm: Date | null;
   criadoEm: Date;
 };
@@ -79,6 +81,7 @@ type Raw = {
 function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | null, categoria: string | null, codigoBarras: string | null = null): TituloRow {
   const valor = toNumber(r.valor as string);
   const pago = r.valorPago === null || r.valorPago === undefined ? null : toNumber(r.valorPago as string);
+  const baixado = toNumber(r.valorBaixado as string);
   return {
     id: r.id,
     descricao: r.descricao,
@@ -91,7 +94,8 @@ function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | nu
     vencimento: r.vencimento,
     status: r.status,
     valorPago: pago,
-    saldo: r.status === "ABERTO" ? Math.max(0, Math.round((valor - (pago ?? 0)) * 100) / 100) : 0,
+    valorBaixado: baixado,
+    saldo: r.status === "ABERTO" ? saldoTitulo(valor, baixado) : 0,
     pagoEm: r.pagoEm,
     criadoEm: r.criadoEm,
   };
@@ -115,8 +119,8 @@ export async function listarTitulos(tipo: Tipo, f: Filtros, hoje: Date): Promise
     const p = f.parceiroId ? { hospitalId: f.parceiroId } : {};
     const [rows, ab, ve, pg] = await Promise.all([
       db.contaReceber.findMany({ where: { ...p, ...lista }, include: { hospital: parceiroSel }, orderBy, take: 500 }),
-      db.contaReceber.aggregate({ where: { ...p, ...whereAberto }, _sum: { valor: true, valorPago: true }, _count: true }),
-      db.contaReceber.aggregate({ where: { ...p, ...whereVencido }, _sum: { valor: true, valorPago: true }, _count: true }),
+      db.contaReceber.aggregate({ where: { ...p, ...whereAberto }, _sum: { valor: true, valorBaixado: true }, _count: true }),
+      db.contaReceber.aggregate({ where: { ...p, ...whereVencido }, _sum: { valor: true, valorBaixado: true }, _count: true }),
       db.lancamento.aggregate({ where: { ...wherePago, contaReceber: { is: { ...busca, ...p } } }, _sum: { valor: true }, _count: true }),
     ]);
     return {
@@ -132,8 +136,8 @@ export async function listarTitulos(tipo: Tipo, f: Filtros, hoje: Date): Promise
   const p = f.parceiroId ? { fornecedorId: f.parceiroId } : {};
   const [rows, ab, ve, pg] = await Promise.all([
     db.contaPagar.findMany({ where: { ...p, ...lista }, include: { fornecedor: parceiroSel }, orderBy, take: 500 }),
-    db.contaPagar.aggregate({ where: { ...p, ...whereAberto }, _sum: { valor: true, valorPago: true }, _count: true }),
-    db.contaPagar.aggregate({ where: { ...p, ...whereVencido }, _sum: { valor: true, valorPago: true }, _count: true }),
+    db.contaPagar.aggregate({ where: { ...p, ...whereAberto }, _sum: { valor: true, valorBaixado: true }, _count: true }),
+    db.contaPagar.aggregate({ where: { ...p, ...whereVencido }, _sum: { valor: true, valorBaixado: true }, _count: true }),
     db.lancamento.aggregate({ where: { ...wherePago, contaPagar: { is: { ...busca, ...p } } }, _sum: { valor: true }, _count: true }),
   ]);
   return {

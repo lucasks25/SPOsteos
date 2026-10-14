@@ -23,9 +23,9 @@ type Range = { gte?: Date; lt?: Date };
 
 async function somaAberto(tipo: Tipo, vencimento?: Range): Promise<Faixa> {
   const where = { status: "ABERTO" as const, ...(vencimento ? { vencimento } : {}) };
-  const args = { where, _sum: { valor: true, valorPago: true }, _count: true } as const;
+  const args = { where, _sum: { valor: true, valorBaixado: true }, _count: true } as const;
   const r = tipo === "receber" ? await db.contaReceber.aggregate(args) : await db.contaPagar.aggregate(args);
-  return { valor: r2(toNumber(r._sum.valor) - toNumber(r._sum.valorPago)), qtd: r._count };
+  return { valor: r2(toNumber(r._sum.valor) - toNumber(r._sum.valorBaixado)), qtd: r._count };
 }
 
 /**
@@ -51,20 +51,20 @@ export async function painelFinanceiro(hoje: Date) {
     listarContas(false),
     faixasAbertas("receber", hoje),
     faixasAbertas("pagar", hoje),
-    db.lancamento.groupBy({ by: ["sentido"], where: { data: { gte: mes, lt: addDias(hoje, 1) }, conta: { ativo: true } }, _sum: { valor: true } }),
+    db.lancamento.groupBy({ by: ["sentido"], where: { data: { gte: mes, lt: addDias(hoje, 1) }, conta: { ativo: true }, transferenciaId: null }, _sum: { valor: true } }),
     db.extratoLinha.count({ where: { lancamentoId: null, conta: { ativo: true } } }),
     db.lancamento.count({ where: { extrato: null, conta: { ativo: true, tipo: "BANCO" } } }),
     db.remessaPagamentoItem.groupBy({ by: ["status"], where: { status: { in: ["ENVIADO", "AGENDADO", "REJEITADO"] }, contaPagar: { status: "ABERTO" } }, _count: true }),
     db.contaReceber.findMany({
       where: { status: "ABERTO", vencimento: { lt: hoje } },
-      select: { valor: true, valorPago: true, vencimento: true, hospital: { select: { id: true, razaoSocial: true, nomeFantasia: true } } },
+      select: { valor: true, valorBaixado: true, vencimento: true, hospital: { select: { id: true, razaoSocial: true, nomeFantasia: true } } },
       take: 2000,
     }),
     db.contaPagar.findMany({
       where: { status: "ABERTO", vencimento: { lt: addDias(hoje, 15) } },
       orderBy: { vencimento: "asc" },
       take: 8,
-      select: { id: true, descricao: true, valor: true, valorPago: true, vencimento: true, fornecedor: { select: { razaoSocial: true, nomeFantasia: true } } },
+      select: { id: true, descricao: true, valor: true, valorBaixado: true, vencimento: true, fornecedor: { select: { razaoSocial: true, nomeFantasia: true } } },
     }),
   ]);
 
@@ -79,7 +79,7 @@ export async function painelFinanceiro(hoje: Date) {
     const h = t.hospital;
     const chave = h?.id ?? "sem";
     const atual = porHospital.get(chave) ?? { nome: h ? h.nomeFantasia || h.razaoSocial : "Sem hospital", id: chave, valor: 0, qtd: 0, maisAntigo: t.vencimento };
-    atual.valor += toNumber(t.valor) - toNumber(t.valorPago);
+    atual.valor += toNumber(t.valor) - toNumber(t.valorBaixado);
     atual.qtd++;
     if (t.vencimento < atual.maisAntigo) atual.maisAntigo = t.vencimento;
     porHospital.set(chave, atual);
@@ -104,7 +104,7 @@ export async function painelFinanceiro(hoje: Date) {
       descricao: t.descricao,
       fornecedor: t.fornecedor ? t.fornecedor.nomeFantasia || t.fornecedor.razaoSocial : null,
       vencimento: t.vencimento,
-      saldo: r2(toNumber(t.valor) - toNumber(t.valorPago)),
+      saldo: r2(toNumber(t.valor) - toNumber(t.valorBaixado)),
     })),
   };
 }

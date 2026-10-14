@@ -48,6 +48,9 @@ const schemaPagar = z.object({
 const schemaBaixa = z.object({
   contaId: zf.text("Escolha a conta"),
   valor: positivo(),
+  juros: zf.money().default(0),
+  multa: zf.money().default(0),
+  desconto: zf.money().default(0),
   data: zf.date("Informe a data"),
   forma: z
     .string()
@@ -117,10 +120,10 @@ export async function baixarTitulo(tipoArg: Tipo, id: string, _: ActionState, fd
   const tipo = checkTipo(tipoArg);
   const parsed = parseForm(schemaBaixa, fd);
   if (!parsed.success) return parsed.state;
-  const { contaId, valor, data, forma } = parsed.data;
+  const { contaId, valor, juros, multa, desconto, data, forma } = parsed.data;
   if (data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
   try {
-    await db.$transaction((tx) => registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, forma }));
+    await db.$transaction((tx) => registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, juros, multa, desconto, forma }));
     await audit(user.id, "baixar", TIPOS[tipo].entidade, id, `${money(valor)} em ${data.toISOString().slice(0, 10)}`);
   } catch (e) {
     return { error: errorMessage(e) };

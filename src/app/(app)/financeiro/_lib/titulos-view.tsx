@@ -11,12 +11,12 @@ const inputCls =
   "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
 
 /** Situação do título, destacando vencidos. */
-export function SituacaoTitulo({ t, hoje }: { t: Pick<TituloRow, "status" | "vencimento"> & { valorPago?: number | null }; hoje: Date }) {
+export function SituacaoTitulo({ t, hoje }: { t: Pick<TituloRow, "status" | "vencimento"> & { valorBaixado?: number }; hoje: Date }) {
   if (t.status === "ABERTO" && t.vencimento < hoje) {
     const dias = Math.round((hoje.getTime() - t.vencimento.getTime()) / 86_400_000);
     return <Badge color="red">vencido há {dias}d</Badge>;
   }
-  if (t.status === "ABERTO" && (t.valorPago ?? 0) > 0) return <Badge color="blue">parcial</Badge>;
+  if (t.status === "ABERTO" && (t.valorBaixado ?? 0) > 0) return <Badge color="blue">parcial</Badge>;
   return <StatusBadge status={t.status} />;
 }
 

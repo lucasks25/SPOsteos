@@ -9,6 +9,15 @@
       "ts": 1791921120321,
       "event": "append",
       "hash": "3459d28cdfcdfa65a676ce4a5109c76b68624d28ae96ff1220b920af83eb23e1"
+    },
+    {
+      "seq": 1,
+      "length": 2,
+      "headHash": "sha256:812e694fe18bba6f3f8640c97f9c5daeef1afc4f3e1e7d0095768674a02ff1ce",
+      "prevAnchorHash": "3459d28cdfcdfa65a676ce4a5109c76b68624d28ae96ff1220b920af83eb23e1",
+      "ts": 1791984404808,
+      "event": "append",
+      "hash": "9b0d333c41b7c7edf04d5bb3089299abc86a8df45015a70549b97d941b79b2e7"
     }
   ]
 }

@@ -1,7 +1,10 @@
 import Link from "next/link";
-import { Badge, LinkButton, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
+import { Badge, Card, LinkButton, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
+import { ActionButton, Field, Form, Grid, Select } from "@/components/form";
+import { transferirEntreContas } from "../_lib/contas-actions";
+import { hojeUTC, ymd } from "../_lib/datas";
 import { listarContas } from "../_lib/contas";
 
 export default async function ContasPage() {
@@ -38,6 +41,23 @@ export default async function ContasPage() {
           </tr>
         ))}
       </Table>
+
+      {contas.filter((c) => c.ativo).length >= 2 && (
+        <div className="mt-6">
+          <Card title="Transferência entre contas">
+            <p className="mb-3 text-sm text-slate-500">Move dinheiro entre contas suas. Muda o saldo de cada conta, mas não conta como receita nem despesa no painel e no fluxo de caixa.</p>
+            <Form action={transferirEntreContas} submitLabel="Transferir" resetOnSuccess>
+              <Grid cols={4}>
+                <Select label="De *" name="origemId" options={contas.filter((c) => c.ativo).map((c) => ({ value: c.id, label: `${c.nome} (${money(c.saldo)})` }))} required />
+                <Select label="Para *" name="destinoId" options={contas.filter((c) => c.ativo).map((c) => ({ value: c.id, label: c.nome }))} required />
+                <Field label="Valor (R$) *" name="valor" type="number" step="0.01" min="0.01" required />
+                <Field label="Data *" name="data" type="date" defaultValue={ymd(hojeUTC())} max={ymd(hojeUTC())} required />
+                <Field label="Descrição" name="descricao" maxLength={120} placeholder="Transferência entre contas" className="sm:col-span-2" />
+              </Grid>
+            </Form>
+          </Card>
+        </div>
+      )}
     </>
   );
 }

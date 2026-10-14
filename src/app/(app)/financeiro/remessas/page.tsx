@@ -83,7 +83,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
                     )}
                     {titulos.map((t) => {
                       const f = formaPrevista(t, t.fornecedor, modo);
-                      const saldo = toNumber(t.valor) - toNumber(t.valorPago);
+                      const saldo = toNumber(t.valor) - toNumber(t.valorBaixado);
                       const ok = "forma" in f;
                       return (
                         <tr key={t.id} className={ok ? "" : "bg-slate-50 text-slate-400"}>

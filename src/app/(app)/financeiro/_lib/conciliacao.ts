@@ -19,14 +19,14 @@ export async function carregarConciliacao(contaId: string) {
     db.extratoLinha.count({ where: { contaId, lancamentoId: null } }),
     db.extratoLinha.count({ where: { contaId, lancamentoId: { not: null } } }),
     db.lancamento.findMany({ where: { contaId, extrato: null }, orderBy: { data: "desc" }, take: 500, select: { id: true, descricao: true, data: true, valor: true, sentido: true } }),
-    db.contaReceber.findMany({ where: { status: "ABERTO" }, orderBy: { vencimento: "asc" }, take: 300, select: { id: true, descricao: true, valor: true, valorPago: true, vencimento: true, hospital: { select: { razaoSocial: true, nomeFantasia: true } } } }),
-    db.contaPagar.findMany({ where: { status: "ABERTO" }, orderBy: { vencimento: "asc" }, take: 300, select: { id: true, descricao: true, valor: true, valorPago: true, vencimento: true, fornecedor: { select: { razaoSocial: true, nomeFantasia: true } } } }),
+    db.contaReceber.findMany({ where: { status: "ABERTO" }, orderBy: { vencimento: "asc" }, take: 300, select: { id: true, descricao: true, valor: true, valorBaixado: true, vencimento: true, hospital: { select: { razaoSocial: true, nomeFantasia: true } } } }),
+    db.contaPagar.findMany({ where: { status: "ABERTO" }, orderBy: { vencimento: "asc" }, take: 300, select: { id: true, descricao: true, valor: true, valorBaixado: true, vencimento: true, fornecedor: { select: { razaoSocial: true, nomeFantasia: true } } } }),
     db.lancamento.count({ where: { contaId, extrato: null } }),
   ]);
 
-  const titulos = (rows: { id: string; descricao: string; valor: unknown; valorPago: unknown; vencimento: Date }[], parceiro: (i: number) => string): OpcaoTitulo[] =>
+  const titulos = (rows: { id: string; descricao: string; valor: unknown; valorBaixado: unknown; vencimento: Date }[], parceiro: (i: number) => string): OpcaoTitulo[] =>
     rows.map((t, i) => {
-      const saldo = toNumber(t.valor as string) - toNumber(t.valorPago as string);
+      const saldo = toNumber(t.valor as string) - toNumber(t.valorBaixado as string);
       return { id: t.id, saldo: Math.round(saldo * 100) / 100, label: `${t.descricao} — ${parceiro(i)} — venc. ${t.vencimento.toLocaleDateString("pt-BR", { timeZone: "UTC" })}` };
     });
   const receber = titulos(rec, (i) => nome(rec[i].hospital));
