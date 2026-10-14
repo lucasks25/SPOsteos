@@ -1,0 +1,14 @@
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: opme-db
+    environment:
+      POSTGRES_USER: opme
+      POSTGRES_PASSWORD: opme
+      POSTGRES_DB: opme
+    ports:
+      - "5440:5432"
+    volumes:
+      - opme-data:/var/lib/postgresql/data
+volumes:
+  opme-data:

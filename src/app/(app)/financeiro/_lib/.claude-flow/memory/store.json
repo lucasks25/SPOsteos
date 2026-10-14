@@ -1,0 +1,14 @@
+{
+  "entries": {
+    "cmd-1791920393668": {
+      "key": "cmd-1791920393668",
+      "value": "{\"command\":\"cd \\\"/Users/lucas/Desktop/IA Brazil/OPME/src/app/(app)/financeiro/_lib\\\" && python3 - <<'EOF'\\np = \\\"config.ts\\\"\\ns = open(p, encoding=\\\"utf-8\\\").read()\\ns = s.replace('''export const STATUS_TITULO = [\\\"ABERTO\\\", \\\"PAGO\\\", \\\"CANCELADO\\\"] as const;''', '''export const STATUS_TITULO = [\\\"ABERTO\\\", \\\"PAGO\\\", \\\"CANCELADO\\\"] as const;\\n\\nexport const FORMAS_PAGAMENTO = [\\n  { value: \\\"PIX\\\", label: \\\"Pix\\\" },\\n  { value: \\\"BOLETO\\\", label: \\\"Boleto\\\" },\\n  { value: \\\"TED\\\", label: \\\"TED / transferência\\\" },\\n  { value: \\\"DINHEIRO\\\", label: \\\"Dinheiro\\\" },\\n  { value: \\\"CARTAO\\\", label: \\\"Cartão\\\" },\\n  { value: \\\"CHEQUE\\\", label: \\\"Cheque\\\" },\\n  { value: \\\"OUTRO\\\", label: \\\"Outro\\\" },\\n] as const;\\nexport const FORMAS = FORMAS_PAGAMENTO.map((f) => f.value);\\n\\n/** Categorias de lançamentos avulsos (o que aparece no extrato sem título). */\\nexport const CATEGORIAS_AVULSO = [\\\"Tarifa bancária\\\", \\\"Juros / multa\\\", \\\"Rendimento\\\", \\\"Transferência entre contas\\\", \\\"Impostos\\\", \\\"Outros\\\"] as const;''')\\ns = s.replace('''  valorPago: number | null;\\n  pagoEm: Date | null;\\n  criadoEm: Date;\\n};''', '''  valorPago: number | null; // acumulado das baixas\\n  saldo: number; // valor - valorPago (0 quando quitado ou cancelado)\\n  pagoEm: Date | null; // última baixa\\n  criadoEm: Date;\\n};''')\\nopen(p, \\\"w\\\", encoding=\\\"utf-8\\\").write(s)\\n\\np = \\\"queries.ts\\\"\\ns = open(p, encoding=\\\"utf-8\\\").read()\\ns = s.replace('''function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | null, categoria: string | null): TituloRow {\\n  return {''', '''function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | null, categoria: string | null): TituloRow {\\n  const valor = toNumber(r.valor as string);\\n  const pago = r.valorPago === null || r.valorPago === undefined ? null : toNumber(r.valorPago as string);\\n  return {''')\\ns = s.replace('''    valor: toNumber(r.valor as string),\\n    vencimento: r.vencimento,\\n    status: r.status,\\n    valorPago: r.valorPago === null || r.valorPago === undefined ? null : toNumber(r.valorPago as string),''', '''    valor,\\n    ve …[truncated]\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-13T19:39:53.668Z",
+      "lastAccessed": "2026-10-13T19:39:53.668Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-12T19:39:53.668Z"
+    }
+  },
+  "version": "3.0.0"
+}

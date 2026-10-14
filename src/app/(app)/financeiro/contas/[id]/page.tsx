@@ -1,0 +1,109 @@
+import Link from "next/link";
+import { notFound } from "next/navigation";
+import { ActionButton, Field, Form, Grid, Select } from "@/components/form";
+import { Badge, Card, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { requireUser } from "@/lib/auth";
+import { db } from "@/lib/db";
+import { date, money, toNumber } from "@/lib/format";
+import { CATEGORIAS_AVULSO } from "../../_lib/config";
+import { alternarAtivoConta, excluirAvulso, lancarAvulso } from "../../_lib/contas-actions";
+import { listarContas } from "../../_lib/contas";
+import { hojeUTC, ymd } from "../../_lib/datas";
+import { ContaForm } from "../conta-form";
+
+export default async function ContaPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireUser(["FINANCEIRO"]);
+  const { id } = await params;
+  const conta = (await listarContas()).find((c) => c.id === id);
+  if (!conta) notFound();
+  const movimentos = await db.lancamento.findMany({
+    where: { contaId: id },
+    orderBy: [{ data: "desc" }, { criadoEm: "desc" }],
+    take: 100,
+    include: { extrato: { select: { id: true } }, contaReceber: { select: { id: true } }, contaPagar: { select: { id: true } } },
+  });
+  const hoje = hojeUTC();
+
+  return (
+    <>
+      <PageHeader
+        title={conta.nome}
+        subtitle={[conta.banco, conta.agencia, conta.numero].filter(Boolean).join(" / ") || undefined}
+        actions={
+          <>
+            {!conta.ativo && <Badge>inativa</Badge>}
+            <ActionButton action={alternarAtivoConta.bind(null, id)}>{conta.ativo ? "Inativar" : "Ativar"}</ActionButton>
+          </>
+        }
+      />
+      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <Stat label="Saldo" value={money(conta.saldo)} tone={conta.saldo < 0 ? "danger" : "default"} />
+        <Stat label="Saldo inicial" value={money(conta.saldoInicial)} />
+        <Stat label="Entradas" value={money(conta.entradas)} />
+        <Stat label="Saídas" value={money(conta.saidas)} />
+      </div>
+
+      <div className="space-y-6">
+        <Card title="Movimentos (últimos 100)">
+          <Table head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", ""]} empty={movimentos.length === 0}>
+            {movimentos.map((m) => {
+              const tituloHref = m.contaReceberId ? `/financeiro/receber/${m.contaReceberId}` : m.contaPagarId ? `/financeiro/pagar/${m.contaPagarId}` : null;
+              return (
+                <tr key={m.id}>
+                  <Td>{date(m.data)}</Td>
+                  <Td className="max-w-xs truncate">{m.descricao}</Td>
+                  <Td>
+                    {tituloHref ? (
+                      <Link href={tituloHref} className="text-teal-700 hover:underline">
+                        título
+                      </Link>
+                    ) : (
+                      (m.categoria ?? "avulso")
+                    )}
+                  </Td>
+                  <Td className="text-right tabular-nums text-emerald-700">{m.sentido === "ENTRADA" ? money(toNumber(m.valor)) : ""}</Td>
+                  <Td className="text-right tabular-nums text-rose-700">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
+                  <Td>{m.extrato ? <Badge color="green">conciliado</Badge> : <Badge>pendente</Badge>}</Td>
+                  <Td>
+                    {!tituloHref && !m.extrato && (
+                      <ActionButton action={excluirAvulso} hidden={{ id: m.id }} confirm="Excluir este lançamento?">
+                        Excluir
+                      </ActionButton>
+                    )}
+                  </Td>
+                </tr>
+              );
+            })}
+          </Table>
+        </Card>
+
+        {conta.ativo && (
+          <Card title="Lançamento avulso (tarifa, rendimento, transferência...)">
+            <Form action={lancarAvulso.bind(null, id)} submitLabel="Lançar" resetOnSuccess>
+              <Grid cols={4}>
+                <Select
+                  label="Tipo *"
+                  name="sentido"
+                  options={[
+                    { value: "ENTRADA", label: "Entrada" },
+                    { value: "SAIDA", label: "Saída" },
+                  ]}
+                  placeholder="Selecione..."
+                  required
+                />
+                <Field label="Descrição *" name="descricao" required maxLength={200} className="sm:col-span-2" />
+                <Select label="Categoria" name="categoria" options={CATEGORIAS_AVULSO.map((c) => ({ value: c, label: c }))} placeholder="(sem categoria)" />
+                <Field label="Valor (R$) *" name="valor" type="number" step="0.01" min="0.01" required />
+                <Field label="Data *" name="data" type="date" defaultValue={ymd(hoje)} max={ymd(hoje)} required />
+              </Grid>
+            </Form>
+          </Card>
+        )}
+
+        <Card title="Dados da conta">
+          <ContaForm conta={conta} />
+        </Card>
+      </div>
+    </>
+  );
+}

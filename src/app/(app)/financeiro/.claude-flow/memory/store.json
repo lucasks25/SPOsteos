@@ -1,0 +1,14 @@
+{
+  "entries": {
+    "cmd-1791921120392": {
+      "key": "cmd-1791921120392",
+      "value": "{\"command\":\"cd \\\"/Users/lucas/Desktop/IA Brazil/OPME/src/app/(app)/financeiro\\\" && mkdir -p conciliacao && cat > _lib/conciliacao.ts <<'EOF'\\nimport \\\"server-only\\\";\\nimport { db } from \\\"@/lib/db\\\";\\nimport { toNumber } from \\\"@/lib/format\\\";\\n\\nexport type LinhaView = { id: string; data: Date; valor: number; descricao: string; lancamentoId: string | null };\\nexport type OpcaoTitulo = { id: string; label: string; saldo: number };\\nexport type SugestaoLancamento = { id: string; descricao: string; data: Date };\\n\\nconst DIA = 86_400_000;\\nconst JANELA_DIAS = 5;\\nconst cent = (n: number) => Math.round(n * 100);\\n\\nconst nome = (p: { razaoSocial: string; nomeFantasia: string | null } | null) => (p ? p.nomeFantasia || p.razaoSocial : \\\"sem parceiro\\\");\\n\\nexport async function carregarConciliacao(contaId: string) {\\n  const [pendentes, conciliadas, pendTotal, concTotal, lancamentos, rec, pag, semExtrato] = await Promise.all([\\n    db.extratoLinha.findMany({ where: { contaId, lancamentoId: null }, orderBy: { data: \\\"asc\\\" }, take: 100 }),\\n    db.extratoLinha.findMany({ where: { contaId, lancamentoId: { not: null } }, orderBy: { data: \\\"desc\\\" }, take: 30, include: { lancamento: { select: { descricao: true, contaReceberId: true, contaPagarId: true } } } }),\\n    db.extratoLinha.count({ where: { contaId, lancamentoId: null } }),\\n    db.extratoLinha.count({ where: { contaId, lancamentoId: { not: null } } }),\\n    db.lancamento.findMany({ where: { contaId, extrato: null }, orderBy: { data: \\\"desc\\\" }, take: 500, select: { id: true, descricao: true, data: true, valor: true, sentido: true } }),\\n    db.contaReceber.findMany({ where: { status: \\\"ABERTO\\\" }, orderBy: { vencimento: \\\"asc\\\" }, take: 300, select: { id: true, descricao: true, valor: true, valorPago: true, vencimento: true, hospital: { select: { razaoSocial: true, nomeFantasia: true } } } }),\\n    db.contaPagar.findMany({ where: { status: \\\"ABERTO\\\" }, orderBy: { vencimento: \\\"asc\\\" }, take: 300, select: { id: true, descricao: true, valor: true, valorPago: true, vencimento …[truncated]\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-13T19:52:00.392Z",
+      "lastAccessed": "2026-10-13T19:52:00.392Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-12T19:52:00.392Z"
+    }
+  },
+  "version": "3.0.0"
+}

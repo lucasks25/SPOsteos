@@ -1,0 +1,23 @@
+{
+  "entries": {
+    "cmd-1791935883075": {
+      "key": "cmd-1791935883075",
+      "value": "{\"command\":\"cd \\\"/Users/lucas/Desktop/IA Brazil/OPME/src/app/(app)/estoque\\\" && grep -n \\\"export async function\\\\|export function\\\" _lib/remessas.ts remessas/actions.ts; grep -n \\\"href\\\" remessas/page.tsx | head; wc -l _lib/remessas.ts remessas/*.ts* remessas/nova/*\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-13T23:58:03.075Z",
+      "lastAccessed": "2026-10-13T23:58:03.075Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-12T23:58:03.075Z"
+    },
+    "cmd-1791935889052": {
+      "key": "cmd-1791935889052",
+      "value": "{\"command\":\"cd \\\"/Users/lucas/Desktop/IA Brazil/OPME/src/app/(app)/estoque\\\" && sed -n 1,128p remessas/actions.ts; sed -n 160,230p _lib/remessas.ts; ls ../qualidade/_lib; cat ../qualidade/_lib/print-button.tsx\",\"exitCode\":0,\"success\":true}",
+      "namespace": "commands",
+      "storedAt": "2026-10-13T23:58:09.052Z",
+      "lastAccessed": "2026-10-13T23:58:09.052Z",
+      "accessCount": 0,
+      "expiresAt": "2026-11-12T23:58:09.052Z"
+    }
+  },
+  "version": "3.0.0"
+}

@@ -1,0 +1,30 @@
+import { notFound } from "next/navigation";
+import { db } from "@/lib/db";
+import { requireUser } from "@/lib/auth";
+import { Card, LinkButton, PageHeader } from "@/components/ui";
+import { opcoesCirurgia } from "../../../_lib/opcoes";
+import { CirurgiaForm } from "../../cirurgia-form";
+
+export default async function EditarCirurgiaPage({ params }: { params: Promise<{ id: string }> }) {
+  await requireUser(["COMERCIAL"]);
+  const { id } = await params;
+  const [cirurgia, opcoes] = await Promise.all([db.cirurgia.findUnique({ where: { id } }), opcoesCirurgia(false)]);
+  if (!cirurgia) notFound();
+  const bloqueada = cirurgia.status === "FATURADA" || cirurgia.status === "CANCELADA";
+  return (
+    <>
+      <PageHeader
+        title={`Editar cirurgia CIR-${cirurgia.numero}`}
+        subtitle={cirurgia.paciente}
+        actions={<LinkButton href={`/comercial/cirurgias/${id}`} variant="secondary">Voltar</LinkButton>}
+      />
+      <Card>
+        {bloqueada ? (
+          <p className="text-sm text-slate-600">Cirurgia {cirurgia.status.toLowerCase()} não pode ser editada.</p>
+        ) : (
+          <CirurgiaForm cirurgia={cirurgia} opcoes={opcoes} />
+        )}
+      </Card>
+    </>
+  );
+}

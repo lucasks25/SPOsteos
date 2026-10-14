@@ -1,0 +1,694 @@
+// Sistema de Gestão OPME — esquema de dados
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ───────────────────────── Acesso ─────────────────────────
+
+enum Perfil {
+  ADMIN
+  COMERCIAL
+  ESTOQUE
+  QUALIDADE
+  COMPRAS
+  FINANCEIRO
+}
+
+model Usuario {
+  id        String         @id @default(cuid())
+  nome      String
+  email     String         @unique
+  senhaHash String
+  perfil    Perfil         @default(COMERCIAL)
+  ativo     Boolean        @default(true)
+  criadoEm  DateTime       @default(now())
+  logs      LogAuditoria[]
+}
+
+model LogAuditoria {
+  id         String   @id @default(cuid())
+  usuarioId  String?
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id])
+  acao       String
+  entidade   String
+  entidadeId String?
+  detalhes   String?
+  criadoEm   DateTime @default(now())
+
+  @@index([entidade, entidadeId])
+}
+
+// ───────────────────────── Cadastros ─────────────────────────
+
+model Fabricante {
+  id       String    @id @default(cuid())
+  nome     String
+  cnpj     String?
+  pais     String?
+  produtos Produto[]
+}
+
+model Fornecedor {
+  id           String         @id @default(cuid())
+  razaoSocial  String
+  nomeFantasia String?
+  cnpj         String         @unique
+  ie           String?
+  email        String?
+  telefone     String?
+  cidade       String?
+  uf           String?
+  afe          String? // Autorização de Funcionamento ANVISA
+  // dados para pagamento (SISPAG): banco/agência/conta ou chave Pix
+  bancoCodigo  String? // código de compensação, ex.: 341
+  agencia      String?
+  conta        String?
+  contaDigito  String?
+  chavePix     String?
+  ativo        Boolean        @default(true)
+  criadoEm     DateTime       @default(now())
+  pedidos      PedidoCompra[]
+  contasPagar  ContaPagar[]
+}
+
+model Hospital {
+  id                 String         @id @default(cuid())
+  razaoSocial        String
+  nomeFantasia       String?
+  cnpj               String         @unique
+  ie                 String?
+  email              String?
+  telefone           String?
+  endereco           String?
+  cidade             String?
+  uf                 String?
+  prazoPagamentoDias Int            @default(30)
+  ativo              Boolean        @default(true)
+  criadoEm           DateTime       @default(now())
+  local              LocalEstoque?
+  cirurgias          Cirurgia[]
+  pedidos            PedidoVenda[]
+  orcamentos         Orcamento[]
+  contasReceber      ContaReceber[]
+  tabelaPrecoId      String?
+  tabelaPreco        TabelaPreco?   @relation(fields: [tabelaPrecoId], references: [id])
+}
+
+model Medico {
+  id            String     @id @default(cuid())
+  nome          String
+  crm           String
+  ufCrm         String
+  especialidade String?
+  email         String?
+  telefone      String?
+  ativo         Boolean    @default(true)
+  cirurgias     Cirurgia[]
+
+  @@unique([crm, ufCrm])
+}
+
+model Convenio {
+  id          String      @id @default(cuid())
+  nome        String
+  registroAns String?
+  cnpj        String?
+  ativo       Boolean     @default(true)
+  cirurgias   Cirurgia[]
+  orcamentos  Orcamento[]
+}
+
+model Procedimento {
+  id            String             @id @default(cuid())
+  codigoTuss    String?
+  descricao     String
+  especialidade String?
+  itens         ProcedimentoItem[]
+  cirurgias     Cirurgia[]
+}
+
+// Materiais padrão sugeridos para um procedimento (perfil do procedimento)
+model ProcedimentoItem {
+  id             String       @id @default(cuid())
+  procedimentoId String
+  procedimento   Procedimento @relation(fields: [procedimentoId], references: [id], onDelete: Cascade)
+  produtoId      String
+  produto        Produto      @relation(fields: [produtoId], references: [id])
+  quantidade     Int          @default(1)
+}
+
+model Representante {
+  id              String        @id @default(cuid())
+  nome            String
+  cpfCnpj         String?
+  email           String?
+  telefone        String?
+  comissaoPercent Decimal       @default(0) @db.Decimal(5, 2)
+  ativo           Boolean       @default(true)
+  cirurgias       Cirurgia[]
+  pedidos         PedidoVenda[]
+}
+
+model Produto {
+  id                String             @id @default(cuid())
+  codigo            String             @unique
+  descricao         String
+  referencia        String? // referência do fabricante
+  fabricanteId      String?
+  fabricante        Fabricante?        @relation(fields: [fabricanteId], references: [id])
+  registroAnvisa    String?
+  validadeRegistro  DateTime?
+  classeRisco       String? // I, II, III, IV
+  gtin              String? // GTIN / código de barras UDI-GS1
+  ncm               String?
+  unidade           String             @default("UN")
+  custoMedio        Decimal            @default(0) @db.Decimal(14, 2)
+  precoBase         Decimal            @default(0) @db.Decimal(14, 2)
+  estoqueMinimo     Int                @default(0)
+  controlaLote      Boolean            @default(true)
+  ativo             Boolean            @default(true)
+  criadoEm          DateTime           @default(now())
+  lotes             Lote[]
+  saldos            Saldo[]
+  movimentos        Movimento[]
+  precos            TabelaPrecoItem[]
+  procedimentoItens ProcedimentoItem[]
+  kitItens          KitItem[]
+  pedidoCompraItens PedidoCompraItem[]
+  pedidoVendaItens  PedidoVendaItem[]
+  orcamentoItens    OrcamentoItem[]
+  remessaItens      RemessaItem[]
+  consumos          CirurgiaConsumo[]
+}
+
+// ───────────────────────── Qualidade / Lotes ─────────────────────────
+
+enum StatusLote {
+  QUARENTENA
+  LIBERADO
+  NAO_CONFORME
+  BLOQUEADO
+  VENCIDO
+}
+
+model Lote {
+  id           String            @id @default(cuid())
+  produtoId    String
+  produto      Produto           @relation(fields: [produtoId], references: [id])
+  numero       String
+  serie        String?
+  fabricacao   DateTime?
+  validade     DateTime
+  status       StatusLote        @default(QUARENTENA)
+  criadoEm     DateTime          @default(now())
+  saldos       Saldo[]
+  movimentos   Movimento[]
+  inspecoes    Inspecao[]
+  remessaItens RemessaItem[]
+  consumos     CirurgiaConsumo[]
+
+  @@unique([produtoId, numero])
+}
+
+model Inspecao {
+  id             String     @id @default(cuid())
+  loteId         String
+  lote           Lote       @relation(fields: [loteId], references: [id])
+  resultado      StatusLote // LIBERADO, NAO_CONFORME ou BLOQUEADO
+  embalagemOk    Boolean    @default(true)
+  rotulagemOk    Boolean    @default(true)
+  documentacaoOk Boolean    @default(true)
+  observacao     String?
+  inspetor       String
+  criadoEm       DateTime   @default(now())
+}
+
+// ───────────────────────── Estoque ─────────────────────────
+
+enum TipoLocal {
+  DEPOSITO
+  HOSPITAL
+  QUARENTENA
+  NAO_CONFORME
+}
+
+model LocalEstoque {
+  id         String      @id @default(cuid())
+  nome       String
+  tipo       TipoLocal
+  hospitalId String?     @unique
+  hospital   Hospital?   @relation(fields: [hospitalId], references: [id])
+  saldos     Saldo[]
+  movOrigem  Movimento[] @relation("origem")
+  movDestino Movimento[] @relation("destino")
+  remessas   Remessa[]
+}
+
+model Saldo {
+  id         String       @id @default(cuid())
+  produtoId  String
+  produto    Produto      @relation(fields: [produtoId], references: [id])
+  loteId     String
+  lote       Lote         @relation(fields: [loteId], references: [id])
+  localId    String
+  local      LocalEstoque @relation(fields: [localId], references: [id])
+  quantidade Int          @default(0)
+
+  @@unique([loteId, localId])
+  @@index([produtoId])
+}
+
+enum TipoMovimento {
+  ENTRADA // recebimento de compra
+  REMESSA // envio em consignação ao hospital
+  RETORNO // devolução do hospital
+  CONSUMO // utilizado em cirurgia
+  TRANSFERENCIA // entre locais internos (ex.: quarentena -> depósito)
+  AJUSTE
+  PERDA
+}
+
+// Kardex: cada linha é um movimento de quantidade de um lote
+model Movimento {
+  id         String        @id @default(cuid())
+  tipo       TipoMovimento
+  produtoId  String
+  produto    Produto       @relation(fields: [produtoId], references: [id])
+  loteId     String
+  lote       Lote          @relation(fields: [loteId], references: [id])
+  origemId   String?
+  origem     LocalEstoque? @relation("origem", fields: [origemId], references: [id])
+  destinoId  String?
+  destino    LocalEstoque? @relation("destino", fields: [destinoId], references: [id])
+  quantidade Int
+  custoUnit  Decimal       @default(0) @db.Decimal(14, 2)
+  documento  String? // ex.: "REM-12", "PC-3", "CIR-8"
+  observacao String?
+  usuario    String?
+  criadoEm   DateTime      @default(now())
+
+  @@index([produtoId, criadoEm])
+  @@index([loteId])
+}
+
+// Caixa / kit padrão de instrumentais e implantes
+model Kit {
+  id        String    @id @default(cuid())
+  codigo    String    @unique
+  descricao String
+  itens     KitItem[]
+  remessas  Remessa[]
+}
+
+model KitItem {
+  id         String  @id @default(cuid())
+  kitId      String
+  kit        Kit     @relation(fields: [kitId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto @relation(fields: [produtoId], references: [id])
+  quantidade Int     @default(1)
+}
+
+enum StatusRemessa {
+  ABERTA // em separação
+  ENVIADA // no hospital
+  CONFERIDA // retorno conferido, consumo apurado
+  CANCELADA
+}
+
+// Vale / remessa de consignação para um hospital
+model Remessa {
+  id          Int           @id @default(autoincrement())
+  localId     String // local do hospital
+  local       LocalEstoque  @relation(fields: [localId], references: [id])
+  cirurgiaId  String?
+  cirurgia    Cirurgia?     @relation(fields: [cirurgiaId], references: [id])
+  kitId       String?
+  kit         Kit?          @relation(fields: [kitId], references: [id])
+  status      StatusRemessa @default(ABERTA)
+  observacao  String?
+  enviadaEm   DateTime?
+  conferidaEm DateTime?
+  criadoEm    DateTime      @default(now())
+  itens       RemessaItem[]
+}
+
+model RemessaItem {
+  id         String  @id @default(cuid())
+  remessaId  Int
+  remessa    Remessa @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto @relation(fields: [produtoId], references: [id])
+  loteId     String
+  lote       Lote    @relation(fields: [loteId], references: [id])
+  quantidade Int
+  devolvido  Int     @default(0)
+  consumido  Int     @default(0)
+}
+
+// ───────────────────────── Comercial ─────────────────────────
+
+model TabelaPreco {
+  id             String            @id @default(cuid())
+  nome           String
+  vigenciaInicio DateTime?
+  vigenciaFim    DateTime?
+  itens          TabelaPrecoItem[]
+  hospitais      Hospital[]
+}
+
+model TabelaPrecoItem {
+  id        String      @id @default(cuid())
+  tabelaId  String
+  tabela    TabelaPreco @relation(fields: [tabelaId], references: [id], onDelete: Cascade)
+  produtoId String
+  produto   Produto     @relation(fields: [produtoId], references: [id])
+  preco     Decimal     @db.Decimal(14, 2)
+
+  @@unique([tabelaId, produtoId])
+}
+
+enum StatusCirurgia {
+  AGENDADA
+  CONFIRMADA
+  REALIZADA
+  FATURADA
+  CANCELADA
+}
+
+model Cirurgia {
+  id              String            @id @default(cuid())
+  numero          Int               @unique @default(autoincrement())
+  dataHora        DateTime
+  hospitalId      String
+  hospital        Hospital          @relation(fields: [hospitalId], references: [id])
+  medicoId        String
+  medico          Medico            @relation(fields: [medicoId], references: [id])
+  convenioId      String?
+  convenio        Convenio?         @relation(fields: [convenioId], references: [id])
+  procedimentoId  String?
+  procedimento    Procedimento?     @relation(fields: [procedimentoId], references: [id])
+  representanteId String?
+  representante   Representante?    @relation(fields: [representanteId], references: [id])
+  paciente        String
+  carteirinha     String?
+  sus             Boolean           @default(false)
+  status          StatusCirurgia    @default(AGENDADA)
+  observacao      String?
+  criadoEm        DateTime          @default(now())
+  remessas        Remessa[]
+  consumos        CirurgiaConsumo[]
+  pedido          PedidoVenda?
+  anexos          Anexo[]
+}
+
+// Material efetivamente utilizado na cirurgia (folha de consumo / pós-cirúrgico)
+model CirurgiaConsumo {
+  id         String   @id @default(cuid())
+  cirurgiaId String
+  cirurgia   Cirurgia @relation(fields: [cirurgiaId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto  @relation(fields: [produtoId], references: [id])
+  loteId     String
+  lote       Lote     @relation(fields: [loteId], references: [id])
+  quantidade Int
+}
+
+model Anexo {
+  id         String   @id @default(cuid())
+  cirurgiaId String
+  cirurgia   Cirurgia @relation(fields: [cirurgiaId], references: [id], onDelete: Cascade)
+  nome       String
+  url        String
+  criadoEm   DateTime @default(now())
+}
+
+enum StatusOrcamento {
+  RASCUNHO
+  ENVIADO
+  APROVADO
+  RECUSADO
+}
+
+model Orcamento {
+  id         Int             @id @default(autoincrement())
+  hospitalId String
+  hospital   Hospital        @relation(fields: [hospitalId], references: [id])
+  convenioId String?
+  convenio   Convenio?       @relation(fields: [convenioId], references: [id])
+  paciente   String?
+  status     StatusOrcamento @default(RASCUNHO)
+  validade   DateTime?
+  observacao String?
+  criadoEm   DateTime        @default(now())
+  itens      OrcamentoItem[]
+}
+
+model OrcamentoItem {
+  id          String    @id @default(cuid())
+  orcamentoId Int
+  orcamento   Orcamento @relation(fields: [orcamentoId], references: [id], onDelete: Cascade)
+  produtoId   String
+  produto     Produto   @relation(fields: [produtoId], references: [id])
+  quantidade  Int
+  precoUnit   Decimal   @db.Decimal(14, 2)
+}
+
+enum StatusPedidoVenda {
+  ABERTO
+  FATURADO
+  CANCELADO
+}
+
+model PedidoVenda {
+  id              Int               @id @default(autoincrement())
+  hospitalId      String
+  hospital        Hospital          @relation(fields: [hospitalId], references: [id])
+  cirurgiaId      String?           @unique
+  cirurgia        Cirurgia?         @relation(fields: [cirurgiaId], references: [id])
+  representanteId String?
+  representante   Representante?    @relation(fields: [representanteId], references: [id])
+  status          StatusPedidoVenda @default(ABERTO)
+  numeroNf        String?
+  total           Decimal           @default(0) @db.Decimal(14, 2)
+  custoTotal      Decimal           @default(0) @db.Decimal(14, 2)
+  comissao        Decimal           @default(0) @db.Decimal(14, 2)
+  criadoEm        DateTime          @default(now())
+  faturadoEm      DateTime?
+  itens           PedidoVendaItem[]
+  contasReceber   ContaReceber[]
+}
+
+model PedidoVendaItem {
+  id         String      @id @default(cuid())
+  pedidoId   Int
+  pedido     PedidoVenda @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto     @relation(fields: [produtoId], references: [id])
+  loteNumero String?
+  quantidade Int
+  precoUnit  Decimal     @db.Decimal(14, 2)
+  custoUnit  Decimal     @default(0) @db.Decimal(14, 2)
+}
+
+// ───────────────────────── Compras ─────────────────────────
+
+enum StatusPedidoCompra {
+  ABERTO
+  PARCIAL
+  RECEBIDO
+  CANCELADO
+}
+
+model PedidoCompra {
+  id           Int                @id @default(autoincrement())
+  fornecedorId String
+  fornecedor   Fornecedor         @relation(fields: [fornecedorId], references: [id])
+  status       StatusPedidoCompra @default(ABERTO)
+  previsao     DateTime?
+  importacao   Boolean            @default(false)
+  invoice      String?
+  numeroDi     String?
+  observacao   String?
+  criadoEm     DateTime           @default(now())
+  itens        PedidoCompraItem[]
+  contasPagar  ContaPagar[]
+}
+
+model PedidoCompraItem {
+  id         String       @id @default(cuid())
+  pedidoId   Int
+  pedido     PedidoCompra @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  produtoId  String
+  produto    Produto      @relation(fields: [produtoId], references: [id])
+  quantidade Int
+  recebido   Int          @default(0)
+  custoUnit  Decimal      @db.Decimal(14, 2)
+}
+
+// ───────────────────────── Financeiro ─────────────────────────
+
+enum StatusTitulo {
+  ABERTO
+  PAGO
+  CANCELADO
+}
+
+model ContaReceber {
+  id          String       @id @default(cuid())
+  descricao   String
+  hospitalId  String?
+  hospital    Hospital?    @relation(fields: [hospitalId], references: [id])
+  pedidoId    Int?
+  pedido      PedidoVenda? @relation(fields: [pedidoId], references: [id])
+  valor       Decimal      @db.Decimal(14, 2)
+  vencimento  DateTime
+  status      StatusTitulo @default(ABERTO)
+  valorPago   Decimal?     @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm      DateTime? // data da última baixa
+  criadoEm    DateTime     @default(now())
+  lancamentos Lancamento[]
+}
+
+model ContaPagar {
+  id           String                 @id @default(cuid())
+  descricao    String
+  fornecedorId String?
+  fornecedor   Fornecedor?            @relation(fields: [fornecedorId], references: [id])
+  pedidoId     Int?
+  pedido       PedidoCompra?          @relation(fields: [pedidoId], references: [id])
+  categoria    String?
+  codigoBarras String? // boleto do fornecedor: 44 dígitos do código de barras
+  valor        Decimal                @db.Decimal(14, 2)
+  vencimento   DateTime
+  status       StatusTitulo           @default(ABERTO)
+  valorPago    Decimal?               @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm       DateTime? // data da última baixa
+  criadoEm     DateTime               @default(now())
+  lancamentos  Lancamento[]
+  pagamentos   RemessaPagamentoItem[]
+}
+
+enum TipoConta {
+  BANCO
+  CAIXA
+}
+
+enum SentidoLancamento {
+  ENTRADA
+  SAIDA
+}
+
+enum FormaPagamento {
+  PIX
+  BOLETO
+  TED
+  DINHEIRO
+  CARTAO
+  CHEQUE
+  OUTRO
+}
+
+// Conta bancária ou caixa: onde o dinheiro entra e sai.
+model ContaBancaria {
+  id           String             @id @default(cuid())
+  nome         String
+  tipo         TipoConta          @default(BANCO)
+  banco        String?
+  agencia      String?
+  numero       String?
+  saldoInicial Decimal            @default(0) @db.Decimal(14, 2)
+  titularCnpj  String? // empresa debitada nos pagamentos (SISPAG)
+  titularNome  String?
+  ativo        Boolean            @default(true)
+  criadoEm     DateTime           @default(now())
+  lancamentos  Lancamento[]
+  extrato      ExtratoLinha[]
+  remessas     RemessaPagamento[]
+}
+
+// Movimento real de dinheiro numa conta (baixa de título ou lançamento avulso).
+// `valor` é sempre positivo; o sentido define se entra ou sai.
+model Lancamento {
+  id             String            @id @default(cuid())
+  contaId        String
+  conta          ContaBancaria     @relation(fields: [contaId], references: [id])
+  data           DateTime
+  sentido        SentidoLancamento
+  valor          Decimal           @db.Decimal(14, 2)
+  descricao      String
+  forma          FormaPagamento?
+  categoria      String? // só para lançamentos avulsos (tarifa, rendimento, transferência...)
+  contaReceberId String?
+  contaReceber   ContaReceber?     @relation(fields: [contaReceberId], references: [id], onDelete: Restrict)
+  contaPagarId   String?
+  contaPagar     ContaPagar?       @relation(fields: [contaPagarId], references: [id], onDelete: Restrict)
+  extrato        ExtratoLinha?
+  criadoEm       DateTime          @default(now())
+
+  @@index([contaId, data])
+  @@index([contaReceberId])
+  @@index([contaPagarId])
+}
+
+// Linha do extrato bancário importado (OFX). `valor` é assinado: crédito > 0, débito < 0.
+// Conciliada quando está ligada a um Lancamento.
+model ExtratoLinha {
+  id           String        @id @default(cuid())
+  contaId      String
+  conta        ContaBancaria @relation(fields: [contaId], references: [id])
+  data         DateTime
+  valor        Decimal       @db.Decimal(14, 2)
+  descricao    String
+  fitid        String // identificador único da transação (FITID do OFX ou chave do CNAB)
+  origem       String        @default("OFX") // OFX | CNAB
+  lancamentoId String?       @unique
+  lancamento   Lancamento?   @relation(fields: [lancamentoId], references: [id])
+  conciliadoEm DateTime?
+  importadoEm  DateTime      @default(now())
+
+  @@unique([contaId, fitid])
+  @@index([contaId, data])
+}
+
+// Remessa de pagamentos SISPAG (Itaú). Um arquivo por remessa; Pix sempre em arquivo separado.
+model RemessaPagamento {
+  id        Int                    @id @default(autoincrement())
+  contaId   String
+  conta     ContaBancaria          @relation(fields: [contaId], references: [id])
+  modo      String // TED_BOLETO | PIX
+  dataPagto DateTime
+  conteudo  String // arquivo CNAB 240 gerado
+  criadoEm  DateTime               @default(now())
+  retornoEm DateTime?
+  itens     RemessaPagamentoItem[]
+}
+
+enum StatusPagamentoBanco {
+  ENVIADO
+  AGENDADO
+  PAGO
+  REJEITADO
+}
+
+// Um pagamento dentro da remessa. `id` vira o "seu número" (SP<id>) que volta no retorno.
+model RemessaPagamentoItem {
+  id           Int                  @id @default(autoincrement())
+  remessaId    Int
+  remessa      RemessaPagamento     @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  contaPagarId String
+  contaPagar   ContaPagar           @relation(fields: [contaPagarId], references: [id])
+  forma        String // 01 | 41 | 45 | 30 | 31 (nota 5 do manual)
+  valor        Decimal              @db.Decimal(14, 2)
+  status       StatusPagamentoBanco @default(ENVIADO)
+  ocorrencias  String?
+  nossoNumero  String?
+
+  @@index([contaPagarId])
+}
