@@ -12,6 +12,8 @@ Sistema para distribuidoras/importadoras de OPME (órteses, próteses e materiai
 | **Qualidade** | QUALIDADE | quarentena/inspeção, lotes e validades, rastreabilidade, registros ANVISA |
 | **Compras** | COMPRAS | sugestão de compra, pedidos, recebimento por item (lote, validade, quarentena, custo médio, gera conta a pagar) |
 | **Financeiro** | FINANCEIRO | cobrança dos hospitais (boleto Itaú CNAB 400), aprovação de contas a pagar, contas a receber/pagar (baixa parcial, juros, multa, desconto, glosa, estorno), contas bancárias e caixa, transferências, fluxo de caixa, conciliação (OFX e CNAB 240 Itaú), pagamentos SISPAG (TED, crédito Itaú, boleto, Pix por chave), plano de contas e centros de custo, DRE gerencial por competência, relatórios de aging com CSV, classificar pendentes, fechamento de mês |
+| **Gestão** | COMERCIAL, ESTOQUE, COMPRAS, FINANCEIRO | curva ABC, giro e cobertura de estoque, margem por produto/hospital/representante, vencimentos, vendas por mês (CSV) |
+| **Importação** | COMPRAS | pedido de importação com moeda, câmbio, despesas aduaneiras rateadas e custo nacionalizado no recebimento |
 | **Administração** | ADMIN | usuários, perfis, redefinir senha, log de auditoria |
 | **Painel** | todos | indicadores por perfil |
 

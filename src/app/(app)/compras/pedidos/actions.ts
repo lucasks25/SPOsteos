@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { itensJson } from "../_lib/itens";
+import { INCOTERMS, MOEDAS } from "../_lib/custo-importacao";
 import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
 import { receberItemTx } from "../_lib/recebimento";
 import { ErroNegocio } from "@/lib/erros";
@@ -17,22 +18,34 @@ const schemaPedido = z.object({
   importacao: zf.bool(),
   invoice: zf.optText(),
   numeroDi: zf.optText(),
+  moeda: z.enum(MOEDAS).optional(),
+  cambio: zf.optMoney(),
+  incoterm: z.union([z.enum(INCOTERMS), z.literal("")]).optional().transform((v) => v || null),
   observacao: zf.optText(),
   itens: itensJson(),
+}).superRefine((d, ctx) => {
+  if (d.importacao && d.moeda && d.moeda !== "BRL" && !(d.cambio && d.cambio > 0)) ctx.addIssue({ code: "custom", path: ["cambio"], message: "Informe o câmbio (estimativa; pode ser ajustado até o primeiro recebimento)" });
 });
 
 export async function criarPedidoCompra(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
   const parsed = parseForm(schemaPedido, fd);
   if (!parsed.success) return parsed.state;
-  const { itens, ...dados } = parsed.data;
+  const { itens: itensForm, moeda: moedaForm, cambio: cambioForm, incoterm, ...dados } = parsed.data;
+  // Importação: o preço digitado é na moeda do pedido; custoUnit fica em reais (preço × câmbio)
+  const moeda = dados.importacao ? (moedaForm ?? "BRL") : "BRL";
+  const cambio = moeda === "BRL" ? null : cambioForm;
+  const itens = dados.importacao
+    ? itensForm.map((i) => ({ ...i, precoMoeda: i.custoUnit, custoUnit: Math.round(i.custoUnit * (cambio ?? 1) * 100) / 100 }))
+    : itensForm;
+  const extra = dados.importacao ? { moeda, cambio, tipoCambio: cambio ? ("PTAX" as const) : null, incoterm } : { invoice: null, numeroDi: null };
   let id: number;
   try {
     const forn = await db.fornecedor.findUnique({ where: { id: dados.fornecedorId }, select: { ativo: true } });
     if (!forn?.ativo) return { error: "Fornecedor inexistente ou inativo." };
     const produtos = await db.produto.count({ where: { id: { in: itens.map((i) => i.produtoId) }, ativo: true } });
     if (produtos !== new Set(itens.map((i) => i.produtoId)).size) return { error: "Há produto inexistente ou inativo nos itens." };
-    const pedido = await db.pedidoCompra.create({ data: { ...dados, itens: { create: itens } } });
+    const pedido = await db.pedidoCompra.create({ data: { ...dados, ...extra, itens: { create: itens } } });
     id = pedido.id;
     await audit(user.id, "criar", "PedidoCompra", id, `${documentoPedido(id)} — ${itens.length} item(ns)`);
   } catch (e) {

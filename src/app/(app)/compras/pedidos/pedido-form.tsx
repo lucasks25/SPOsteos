@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { btn } from "@/components/ui";
 import { money } from "@/lib/format";
+import { INCOTERMS, MOEDAS } from "../_lib/custo-importacao";
 import { criarPedidoCompra } from "./actions";
 
 type ProdutoOpt = { id: string; codigo: string; descricao: string; custoMedio: number };
@@ -21,6 +22,8 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
 }) {
   const mapa = useMemo(() => new Map(produtos.map((p) => [p.id, p])), [produtos]);
   const [importacao, setImportacao] = useState(false);
+  const [moeda, setMoeda] = useState("BRL");
+  const moedaItens = importacao ? moeda : "BRL";
   const [rows, setRows] = useState<Row[]>(() =>
     (itensIniciais ?? []).filter((i) => mapa.has(i.produtoId)).map((i) => ({ key: `i${++seq}`, produtoId: i.produtoId, quantidade: i.quantidade, custoUnit: mapa.get(i.produtoId)!.custoMedio })),
   );
@@ -50,6 +53,9 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
           <>
             <Field label="Invoice" name="invoice" maxLength={60} />
             <Field label="Nº da DI" name="numeroDi" maxLength={30} />
+            <Select label="Moeda da invoice" name="moeda" options={MOEDAS.map((m) => ({ value: m, label: m }))} value={moeda} onChange={(e) => setMoeda(e.target.value)} placeholder="" />
+            {moeda !== "BRL" && <Field label="Câmbio (R$ por 1 unidade) *" name="cambio" type="number" min={0.000001} step="0.000001" required hint="Estimativa; ajuste no pedido até o primeiro recebimento" />}
+            <Select label="Incoterm" name="incoterm" options={INCOTERMS.map((m) => ({ value: m, label: m }))} placeholder="—" />
           </>
         )}
       </Grid>
@@ -82,7 +88,7 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
               <tr>
                 <th scope="col" className="px-3 py-2 text-left">Produto</th>
                 <th scope="col" className="w-28 px-3 py-2 text-right">Qtd.</th>
-                <th scope="col" className="w-36 px-3 py-2 text-right">Custo unit. (R$)</th>
+                <th scope="col" className="w-36 px-3 py-2 text-right">{moedaItens === "BRL" ? "Custo unit. (R$)" : `Preço unit. (${moedaItens})`}</th>
                 <th scope="col" className="px-3 py-2 text-right">Subtotal</th>
                 <th scope="col" className="w-20"><span className="sr-only">Ações</span></th>
               </tr>
@@ -104,9 +110,9 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
                       <input type="number" min={1} aria-label={`Quantidade de ${p?.descricao ?? "item"}`} value={r.quantidade} onChange={(e) => atualizar(r.key, { quantidade: Number(e.target.value) })} className={`${inputCls} text-right`} />
                     </td>
                     <td className="px-3 py-1.5">
-                      <input type="number" min={0} step="0.01" aria-label={`Custo unitário de ${p?.descricao ?? "item"}`} value={r.custoUnit} onChange={(e) => atualizar(r.key, { custoUnit: Number(e.target.value) })} className={`${inputCls} text-right`} />
+                      <input type="number" min={0} step={moedaItens === "BRL" ? "0.01" : "0.0001"} aria-label={`Custo unitário de ${p?.descricao ?? "item"}`} value={r.custoUnit} onChange={(e) => atualizar(r.key, { custoUnit: Number(e.target.value) })} className={`${inputCls} text-right`} />
                     </td>
-                    <td className="px-3 py-1.5 text-right tnum">{money(r.quantidade * r.custoUnit)}</td>
+                    <td className="px-3 py-1.5 text-right tnum">{moedaItens === "BRL" ? money(r.quantidade * r.custoUnit) : `${moedaItens} ${(r.quantidade * r.custoUnit).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`}</td>
                     <td className="px-3 py-1.5 text-right">
                       <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className="inline-flex h-7 items-center rounded px-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">
                         Remover
@@ -122,7 +128,7 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
                   <td colSpan={3} className="px-3 py-1.5 text-right">
                     Total do pedido
                   </td>
-                  <td className="px-3 py-1.5 text-right tnum">{money(total)}</td>
+                  <td className="px-3 py-1.5 text-right tnum">{moedaItens === "BRL" ? money(total) : `${moedaItens} ${total.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`}</td>
                   <td />
                 </tr>
               </tfoot>

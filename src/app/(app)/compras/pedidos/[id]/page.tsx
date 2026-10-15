@@ -7,10 +7,12 @@ import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
 import { documentoPedido, PERFIS_COMPRAS } from "../../_lib/perfis";
 import { cancelarPedidoCompra, receberItem } from "../actions";
+import { SecaoImportacao } from "./importacao";
 
-export default async function PedidoCompraPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function PedidoCompraPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ despesa?: string }> }) {
   await requireUser(PERFIS_COMPRAS);
   const { id: idStr } = await params;
+  const { despesa } = await searchParams;
   const id = Number(idStr);
   if (!Number.isInteger(id)) notFound();
   const pedido = await db.pedidoCompra.findUnique({
@@ -46,7 +48,7 @@ export default async function PedidoCompraPage({ params }: { params: Promise<{ i
       />
       <KpiGrid>
         <Stat label="Valor do pedido" value={money(total)} />
-        <Stat label="Recebido" value={money(recebido)} hint="gera conta a pagar a cada recebimento" />
+        <Stat label="Recebido" value={money(recebido)} hint={pedido.importacao ? "valor da mercadoria; o estoque entra pelo custo nacionalizado" : "gera conta a pagar a cada recebimento"} />
         <Stat label="Previsão" value={date(pedido.previsao)} />
         <Stat label="Criado em" value={date(pedido.criadoEm)} />
       </KpiGrid>
@@ -56,17 +58,17 @@ export default async function PedidoCompraPage({ params }: { params: Promise<{ i
           <Dl
             items={[
               ["Fornecedor", pedido.fornecedor.razaoSocial],
-              ["Tipo", pedido.importacao ? <Badge key="t" color="purple">importação</Badge> : "Nacional"],
-              ["Invoice", pedido.invoice],
-              ["DI", pedido.numeroDi],
+              ["Tipo", pedido.importacao ? <Badge key="t" color="purple">importação {pedido.moeda}</Badge> : "Nacional"],
               ["Observação", pedido.observacao],
             ]}
           />
         </Card>
 
+        {pedido.importacao && <SecaoImportacao pedidoId={pedido.id} editarDespesaId={despesa} />}
+
         <div>
           <SectionTitle>Itens</SectionTitle>
-          <Table head={["Produto", "Pedido", "Recebido", "Pendente", "Custo unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
+          <Table head={["Produto", "Pedido", "Recebido", "Pendente", pedido.importacao ? "Mercadoria (R$/un.)" : "Custo unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
             {pedido.itens.map((i) => (
               <tr key={i.id}>
                 <Td>

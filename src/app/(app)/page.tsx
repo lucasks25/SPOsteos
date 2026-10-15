@@ -5,17 +5,9 @@ import { requireUser } from "@/lib/auth";
 import { Card, EmptyState, KpiGrid, LinkButton, PageHeader, StatusBadge, Table, Td, btn, cx } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
 import { dateTime, diasAtras, money, num, toNumber } from "@/lib/format";
-import type { Perfil } from "@/generated/prisma/client";
-import { hojeUTC } from "./financeiro/_lib/datas";
-import { faixasAbertas } from "./financeiro/_lib/painel";
+import { areasDoPerfil, carregarPendencias, hojeSP, listarPendencias } from "@/lib/pendencias";
 
 const DIA = 24 * 60 * 60 * 1000;
-
-/** Meia-noite de hoje em Brasília (UTC−3). */
-function hojeSP() {
-  const agora = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  return new Date(`${agora.toISOString().slice(0, 10)}T00:00:00-03:00`);
-}
 
 type Tom = "default" | "warn" | "danger" | "ok";
 const corTom = { default: "text-slate-900", warn: "text-amber-600", danger: "text-rose-600", ok: "text-emerald-600" };
@@ -47,35 +39,21 @@ function Pendencia({ href, icon, tom, titulo, nota, acao }: { href: string; icon
   );
 }
 
-const ve = (perfil: Perfil, ...perfis: Perfil[]) => perfil === "ADMIN" || perfis.includes(perfil);
-
 export default async function Painel() {
   const user = await requireUser();
   const p = user.perfil;
   const hoje = hojeSP();
-  const hojeFin = hojeUTC(); // dia de hoje como o financeiro o usa (meia-noite UTC do dia em Brasília)
   const amanha = new Date(hoje.getTime() + DIA);
   const em7 = new Date(hoje.getTime() + 7 * DIA);
-  const em30 = new Date(hoje.getTime() + 30 * DIA);
-  const em90 = new Date(hoje.getTime() + 90 * DIA);
   const inicioMes = new Date(`${new Date(hoje.getTime() + 3 * 60 * 60 * 1000).toISOString().slice(0, 7)}-01T00:00:00-03:00`);
   const seisMeses = diasAtras(186);
 
-  const [
-    cirHoje, cir7, aFaturar, vendasMes, recFaixas, pagFaixas, quarentena, lotesVencendo, produtos, saldosLib, registros, remessasPend, proximas, vendas6m,
-  ] = await Promise.all([
+  const pend = await carregarPendencias(p);
+  const { comercial, financeiro, estoque } = areasDoPerfil(p);
+  const [cirHoje, cir7, vendasMes, proximas, vendas6m] = await Promise.all([
     db.cirurgia.count({ where: { dataHora: { gte: hoje, lt: amanha }, status: { not: "CANCELADA" } } }),
     db.cirurgia.count({ where: { dataHora: { gte: hoje, lt: em7 }, status: { not: "CANCELADA" } } }),
-    db.cirurgia.count({ where: { status: "REALIZADA" } }),
     db.pedidoVenda.aggregate({ where: { status: "FATURADO", faturadoEm: { gte: inicioMes } }, _sum: { total: true, custoTotal: true }, _count: true }),
-    faixasAbertas("receber", hojeFin),
-    faixasAbertas("pagar", hojeFin),
-    db.lote.count({ where: { status: "QUARENTENA", saldos: { some: { quantidade: { gt: 0 } } } } }),
-    db.lote.count({ where: { validade: { lt: em30 }, saldos: { some: { quantidade: { gt: 0 } } } } }),
-    db.produto.findMany({ where: { ativo: true, estoqueMinimo: { gt: 0 } }, select: { id: true, estoqueMinimo: true } }),
-    db.saldo.groupBy({ by: ["produtoId"], where: { quantidade: { gt: 0 }, local: { tipo: { in: ["DEPOSITO", "HOSPITAL"] } }, lote: { status: "LIBERADO", validade: { gte: hoje } } }, _sum: { quantidade: true } }),
-    db.produto.count({ where: { ativo: true, validadeRegistro: { lt: em90 } } }),
-    db.remessa.count({ where: { status: "ENVIADA" } }),
     db.cirurgia.findMany({
       where: { dataHora: { gte: hoje }, status: { in: ["AGENDADA", "CONFIRMADA"] } },
       include: { hospital: true, medico: true, procedimento: true, _count: { select: { remessas: true } } },
@@ -84,11 +62,9 @@ export default async function Painel() {
     }),
     db.pedidoVenda.findMany({ where: { status: "FATURADO", faturadoEm: { gte: seisMeses } }, select: { faturadoEm: true, total: true, custoTotal: true } }),
   ]);
-
-  const pagar7Valor = pagFaixas.vencido.valor + pagFaixas.hoje.valor + pagFaixas.ate7.valor;
-  const pagar7Qtd = pagFaixas.vencido.qtd + pagFaixas.hoje.qtd + pagFaixas.ate7.qtd;
-  const saldoMap = new Map(saldosLib.map((s) => [s.produtoId, s._sum.quantidade ?? 0]));
-  const abaixoMin = produtos.filter((x) => (saldoMap.get(x.id) ?? 0) < x.estoqueMinimo).length;
+  const { aFaturar, quarentena, lotesVencendo, recVencido, pagar7 } = pend;
+  const pagar7Valor = pagar7.valor;
+  const pagar7Qtd = pagar7.qtd;
   const vendidoMes = toNumber(vendasMes._sum.total);
   const margemMes = vendidoMes - toNumber(vendasMes._sum.custoTotal);
 
@@ -110,22 +86,7 @@ export default async function Painel() {
   }
   const maxVenda = Math.max(1, ...meses.map((m) => m.total));
 
-  const comercial = ve(p, "COMERCIAL", "FINANCEIRO");
-  const financeiro = ve(p, "FINANCEIRO");
-  const estoque = ve(p, "ESTOQUE", "QUALIDADE", "COMPRAS", "COMERCIAL");
-
-  const pendencias: { key: string; ok: boolean; node: ReactNode }[] = [];
-  const add = (key: string, mostrar: boolean, qtd: number, props: Omit<React.ComponentProps<typeof Pendencia>, "titulo"> & { titulo: (n: number) => string }) => {
-    if (mostrar && qtd > 0) pendencias.push({ key, ok: false, node: <Pendencia key={key} {...props} titulo={props.titulo(qtd)} /> });
-  };
-  add("rec", financeiro, recFaixas.vencido.qtd, { href: "/financeiro/receber?vencidos=1", icon: "receber", tom: "danger", titulo: (n) => `${n} título(s) a receber vencido(s)`, nota: `${money(recFaixas.vencido.valor)} em atraso`, acao: "Cobrar" });
-  add("venc", estoque, lotesVencendo, { href: "/qualidade/lotes", icon: "alerta", tom: "danger", titulo: (n) => `${n} lote(s) vencido(s) ou vencendo`, nota: "validade em até 30 dias, com saldo", acao: "Abrir" });
-  add("min", estoque, abaixoMin, { href: "/compras/sugestao", icon: "tendencia", tom: "danger", titulo: (n) => `${n} produto(s) abaixo do mínimo`, nota: "disponível liberado insuficiente", acao: "Comprar" });
-  add("pag", financeiro, pagar7Qtd, { href: "/financeiro/pagar", icon: "pagar", tom: "warn", titulo: (n) => `${n} título(s) a pagar em 7 dias`, nota: `${money(pagar7Valor)}, incluindo atrasados`, acao: "Ver" });
-  add("fat", comercial, aFaturar, { href: "/comercial/cirurgias?status=REALIZADA", icon: "documento", tom: "warn", titulo: (n) => `${n} cirurgia(s) a faturar`, nota: "realizadas sem pedido de venda", acao: "Faturar" });
-  add("rem", estoque, remessasPend, { href: "/estoque/remessas?status=ENVIADA", icon: "caminhao", tom: "warn", titulo: (n) => `${n} remessa(s) a conferir`, nota: "vales enviados aos hospitais", acao: "Conferir" });
-  add("qua", estoque, quarentena, { href: "/qualidade/quarentena", icon: "frasco", tom: "warn", titulo: (n) => `${n} lote(s) em quarentena`, nota: "aguardando inspeção", acao: "Inspecionar" });
-  add("reg", estoque, registros, { href: "/qualidade/registros", icon: "livro", tom: "warn", titulo: (n) => `${n} registro(s) ANVISA a vencer`, nota: "vencidos ou vencendo em 90 dias", acao: "Revisar" });
+  const pendencias = listarPendencias(pend).map((x) => <Pendencia key={x.key} href={x.href} icon={x.icon} tom={x.tom} titulo={x.titulo} nota={x.nota} acao={x.acao} />);
 
   const indicadores: ReactNode[] = [];
   if (comercial) {
@@ -136,7 +97,7 @@ export default async function Painel() {
     indicadores.push(<Indicador key="f" href="/comercial/cirurgias?status=REALIZADA" label="Cirurgias a faturar" value={num(aFaturar)} tom={aFaturar ? "warn" : "default"} nota="realizadas sem pedido de venda" notaTom={aFaturar ? "warn" : undefined} />);
   }
   if (financeiro) {
-    indicadores.push(<Indicador key="r" href="/financeiro/receber?vencidos=1" label="A receber vencido" value={money(recFaixas.vencido.valor)} tom={recFaixas.vencido.qtd ? "danger" : "default"} nota={`${recFaixas.vencido.qtd} título(s), descontadas baixas parciais`} notaTom={recFaixas.vencido.qtd ? "danger" : undefined} />);
+    indicadores.push(<Indicador key="r" href="/financeiro/receber?vencidos=1" label="A receber vencido" value={money(recVencido.valor)} tom={recVencido.qtd ? "danger" : "default"} nota={`${recVencido.qtd} título(s), descontadas baixas parciais`} notaTom={recVencido.qtd ? "danger" : undefined} />);
     indicadores.push(<Indicador key="p" href="/financeiro/pagar" label="A pagar em 7 dias" value={money(pagar7Valor)} tom={pagar7Qtd ? "warn" : "default"} nota={`${pagar7Qtd} título(s), incluindo atrasados`} notaTom={pagar7Qtd ? "warn" : undefined} />);
   }
   if (estoque) {
@@ -211,7 +172,7 @@ export default async function Painel() {
           {pendencias.length === 0 ? (
             <EmptyState icon="ok" text="Nada pendente para o seu perfil. Tudo em dia." />
           ) : (
-            <ul className="-m-3 divide-y divide-slate-200">{pendencias.map((x) => x.node)}</ul>
+            <ul className="-m-3 divide-y divide-slate-200">{pendencias}</ul>
           )}
         </Card>
       </div>

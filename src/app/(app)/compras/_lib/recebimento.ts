@@ -4,6 +4,8 @@ import { LOCAIS, movimentar } from "@/lib/estoque";
 import { documentoPedido, hojeUTC } from "./perfis";
 import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
 import { ErroNegocio } from "@/lib/erros";
+import { reais, valorRecebimentoCent } from "./custo-importacao";
+import { custoDoPedido, travarPedido } from "./importacao-servico";
 
 export type RecebimentoInput = {
   itemId: string;
@@ -21,8 +23,20 @@ const round2 = (n: number) => Math.round(n * 100) / 100;
  * Recebe uma quantidade de um item do pedido de compra (tudo dentro da transação):
  * lote (novo entra em QUARENTENA), ENTRADA na quarentena, recebido do item,
  * custo médio ponderado do produto, status do pedido e conta a pagar.
+ *
+ * Custo (sempre em REAIS):
+ * - pedido nacional: custoUnit do item;
+ * - importação: custo NACIONALIZADO (preço na moeda × câmbio + rateio das despesas que integram o custo). O estoque e o
+ *   custo médio recebem esse valor; a conta a pagar do fornecedor recebe só a mercadoria (preço × câmbio). As despesas
+ *   têm contas a pagar próprias (opcionais), lançadas em ESTOQUE quando integram o custo.
+ * Recebimentos parciais usam a diferença de valores acumulados, então a soma das entregas fecha no centavo.
+ * A linha do pedido fica travada (FOR UPDATE) durante a transação: recebimentos simultâneos e alteração de despesas
+ * esperam um ao outro.
  */
 export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
+  const ref = await tx.pedidoCompraItem.findUnique({ where: { id: r.itemId }, select: { pedidoId: true } });
+  if (!ref) throw new ErroNegocio("Item do pedido não encontrado.");
+  const travado = await travarPedido(tx, ref.pedidoId);
   const item = await tx.pedidoCompraItem.findUnique({
     where: { id: r.itemId },
     include: { pedido: { include: { fornecedor: true } }, produto: true },
@@ -65,12 +79,23 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
     loteId = novo.id;
   }
 
-  // Custo médio ponderado (calculado com o saldo ANTES da entrada)
-  const custo = Number(item.custoUnit.toString());
+  // Valores em reais desta entrega: estoque (custo) e fornecedor (conta a pagar)
+  let valorEstoque: number;
+  let valorFornecedor: number;
+  if (pedido.importacao) {
+    const linha = custoDoPedido(travado).linhas.find((l) => l.id === item.id)!;
+    valorEstoque = reais(valorRecebimentoCent(linha.totalCent, item.quantidade, item.recebido, r.quantidade));
+    valorFornecedor = reais(valorRecebimentoCent(linha.valorReaisCent, item.quantidade, item.recebido, r.quantidade));
+  } else {
+    valorEstoque = valorFornecedor = round2(r.quantidade * Number(item.custoUnit.toString()));
+  }
+  const custo = round2(valorEstoque / r.quantidade); // custo unitário do kardex (2 casas)
+
+  // Custo médio ponderado (calculado com o saldo ANTES da entrada), pelo valor exato da entrega
   const agg = await tx.saldo.aggregate({ where: { produtoId: item.produtoId }, _sum: { quantidade: true } });
   const saldoAtual = Math.max(0, agg._sum.quantidade ?? 0);
   const custoAtual = Number(item.produto.custoMedio.toString());
-  const novoCusto = round2((saldoAtual * custoAtual + r.quantidade * custo) / (saldoAtual + r.quantidade));
+  const novoCusto = round2((saldoAtual * custoAtual + valorEstoque) / (saldoAtual + r.quantidade));
   await tx.produto.update({ where: { id: item.produtoId }, data: { custoMedio: novoCusto } });
 
   const documento = documentoPedido(pedido.id);
@@ -94,7 +119,7 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
   const completo = itens.every((i) => i.recebido >= i.quantidade);
   await tx.pedidoCompra.update({ where: { id: pedido.id }, data: { status: completo ? "RECEBIDO" : "PARCIAL" } });
 
-  const valor = round2(r.quantidade * custo);
+  const valor = valorFornecedor;
   if (valor > 0) {
     await tx.contaPagar.create({
       data: {
@@ -110,5 +135,5 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
     });
   }
 
-  return { pedidoId: pedido.id, loteId, valor, completo };
+  return { pedidoId: pedido.id, loteId, valor, valorEstoque, custoUnit: custo, completo };
 }

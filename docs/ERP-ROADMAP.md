@@ -8,9 +8,9 @@ Cadastros (produto com registro ANVISA, classe de risco, GTIN, NCM), lotes e val
 ## Lacunas, por valor para o negócio
 | # | Lacuna | Por quê | Estado |
 |---|---|---|---|
-| 1 | **Custo de importação (landed cost)**: moeda, câmbio, despesas aduaneiras e tributos rateados por item, custo nacionalizado no recebimento | Sem isso a margem de produto importado está errada (hoje a importação é só uma marcação com invoice e nº da DI) | Em desenvolvimento |
-| 2 | **Busca global de dados** (produto, hospital, pedido, lote, cirurgia) e atalhos "+ Novo" | Produtividade diária | Em desenvolvimento |
-| 3 | **Relatórios de gestão**: curva ABC, giro e cobertura de estoque, margem por produto/hospital/representante, vencimentos | Decisão de compra e de preço | Em desenvolvimento |
+| 1 | **Custo de importação (landed cost)**: moeda, câmbio, despesas aduaneiras e tributos rateados por item, custo nacionalizado no recebimento | Sem isso a margem de produto importado está errada | **Feito (16/10/2026)**: ver docs/REVISAO.md seção 17 |
+| 2 | **Busca global de dados** (produto, hospital, pedido, lote, cirurgia), "+ Novo", sino de pendências e atalhos de teclado | Produtividade diária | **Feito** |
+| 3 | **Relatórios de gestão**: curva ABC, giro e cobertura de estoque, margem por produto/hospital/representante, vencimentos, vendas por mês | Decisão de compra e de preço | **Feito** (módulo Gestão) |
 | 4 | **Inventário de consignado nos hospitais**: contagem física × saldo do sistema, divergências, ajuste e cobrança | É onde a distribuidora perde dinheiro; auditorias apontam falta de comprovação de saída | Planejado |
 | 5 | **Documentos e licenças** (AFE, licença sanitária, CBPAD/BPDA, registros, certificados) com alerta de vencimento | Conformidade da distribuidora e dos fornecedores | Planejado |
 | 6 | **Recolhimento / tecnovigilância**: bloquear lote, listar hospitais e pacientes afetados, registrar ações e prazos | Exigência sanitária; hoje só há rastreabilidade para consulta | Planejado |

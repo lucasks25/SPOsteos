@@ -97,6 +97,18 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Gestão",
+    modulo: "Gestão",
+    perfis: ["COMERCIAL", "ESTOQUE", "COMPRAS", "FINANCEIRO"],
+    items: [
+      { href: "/gestao/abc", label: "Curva ABC" },
+      { href: "/gestao/giro", label: "Giro e cobertura" },
+      { href: "/gestao/margem", label: "Margem" },
+      { href: "/gestao/vencimentos", label: "Vencimentos" },
+      { href: "/gestao/vendas", label: "Vendas por mês" },
+    ],
+  },
+  {
     label: "Cadastros",
     items: [
       { href: "/cadastros/produtos", label: "Produtos" },

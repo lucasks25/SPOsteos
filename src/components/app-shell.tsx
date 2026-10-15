@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
-import { Icon, ICONE_ITEM } from "@/components/icons";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { Icon } from "@/components/icons";
+import { BuscaGlobal } from "@/components/busca-global";
+import { MenuAjuda, MenuNovo, Sino, useAtalhosGlobais, type MenuId } from "@/components/topbar-menus";
 import type { NavGroup } from "@/components/nav";
 import { definirTema } from "@/app/tema-actions";
-
-const semAcento = (s: string) => s.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 type Modulo = { nome: string; grupos: NavGroup[]; href: string };
 
@@ -28,91 +28,6 @@ function itemAtivo(groups: NavGroup[], pathname: string) {
     if (bate && (!melhor || i.href.length > melhor.href.length)) melhor = { href: i.href, modulo: g.modulo ?? g.label };
   }
   return melhor;
-}
-
-/** Busca global de telas (Ctrl/Cmd+K): filtra o menu por nome e leva direto à tela. */
-function Busca({ groups }: { groups: NavGroup[] }) {
-  const router = useRouter();
-  const [q, setQ] = useState("");
-  const [aberto, setAberto] = useState(false);
-  const [sel, setSel] = useState(0);
-  const ref = useRef<HTMLInputElement>(null);
-  const todos = useMemo(() => groups.flatMap((g) => g.items.map((i) => ({ ...i, modulo: g.modulo ?? g.label, grupo: g.label }))), [groups]);
-  const achados = useMemo(() => {
-    const t = semAcento(q.trim());
-    if (!t) return [];
-    return todos.filter((i) => semAcento(`${i.label} ${i.modulo} ${i.grupo}`).includes(t)).slice(0, 8);
-  }, [q, todos]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
-        e.preventDefault();
-        ref.current?.focus();
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, []);
-
-  const ir = (href: string) => {
-    setQ("");
-    setAberto(false);
-    ref.current?.blur();
-    router.push(href);
-  };
-
-  return (
-    <div className="relative w-full max-w-[520px]" role="search">
-      <Icon name="busca" size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
-      <input
-        ref={ref}
-        value={q}
-        onChange={(e) => {
-          setQ(e.target.value);
-          setSel(0);
-          setAberto(true);
-        }}
-        onFocus={() => setAberto(true)}
-        onBlur={() => setTimeout(() => setAberto(false), 120)}
-        onKeyDown={(e) => {
-          if (e.key === "ArrowDown") {
-            e.preventDefault();
-            setSel((s) => Math.min(s + 1, achados.length - 1));
-          } else if (e.key === "ArrowUp") {
-            e.preventDefault();
-            setSel((s) => Math.max(s - 1, 0));
-          } else if (e.key === "Enter" && achados[sel]) {
-            e.preventDefault();
-            ir(achados[sel].href);
-          } else if (e.key === "Escape") {
-            setQ("");
-            ref.current?.blur();
-          }
-        }}
-        placeholder="Ir para uma tela…  (Ctrl K)"
-        aria-label="Buscar telas do sistema"
-        role="combobox"
-        aria-expanded={aberto && achados.length > 0}
-        aria-controls="busca-lista"
-        className="h-8 w-full rounded border border-slate-300 bg-slate-50 pl-8 pr-3 text-[13px] text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-700/25"
-      />
-      {aberto && q.trim() && (
-        <ul id="busca-lista" role="listbox" className="absolute left-0 right-0 top-9 z-50 overflow-hidden rounded border border-slate-200 bg-white py-1 shadow-[var(--shadow-overlay)]">
-          {achados.length === 0 && <li className="px-3 py-2 text-[13px] text-slate-500">Nenhuma tela encontrada.</li>}
-          {achados.map((i, idx) => (
-            <li key={i.href} role="option" aria-selected={idx === sel}>
-              <button type="button" onMouseDown={(e) => e.preventDefault()} onClick={() => ir(i.href)} className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] ${idx === sel ? "bg-teal-50 text-slate-900" : "text-slate-700 hover:bg-slate-50"}`}>
-                <Icon name={ICONE_ITEM[i.href] ?? "caixa"} size={15} className="text-slate-500" />
-                <span className="font-medium">{i.label}</span>
-                <span className="ml-auto text-xs text-slate-500">{i.modulo}</span>
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
-    </div>
-  );
 }
 
 function MenuUsuario({ nome, perfil, sair }: { nome: string; perfil: string; sair: () => Promise<void> }) {
@@ -209,6 +124,17 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
   const modulos = useMemo(() => agrupar(groups), [groups]);
   const ativo = itemAtivo(groups, pathname);
   const moduloAtivo = modulos.find((m) => m.nome === ativo?.modulo) ?? modulos[0];
+  const router = useRouter();
+  const [menu, setMenu] = useState<MenuId | null>(null);
+  const alternar = useCallback((id: MenuId) => (a: boolean) => setMenu(a ? id : null), []);
+  useAtalhosGlobais({
+    abrir: (m) => setMenu(m),
+    irPara: (letra) => {
+      const nome = { p: "Painel", c: "Comercial", e: "Estoque", f: "Financeiro" }[letra];
+      const m = modulos.find((x) => x.nome === nome);
+      if (m) router.push(m.href);
+    },
+  });
   const temSubabas = moduloAtivo && moduloAtivo.grupos.reduce((n, g) => n + g.items.length, 0) > 1;
 
   return (
@@ -222,7 +148,12 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
             <span className="flex h-7 w-7 items-center justify-center rounded bg-teal-700 text-sm font-bold text-white">O</span>
           </Link>
           <div className="flex min-w-0 flex-1 justify-center md:justify-start md:pl-4">
-            <Busca groups={groups} />
+            <BuscaGlobal groups={groups} />
+          </div>
+          <div className="flex shrink-0 items-center gap-1">
+            <MenuNovo perfil={perfil} aberto={menu === "novo"} setAberto={alternar("novo")} />
+            <MenuAjuda aberto={menu === "ajuda"} setAberto={alternar("ajuda")} />
+            <Sino aberto={menu === "sino"} setAberto={alternar("sino")} />
           </div>
           <MenuUsuario nome={nome} perfil={perfil} sair={sair} />
         </div>

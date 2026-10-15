@@ -522,29 +522,88 @@ enum StatusPedidoCompra {
 }
 
 model PedidoCompra {
-  id           Int                @id @default(autoincrement())
-  fornecedorId String
-  fornecedor   Fornecedor         @relation(fields: [fornecedorId], references: [id])
-  status       StatusPedidoCompra @default(ABERTO)
-  previsao     DateTime?
-  importacao   Boolean            @default(false)
-  invoice      String?
-  numeroDi     String?
-  observacao   String?
-  criadoEm     DateTime           @default(now())
-  itens        PedidoCompraItem[]
-  contasPagar  ContaPagar[]
+  id              Int                   @id @default(autoincrement())
+  fornecedorId    String
+  fornecedor      Fornecedor            @relation(fields: [fornecedorId], references: [id])
+  status          StatusPedidoCompra    @default(ABERTO)
+  previsao        DateTime?
+  importacao      Boolean               @default(false)
+  invoice         String?
+  numeroDi        String?
+  observacao      String?
+  criadoEm        DateTime              @default(now())
+  itens           PedidoCompraItem[]
+  contasPagar     ContaPagar[]
+  // Importação (custo nacionalizado). Nacional: moeda BRL e câmbio nulo. Moeda estrangeira exige câmbio (CHECK no SQL).
+  // Câmbio e despesas ficam travados depois do primeiro recebimento (compras/_lib/importacao-servico.ts).
+  moeda           String                @default("BRL") @db.Char(3)
+  cambio          Decimal?              @db.Decimal(12, 6) // reais por 1 unidade da moeda
+  tipoCambio      TipoCambio?
+  incoterm        String?
+  dataInvoice     DateTime?
+  dataRegistroDi  DateTime?
+  dataDesembaraco DateTime?
+  despesas        PedidoCompraDespesa[]
+}
+
+enum TipoCambio {
+  PTAX
+  CONTRATADO
+}
+
+enum TipoDespesaImportacao {
+  FRETE_INTERNACIONAL
+  SEGURO
+  II
+  IPI
+  PIS_IMPORTACAO
+  COFINS_IMPORTACAO
+  ICMS
+  AFRMM
+  DESPACHANTE
+  ARMAZENAGEM
+  CAPATAZIA
+  TRANSPORTE_NACIONAL
+  OUTRA
+}
+
+enum CriterioRateio {
+  VALOR
+  QUANTIDADE
+  PESO
+}
+
+/// Despesa aduaneira ou tributo de um pedido de importação, em reais. Só as que integram o custo são rateadas.
+model PedidoCompraDespesa {
+  id           String                @id @default(cuid())
+  pedidoId     Int
+  pedido       PedidoCompra          @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  tipo         TipoDespesaImportacao
+  descricao    String?
+  valor        Decimal               @db.Decimal(14, 2)
+  integraCusto Boolean
+  criterio     CriterioRateio        @default(VALOR)
+  itemId       String? // despesa só deste item (ex.: II de uma adição); nulo = rateia entre todos
+  item         PedidoCompraItem?     @relation(fields: [itemId], references: [id], onDelete: Cascade)
+  contaPagarId String?               @unique // conta a pagar própria (opcional)
+  contaPagar   ContaPagar?           @relation(fields: [contaPagarId], references: [id], onDelete: SetNull)
+  criadoEm     DateTime              @default(now())
+
+  @@index([pedidoId])
 }
 
 model PedidoCompraItem {
-  id         String       @id @default(cuid())
+  id         String                @id @default(cuid())
   pedidoId   Int
-  pedido     PedidoCompra @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
+  pedido     PedidoCompra          @relation(fields: [pedidoId], references: [id], onDelete: Cascade)
   produtoId  String
-  produto    Produto      @relation(fields: [produtoId], references: [id])
+  produto    Produto               @relation(fields: [produtoId], references: [id])
   quantidade Int
-  recebido   Int          @default(0)
-  custoUnit  Decimal      @db.Decimal(14, 2)
+  recebido   Int                   @default(0)
+  custoUnit  Decimal               @db.Decimal(14, 2) // SEMPRE em reais (na importação = preço na moeda × câmbio, estimativa até o recebimento)
+  precoMoeda Decimal?              @db.Decimal(14, 4) // importação: preço unitário na moeda do pedido
+  pesoKg     Decimal?              @db.Decimal(12, 3) // importação: peso líquido total da linha (rateio por peso)
+  despesas   PedidoCompraDespesa[]
 }
 
 // ───────────────────────── Financeiro ─────────────────────────
@@ -586,31 +645,32 @@ model ContaReceber {
 }
 
 model ContaPagar {
-  id            String                 @id @default(cuid())
-  descricao     String
-  fornecedorId  String?
-  fornecedor    Fornecedor?            @relation(fields: [fornecedorId], references: [id])
-  pedidoId      Int?
-  pedido        PedidoCompra?          @relation(fields: [pedidoId], references: [id])
-  categoria     String?
+  id                String                 @id @default(cuid())
+  descricao         String
+  fornecedorId      String?
+  fornecedor        Fornecedor?            @relation(fields: [fornecedorId], references: [id])
+  pedidoId          Int?
+  pedido            PedidoCompra?          @relation(fields: [pedidoId], references: [id])
+  categoria         String?
   // Aprovação do financeiro: conta que nasce de recebimento de compra fica pendente (aprovadoEm nulo) e não entra em remessa SISPAG até ser aprovada.
-  aprovadoEm    DateTime?
-  aprovadoPor   String?
-  codigoBarras  String? // boleto do fornecedor: 44 dígitos do código de barras
-  valor         Decimal                @db.Decimal(14, 2)
-  vencimento    DateTime
-  status        StatusTitulo           @default(ABERTO)
-  valorPago     Decimal?               @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
-  pagoEm        DateTime? // data da última baixa
-  valorBaixado  Decimal?               @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
-  criadoEm      DateTime               @default(now())
-  lancamentos   Lancamento[]
-  pagamentos    RemessaPagamentoItem[]
-  planoContaId  String?
-  planoConta    PlanoConta?            @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
-  centroCustoId String?
-  centroCusto   CentroCusto?           @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
-  competencia   DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
+  aprovadoEm        DateTime?
+  aprovadoPor       String?
+  codigoBarras      String? // boleto do fornecedor: 44 dígitos do código de barras
+  valor             Decimal                @db.Decimal(14, 2)
+  vencimento        DateTime
+  status            StatusTitulo           @default(ABERTO)
+  valorPago         Decimal?               @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm            DateTime? // data da última baixa
+  valorBaixado      Decimal?               @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
+  criadoEm          DateTime               @default(now())
+  lancamentos       Lancamento[]
+  pagamentos        RemessaPagamentoItem[]
+  planoContaId      String?
+  planoConta        PlanoConta?            @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
+  centroCustoId     String?
+  centroCusto       CentroCusto?           @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
+  competencia       DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
+  despesaImportacao PedidoCompraDespesa?
 }
 
 enum TipoConta {

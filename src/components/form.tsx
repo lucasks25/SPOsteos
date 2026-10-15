@@ -5,6 +5,10 @@ import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
 import { btn, cx } from "@/components/ui";
+import { Combobox } from "@/components/combobox";
+import { confirmar } from "@/components/confirm-dialog";
+import { MONEY_RE, maskFor, maskInitial, maskInput } from "@/components/masks";
+import { toast } from "@/components/toast";
 
 export type ActionState = { ok?: boolean; aviso?: string; error?: string; fieldErrors?: Record<string, string> } | undefined;
 type Action = (state: ActionState, formData: FormData) => Promise<ActionState>;
@@ -40,13 +44,30 @@ export function Form({
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
+  const sujo = useRef(false); // há alterações não salvas
   useEffect(() => {
     if (state?.ok && redirectTo) router.push(redirectTo);
     if (state?.ok && resetOnSuccess) formRef.current?.reset();
+    if (state?.ok && !state.aviso && !redirectTo) toast("Salvo com sucesso.");
+    if (state && !state.ok) {
+      sujo.current = true; // os dados continuam na tela, ainda não salvos
+      formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
+    }
   }, [state, redirectTo, resetOnSuccess, router]);
+
+  useEffect(() => {
+    const aviso = (e: BeforeUnloadEvent) => {
+      if (!sujo.current) return;
+      e.preventDefault();
+      e.returnValue = "";
+    };
+    window.addEventListener("beforeunload", aviso);
+    return () => window.removeEventListener("beforeunload", aviso);
+  }, []);
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
+    sujo.current = false;
     const fd = new FormData(e.currentTarget, (e.nativeEvent as SubmitEvent).submitter);
     startTransition(() => formAction(fd));
   }
@@ -54,7 +75,13 @@ export function Form({
   return (
     <ErrorsCtx.Provider value={state?.fieldErrors ?? {}}>
       <PendingCtx.Provider value={pending}>
-        <form ref={formRef} onSubmit={onSubmit} className={cx("space-y-4", className)}>
+        <form
+          ref={formRef}
+          onSubmit={onSubmit}
+          onInput={() => (sujo.current = true)}
+          onChange={() => (sujo.current = true)}
+          onReset={() => (sujo.current = false)}
+          className={cx("space-y-4", className)}>
           {state?.error && (
             <div role="alert" className="flex items-start gap-2 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-rose-600" />
@@ -65,12 +92,6 @@ export function Form({
             <div role="status" className="flex items-start gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-amber-600" />
               <span>{state.aviso}</span>
-            </div>
-          )}
-          {state?.ok && !state.aviso && !redirectTo && (
-            <div role="status" className="flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-700">
-              <Icon name="ok" size={16} className="shrink-0 text-emerald-600" />
-              Salvo com sucesso.
             </div>
           )}
           {children}
@@ -89,13 +110,26 @@ export function SubmitButton({ children, variant = "primary", confirm }: { child
   const { pending: pendingAction } = useFormStatus(); // <form action> (ActionButton)
   const pendingForm = useContext(PendingCtx); // <Form> (envio por transição)
   const pending = pendingAction || pendingForm;
+  const confirmado = useRef(false);
   return (
     <button
       type="submit"
       disabled={pending}
       className={btn[variant]}
       onClick={(e) => {
-        if (confirm && !window.confirm(confirm)) e.preventDefault();
+        if (!confirm) return;
+        if (confirmado.current) {
+          confirmado.current = false;
+          return;
+        }
+        e.preventDefault();
+        const botao = e.currentTarget;
+        const form = botao.form;
+        confirmar(confirm).then((ok) => {
+          if (!ok || !form) return;
+          confirmado.current = true;
+          form.requestSubmit(botao);
+        });
       }}
     >
       {pending && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />}
@@ -137,9 +171,41 @@ export function Field({ label, name, className, hint, ...rest }: InputProps) {
       </label>
     );
   }
+  return <TextField label={label} name={name} className={className} hint={hint} {...rest} />;
+}
+
+function TextField({ label, name, className, hint, ...rest }: InputProps) {
+  const errors = useContext(ErrorsCtx);
+  const invalido = !!errors[name];
+  const mask = rest.type === undefined || rest.type === "text" ? maskFor(name) : null;
+  const dinheiro = rest.type === "number" && MONEY_RE.test(name);
+  const { onInput, defaultValue, ...resto } = rest;
+  const input = (
+    <input
+      name={name}
+      {...resto}
+      defaultValue={mask ? maskInitial(mask, defaultValue) : defaultValue}
+      aria-invalid={invalido || undefined}
+      onInput={(e) => {
+        if (mask) maskInput(e.currentTarget, mask);
+        onInput?.(e);
+      }}
+      inputMode={resto.inputMode ?? (mask ? "numeric" : undefined)}
+      className={dinheiro ? cx(inputCls, "tnum pl-8 text-right") : inputCls}
+    />
+  );
   return (
     <Wrap label={label} name={name} className={className} hint={hint}>
-      <input name={name} {...rest} className={inputCls} />
+      {dinheiro ? (
+        <span className="relative block">
+          <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-slate-500" aria-hidden="true">
+            R$
+          </span>
+          {input}
+        </span>
+      ) : (
+        input
+      )}
     </Wrap>
   );
 }
@@ -152,9 +218,27 @@ type SelectProps = React.SelectHTMLAttributes<HTMLSelectElement> & {
   hint?: string;
 };
 export function Select({ label, name, options, placeholder = "Selecione...", className, hint, ...rest }: SelectProps) {
+  const errors = useContext(ErrorsCtx);
+  if (options.length > 12) {
+    return (
+      <Wrap label={label} name={name} className={className} hint={hint}>
+        <Combobox
+          name={name}
+          options={options}
+          placeholder={placeholder}
+          defaultValue={rest.defaultValue === undefined ? undefined : String(rest.defaultValue)}
+          required={rest.required}
+          disabled={rest.disabled}
+          invalid={!!errors[name]}
+          onChange={rest.onChange as never}
+          className={inputCls}
+        />
+      </Wrap>
+    );
+  }
   return (
     <Wrap label={label} name={name} className={className} hint={hint}>
-      <select name={name} {...rest} className={inputCls}>
+      <select name={name} aria-invalid={errors[name] ? true : undefined} {...rest} className={inputCls}>
         {placeholder !== "" && <option value="">{placeholder}</option>}
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -170,7 +254,7 @@ type AreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: st
 export function TextArea({ label, name, className, ...rest }: AreaProps) {
   return (
     <Wrap label={label} name={name} className={className}>
-      <textarea name={name} rows={3} {...rest} className={inputCls} />
+      <textarea name={name} rows={3} aria-invalid={useContext(ErrorsCtx)[name] ? true : undefined} {...rest} className={inputCls} />
     </Wrap>
   );
 }

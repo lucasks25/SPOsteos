@@ -12,7 +12,9 @@ export type ChaveSistema =
   | "JUROS_RECEBIDOS"
   | "DESCONTO_OBTIDO"
   | "JUROS_PAGOS"
-  | "DESCONTO_CONCEDIDO";
+  | "DESCONTO_CONCEDIDO"
+  | "CUSTO_IMPORTACAO" // 3.03: despesa de importação que não integra o custo do estoque
+  | "TRIBUTOS_RECUPERAR"; // 8.04: IPI/PIS/COFINS/ICMS da importação com crédito (fora do resultado)
 
 /** Id da conta do sistema; falha com mensagem clara se alguém a apagou. */
 export async function planoPorChave(tx: Tx, chave: ChaveSistema): Promise<string> {
