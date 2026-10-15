@@ -58,6 +58,7 @@ export const NAV: NavGroup[] = [
       { href: "/financeiro/dre", label: "DRE gerencial" },
       { href: "/financeiro/plano-contas", label: "Plano de contas" },
       { href: "/financeiro/relatorios", label: "Relatórios" },
+      { href: "/financeiro/classificar", label: "Classificar pendentes" },
       { href: "/financeiro/fechamento", label: "Fechamento de mês" },
       { href: "/financeiro/contas", label: "Contas bancárias" },
       { href: "/financeiro/conciliacao", label: "Conciliação" },

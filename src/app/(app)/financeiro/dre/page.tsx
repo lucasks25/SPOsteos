@@ -72,7 +72,7 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
 
       {semClass && (
         <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Há lançamentos sem conta do plano. Eles somam no resultado na linha “Não classificado”; classifique-os nas telas de contas a pagar, a receber e conta bancária.
+          Há lançamentos sem conta do plano. Eles somam no resultado na linha “Não classificado”; classifique-os em <Link href="/financeiro/classificar" className="underline">Classificar pendentes</Link>.
         </p>
       )}
       {centroId && <p className="mb-3 text-xs text-slate-500">Com o filtro de centro de custo, perdas e ajustes de estoque ficam de fora (o estoque não tem centro de custo).</p>}

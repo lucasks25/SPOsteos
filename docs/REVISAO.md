@@ -173,7 +173,7 @@ Desenho feito pelo agente `arquiteto` (Opus), implementado e conferido por teste
 - Glosa: feita em 15/10/2026 (seção 10).
 - Fechamento de período: feito em 15/10/2026 (seção 11).
 - Drill-down da linha do DRE até o documento: hoje só até a conta do plano.
-- Lançamento avulso antigo sem conta do plano permanece "Não classificado" até alguém classificar (não há tela de classificação em lote).
+- Classificação em lote: feita em 15/10/2026 (seção 12).
 
 ## 8. Correções da revisão do CNAB (14/10/2026)
 
@@ -217,3 +217,7 @@ Tabela `FechamentoMes` (migration `20261015210000_fechamento_mes`, CHECK no form
 **Limites conhecidos:** (1) retorno SISPAG ou conciliação cujo pagamento tenha data em mês fechado é recusado inteiro (a transação desfaz tudo) até reabrir o mês; (2) fechar e alterar ao mesmo tempo (corrida) não tem trava de linha: risco baixo, uma única pessoa fecha; (3) o custo da mercadoria e as perdas de estoque vêm do faturamento e dos movimentos do dia, que sempre caem no mês corrente, então não são congelados por este mecanismo; (4) fechar não guarda foto do DRE: se reabrir e alterar, o DRE muda.
 
 Testes: `tests/financeiro-db/fechamento.test.ts` (3).
+
+## 12. Classificar pendentes em lote (15/10/2026)
+
+`/financeiro/classificar` lista títulos a receber, a pagar e lançamentos avulsos sem conta do plano (até 300 de cada, do mais antigo). Marca-se vários, escolhe-se conta (e centro de custo, opcional) e aplica-se de uma vez (`_lib/classificar.ts`). Tudo ou nada; não sobrescreve item já classificado (outra pessoa pode ter feito); recusa conta de grupo/inativa, baixa de título tratada como avulso e itens em mês fechado. A competência não muda. Testes: `tests/financeiro-db/classificar.test.ts` (4). A base de desenvolvimento hoje não tem nenhum item pendente, então a tela só foi vista no estado vazio; o fluxo com itens foi validado nos testes de banco, não pelo navegador.

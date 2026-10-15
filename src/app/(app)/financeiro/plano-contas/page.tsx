@@ -20,7 +20,7 @@ export default async function PlanoContasPage() {
   return (
     <>
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
-      {uso > 0 && <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{uso} título(s) ainda sem conta do plano; abra o título e use “Classificação”.</p>}
+      {uso > 0 && <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{uso} título(s) ainda sem conta do plano. Use <a href="/financeiro/classificar" className="underline">Classificar pendentes</a>.</p>}
       <div className="space-y-6">
         <Table head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]}>
           {ordenadas.map((c) => (
