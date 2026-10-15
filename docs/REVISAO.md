@@ -171,7 +171,7 @@ Desenho feito pelo agente `arquiteto` (Opus), implementado e conferido por teste
 - Custos de importação (frete, II, IPI) entram como custo no mês em que ocorrem, não no custo médio.
 - Centro de custo do pedido de venda (para filtrar o CMV) ainda não tem campo na tela de pedido; hoje o CMV só aparece sem filtro de centro.
 - Glosa: feita em 15/10/2026 (seção 10).
-- Fechamento de período (bloquear estorno e edição em meses fechados): não existe; estornar uma baixa muda o DRE do mês antigo.
+- Fechamento de período: feito em 15/10/2026 (seção 11).
 - Drill-down da linha do DRE até o documento: hoje só até a conta do plano.
 - Lançamento avulso antigo sem conta do plano permanece "Não classificado" até alguém classificar (não há tela de classificação em lote).
 
@@ -206,3 +206,14 @@ Tabela `Glosa` (migration `20261015200000_glosa`, CHECK valor > 0). Só em conta
 - Título com glosa não pode ser editado nem cancelado (estorne a glosa antes); as travas agora usam `valorBaixado IS NULL`.
 - Tela: cartão "Registrar glosa" e lista de glosas com estorno no detalhe da conta a receber. Testes: `tests/financeiro-db/glosa.test.ts` (4).
 - Não feito: glosa por item do pedido, recurso/reapresentação ao hospital, relatório de glosas por hospital/motivo.
+
+## 11. Fechamento de mês (15/10/2026)
+
+Tabela `FechamentoMes` (migration `20261015210000_fechamento_mes`, CHECK no formato `yyyy-mm`). Tela `/financeiro/fechamento` (últimos 12 meses). Regras:
+- Só fecha mês que já terminou e sem lançamento "Não classificado" no DRE. Reabrir exige motivo (auditoria).
+- Mês fechado recusa (`garantirMesAberto`, `_lib/fechamento.ts`): baixa e estorno de baixa (pela data da baixa), glosa e estorno, transferência e estorno, lançamento avulso (criar, excluir, lançar pela conciliação), e título (criar, editar, cancelar, reclassificar) cuja **competência** caia no mês. Mudar a competência de um título para ou a partir de mês fechado também é recusado.
+- O DRE marca os meses fechados.
+
+**Limites conhecidos:** (1) retorno SISPAG ou conciliação cujo pagamento tenha data em mês fechado é recusado inteiro (a transação desfaz tudo) até reabrir o mês; (2) fechar e alterar ao mesmo tempo (corrida) não tem trava de linha: risco baixo, uma única pessoa fecha; (3) o custo da mercadoria e as perdas de estoque vêm do faturamento e dos movimentos do dia, que sempre caem no mês corrente, então não são congelados por este mecanismo; (4) fechar não guarda foto do DRE: se reabrir e alterar, o DRE muda.
+
+Testes: `tests/financeiro-db/fechamento.test.ts` (3).

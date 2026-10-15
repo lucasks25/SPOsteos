@@ -1,5 +1,6 @@
 "use server";
 
+import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
@@ -150,6 +151,7 @@ export async function avulsoEConciliar(linhaId: string, _: ActionState, fd: Form
     await db.$transaction(async (tx) => {
       await validarClassificacao(tx, parsed.data.planoContaId, parsed.data.centroCustoId);
       const l = await linhaPendente(tx, linhaId);
+      await garantirMesAberto(tx, [l.data], "lançar nessa data");
       const lan = await tx.lancamento.create({
         data: {
           contaId: l.contaId,

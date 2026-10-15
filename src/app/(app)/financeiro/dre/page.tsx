@@ -39,10 +39,11 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
   const iniDate = addMeses(fimDate, -NUM_MESES);
   const meses = mesesDe(iniDate.toISOString().slice(0, 7), NUM_MESES);
 
-  const [linhas, centros, planos] = await Promise.all([
+  const [linhas, centros, planos, fechados] = await Promise.all([
     carregarLinhasDre(inicioMes(iniDate), fimDate, centroId),
     db.centroCusto.findMany({ orderBy: { codigo: "asc" }, select: { id: true, codigo: true, nome: true } }),
     db.planoConta.findMany({ select: { id: true, codigo: true, nome: true } }),
+    db.fechamentoMes.findMany({ select: { mes: true } }).then((l) => new Set(l.map((f) => f.mes))),
   ]);
   const nomePlano = new Map(planos.map((p) => [p.id, `${p.codigo} — ${p.nome}`]));
   const colunas = [...meses.map((m) => dreDoMes(linhas, m)), dreTotal(linhas, meses)];
@@ -76,7 +77,7 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
       )}
       {centroId && <p className="mb-3 text-xs text-slate-500">Com o filtro de centro de custo, perdas e ajustes de estoque ficam de fora (o estoque não tem centro de custo).</p>}
 
-      <Table head={["", ...meses.map((m) => mesAno(new Date(`${m}-01T00:00:00Z`))), "Total"]}>
+      <Table head={["", ...meses.map((m) => mesAno(new Date(`${m}-01T00:00:00Z`)) + (fechados.has(m) ? " (fechado)" : "")), "Total"]}>
         {LINHAS.map((def) => {
           const detalhes = def.tipo ? colunas.map((c) => c.contas[def.tipo!] ?? []) : [];
           const ids = [...new Set(detalhes.flat().map((c) => c.planoId))];

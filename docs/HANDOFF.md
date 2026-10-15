@@ -300,6 +300,8 @@ Para cada cadastro: lista com busca, novo, editar, e ativar/inativar quando houv
 
 **Relatórios (15/10/2026):** `/financeiro/relatorios` traz o aging (a vencer, 1-30, 31-60, 61-90, +90 dias) por hospital (inadimplência) e por fornecedor, com exportação CSV (`;`, vírgula decimal, BOM; neutraliza fórmulas). Lógica pura em `_lib/aging.ts`, testada.
 
+**Fechamento de mês (15/10/2026):** `/financeiro/fechamento` congela meses encerrados; detalhes e limites em `docs/REVISAO.md` seção 11. Ao criar qualquer nova mutação financeira com data, chame `garantirMesAberto`.
+
 ## 10. Próximas fases (depois do MVP)
 
 1. **NF-e/NFS-e reais**: integrar uma API emissora (Focus NFe, PlugNotas, NFe.io etc.) para NF de remessa em consignação (CFOP 5917/6917), retorno (5918/6918), venda de consignado (5114/6114) e faturamento; CC-e; DANFE.

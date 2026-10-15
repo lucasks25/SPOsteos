@@ -4,6 +4,7 @@ import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { money, toNumber } from "@/lib/format";
 import type { Tipo } from "./config";
+import { garantirMesAberto } from "./fechamento";
 
 /** Regra de negócio violada (mensagem já amigável para o usuário). */
 export class FinanceiroError extends ErroNegocio {}
@@ -111,6 +112,7 @@ export type BaixaInput = {
 /** Registra um pagamento/recebimento (total ou parcial, com juros, multa e desconto) e atualiza o título. */
 export async function registrarBaixa(tx: Tx, input: BaixaInput) {
   const { tipo, tituloId, contaId, data, forma } = input;
+  await garantirMesAberto(tx, [data], "registrar baixa nessa data");
   const titulo = await carregar(tx, tipo, tituloId, true);
   if (titulo.status !== "ABERTO") throw new FinanceiroError("O título não está em aberto.");
   const b = calcularBaixa(input, saldoTitulo(titulo.valor, titulo.valorBaixado));
@@ -141,8 +143,9 @@ export async function registrarBaixa(tx: Tx, input: BaixaInput) {
 export async function estornarBaixa(tx: Tx, tipo: Tipo, lancamentoId: string) {
   const l = await tx.lancamento.findUnique({
     where: { id: lancamentoId },
-    select: { id: true, contaReceberId: true, contaPagarId: true, extrato: { select: { id: true } } },
+    select: { id: true, data: true, contaReceberId: true, contaPagarId: true, extrato: { select: { id: true } } },
   });
+  if (l) await garantirMesAberto(tx, [l.data], "estornar uma baixa dessa data");
   const tituloId = tipo === "receber" ? l?.contaReceberId : l?.contaPagarId;
   if (!l || !tituloId) throw new FinanceiroError("Baixa não encontrada.");
   if (l.extrato) throw new FinanceiroError("Esta baixa está conciliada com o extrato. Desfaça a conciliação antes de estornar.");
@@ -162,6 +165,7 @@ export async function registrarGlosa(tx: Tx, input: GlosaInput) {
   const valor = arredondar(input.valor);
   if (!Number.isFinite(valor) || !(cent(valor) > 0)) throw new FinanceiroError("Informe um valor de glosa maior que zero.");
   if (motivo.length < 5) throw new FinanceiroError("Explique o motivo da glosa (mínimo 5 letras).");
+  await garantirMesAberto(tx, [input.data], "registrar glosa nessa data");
   const titulo = await carregar(tx, "receber", input.tituloId, true);
   if (titulo.status !== "ABERTO") throw new FinanceiroError("O título não está em aberto.");
   const saldo = saldoTitulo(titulo.valor, titulo.valorBaixado);
@@ -173,8 +177,9 @@ export async function registrarGlosa(tx: Tx, input: GlosaInput) {
 
 /** Estorna a glosa e reabre o título se ele deixar de estar quitado. */
 export async function estornarGlosa(tx: Tx, glosaId: string) {
-  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true } });
+  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true } });
   if (!g) throw new FinanceiroError("Glosa não encontrada.");
+  await garantirMesAberto(tx, [g.data], "estornar uma glosa dessa data");
   await carregar(tx, "receber", g.contaReceberId, true);
   await tx.glosa.delete({ where: { id: glosaId } });
   await recalcularTitulo(tx, "receber", g.contaReceberId);
@@ -189,6 +194,7 @@ export type TransferenciaInput = { origemId: string; destinoId: string; valor: n
 export async function transferir(tx: Tx, input: TransferenciaInput) {
   const { origemId, destinoId, data } = input;
   const valor = arredondar(input.valor);
+  await garantirMesAberto(tx, [data], "transferir nessa data");
   if (origemId === destinoId) throw new FinanceiroError("Origem e destino precisam ser contas diferentes.");
   if (!(cent(valor) > 0)) throw new FinanceiroError("Informe um valor maior que zero.");
   const contas = await tx.contaBancaria.findMany({ where: { id: { in: [origemId, destinoId] } }, select: { id: true, nome: true, ativo: true } });
@@ -206,8 +212,9 @@ export async function transferir(tx: Tx, input: TransferenciaInput) {
 
 /** Estorna a transferência inteira (as duas pernas). Bloqueado se alguma perna já foi conciliada com o extrato. */
 export async function estornarTransferencia(tx: Tx, transferenciaId: string) {
-  const pernas = await tx.lancamento.findMany({ where: { transferenciaId }, select: { id: true, extrato: { select: { id: true } } } });
+  const pernas = await tx.lancamento.findMany({ where: { transferenciaId }, select: { id: true, data: true, extrato: { select: { id: true } } } });
   if (pernas.length === 0) throw new FinanceiroError("Transferência não encontrada.");
+  await garantirMesAberto(tx, pernas.map((p) => p.data), "estornar uma transferência dessa data");
   if (pernas.some((p) => p.extrato)) throw new FinanceiroError("Uma das pernas da transferência está conciliada com o extrato. Desfaça a conciliação antes de estornar.");
   await tx.lancamento.deleteMany({ where: { transferenciaId } });
   await tx.transferencia.delete({ where: { id: transferenciaId } });

@@ -11,6 +11,7 @@ import { checarCnpj } from "../../cadastros/_lib/documentos";
 import { ErroNegocio } from "@/lib/erros";
 import { listarContas } from "./contas";
 import { addDias, hojeUTC } from "./datas";
+import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";
 import { estornarTransferencia, transferir } from "./titulos";
 
@@ -88,6 +89,7 @@ export async function lancarAvulso(contaId: string, _: ActionState, fd: FormData
     const conta = await db.contaBancaria.findUnique({ where: { id: contaId }, select: { ativo: true } });
     if (!conta?.ativo) return { error: "Conta inexistente ou inativa." };
     await validarClassificacao(db, d.planoContaId, d.centroCustoId);
+    await garantirMesAberto(db, [d.data], "lançar nessa data");
     const l = await db.lancamento.create({ data: { contaId, ...d } });
     await audit(user.id, "lançar", "Lancamento", l.id, `${d.sentido} ${money(d.valor)} — ${d.descricao}`);
   } catch (e) {
@@ -105,11 +107,12 @@ export async function excluirAvulso(_: ActionState, fd: FormData): Promise<Actio
   const id = fd.get("id");
   if (typeof id !== "string" || !id) return { error: "Lançamento inválido." };
   try {
-    const l = await db.lancamento.findUnique({ where: { id }, select: { contaId: true, contaReceberId: true, contaPagarId: true, transferenciaId: true, extrato: { select: { id: true } } } });
+    const l = await db.lancamento.findUnique({ where: { id }, select: { contaId: true, data: true, contaReceberId: true, contaPagarId: true, transferenciaId: true, extrato: { select: { id: true } } } });
     if (!l) return { error: "Lançamento não encontrado." };
     if (l.transferenciaId) return { error: "Este lançamento é parte de uma transferência. Estorne a transferência inteira." };
     if (l.contaReceberId || l.contaPagarId) return { error: "Este lançamento é baixa de título. Estorne pela tela do título." };
     if (l.extrato) return { error: "Lançamento conciliado com o extrato. Desfaça a conciliação antes." };
+    await garantirMesAberto(db, [l.data], "excluir lançamento dessa data");
     await db.lancamento.delete({ where: { id } });
     await audit(user.id, "excluir lançamento", "Lancamento", id);
     revalidatePath(`/financeiro/contas/${l.contaId}`);

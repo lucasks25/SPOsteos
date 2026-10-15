@@ -11,6 +11,7 @@ import type { FormaPagamento } from "@/generated/prisma/client";
 import { FORMAS, TIPOS, isTipo, type Tipo } from "./config";
 import { addDias, hojeUTC } from "./datas";
 import { lerBoleto } from "./boleto";
+import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";
 import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa } from "./titulos";
 import { ErroNegocio } from "@/lib/erros";
@@ -66,6 +67,13 @@ const schemaBaixa = z.object({
 
 const schemaId = z.object({ id: zf.text() });
 
+/** Competência atual do título (para recusar mudanças em mês fechado). */
+async function competenciaDo(tipo: Tipo, id: string): Promise<Date | null> {
+  const sel = { competencia: true } as const;
+  const t = tipo === "receber" ? await db.contaReceber.findUnique({ where: { id }, select: sel }) : await db.contaPagar.findUnique({ where: { id }, select: sel });
+  return t?.competencia ?? null;
+}
+
 function checkTipo(tipo: unknown): Tipo {
   if (!isTipo(tipo)) throw new ErroNegocio("Tipo de título inválido.");
   return tipo;
@@ -91,6 +99,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
       await validarClassificacao(db, data.planoContaId, data.centroCustoId);
+      await garantirMesAberto(db, [data.competencia, id ? await competenciaDo(tipo, id) : null], "criar ou alterar título nessa competência");
       if (id) {
         const r = await db.contaReceber.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
@@ -104,6 +113,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
       await validarClassificacao(db, data.planoContaId, data.centroCustoId);
+      await garantirMesAberto(db, [data.competencia, id ? await competenciaDo(tipo, id) : null], "criar ou alterar título nessa competência");
       if (id) {
         const r = await db.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
@@ -164,6 +174,7 @@ export async function cancelarTitulo(tipoArg: Tipo, _: ActionState, fd: FormData
   const { id } = parsed.data;
   const data = { status: "CANCELADO" as const };
   try {
+    await garantirMesAberto(db, [await competenciaDo(tipo, id)], "cancelar título dessa competência");
     if (tipo === "receber") {
       // Cancelar a receita de uma NF emitida tiraria a venda do DRE e deixaria o custo (CMV): precisa de cancelamento de NF/devolução.
       const t = await db.contaReceber.findUnique({ where: { id }, select: { pedido: { select: { status: true } } } });
@@ -191,6 +202,7 @@ export async function classificarTitulo(tipoArg: Tipo, id: string, _: ActionStat
   const data = parsed.data;
   try {
     await validarClassificacao(db, data.planoContaId, data.centroCustoId);
+    await garantirMesAberto(db, [data.competencia, await competenciaDo(tipo, id)], "reclassificar título dessa competência");
     const r = tipo === "receber" ? await db.contaReceber.updateMany({ where: { id }, data }) : await db.contaPagar.updateMany({ where: { id }, data });
     if (r.count === 0) return { error: "Título não encontrado." };
     await audit(user.id, "classificar", TIPOS[tipo].entidade, id);

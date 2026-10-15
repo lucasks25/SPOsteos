@@ -793,3 +793,11 @@ model Glosa {
   @@index([contaReceberId])
   @@index([data])
 }
+
+// Mês financeiro fechado: nenhuma baixa, glosa, transferência, lançamento avulso ou título (por competência) com data
+// naquele mês pode ser criado, alterado ou estornado. Reabrir apaga a linha (com motivo na auditoria).
+model FechamentoMes {
+  mes       String   @id // "yyyy-mm"
+  fechadoEm DateTime @default(now())
+  usuarioId String?
+}
