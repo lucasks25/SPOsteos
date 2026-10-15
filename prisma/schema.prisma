@@ -105,6 +105,7 @@ model Hospital {
   ativo              Boolean        @default(true)
   criadoEm           DateTime       @default(now())
   local              LocalEstoque?
+  inventarios        InventarioConsignacao[]
   cirurgias          Cirurgia[]
   pedidos            PedidoVenda[]
   orcamentos         Orcamento[]
@@ -198,6 +199,7 @@ model Produto {
   orcamentoItens    OrcamentoItem[]
   remessaItens      RemessaItem[]
   consumos          CirurgiaConsumo[]
+  inventarioItens   InventarioConsignacaoItem[]
 }
 
 // ───────────────────────── Qualidade / Lotes ─────────────────────────
@@ -225,6 +227,7 @@ model Lote {
   inspecoes    Inspecao[]
   remessaItens RemessaItem[]
   consumos     CirurgiaConsumo[]
+  inventarioItens InventarioConsignacaoItem[]
 
   @@unique([produtoId, numero])
 }
@@ -261,6 +264,7 @@ model LocalEstoque {
   movOrigem  Movimento[] @relation("origem")
   movDestino Movimento[] @relation("destino")
   remessas   Remessa[]
+  inventarios InventarioConsignacao[]
 }
 
 model Saldo {
@@ -941,4 +945,60 @@ model CobrancaEvento {
   criadoEm    DateTime @default(now())
 
   @@unique([contaId, nossoNumero, codigo, data])
+}
+
+// ───── Inventário de consignado nos hospitais (contagem física × saldo do sistema) ─────
+enum StatusInventario {
+  ABERTO
+  CONTADO
+  FECHADO
+  CANCELADO
+}
+
+enum ResolucaoInventario {
+  AJUSTE // corrige o saldo (falta vira PERDA no kardex; sobra vira AJUSTE)
+  COBRAR_HOSPITAL // corrige o saldo e registra o valor a cobrar (só para falta); não cria título
+  JUSTIFICADA // fica registrada, não mexe no saldo
+}
+
+// Documento "INV-<id>". Só um inventário aberto/contado por hospital (índice parcial no SQL da migration).
+model InventarioConsignacao {
+  id          Int                         @id @default(autoincrement())
+  hospitalId  String
+  hospital    Hospital                    @relation(fields: [hospitalId], references: [id])
+  localId     String
+  local       LocalEstoque                @relation(fields: [localId], references: [id])
+  status      StatusInventario            @default(ABERTO)
+  criadoEm    DateTime                    @default(now())
+  criadoPor   String
+  contadoEm   DateTime?
+  fechadoEm   DateTime?
+  fechadoPor  String?
+  canceladoEm DateTime?
+  observacao  String?
+  itens       InventarioConsignacaoItem[]
+
+  @@index([hospitalId, status])
+}
+
+model InventarioConsignacaoItem {
+  id              String                @id @default(cuid())
+  inventarioId    Int
+  inventario      InventarioConsignacao @relation(fields: [inventarioId], references: [id], onDelete: Cascade)
+  produtoId       String
+  produto         Produto               @relation(fields: [produtoId], references: [id])
+  loteId          String
+  lote            Lote                  @relation(fields: [loteId], references: [id])
+  saldoSistema    Int // "foto" do saldo no momento da criação (ou da inclusão do lote encontrado)
+  contado         Int?
+  valorUnit       Decimal               @db.Decimal(14, 2) // custo médio congelado na foto
+  resolucao       ResolucaoInventario?
+  justificativa   String?
+  // preenchidos só no fechamento
+  saldoFechamento Int? // saldo ATUAL no instante do fechamento (pode diferir da foto)
+  diferenca       Int? // contado − saldoFechamento
+  valorCobrar     Decimal?              @db.Decimal(14, 2)
+
+  @@unique([inventarioId, loteId])
+  @@index([produtoId])
 }

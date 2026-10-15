@@ -20,6 +20,7 @@ export async function limparTudo() {
   await db.contaReceber.deleteMany({ where: { hospital: hosp } });
   await db.contaPagar.deleteMany({ where: { fornecedor: { razaoSocial: { startsWith: P } } } });
   await db.contaPagar.deleteMany({ where: { descricao: { startsWith: P } } });
+  await db.inventarioConsignacao.deleteMany({ where: { hospital: hosp } }); // itens em cascata
   await db.remessaItem.deleteMany({ where: prod });
   await db.remessa.deleteMany({ where: { OR: [{ local: { hospital: hosp } }, { cirurgia: { paciente: { startsWith: P } } }] } });
   await db.pedidoVenda.deleteMany({ where: { hospital: hosp } });

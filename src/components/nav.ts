@@ -27,6 +27,7 @@ export const NAV: NavGroup[] = [
       { href: "/estoque/kits", label: "Caixas e kits" },
       { href: "/estoque/kardex", label: "Kardex" },
       { href: "/estoque/ajustes", label: "Ajustes e perdas" },
+      { href: "/estoque/inventario", label: "Inventário consignado" },
     ],
   },
   {
