@@ -81,6 +81,8 @@ type Raw = {
   centroCustoId: string | null;
   centroCusto: { nome: string } | null;
   competencia: Date;
+  cobrancaStatus?: string | null;
+  nossoNumero?: string | null;
 };
 
 function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | null, codigoBarras: string | null = null): TituloRow {
@@ -98,6 +100,8 @@ function normalizar(r: Raw, parceiroId: string | null, parceiroNome: string | nu
     centroCustoId: r.centroCustoId,
     centroNome: r.centroCusto?.nome ?? null,
     competencia: r.competencia,
+    cobrancaStatus: r.cobrancaStatus ?? null,
+    nossoNumero: r.nossoNumero ?? null,
     codigoBarras,
     valor,
     vencimento: r.vencimento,

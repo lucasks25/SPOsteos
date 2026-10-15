@@ -97,6 +97,8 @@ model Hospital {
   email              String?
   telefone           String?
   endereco           String?
+  bairro             String? // endereço do pagador no boleto de cobrança
+  cep                String?
   cidade             String?
   uf                 String?
   prazoPagamentoDias Int            @default(30)
@@ -554,26 +556,33 @@ enum StatusTitulo {
 }
 
 model ContaReceber {
-  id            String       @id @default(cuid())
-  descricao     String
-  hospitalId    String?
-  hospital      Hospital?    @relation(fields: [hospitalId], references: [id])
-  pedidoId      Int?
-  pedido        PedidoVenda? @relation(fields: [pedidoId], references: [id])
-  valor         Decimal      @db.Decimal(14, 2)
-  vencimento    DateTime
-  status        StatusTitulo @default(ABERTO)
-  valorPago     Decimal?     @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
-  pagoEm        DateTime? // data da última baixa
-  valorBaixado  Decimal?     @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
-  criadoEm      DateTime     @default(now())
-  lancamentos   Lancamento[]
-  glosas        Glosa[]
-  planoContaId  String?
-  planoConta    PlanoConta?  @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
-  centroCustoId String?
-  centroCusto   CentroCusto? @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
-  competencia   DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
+  id              String                @id @default(cuid())
+  descricao       String
+  hospitalId      String?
+  hospital        Hospital?             @relation(fields: [hospitalId], references: [id])
+  pedidoId        Int?
+  pedido          PedidoVenda?          @relation(fields: [pedidoId], references: [id])
+  valor           Decimal               @db.Decimal(14, 2)
+  vencimento      DateTime
+  status          StatusTitulo          @default(ABERTO)
+  valorPago       Decimal?              @db.Decimal(14, 2) // acumulado das baixas (soma dos lançamentos)
+  pagoEm          DateTime? // data da última baixa
+  valorBaixado    Decimal?              @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
+  criadoEm        DateTime              @default(now())
+  // Cobrança bancária (boleto registrado). Estado: ENVIADO (na remessa), REGISTRADO (banco confirmou), REJEITADO, LIQUIDADO, BAIXADO.
+  cobrancaContaId String?
+  nossoNumero     String?
+  cobrancaStatus  String?
+  lancamentos     Lancamento[]
+  cobrancaItens   RemessaCobrancaItem[]
+  glosas          Glosa[]
+  planoContaId    String?
+  planoConta      PlanoConta?           @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
+  centroCustoId   String?
+  centroCusto     CentroCusto?          @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
+  competencia     DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
+
+  @@unique([cobrancaContaId, nossoNumero])
 }
 
 model ContaPagar {
@@ -626,20 +635,26 @@ enum FormaPagamento {
 
 // Conta bancária ou caixa: onde o dinheiro entra e sai.
 model ContaBancaria {
-  id           String             @id @default(cuid())
-  nome         String
-  tipo         TipoConta          @default(BANCO)
-  banco        String?
-  agencia      String?
-  numero       String?
-  saldoInicial Decimal            @default(0) @db.Decimal(14, 2)
-  titularCnpj  String? // empresa debitada nos pagamentos (SISPAG)
-  titularNome  String?
-  ativo        Boolean            @default(true)
-  criadoEm     DateTime           @default(now())
-  lancamentos  Lancamento[]
-  extrato      ExtratoLinha[]
-  remessas     RemessaPagamento[]
+  id                         String             @id @default(cuid())
+  nome                       String
+  tipo                       TipoConta          @default(BANCO)
+  banco                      String?
+  agencia                    String?
+  numero                     String?
+  saldoInicial               Decimal            @default(0) @db.Decimal(14, 2)
+  titularCnpj                String? // empresa debitada nos pagamentos (SISPAG)
+  titularNome                String?
+  // Cobrança dos hospitais (CNAB 400 Itaú, carteira 109): só habilita se a carteira estiver preenchida.
+  carteiraCobranca           String?
+  proximoNossoNumero         Int                @default(1) // sequência do nosso número (8 dígitos) desta conta
+  cobrancaMultaPercent       Decimal            @default(2) @db.Decimal(5, 2)
+  cobrancaJurosMensalPercent Decimal            @default(1) @db.Decimal(5, 2)
+  ativo                      Boolean            @default(true)
+  criadoEm                   DateTime           @default(now())
+  lancamentos                Lancamento[]
+  extrato                    ExtratoLinha[]
+  remessas                   RemessaPagamento[]
+  remessasCobranca           RemessaCobranca[]
 }
 
 // Movimento real de dinheiro numa conta (baixa de título ou lançamento avulso).
@@ -814,4 +829,56 @@ model FechamentoMes {
   mes       String   @id // "yyyy-mm"
   fechadoEm DateTime @default(now())
   usuarioId String?
+}
+
+// ───────────── Cobrança dos hospitais (CNAB 400 Itaú, carteira 109) ─────────────
+
+enum StatusCobrancaItem {
+  ENVIADO
+  CONFIRMADO
+  REJEITADO
+  LIQUIDADO
+  BAIXADO
+  CANCELADO
+}
+
+model RemessaCobranca {
+  id              Int                   @id @default(autoincrement())
+  contaId         String
+  conta           ContaBancaria         @relation(fields: [contaId], references: [id])
+  conteudo        String
+  criadaEm        DateTime              @default(now())
+  retornoEm       DateTime?
+  canceladaEm     DateTime?
+  canceladaMotivo String?
+  itens           RemessaCobrancaItem[]
+}
+
+// ocorrencia: 01 entrada de título, 02 pedido de baixa. `id` não vai ao banco: o "seu número" é CR<contaReceberId> truncado em 10, então a ligação é pelo nosso número.
+model RemessaCobrancaItem {
+  id             Int                @id @default(autoincrement())
+  remessaId      Int
+  remessa        RemessaCobranca    @relation(fields: [remessaId], references: [id], onDelete: Cascade)
+  contaReceberId String
+  contaReceber   ContaReceber       @relation(fields: [contaReceberId], references: [id])
+  ocorrencia     String // 01 | 02
+  nossoNumero    String
+  valor          Decimal            @db.Decimal(14, 2)
+  status         StatusCobrancaItem @default(ENVIADO)
+  motivos        String?
+
+  @@index([contaReceberId])
+  @@index([remessaId])
+}
+
+// Evento de retorno já processado: reprocessar o mesmo arquivo não baixa duas vezes.
+model CobrancaEvento {
+  id          String   @id @default(cuid())
+  contaId     String
+  nossoNumero String
+  codigo      String
+  data        DateTime
+  criadoEm    DateTime @default(now())
+
+  @@unique([contaId, nossoNumero, codigo, data])
 }

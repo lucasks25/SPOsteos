@@ -11,7 +11,7 @@ Sistema para distribuidoras/importadoras de OPME (órteses, próteses e materiai
 | **Estoque** | ESTOQUE | saldos por local, kardex, remessas/vales em consignação com FEFO (enviar, conferir retorno, consumo, cancelar), kits, ajustes e perdas |
 | **Qualidade** | QUALIDADE | quarentena/inspeção, lotes e validades, rastreabilidade, registros ANVISA |
 | **Compras** | COMPRAS | sugestão de compra, pedidos, recebimento por item (lote, validade, quarentena, custo médio, gera conta a pagar) |
-| **Financeiro** | FINANCEIRO | contas a receber/pagar (baixa parcial, juros, multa, desconto, glosa, estorno), contas bancárias e caixa, transferências, fluxo de caixa, conciliação (OFX e CNAB 240 Itaú), pagamentos SISPAG (TED, crédito Itaú, boleto, Pix por chave), plano de contas e centros de custo, DRE gerencial por competência, relatórios de aging com CSV, classificar pendentes, fechamento de mês |
+| **Financeiro** | FINANCEIRO | cobrança dos hospitais (boleto Itaú CNAB 400), aprovação de contas a pagar, contas a receber/pagar (baixa parcial, juros, multa, desconto, glosa, estorno), contas bancárias e caixa, transferências, fluxo de caixa, conciliação (OFX e CNAB 240 Itaú), pagamentos SISPAG (TED, crédito Itaú, boleto, Pix por chave), plano de contas e centros de custo, DRE gerencial por competência, relatórios de aging com CSV, classificar pendentes, fechamento de mês |
 | **Administração** | ADMIN | usuários, perfis, redefinir senha, log de auditoria |
 | **Painel** | todos | indicadores por perfil |
 
@@ -31,6 +31,7 @@ Demonstração local: `docker compose up -d`, `npx prisma migrate deploy`, `npm 
 1. Contas bancárias: cadastrar a conta Itaú com agência, conta com dígito, CNPJ e razão social do titular.
 2. Fornecedores: banco/agência/conta ou chave Pix (só o FINANCEIRO vê e edita).
 3. Plano de contas: revisar o plano padrão e criar os centros de custo.
+3b. Para cobrar hospitais: na conta do Itaú selecione a carteira 109 e complete o endereço/CEP dos hospitais; depois Cobrança dos hospitais → gerar remessa → enviar → importar retorno → imprimir boleto.
 4. Pagar: Pagamentos SISPAG → marcar títulos → gerar arquivo → enviar no Itaú Empresas → importar o retorno.
 5. Receber: importar o extrato (OFX ou CNAB 240) em Conciliação → "Baixar e conciliar".
 6. Mês a mês: Classificar pendentes → conferir o DRE → Fechamento de mês.
@@ -38,14 +39,14 @@ Demonstração local: `docker compose up -d`, `npx prisma migrate deploy`, `npm 
 ## O que NÃO está no MVP (conhecido)
 - **Banco é por arquivo, não automático:** enviar remessa e subir retorno/extrato é manual. Automatizar exige API ou troca de arquivos contratada com o Itaú.
 - **Nada foi validado com arquivo real do Itaú.** Posições de campo conferidas contra os manuais públicos, fluxo testado com arquivos simulados. Antes do uso com valores reais: Validador de Layout do Itaú Empresas e teste com R$ 1,00 (roteiro em `docs/REVISAO.md` seção 2).
-- **Cobrança para hospitais** (emitir boleto/Pix): falta o manual atual do Itaú de cobrança CNAB.
+- **Cobrança para hospitais:** boleto registrado CNAB 400 (carteira 109) com baixa automática no retorno está implementado, **mas nunca validado com arquivo real** e exige convênio de cobrança no Itaú; Pix de cobrança (QR) não existe.
 - **NF-e/NFS-e**: a NF é registrada pelo número digitado, não emitida pelo sistema. Integrar um emissor é a próxima fase.
 - Faturamento TISS/SUS, etiquetas UDI/GS1, SPED, app do representante: fases futuras (`docs/HANDOFF.md` seção 10).
 - **Segurança:** pendentes a decidir com o cliente (separação de funções em compras, quem registra NF) e a CSP; ver `docs/REVISAO.md` seção 13.
 - Anexos com dado de paciente: definir política de retenção/LGPD e armazenamento privado (Supabase Storage em bucket privado na hospedagem).
 
 ## Qualidade
-- 43 testes unitários (`npm test`) e 52 testes de integração contra o banco (`npm run test:db`), todos passando; `tsc` e `next build` limpos; lint sem erros.
+- 53 testes unitários (`npm test`) e 59 testes de integração contra o banco (`npm run test:db`), todos passando; `tsc` e `next build` limpos; lint sem erros.
 - Revisões e correções documentadas: `docs/REVISAO.md` (segurança, bancário, financeiro, bugs de estoque).
 - Varredura de todas as telas do menu com os 6 perfis: sem erros.
 

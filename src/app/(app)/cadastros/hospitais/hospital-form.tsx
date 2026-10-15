@@ -15,6 +15,8 @@ export function HospitalForm({ hospital, tabelas }: { hospital?: Hospital; tabel
         <Field label="E-mail" name="email" type="email" defaultValue={h?.email ?? ""} />
         <Field label="Telefone" name="telefone" defaultValue={h?.telefone ?? ""} />
         <Field label="Endereço" name="endereco" defaultValue={h?.endereco ?? ""} className="sm:col-span-2" />
+        <Field label="Bairro" name="bairro" defaultValue={h?.bairro ?? ""} />
+        <Field label="CEP" name="cep" defaultValue={h?.cep ?? ""} maxLength={9} placeholder="00000-000" hint="Necessário para emitir cobrança" />
         <Field label="Cidade" name="cidade" defaultValue={h?.cidade ?? ""} />
         <Select label="UF" name="uf" defaultValue={h?.uf ?? ""} options={UF_OPTIONS} placeholder="—" />
         <Field label="Prazo de pagamento (dias) *" name="prazoPagamentoDias" type="number" min="0" max="365" defaultValue={h?.prazoPagamentoDias ?? 30} required />

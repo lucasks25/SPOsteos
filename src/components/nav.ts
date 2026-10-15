@@ -53,6 +53,7 @@ export const NAV: NavGroup[] = [
     items: [
       { href: "/financeiro", label: "Visão geral" },
       { href: "/financeiro/receber", label: "Contas a receber" },
+      { href: "/financeiro/cobranca", label: "Cobrança dos hospitais" },
       { href: "/financeiro/pagar", label: "Contas a pagar" },
       { href: "/financeiro/aprovacoes", label: "Aprovar contas a pagar" },
       { href: "/financeiro/fluxo", label: "Fluxo de caixa" },

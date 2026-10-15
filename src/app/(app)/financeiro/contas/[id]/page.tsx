@@ -23,6 +23,8 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
     include: { extrato: { select: { id: true } }, contaReceber: { select: { id: true } }, contaPagar: { select: { id: true } } },
   });
   const hoje = hojeUTC();
+  const cx = await db.contaBancaria.findUnique({ where: { id }, select: { carteiraCobranca: true, cobrancaMultaPercent: true, cobrancaJurosMensalPercent: true } });
+  const extra = { carteiraCobranca: cx?.carteiraCobranca ?? null, cobrancaMultaPercent: toNumber(cx?.cobrancaMultaPercent ?? 2), cobrancaJurosMensalPercent: toNumber(cx?.cobrancaJurosMensalPercent ?? 1) };
   const { planos, centros } = await opcoesClassificacao(db);
 
   return (
@@ -110,7 +112,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         )}
 
         <Card title="Dados da conta">
-          <ContaForm conta={conta} />
+          <ContaForm conta={{ ...conta, ...extra }} />
         </Card>
       </div>
     </>

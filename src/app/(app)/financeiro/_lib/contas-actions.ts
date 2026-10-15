@@ -24,6 +24,9 @@ const schemaConta = z.object({
   saldoInicial: z.coerce.number({ error: "Valor inválido" }),
   titularCnpj: zf.optText(),
   titularNome: zf.optText(),
+  carteiraCobranca: z.enum(["109"], { error: "Carteira inválida" }).optional().transform((v) => v ?? null),
+  cobrancaMultaPercent: z.coerce.number().min(0, "Entre 0 e 20").max(20, "Entre 0 e 20").default(2),
+  cobrancaJurosMensalPercent: z.coerce.number().min(0, "Entre 0 e 20").max(20, "Entre 0 e 20").default(1),
 });
 
 export async function salvarConta(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
@@ -34,6 +37,9 @@ export async function salvarConta(id: string | null, _: ActionState, fd: FormDat
     const c = checarCnpj(parsed.data.titularCnpj);
     if (!c.ok) return { error: "Verifique os campos destacados.", fieldErrors: { titularCnpj: c.error } };
     parsed.data.titularCnpj = c.value;
+  }
+  if (parsed.data.carteiraCobranca && (!parsed.data.titularCnpj || !parsed.data.agencia || !parsed.data.numero)) {
+    return { error: "Para habilitar a cobrança, informe agência, número da conta e CNPJ do titular." };
   }
   let savedId: string;
   try {

@@ -61,6 +61,8 @@ export type TituloRow = {
   centroCustoId: string | null;
   centroNome: string | null;
   competencia: Date;
+  cobrancaStatus: string | null;
+  nossoNumero: string | null;
   codigoBarras: string | null;
   valor: number;
   vencimento: Date;

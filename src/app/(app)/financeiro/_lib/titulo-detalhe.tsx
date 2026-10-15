@@ -76,6 +76,9 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
               ["Conta do plano", titulo.categoria ?? "Não classificado"],
               ["Centro de custo", titulo.centroNome],
               ["Competência", date(titulo.competencia)],
+              ...(tipo === "receber" && titulo.cobrancaStatus
+                ? ([["Cobrança", <span key="c">{titulo.cobrancaStatus.toLowerCase()} · nosso nº {titulo.nossoNumero}{titulo.cobrancaStatus === "REGISTRADO" && titulo.status === "ABERTO" && (<> · <Link href={`/financeiro/receber/${titulo.id}/boleto`} className="text-teal-700 hover:underline">imprimir boleto</Link></>)}</span>]] as [string, React.ReactNode][])
+                : []),
               [
                 "Origem",
                 titulo.pedidoId ? (

@@ -18,6 +18,12 @@ const schema = z.object({
   email: z.email("E-mail inválido").optional().transform((v) => v ?? null),
   telefone: zf.optText(),
   endereco: zf.optText(),
+  bairro: zf.optText(),
+  cep: z
+    .string()
+    .optional()
+    .transform((v) => (v ? v.replace(/\D/g, "") : null))
+    .refine((v) => v === null || v.length === 8, "CEP com 8 dígitos"),
   cidade: zf.optText(),
   uf: z.enum(UFS, { error: "UF inválida" }).optional().transform((v) => v ?? null),
   prazoPagamentoDias: zf.int(0).max(365, "Máximo 365 dias"),
