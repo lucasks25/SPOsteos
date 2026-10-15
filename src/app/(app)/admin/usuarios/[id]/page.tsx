@@ -19,7 +19,7 @@ export default async function EditarUsuarioPage({ params }: { params: Promise<{ 
   return (
     <>
       <PageHeader title={u.nome} subtitle={`${u.email} · último login: ${ultimoLogin ? dateTime(ultimoLogin.criadoEm) : "nunca"}`} />
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Dados e perfil">
           <Form action={editarUsuario.bind(null, id)} redirectTo="/admin/usuarios">
             <Grid cols={2}>

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, Dl, LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, Card, Dl, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, num } from "@/lib/format";
 import { hojeUTC, PERFIS_QUALIDADE } from "../../_lib/datas";
 
@@ -35,7 +35,7 @@ export default async function LoteDetalhePage({ params }: { params: Promise<{ id
           </>
         }
       />
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Dados do lote">
           <Dl
             items={[
@@ -53,20 +53,22 @@ export default async function LoteDetalhePage({ params }: { params: Promise<{ id
           />
         </Card>
 
-        <Card title="Saldos por local">
+        <div>
+          <SectionTitle>Saldos por local</SectionTitle>
           <Table head={["Local", "Tipo", "Quantidade"]} empty={lote.saldos.length === 0}>
             {lote.saldos.map((s) => (
               <tr key={s.id}>
                 <Td>{s.local.nome}</Td>
                 <Td>{s.local.tipo.replaceAll("_", " ").toLowerCase()}</Td>
-                <Td className="font-medium">{num(s.quantidade)}</Td>
+                <Td className="text-right font-medium">{num(s.quantidade)}</Td>
               </tr>
             ))}
           </Table>
-        </Card>
+        </div>
 
-        <Card title="Histórico de inspeções">
-          <Table head={["Data", "Resultado", "Embalagem", "Rotulagem", "Documentação", "Inspetor", "Observação"]} empty={lote.inspecoes.length === 0}>
+        <div>
+          <SectionTitle>Histórico de inspeções</SectionTitle>
+          <Table head={["Data", "Resultado", "Embalagem", "Rotulagem", "Documentação", "Inspetor", "Observação"]} empty={lote.inspecoes.length === 0} emptyText="Este lote ainda não foi inspecionado.">
             {lote.inspecoes.map((i) => (
               <tr key={i.id}>
                 <Td>{dateTime(i.criadoEm)}</Td>
@@ -79,7 +81,7 @@ export default async function LoteDetalhePage({ params }: { params: Promise<{ id
               </tr>
             ))}
           </Table>
-        </Card>
+        </div>
       </div>
     </>
   );

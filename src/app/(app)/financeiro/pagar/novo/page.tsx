@@ -13,7 +13,7 @@ export default async function Page() {
   const { planos, centros } = await opcoesClassificacao(db);
   return (
     <>
-      <PageHeader title={`Novo título — ${TIPOS.pagar.singular.toLowerCase()}`} />
+      <PageHeader title={`Novo título — ${TIPOS.pagar.singular.toLowerCase()}`} subtitle="Cadastre uma obrigação manual. Compras recebidas geram a conta a pagar sozinhas." />
       <Card>
         <TituloForm tipo="pagar" parceiros={parceiros} planos={planos} centros={centros} hoje={hojeUTC()} />
       </Card>

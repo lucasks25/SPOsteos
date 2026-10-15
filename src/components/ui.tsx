@@ -20,7 +20,7 @@ export function PageHeader({ title, subtitle, actions }: { title: string; subtit
 
 export function Card({ title, actions, children, className }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
-    <section className={cx("rounded border border-slate-200 bg-white shadow-sm", className)}>
+    <section className={cx("rounded border border-slate-200 bg-white shadow-sm print:shadow-none", className)}>
       {(title || actions) && (
         <div className="flex min-h-10 items-center justify-between gap-3 border-b border-slate-200 px-3 py-2">
           {title && <h2 className="text-sm font-bold text-slate-900">{title}</h2>}
@@ -53,7 +53,7 @@ export function LinkButton({ href, children, variant = "primary", icon }: { href
 
 export function Table({ head, children, empty, emptyText, emptyAction }: { head: ReactNode[]; children: ReactNode; empty?: boolean; emptyText?: string; emptyAction?: ReactNode }) {
   return (
-    <div className="overflow-x-auto rounded border border-slate-200 bg-white shadow-sm">
+    <div className="overflow-x-auto rounded border border-slate-200 bg-white shadow-sm print:shadow-none">
       <table className="min-w-full text-[13px]">
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>

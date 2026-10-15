@@ -20,7 +20,7 @@ export default async function EditarCirurgiaPage({ params }: { params: Promise<{
       />
       <Card>
         {bloqueada ? (
-          <p className="text-sm text-slate-600">Cirurgia {cirurgia.status.toLowerCase()} não pode ser editada.</p>
+          <p className="text-sm text-slate-600">Cirurgia {cirurgia.status.toLowerCase()} não pode ser editada. Volte para a cirurgia para consultar os dados.</p>
         ) : (
           <CirurgiaForm cirurgia={cirurgia} opcoes={opcoes} />
         )}

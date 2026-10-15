@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { money, num, toNumber } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "../_components/filtros";
 import { diaSP, periodo } from "../_lib/datas";
@@ -57,16 +57,16 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
   const margem = tot.total - tot.custo;
 
   const tabela = (linhas: Linha[], titulo: string) => (
-    <Table head={[titulo, "Pedidos", "Vendido", "Custo", "Margem (R$)", "Margem %", "Comissão"]} empty={linhas.length === 0}>
+    <Table head={[titulo, "Pedidos", "Vendido", "Custo", "Margem (R$)", "Margem %", "Comissão"]} empty={linhas.length === 0} emptyText="Nenhum pedido faturado no período selecionado.">
       {linhas.map((l) => (
         <tr key={l.nome}>
           <Td className="font-medium">{l.nome}</Td>
-          <Td>{num(l.pedidos)}</Td>
-          <Td>{money(l.total)}</Td>
-          <Td>{money(l.custo)}</Td>
-          <Td>{money(l.total - l.custo)}</Td>
-          <Td>{pct(l.total - l.custo, l.total)}</Td>
-          <Td className="font-semibold">{money(l.comissao)}</Td>
+          <Td className="text-right">{num(l.pedidos)}</Td>
+          <Td className="text-right">{money(l.total)}</Td>
+          <Td className="text-right">{money(l.custo)}</Td>
+          <Td className="text-right">{money(l.total - l.custo)}</Td>
+          <Td className="text-right">{pct(l.total - l.custo, l.total)}</Td>
+          <Td className="text-right font-semibold">{money(l.comissao)}</Td>
         </tr>
       ))}
     </Table>
@@ -80,27 +80,27 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
         <FiltroInput label="Até" name="ate" type="date" defaultValue={ate} />
         <FiltroSelect label="Representante" name="representante" options={representantes} defaultValue={sp.representante} />
       </Filtros>
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Stat label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
         <Stat label="Custo" value={money(tot.custo)} />
         <Stat label="Margem de contribuição" value={money(margem)} hint={pct(margem, tot.total)} tone={margem < 0 ? "danger" : "default"} />
         <Stat label="Comissões" value={money(tot.comissao)} />
-      </div>
+      </KpiGrid>
       <div className="space-y-6">
         <Card title="Por representante">{tabela(porRep, "Representante")}</Card>
         <Card title="Vendas por hospital">{tabela(porHospital, "Hospital")}</Card>
         <Card title="Cirurgias por médico (no período)">
-          <Table head={["Médico", "Realizadas/faturadas", "Agendadas/confirmadas", "Total"]} empty={porMedico.size === 0}>
+          <Table head={["Médico", "Realizadas/faturadas", "Agendadas/confirmadas", "Total"]} empty={porMedico.size === 0} emptyText="Nenhuma cirurgia no período selecionada.">
             {[...porMedico.values()].sort((a, b) => b.realizadas + b.agendadas - (a.realizadas + a.agendadas)).map((m) => (
               <tr key={m.nome}>
                 <Td className="font-medium">{m.nome}</Td>
-                <Td>{num(m.realizadas)}</Td>
-                <Td>{num(m.agendadas)}</Td>
-                <Td className="font-semibold">{num(m.realizadas + m.agendadas)}</Td>
+                <Td className="text-right">{num(m.realizadas)}</Td>
+                <Td className="text-right">{num(m.agendadas)}</Td>
+                <Td className="text-right font-semibold">{num(m.realizadas + m.agendadas)}</Td>
               </tr>
             ))}
           </Table>
-          <p className="mt-2 text-xs text-slate-400">
+          <p className="mt-2 text-xs text-slate-600">
             Ver cirurgias em <Link href="/comercial/cirurgias" className="text-teal-700 hover:underline">Cirurgias</Link>.
           </p>
         </Card>

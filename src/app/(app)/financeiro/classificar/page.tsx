@@ -1,6 +1,5 @@
-import Link from "next/link";
-import { Form, Select } from "@/components/form";
-import { Card, PageHeader } from "@/components/ui";
+import { Form, Grid, Select } from "@/components/form";
+import { LinkButton, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -26,47 +25,31 @@ export default async function ClassificarPage() {
 
   return (
     <>
-      <PageHeader title="Classificar pendentes" subtitle="Títulos e lançamentos avulsos sem conta do plano. Marque os itens, escolha a conta e aplique de uma vez. A data de competência não muda." />
+      <PageHeader title="Classificar pendentes" subtitle="Títulos e lançamentos avulsos sem conta do plano. Marque os itens, escolha a conta e aplique de uma vez; a competência não muda." />
       {linhas.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600">
-            Nada pendente: tudo está classificado. Veja o <Link href="/financeiro/dre" className="text-teal-700 hover:underline">DRE</Link>.
-          </p>
-        </Card>
+        <Table head={["Competência", "Tipo", "Descrição", "Parceiro / conta", "Valor"]} empty emptyText="Nada pendente: tudo está classificado." emptyAction={<LinkButton href="/financeiro/dre" variant="secondary">Ver o DRE</LinkButton>}>
+          {null}
+        </Table>
       ) : (
         <Form action={classificarLote} submitLabel="Classificar selecionados" resetOnSuccess>
-          <div className="grid gap-4 sm:grid-cols-2">
+          <Grid cols={2}>
             <Select label="Conta do plano *" name="planoContaId" options={planos} placeholder="Selecione..." required />
             <Select label="Centro de custo (opcional)" name="centroCustoId" options={centros} placeholder="(manter como está)" />
-          </div>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th scope="col" className="w-10 px-3 py-2"><span className="sr-only">Selecionar</span></th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Competência</th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Tipo</th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Descrição</th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Parceiro / conta</th>
-                  <th scope="col" className="px-3 py-2 text-right font-semibold">Valor</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 [&>tr:hover]:bg-slate-50/70">
-                {linhas.map((l) => (
-                  <tr key={l.chave}>
-                    <td className="px-3 py-2">
-                      <input type="checkbox" name="item" value={l.chave} className="h-4 w-4" aria-label={`Selecionar ${l.descricao}`} />
-                    </td>
-                    <td className="px-3 py-2">{date(l.data)}</td>
-                    <td className="px-3 py-2">{l.tipo}</td>
-                    <td className="max-w-xs truncate px-3 py-2">{l.descricao}</td>
-                    <td className="max-w-[14rem] truncate px-3 py-2">{l.parceiro}</td>
-                    <td className={`px-3 py-2 text-right tabular-nums ${l.valor < 0 ? "text-rose-700" : ""}`}>{money(l.valor)}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          </Grid>
+          <Table head={[<span key="s" className="sr-only">Selecionar</span>, "Competência", "Tipo", "Descrição", "Parceiro / conta", "Valor"]}>
+            {linhas.map((l) => (
+              <tr key={l.chave}>
+                <Td>
+                  <input type="checkbox" name="item" value={l.chave} className="h-4 w-4" aria-label={`Selecionar ${l.descricao}`} />
+                </Td>
+                <Td>{date(l.data)}</Td>
+                <Td>{l.tipo}</Td>
+                <Td className="max-w-xs truncate">{l.descricao}</Td>
+                <Td className="max-w-[14rem] truncate">{l.parceiro}</Td>
+                <Td className={`text-right tnum ${l.valor < 0 ? "text-rose-700" : ""}`}>{money(l.valor)}</Td>
+              </tr>
+            ))}
+          </Table>
           <p className="text-xs text-slate-500">Mostrando até 300 de cada tipo, do mais antigo. Item em mês fechado faz o lote inteiro ser recusado: reabra o mês em Fechamento.</p>
         </Form>
       )}

@@ -47,10 +47,10 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
           {edita && (
             <div className="mb-4">
               <ItemAdder action={salvarPreco.bind(null, id)} produtos={produtoOptions(produtos)} comPreco comQuantidade={false} label="Salvar preço" />
-              <p className="mt-1 text-xs text-slate-400">Se o produto já estiver na tabela, o preço é atualizado.</p>
+              <p className="mt-1 text-xs text-slate-600">Se o produto já estiver na tabela, o preço é atualizado.</p>
             </div>
           )}
-          <Table head={["Código", "Produto", "Custo médio", "Preço base", "Preço na tabela", "Margem", ""]} empty={t.itens.length === 0}>
+          <Table head={["Código", "Produto", "Custo médio", "Preço base", "Preço na tabela", "Margem", "Ações"]} empty={t.itens.length === 0} emptyText="Nenhum preço nesta tabela. Os produtos usam o preço base até serem incluídos." emptyAction={edita ? <ActionButton action={incluirTodos.bind(null, id)}>Incluir todos pelo preço base</ActionButton> : undefined}>
             {t.itens.map((i) => {
               const preco = toNumber(i.preco);
               const custo = toNumber(i.produto.custoMedio);
@@ -58,14 +58,14 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
               return (
                 <tr key={i.id}>
                   <Td className="font-mono text-xs">
-                    <Link href={`/cadastros/produtos/${i.produtoId}`} className="hover:underline">{i.produto.codigo}</Link>
+                    <Link href={`/cadastros/produtos/${i.produtoId}`} className="text-teal-700 hover:underline">{i.produto.codigo}</Link>
                   </Td>
                   <Td className="max-w-sm truncate">{i.produto.descricao}</Td>
-                  <Td>{money(custo)}</Td>
-                  <Td>{money(i.produto.precoBase)}</Td>
-                  <Td className="font-semibold">{money(preco)}</Td>
-                  <Td className={margem < 20 ? "text-rose-600" : "text-emerald-700"}>{margem.toFixed(1)}%</Td>
-                  <Td>{edita && <ActionButton action={removerPreco.bind(null, i.id)} variant="ghost">Remover</ActionButton>}</Td>
+                  <Td className="text-right">{money(custo)}</Td>
+                  <Td className="text-right">{money(i.produto.precoBase)}</Td>
+                  <Td className="text-right font-semibold">{money(preco)}</Td>
+                  <Td className={margem < 20 ? "text-right text-rose-600" : "text-right text-emerald-700"}>{margem.toFixed(1)}%</Td>
+                  <Td>{edita && <ActionButton action={removerPreco.bind(null, i.id)} variant="small">Remover</ActionButton>}</Td>
                 </tr>
               );
             })}

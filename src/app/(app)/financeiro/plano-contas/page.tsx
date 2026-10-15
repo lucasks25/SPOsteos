@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { ActionButton, Field, Form, Grid, Select } from "@/components/form";
 import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
@@ -20,15 +21,15 @@ export default async function PlanoContasPage() {
   return (
     <>
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
-      {uso > 0 && <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">{uso} título(s) ainda sem conta do plano. Use <a href="/financeiro/classificar" className="underline">Classificar pendentes</a>.</p>}
-      <div className="space-y-6">
-        <Table head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]}>
+      {uso > 0 && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</p>}
+      <div className="space-y-4">
+        <Table head={["Código", "Conta", "Tipo", "Natureza", "Situação", "Ações"]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
           {ordenadas.map((c) => (
             <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
-              <Td className="tabular-nums">{c.codigo}</Td>
+              <Td>{c.codigo}</Td>
               <Td className={c.analitica ? "" : "font-semibold"}>
                 <span style={{ paddingLeft: `${nivel(c.codigo) * 1.25}rem` }}>{c.nome}</span>
-                {c.chaveSistema && <span className="ml-2 text-xs text-slate-400">(sistema)</span>}
+                {c.chaveSistema && <span className="ml-2 text-xs text-slate-500">(sistema)</span>}
               </Td>
               <Td>{rotuloTipo(c.tipo)}</Td>
               <Td>{c.analitica ? "Conta" : "Grupo"}</Td>
@@ -52,14 +53,14 @@ export default async function PlanoContasPage() {
               <Select label="Dentro do grupo" name="paiId" options={grupos.map((g) => ({ value: g.id, label: `${g.codigo} — ${g.nome}` }))} placeholder="(raiz)" />
               <Select label="Tipo *" name="tipo" options={TIPOS_PLANO} placeholder="Selecione..." required hint="Dentro de um grupo, o mesmo tipo dele" />
               <label className="flex items-center gap-2 pt-6 text-sm text-slate-700">
-                <input type="checkbox" name="analitica" defaultChecked /> Conta analítica (recebe lançamentos)
+                <input type="checkbox" name="analitica" defaultChecked className="h-4 w-4" /> Conta analítica (recebe lançamentos)
               </label>
             </Grid>
           </Form>
         </Card>
 
         <Card title="Centros de custo">
-          <Table head={["Código", "Nome", "Situação", ""]} empty={centros.length === 0}>
+          <Table head={["Código", "Nome", "Situação", "Ações"]} empty={centros.length === 0} emptyText="Nenhum centro de custo cadastrado. Crie o primeiro abaixo.">
             {centros.map((c) => (
               <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
                 <Td>{c.codigo}</Td>

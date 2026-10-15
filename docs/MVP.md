@@ -52,3 +52,8 @@ Demonstração local: `docker compose up -d`, `npx prisma migrate deploy`, `npm 
 
 ## Dados de demonstração no banco de desenvolvimento
 Existem `CIR-2` (paciente de teste), `PV-2` e a conta a receber do PV-2 de um teste anterior. Para começar limpo, use um banco novo (passos acima).
+
+## Interface (Vionex Design System V2 · Corporativo)
+O visual segue `Vionex_Design_Systems.html` (versão 2): azul institucional `#0B5CAB`, cinza neutro, fonte do sistema, texto de 13 px, cantos de 4 px, controles de 32 px, linhas de tabela de 36 px. Navegação em barra superior de três faixas (logo, busca de telas com Ctrl+K e usuário; módulos; telas do módulo). Modo claro, escuro ou do sistema (menu do usuário; cookie `opme_tema`).
+
+Como funciona: `src/app/globals.css` remapeia as escalas do Tailwind (`teal` = marca, `slate` = neutros, `emerald/rose/amber/sky` = ok/crítico/atenção/info, `white` = superfície) para os tokens do Vionex, claro e escuro. Os componentes e as páginas usam só essas escalas (nunca hex). Blocos padrão em `src/components/ui.tsx`: `PageHeader`, `Card`, `Table/Td`, `Stat/KpiGrid`, `FilterBar`, `SectionTitle`, `Badge/StatusBadge`, `EmptyState`, `Dl`, `btn.*`. Regra: número em célula `text-right` (um script alinha o cabeçalho da coluna).

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton, Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -39,16 +39,16 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
           </>
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Stat label="Saldo" value={money(conta.saldo)} tone={conta.saldo < 0 ? "danger" : "default"} />
         <Stat label="Saldo inicial" value={money(conta.saldoInicial)} />
         <Stat label="Entradas" value={money(conta.entradas)} />
         <Stat label="Saídas" value={money(conta.saidas)} />
-      </div>
+      </KpiGrid>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Movimentos (últimos 100)">
-          <Table head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", ""]} empty={movimentos.length === 0}>
+          <Table head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", "Ações"]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
             {movimentos.map((m) => {
               const tituloHref = m.contaReceberId ? `/financeiro/receber/${m.contaReceberId}` : m.contaPagarId ? `/financeiro/pagar/${m.contaPagarId}` : null;
               return (
@@ -66,8 +66,8 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                       (m.categoria ?? "avulso")
                     )}
                   </Td>
-                  <Td className="text-right tabular-nums text-emerald-700">{m.sentido === "ENTRADA" ? money(toNumber(m.valor)) : ""}</Td>
-                  <Td className="text-right tabular-nums text-rose-700">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
+                  <Td className="text-right tnum text-emerald-700">{m.sentido === "ENTRADA" ? money(toNumber(m.valor)) : ""}</Td>
+                  <Td className="text-right tnum text-rose-700">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
                   <Td>{m.extrato ? <Badge color="green">conciliado</Badge> : <Badge>pendente</Badge>}</Td>
                   <Td>
                     {m.transferenciaId && (

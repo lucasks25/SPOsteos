@@ -20,7 +20,7 @@ export default async function AjustesPage() {
   ]);
   return (
     <>
-      <PageHeader title="Ajustes e perdas" subtitle="Correções de inventário e baixas por perda, avaria ou extravio" />
+      <PageHeader title="Ajustes e perdas" subtitle="Correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex." />
       <div className="space-y-6">
         {podeEditar(user.perfil) && (
           <Card title="Novo lançamento">
@@ -51,7 +51,7 @@ export default async function AjustesPage() {
           </Card>
         )}
         <Card title="Últimos 50 lançamentos">
-          <Table head={["Data/hora", "Tipo", "Produto", "Lote", "Local", "Qtd.", "Valor", "Motivo", "Usuário"]} empty={ultimos.length === 0}>
+          <Table head={["Data/hora", "Tipo", "Produto", "Lote", "Local", "Qtd.", "Valor", "Motivo", "Usuário"]} empty={ultimos.length === 0} emptyText="Nenhum ajuste ou perda lançado até agora.">
             {ultimos.map((m) => {
               const entrada = !!m.destinoId;
               return (
@@ -61,8 +61,8 @@ export default async function AjustesPage() {
                   <Td className="max-w-xs truncate">{m.produto.codigo} — {m.produto.descricao}</Td>
                   <Td className="font-mono text-xs">{m.lote.numero}</Td>
                   <Td>{(entrada ? m.destino : m.origem)?.nome ?? "—"}</Td>
-                  <Td className="font-semibold">{entrada ? "+" : "−"}{num(m.quantidade)}</Td>
-                  <Td>{money(Number(m.custoUnit) * m.quantidade)}</Td>
+                  <Td className="text-right font-semibold">{entrada ? "+" : "−"}{num(m.quantidade)}</Td>
+                  <Td className="text-right">{money(Number(m.custoUnit) * m.quantidade)}</Td>
                   <Td className="max-w-xs truncate text-xs">{m.observacao ?? "—"}</Td>
                   <Td className="text-xs">{m.usuario ?? "—"}</Td>
                 </tr>

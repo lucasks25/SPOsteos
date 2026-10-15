@@ -10,13 +10,13 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
   const entrada = linha.valor > 0;
   const opcoesTitulo = titulos.map((t) => ({ value: t.id, label: `${t.label} — saldo ${money(t.saldo)}` }));
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-4">
+    <div className="rounded border border-slate-200 bg-white p-3 shadow-sm">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-medium text-slate-800">{linha.descricao}</div>
           <div className="text-xs text-slate-500">{date(linha.data)}</div>
         </div>
-        <div className={`text-lg font-semibold tabular-nums ${entrada ? "text-emerald-700" : "text-rose-700"}`}>{money(linha.valor)}</div>
+        <div className={`tnum text-lg font-bold ${entrada ? "text-emerald-700" : "text-rose-700"}`}>{money(linha.valor)}</div>
       </div>
 
       {(sugLanc.length > 0 || exatos.length > 0) && (
@@ -44,9 +44,9 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
 
       <details className="mt-3 border-t border-slate-100 pt-3">
         <summary className="cursor-pointer text-sm font-medium text-teal-700">Outras opções</summary>
-        <div className="mt-3 grid gap-6 lg:grid-cols-2">
+        <div className="mt-3 grid gap-4 lg:grid-cols-2">
           <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Baixar um título {entrada ? "a receber" : "a pagar"}</h3>
+            <h3 className="mb-2 text-xs font-bold text-slate-600">Baixar um título {entrada ? "a receber" : "a pagar"}</h3>
             <Form action={baixarEConciliar.bind(null, linha.id)} submitLabel="Baixar e conciliar">
               <Select label="Título" name="tituloId" options={opcoesTitulo} placeholder={opcoesTitulo.length ? "Selecione..." : "Nenhum título em aberto"} required />
               <div className="grid grid-cols-3 gap-3">
@@ -55,12 +55,12 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
                 <Field label="Desconto" name="desconto" type="number" step="0.01" min="0" />
               </div>
             </Form>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-slate-500">
               A baixa usa o valor e a data do extrato. Extrato menor que o saldo: parcial, ou informe o desconto para quitar. Extrato maior: informe os juros ou a multa que explicam a diferença.
             </p>
           </div>
           <div>
-            <h3 className="mb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">Lançamento avulso (tarifa, rendimento...)</h3>
+            <h3 className="mb-2 text-xs font-bold text-slate-600">Lançamento avulso (tarifa, rendimento...)</h3>
             <Form action={avulsoEConciliar.bind(null, linha.id)} submitLabel="Lançar e conciliar">
               <Field label="Descrição" name="descricao" defaultValue={linha.descricao} required maxLength={200} />
               <Select label="Conta do plano *" name="planoContaId" options={planos} placeholder="Selecione..." required />

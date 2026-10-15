@@ -2,6 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, PageHeader, Table, Td, btn, type BadgeColor } from "@/components/ui";
+import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
 import { dateTime, money, num } from "@/lib/format";
 import { PERFIS_VER } from "../_lib/perfis";
 
@@ -58,37 +59,20 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
     q.set("page", String(p));
     return `/estoque/kardex?${q}`;
   };
-  const sel = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
 
   return (
     <>
       <PageHeader title="Kardex" subtitle="Histórico de movimentações por lote. Filtre por produto e local para ver o saldo corrente." />
-      <form className="mb-4 flex flex-wrap gap-2">
-        <select name="produto" defaultValue={sp.produto ?? ""} className={`${sel} max-w-xs`}>
-          <option value="">Todos os produtos</option>
-          {produtos.map((p) => (
-            <option key={p.id} value={p.id}>{p.codigo} — {p.descricao}</option>
-          ))}
-        </select>
-        <select name="local" defaultValue={sp.local ?? ""} className={sel}>
-          <option value="">Todos os locais</option>
-          {locais.map((l) => (
-            <option key={l.id} value={l.id}>{l.nome}</option>
-          ))}
-        </select>
-        <select name="tipo" defaultValue={sp.tipo ?? ""} className={sel}>
-          <option value="">Todos os tipos</option>
-          {TIPOS.map((t) => (
-            <option key={t} value={t}>{t.toLowerCase()}</option>
-          ))}
-        </select>
-        <input name="lote" defaultValue={sp.lote} placeholder="Lote" className={`${sel} w-28`} />
-        <input name="de" type="date" defaultValue={sp.de} className={sel} />
-        <input name="ate" type="date" defaultValue={sp.ate} className={sel} />
-        <button className={btn.secondary}>Filtrar</button>
-      </form>
+      <Filtros limparHref="/estoque/kardex">
+        <FiltroSelect label="Produto" name="produto" defaultValue={sp.produto} todos="Todos os produtos" options={produtos.map((p) => ({ value: p.id, label: `${p.codigo} — ${p.descricao}` }))} />
+        <FiltroSelect label="Local" name="local" defaultValue={sp.local} todos="Todos os locais" options={locais.map((l) => ({ value: l.id, label: l.nome }))} />
+        <FiltroSelect label="Tipo" name="tipo" defaultValue={sp.tipo} todos="Todos os tipos" options={TIPOS.map((t) => ({ value: t, label: t.toLowerCase() }))} />
+        <FiltroInput label="Lote" name="lote" defaultValue={sp.lote} placeholder="Nº do lote" className="w-28" />
+        <FiltroInput label="De" name="de" type="date" defaultValue={sp.de} />
+        <FiltroInput label="Até" name="ate" type="date" defaultValue={sp.ate} />
+      </Filtros>
 
-      <Table head={["Data/hora", "Tipo", "Produto", "Lote", "Origem", "Destino", "Qtd.", "Custo unit.", "Documento", "Usuário", ...(comSaldo ? ["Saldo"] : [])]} empty={movs.length === 0}>
+      <Table head={["Data/hora", "Tipo", "Produto", "Lote", "Origem", "Destino", "Qtd.", "Custo unit.", "Documento", "Usuário", ...(comSaldo ? ["Saldo"] : [])]} empty={movs.length === 0} emptyText="Nenhuma movimentação encontrada para os filtros informados.">
         {movs.map((m, idx) => {
           const sinal = deltas[idx] > 0 ? "+" : deltas[idx] < 0 ? "−" : "";
           return (
@@ -97,21 +81,21 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
               <Td><Badge color={COR[m.tipo]}>{m.tipo.toLowerCase()}</Badge></Td>
               <Td className="max-w-xs truncate">{m.produto.codigo} — {m.produto.descricao}</Td>
               <Td className="font-mono text-xs">
-                <Link href={`/qualidade/lotes/${m.loteId}`} className="hover:underline">{m.lote.numero}</Link>
+                <Link href={`/qualidade/lotes/${m.loteId}`} className="text-teal-700 hover:underline">{m.lote.numero}</Link>
               </Td>
               <Td>{m.origem?.nome ?? "—"}</Td>
               <Td>{m.destino?.nome ?? (m.tipo === "CONSUMO" ? "paciente" : "—")}</Td>
-              <Td className="font-semibold">{sinal}{num(m.quantidade)}</Td>
-              <Td>{money(m.custoUnit)}</Td>
+              <Td className="text-right font-semibold">{sinal}{num(m.quantidade)}</Td>
+              <Td className="text-right">{money(m.custoUnit)}</Td>
               <Td className="font-mono text-xs">{m.documento ?? "—"}</Td>
               <Td className="text-xs">{m.usuario ?? "—"}</Td>
-              {comSaldo && <Td className="font-semibold">{num(saldos[idx])}</Td>}
+              {comSaldo && <Td className="text-right font-semibold">{num(saldos[idx])}</Td>}
             </tr>
           );
         })}
       </Table>
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-500">
-        <span>{num(total)} movimento(s) · página {page} de {paginas}</span>
+      <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
+        <span className="tnum">{num(total)} movimento(s) · página {page} de {paginas}</span>
         <div className="flex gap-2">
           {page > 1 && <Link href={link(page - 1)} className={btn.secondary}>Anterior</Link>}
           {page < paginas && <Link href={link(page + 1)} className={btn.secondary}>Próxima</Link>}

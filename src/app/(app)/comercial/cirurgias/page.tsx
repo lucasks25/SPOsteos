@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
@@ -45,11 +44,11 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Cirurgias"
-        subtitle="Agendamento, consumo e faturamento de procedimentos"
+        subtitle="Acompanhe o agendamento, o consumo de material e o faturamento de cada procedimento."
         actions={
           <>
-            <LinkButton href="/comercial/agenda" variant="secondary">Agenda semanal</LinkButton>
-            <LinkButton href="/comercial/cirurgias/nova">Nova cirurgia</LinkButton>
+            <LinkButton href="/comercial/agenda" variant="secondary" icon="calendario">Agenda semanal</LinkButton>
+            <LinkButton href="/comercial/cirurgias/nova" icon="mais">Nova cirurgia</LinkButton>
           </>
         }
       />
@@ -61,9 +60,9 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
         <FiltroInput label="De" name="de" type="date" defaultValue={sp.de} />
         <FiltroInput label="Até" name="ate" type="date" defaultValue={sp.ate} />
       </Filtros>
-      <Table head={["Nº", "Data/hora", "Paciente", "Hospital", "Médico", "Procedimento", "Convênio", "Status", ""]} empty={cirurgias.length === 0}>
+      <Table head={["Nº", "Data/hora", "Paciente", "Hospital", "Médico", "Procedimento", "Convênio", "Status", "Ações"]} empty={cirurgias.length === 0} emptyText="Nenhuma cirurgia encontrada para os filtros informados." emptyAction={<LinkButton href="/comercial/cirurgias/nova" variant="secondary">Agendar cirurgia</LinkButton>}>
         {cirurgias.map((c) => (
-          <tr key={c.id} className="hover:bg-slate-50">
+          <tr key={c.id}>
             <Td className="font-mono text-xs">CIR-{c.numero}</Td>
             <Td>{dateTime(c.dataHora)}</Td>
             <Td>
@@ -75,15 +74,15 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
             <Td>{c.convenio?.nome ?? (c.sus ? "SUS" : "—")}</Td>
             <Td>
               <StatusBadge status={c.status} />
-              {c._count.remessas > 0 && <span className="ml-1 text-xs text-slate-400">{c._count.remessas} rem.</span>}
+              {c._count.remessas > 0 && <span className="ml-1 text-xs text-slate-600">{c._count.remessas} rem.</span>}
             </Td>
             <Td>
-              <Link href={`/comercial/cirurgias/${c.id}`} className="text-teal-700 hover:underline">Abrir</Link>
+              <LinkButton href={`/comercial/cirurgias/${c.id}`} variant="small">Abrir</LinkButton>
             </Td>
           </tr>
         ))}
       </Table>
-      {cirurgias.length === 300 && <p className="mt-2 text-xs text-slate-400">Exibindo as 300 mais recentes. Refine os filtros.</p>}
+      {cirurgias.length === 300 && <p className="mt-2 text-xs text-slate-600">Exibindo as 300 mais recentes. Refine os filtros.</p>}
     </>
   );
 }

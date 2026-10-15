@@ -8,7 +8,7 @@ export default async function NovaCirurgiaPage() {
   const opcoes = await opcoesCirurgia();
   return (
     <>
-      <PageHeader title="Nova cirurgia" subtitle="Agendamento de procedimento com material OPME" />
+      <PageHeader title="Nova cirurgia" subtitle="Preencha os dados do procedimento. Depois de salvar, gere a remessa/vale de consignação." />
       <Card>
         <CirurgiaForm opcoes={opcoes} />
       </Card>

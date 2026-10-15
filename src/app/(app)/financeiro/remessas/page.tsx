@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
+import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -35,7 +35,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader title="Pagamentos SISPAG (Itaú)" subtitle="Gere o arquivo de remessa, envie no Itaú Empresas e importe o retorno para baixar as contas pagas." />
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Nova remessa">
           <div className="mb-3 flex gap-2 text-sm">
             <Link href="/financeiro/remessas" className={modo === "TED_BOLETO" ? "font-semibold text-teal-800 underline" : "text-teal-700 hover:underline"}>
@@ -47,13 +47,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
             </Link>
           </div>
           {contas.length === 0 ? (
-            <p className="text-sm text-slate-600">
-              Cadastre a conta do Itaú em{" "}
-              <Link href="/financeiro/contas/nova" className="text-teal-700 hover:underline">
-                Contas bancárias
-              </Link>
-              .
-            </p>
+            <EmptyState text="Nenhuma conta bancária cadastrada. Cadastre a conta do Itaú para gerar remessas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta bancária</LinkButton>} />
           ) : (
             <Form action={gerarRemessaPagamentos} submitLabel="Gerar arquivo de remessa">
               <input type="hidden" name="modo" value={modo} />
@@ -61,50 +55,33 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
                 <Select label="Conta a debitar *" name="contaId" options={contas.map((c) => ({ value: c.id, label: c.nome }))} defaultValue={contas.length === 1 ? contas[0].id : ""} required />
                 <Field label="Data do pagamento *" name="dataPagto" type="date" defaultValue={ymd(hoje)} min={ymd(hoje)} required />
               </Grid>
-              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                <table className="min-w-full text-[13px]">
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th scope="col" className="w-10 px-3 py-2"><span className="sr-only">Selecionar</span></th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Vencimento</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Descrição</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Fornecedor</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">A pagar</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Forma</th>
+              <Table
+                head={[<span key="s" className="sr-only">Selecionar</span>, "Vencimento", "Descrição", "Fornecedor", "A pagar", "Forma"]}
+                empty={titulos.length === 0}
+                emptyText="Nenhuma conta a pagar em aberto fora de remessa."
+              >
+                {titulos.map((t) => {
+                  const f = t.aprovadoEm ? formaPrevista(t, t.fornecedor, modo) : { erro: "aguardando aprovação do financeiro" };
+                  const saldo = toNumber(t.valor) - toNumber(t.valorBaixado);
+                  const ok = "forma" in f;
+                  return (
+                    <tr key={t.id} className={ok ? "" : "bg-slate-50 text-slate-500"}>
+                      <Td>
+                        <input type="checkbox" name="tituloId" value={t.id} disabled={!ok} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} />
+                      </Td>
+                      <Td className={t.vencimento < hoje && ok ? "text-rose-700" : ""}>{date(t.vencimento)}</Td>
+                      <Td className="max-w-xs truncate">
+                        <Link href={`/financeiro/pagar/${t.id}`} className="hover:underline">
+                          {t.descricao}
+                        </Link>
+                      </Td>
+                      <Td className="max-w-[14rem] truncate">{t.fornecedor ? t.fornecedor.nomeFantasia || t.fornecedor.razaoSocial : "—"}</Td>
+                      <Td className="text-right tnum">{money(saldo)}</Td>
+                      <Td>{ok ? FORMAS_SISPAG[f.forma] : <span className="text-amber-700">{f.erro}</span>}</Td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 [&>tr:hover]:bg-slate-50/70">
-                    {titulos.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
-                          Nenhuma conta a pagar em aberto fora de remessa.
-                        </td>
-                      </tr>
-                    )}
-                    {titulos.map((t) => {
-                      const f = t.aprovadoEm ? formaPrevista(t, t.fornecedor, modo) : { erro: "aguardando aprovação do financeiro" };
-                      const saldo = toNumber(t.valor) - toNumber(t.valorBaixado);
-                      const ok = "forma" in f;
-                      return (
-                        <tr key={t.id} className={ok ? "" : "bg-slate-50 text-slate-400"}>
-                          <td className="px-3 py-2">
-                            <input type="checkbox" name="tituloId" value={t.id} disabled={!ok} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} />
-                          </td>
-                          <td className={`px-3 py-2 ${t.vencimento < hoje && ok ? "text-rose-700" : ""}`}>{date(t.vencimento)}</td>
-                          <td className="max-w-xs truncate px-3 py-2">
-                            <Link href={`/financeiro/pagar/${t.id}`} className="hover:underline">
-                              {t.descricao}
-                            </Link>
-                          </td>
-                          <td className="max-w-[14rem] truncate px-3 py-2">{t.fornecedor ? t.fornecedor.nomeFantasia || t.fornecedor.razaoSocial : "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{money(saldo)}</td>
-                          <td className="px-3 py-2">{ok ? FORMAS_SISPAG[f.forma] : <span className="text-amber-700">{f.erro}</span>}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                  );
+                })}
+              </Table>
               <p className="text-xs text-slate-500">
                 Contas sem dados bancários ficam bloqueadas: complete o fornecedor (banco, agência, conta ou chave Pix) ou cadastre o boleto na conta a pagar.
               </p>
@@ -119,13 +96,13 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
         </Card>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Remessas geradas</h2>
-          <Table head={["Remessa", "Conta", "Modo", "Pagamento", "Itens", "Total", "Situação"]} empty={remessas.length === 0}>
+          <SectionTitle>Remessas geradas</SectionTitle>
+          <Table head={["Remessa", "Conta", "Modo", "Pagamento", "Itens", "Total", "Situação"]} empty={remessas.length === 0} emptyText="Nenhuma remessa de pagamento gerada ainda.">
             {remessas.map((r) => {
               const total = r.itens.reduce((s, i) => s + toNumber(i.valor), 0);
               const conta = (s: string) => r.itens.filter((i) => i.status === s).length;
               return (
-                <tr key={r.id} className="hover:bg-slate-50">
+                <tr key={r.id}>
                   <Td>
                     <Link href={`/financeiro/remessas/${r.id}`} className="text-teal-700 hover:underline">
                       #{r.id}
@@ -134,8 +111,8 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
                   <Td>{r.conta.nome}</Td>
                   <Td>{r.modo === "PIX" ? "Pix" : "TED / boleto"}</Td>
                   <Td>{date(r.dataPagto)}</Td>
-                  <Td>{r.itens.length}</Td>
-                  <Td className="text-right tabular-nums">{money(total)}</Td>
+                  <Td className="text-right tnum">{r.itens.length}</Td>
+                  <Td className="text-right tnum">{money(total)}</Td>
                   <Td className="space-x-1">
                     {r.canceladaEm && <Badge color="gray">cancelada</Badge>}
                     {conta("PAGO") > 0 && <Badge color="green">{conta("PAGO")} pago(s)</Badge>}

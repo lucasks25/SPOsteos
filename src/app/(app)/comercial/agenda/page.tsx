@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { Icon } from "@/components/icons";
 import { LinkButton, PageHeader, btn, cx } from "@/components/ui";
 import { Filtros, FiltroSelect } from "../_components/filtros";
 import { diaSP, inicioDiaSP, segundaDaSemana, somaDias } from "../_lib/datas";
@@ -47,12 +48,12 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader
         title="Agenda cirúrgica"
-        subtitle={`Semana de ${fmt(dias[0])} a ${fmt(dias[6])} · ${cirurgias.length} cirurgia(s)`}
+        subtitle={`Semana de ${fmt(dias[0])} a ${fmt(dias[6])} · ${cirurgias.length} cirurgia(s) — navegue pelas semanas ou filtre por hospital e representante`}
         actions={
           <>
-            <Link href={qs(somaDias(seg, -7))} className={btn.secondary}>← Anterior</Link>
+            <Link href={qs(somaDias(seg, -7))} className={btn.secondary}><Icon name="direita" size={16} className="rotate-180" aria-hidden="true" />Anterior</Link>
             <Link href={qs(segundaDaSemana())} className={btn.secondary}>Hoje</Link>
-            <Link href={qs(somaDias(seg, 7))} className={btn.secondary}>Próxima →</Link>
+            <Link href={qs(somaDias(seg, 7))} className={btn.secondary}>Próxima<Icon name="direita" size={16} aria-hidden="true" /></Link>
             <LinkButton href="/comercial/cirurgias/nova">Agendar cirurgia</LinkButton>
           </>
         }
@@ -66,20 +67,20 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         {dias.map((dia, i) => {
           const doDia = cirurgias.filter((c) => diaSP(c.dataHora) === dia);
           return (
-            <div key={dia} className={cx("min-h-40 rounded-lg border bg-white p-2", dia === hoje ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200")}>
+            <div key={dia} className={cx("min-h-40 rounded border bg-white p-2", dia === hoje ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200")}>
               <div className="mb-2 flex items-baseline justify-between px-1">
-                <span className="text-xs font-semibold uppercase text-slate-500">{DIAS[i]}</span>
+                <span className="text-xs font-semibold uppercase text-slate-600">{DIAS[i]}</span>
                 <span className={cx("text-sm", dia === hoje ? "font-bold text-teal-700" : "text-slate-700")}>{fmt(dia)}</span>
               </div>
               <div className="space-y-2">
-                {doDia.length === 0 && <div className="px-1 text-xs text-slate-300">—</div>}
+                {doDia.length === 0 && <div className="px-1 text-xs text-slate-500">Sem cirurgias</div>}
                 {doDia.map((c) => (
-                  <Link key={c.id} href={`/comercial/cirurgias/${c.id}`} className={cx("block rounded-lg border p-2 text-xs hover:shadow", COR[c.status])}>
+                  <Link key={c.id} href={`/comercial/cirurgias/${c.id}`} className={cx("block rounded border p-2 text-xs hover:shadow-sm", COR[c.status])}>
                     <div className="font-semibold text-slate-800">{hora(c.dataHora)} · CIR-{c.numero}</div>
                     <div className="truncate text-slate-700">{nomeHospital(c.hospital)}</div>
-                    <div className="truncate text-slate-500">{c.medico.nome}</div>
-                    {c.procedimento && <div className="truncate text-slate-500">{c.procedimento.descricao}</div>}
-                    <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
+                    <div className="truncate text-slate-600">{c.medico.nome}</div>
+                    {c.procedimento && <div className="truncate text-slate-600">{c.procedimento.descricao}</div>}
+                    <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[11px] text-slate-600">
                       <span className="font-medium capitalize">{c.status.toLowerCase()}</span>
                       <span>{c._count.remessas ? `${c._count.remessas} vale${c._count.remessas > 1 ? "s" : ""}` : "sem vale"}</span>
                     </div>

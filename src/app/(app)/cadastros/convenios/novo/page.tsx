@@ -6,7 +6,7 @@ export default async function NovoConvenioPage() {
   await requireUser();
   return (
     <>
-      <PageHeader title="Novo convênio" />
+      <PageHeader title="Novo convênio" subtitle="Cadastre a operadora de plano de saúde com registro ANS e CNPJ." />
       <Card>
         <ConvenioForm />
       </Card>

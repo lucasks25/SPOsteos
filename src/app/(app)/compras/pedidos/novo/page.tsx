@@ -20,7 +20,7 @@ export default async function NovoPedidoCompraPage({ searchParams }: { searchPar
   const itensIniciais = ids.map((produtoId, i) => ({ produtoId, quantidade: Math.max(1, Math.floor(Number(qtds[i])) || 1) }));
   return (
     <>
-      <PageHeader title="Novo pedido de compra" />
+      <PageHeader title="Novo pedido de compra" subtitle="Escolha o fornecedor e os produtos; o recebimento é registrado depois, no pedido." />
       <Card>
         <PedidoCompraForm
           fornecedores={fornecedores.map((f) => ({ value: f.id, label: f.nomeFantasia || f.razaoSocial }))}

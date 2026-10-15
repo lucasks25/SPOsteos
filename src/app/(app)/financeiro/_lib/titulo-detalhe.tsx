@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/form";
-import { Badge, Card, Dl, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
@@ -43,13 +43,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         actions={
           <>
             <SituacaoTitulo t={titulo} hoje={hoje} />
-            {titulo.status !== "CANCELADO" && !editavel && (
-          <Card title="Classificação (DRE)">
-            <ClassificarForm tipo={tipo} titulo={titulo} planos={planos} centros={centros} />
-          </Card>
-        )}
-
-        {editavel && (
+            {editavel && (
               <ActionButton action={cancelarTitulo.bind(null, tipo)} hidden={{ id }} variant="danger" confirm="Cancelar este título?">
                 Cancelar título
               </ActionButton>
@@ -57,7 +51,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           </>
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Stat label="Valor" value={money(titulo.valor)} />
         <Stat
           label={cfg.pagoLabel}
@@ -66,9 +60,9 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         />
         <Stat label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
         <Stat label="Vencimento" value={date(titulo.vencimento)} />
-      </div>
+      </KpiGrid>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Dados">
           <Dl
             items={[
@@ -95,15 +89,15 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         </Card>
 
         <Card title={`Baixas (${baixas.length})`}>
-          <Table head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas}>
+          <Table head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", "Ações"]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
             {baixas.map((b) => (
               <tr key={b.id}>
                 <Td>{date(b.data)}</Td>
-                <Td className="tabular-nums">{money(toNumber(b.valor))}</Td>
-                <Td className="tabular-nums">{money(toNumber(b.principal))}</Td>
-                <Td className="tabular-nums">{toNumber(b.juros) ? money(toNumber(b.juros)) : "—"}</Td>
-                <Td className="tabular-nums">{toNumber(b.multa) ? money(toNumber(b.multa)) : "—"}</Td>
-                <Td className="tabular-nums">{toNumber(b.desconto) ? money(toNumber(b.desconto)) : "—"}</Td>
+                <Td className="text-right tnum">{money(toNumber(b.valor))}</Td>
+                <Td className="text-right tnum">{money(toNumber(b.principal))}</Td>
+                <Td className="text-right tnum">{toNumber(b.juros) ? money(toNumber(b.juros)) : "—"}</Td>
+                <Td className="text-right tnum">{toNumber(b.multa) ? money(toNumber(b.multa)) : "—"}</Td>
+                <Td className="text-right tnum">{toNumber(b.desconto) ? money(toNumber(b.desconto)) : "—"}</Td>
                 <Td>{b.conta.nome}</Td>
                 <Td>{formaLabel(b.forma)}</Td>
                 <Td>{b.extrato ? <Badge color="green">conciliada</Badge> : <Badge>pendente</Badge>}</Td>
@@ -121,11 +115,11 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
 
         {glosas.length > 0 && (
           <Card title={`Glosas (${glosas.length})`}>
-            <Table head={["Data", "Valor", "Motivo", ""]}>
+            <Table head={["Data", "Valor", "Motivo", "Ações"]}>
               {glosas.map((g) => (
                 <tr key={g.id}>
                   <Td>{date(g.data)}</Td>
-                  <Td className="tabular-nums">{money(toNumber(g.valor))}</Td>
+                  <Td className="text-right tnum">{money(toNumber(g.valor))}</Td>
                   <Td className="max-w-md whitespace-normal">{g.motivo}</Td>
                   <Td>
                     <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="secondary" confirm="Estornar esta glosa?">
@@ -148,13 +142,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         {titulo.status === "ABERTO" && (
           <Card title={cfg.baixaLabel}>
             {contas.length === 0 ? (
-              <p className="text-sm text-slate-600">
-                Cadastre uma conta bancária ou caixa em{" "}
-                <Link href="/financeiro/contas" className="text-teal-700 hover:underline">
-                  Contas bancárias
-                </Link>{" "}
-                antes de registrar baixas.
-              </p>
+              <EmptyState text="Nenhuma conta bancária ou caixa cadastrada. Cadastre uma antes de registrar baixas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta</LinkButton>} />
             ) : (
               <BaixaForm tipo={tipo} titulo={titulo} hoje={hoje} contas={contas} />
             )}

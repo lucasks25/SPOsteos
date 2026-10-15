@@ -22,8 +22,8 @@ export default async function BoletoPage({ params }: { params: Promise<{ id: str
   if (!conta || !cd || !t.nossoNumero || t.cobrancaStatus !== "REGISTRADO" || t.status !== "ABERTO") {
     return (
       <>
-        <PageHeader title="Boleto" />
-        <p className="mb-3 rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        <PageHeader title="Boleto" subtitle="O boleto ainda não pode ser impresso." />
+        <p className="mb-3 rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">
           O boleto só pode ser impresso com o título em aberto e o registro confirmado pelo banco (importe o retorno em Cobrança). Situação da cobrança: {t.cobrancaStatus ? t.cobrancaStatus.toLowerCase() : "sem cobrança"}.
         </p>
         {voltar}
@@ -40,7 +40,7 @@ export default async function BoletoPage({ params }: { params: Promise<{ id: str
   return (
     <>
       <div className="print:hidden">
-        <PageHeader title="Boleto de cobrança" actions={<PrintButton />} />
+        <PageHeader title="Boleto de cobrança" subtitle="Confira os dados e imprima. Pagável em qualquer banco até o vencimento." actions={<PrintButton />} />
         {voltar}
       </div>
       <div className="mx-auto mt-4 max-w-3xl border border-slate-400 bg-white p-4 text-sm text-slate-900">

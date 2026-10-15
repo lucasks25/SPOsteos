@@ -2,7 +2,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, PageHeader, StatusBadge, Table, Td, cx } from "@/components/ui";
+import { Card, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td, btn, cx } from "@/components/ui";
 import { dateTime, diasAtras, money, num, toNumber } from "@/lib/format";
 import type { Perfil } from "@/generated/prisma/client";
 import { hojeUTC } from "./financeiro/_lib/datas";
@@ -18,10 +18,10 @@ function hojeSP() {
 
 function Tile({ href, label, value, hint, tone = "default" }: { href: string; label: string; value: ReactNode; hint?: ReactNode; tone?: "default" | "warn" | "danger" }) {
   return (
-    <Link href={href} className="block rounded-lg border border-slate-200 bg-white p-4 transition-colors duration-150 hover:border-teal-600 hover:bg-teal-50/30">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className={cx("tnum mt-1 text-2xl font-semibold tracking-tight", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
+    <Link href={href} className="block rounded border border-slate-200 bg-white p-3 shadow-sm transition-colors duration-150 hover:border-teal-600 hover:bg-teal-50">
+      <div className="text-xs text-slate-600">{label}</div>
+      <div className={cx("tnum mt-1 text-2xl font-bold", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>{value}</div>
+      {hint && <div className="mt-1 text-xs text-slate-600">{hint}</div>}
     </Link>
   );
 }
@@ -95,9 +95,9 @@ export default async function Painel() {
 
   return (
     <>
-      <PageHeader title={`Olá, ${user.nome.split(" ")[0]}`} subtitle="Painel geral — clique em um indicador para ver os detalhes" />
+      <PageHeader title={`Olá, ${user.nome.split(" ")[0]}`} subtitle="Resumo da operação. Clique em um indicador para ver os detalhes." />
 
-      <div className="grid grid-cols-2 gap-4 md:grid-cols-3 xl:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-3 xl:grid-cols-4">
         {comercial && (
           <>
             <Tile href="/comercial/agenda" label="Cirurgias hoje" value={num(cirHoje)} hint={`${num(cir7)} nos próximos 7 dias`} />
@@ -122,13 +122,14 @@ export default async function Painel() {
         )}
       </div>
 
-      <div className="mt-6 grid gap-6 xl:grid-cols-3">
+      <div className="mt-4 grid gap-4 xl:grid-cols-3">
         {comercial || estoque ? (
-          <Card title="Próximas cirurgias" className="xl:col-span-2" actions={<Link href="/comercial/agenda" className="text-xs text-teal-700 hover:underline">Agenda</Link>}>
-            <Table head={["Data", "Nº", "Hospital", "Médico", "Procedimento", "Vale", "Status"]} empty={proximas.length === 0}>
+          <div className="min-w-0 xl:col-span-2">
+            <SectionTitle actions={<Link href="/comercial/agenda" className={btn.small}>Ver agenda</Link>}>Próximas cirurgias</SectionTitle>
+            <Table head={["Data", "Nº", "Hospital", "Médico", "Procedimento", "Vale", "Status"]} empty={proximas.length === 0} emptyText="Nenhuma cirurgia agendada a partir de hoje." emptyAction={<LinkButton href="/comercial/cirurgias/nova" variant="secondary" icon="mais">Agendar cirurgia</LinkButton>}>
               {proximas.map((c) => (
-                <tr key={c.id} className="hover:bg-slate-50">
-                  <Td className="text-xs">{dateTime(c.dataHora)}</Td>
+                <tr key={c.id}>
+                  <Td className="tnum">{dateTime(c.dataHora)}</Td>
                   <Td>
                     <Link href={`/comercial/cirurgias/${c.id}`} className="font-mono text-teal-700 hover:underline">CIR-{c.numero}</Link>
                   </Td>
@@ -140,14 +141,14 @@ export default async function Painel() {
                 </tr>
               ))}
             </Table>
-          </Card>
+          </div>
         ) : null}
         {comercial && (
           <Card title="Vendas faturadas — 6 meses">
             <div className="flex h-48 items-end gap-3" role="img" aria-label="Gráfico de vendas mensais">
               {meses.map((m) => (
                 <div key={m.chave} className="flex flex-1 flex-col items-center gap-1">
-                  <div className="text-[10px] text-slate-500">{m.total ? money(m.total).replace(/,\d{2}$/, "") : ""}</div>
+                  <div className="text-xs text-slate-600">{m.total ? money(m.total).replace(/,\d{2}$/, "") : ""}</div>
                   <div className="relative w-full rounded-t bg-teal-100" style={{ height: `${(m.total / maxVenda) * 140}px`, minHeight: m.total ? 4 : 1 }} title={`${m.label}: ${money(m.total)} · margem ${money(m.margem)}`}>
                     <div className="absolute bottom-0 w-full rounded-t bg-teal-600" style={{ height: `${m.total ? Math.max(0, (m.margem / m.total) * 100) : 0}%` }} />
                   </div>
@@ -155,7 +156,7 @@ export default async function Painel() {
                 </div>
               ))}
             </div>
-            <div className="mt-3 flex gap-4 text-xs text-slate-500">
+            <div className="mt-3 flex gap-4 text-xs text-slate-600">
               <span className="flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-teal-100" /> vendido</span>
               <span className="flex items-center gap-1"><span className="h-2 w-3 rounded-sm bg-teal-600" /> margem</span>
             </div>

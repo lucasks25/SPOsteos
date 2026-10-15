@@ -1,10 +1,9 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { LOCAIS } from "@/lib/estoque";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
-import { Badge, Card, Dl, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, Card, Dl, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, num } from "@/lib/format";
 import { hojeUTC, PERFIS_QUALIDADE } from "../../_lib/datas";
 import { inspecionarLote } from "../actions";
@@ -33,12 +32,12 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
         title={`Inspeção do lote ${lote.numero}`}
         subtitle={`${lote.produto.codigo} — ${lote.produto.descricao}`}
         actions={
-          <Link href={`/qualidade/lotes/${lote.id}`} className="text-sm text-teal-700 hover:underline">
+          <LinkButton href={`/qualidade/lotes/${lote.id}`} variant="secondary">
             Ver detalhes do lote
-          </Link>
+          </LinkButton>
         }
       />
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Dados do lote">
           <Dl
             items={[
@@ -54,7 +53,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
             ]}
           />
           {!podeLiberar && (
-            <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
+            <div className="mt-4 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
               Este lote não pode ser liberado: {vencido ? "lote vencido" : "registro ANVISA do produto vencido"}. Registre como não conforme ou bloqueado.
             </div>
           )}
@@ -80,14 +79,15 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
               />
             </Grid>
             <TextArea label="Observação" name="observacao" />
-            <p className="text-xs text-slate-500">
+            <p className="text-xs text-slate-600">
               Ao registrar, todo o saldo em quarentena ({num(qtd)}) será transferido conforme o resultado.
             </p>
           </Form>
         </Card>
 
-        <Card title="Histórico de inspeções">
-          <Table head={["Data", "Resultado", "Embalagem", "Rotulagem", "Documentação", "Inspetor", "Observação"]} empty={lote.inspecoes.length === 0}>
+        <div>
+          <SectionTitle>Histórico de inspeções</SectionTitle>
+          <Table head={["Data", "Resultado", "Embalagem", "Rotulagem", "Documentação", "Inspetor", "Observação"]} empty={lote.inspecoes.length === 0} emptyText="Este lote ainda não foi inspecionado.">
             {lote.inspecoes.map((i) => (
               <tr key={i.id}>
                 <Td>{dateTime(i.criadoEm)}</Td>
@@ -100,7 +100,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
               </tr>
             ))}
           </Table>
-        </Card>
+        </div>
       </div>
     </>
   );

@@ -6,7 +6,7 @@ export default async function NovoProcedimentoPage() {
   await requireUser();
   return (
     <>
-      <PageHeader title="Novo procedimento" subtitle="Depois de criar, inclua os materiais padrão" />
+      <PageHeader title="Novo procedimento" subtitle="Descreva o procedimento; depois de criar, inclua os materiais padrão." />
       <Card>
         <ProcedimentoForm />
       </Card>

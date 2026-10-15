@@ -1,14 +1,14 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { btn } from "@/components/ui";
+import { FilterBar, btn, cx } from "@/components/ui";
 
 const cls =
-  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
+  "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
 
 /** Formulário GET de filtros (querystring). */
 export function Filtros({ children, limparHref }: { children: ReactNode; limparHref?: string }) {
   return (
-    <form className="mb-4 flex flex-wrap items-end gap-2 print:hidden">
+    <FilterBar className="print:hidden">
       {children}
       <button className={btn.secondary}>Filtrar</button>
       {limparHref && (
@@ -16,7 +16,7 @@ export function Filtros({ children, limparHref }: { children: ReactNode; limparH
           Limpar
         </Link>
       )}
-    </form>
+    </FilterBar>
   );
 }
 
@@ -35,8 +35,8 @@ export function FiltroSelect({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
-      <select name={name} defaultValue={defaultValue ?? ""} className={`${cls} max-w-56`}>
+      <span className="mb-1 block text-xs text-slate-700">{label}</span>
+      <select name={name} defaultValue={defaultValue ?? ""} className={cx(cls, "min-w-36 max-w-56")}>
         <option value="">{todos}</option>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
@@ -48,11 +48,11 @@ export function FiltroSelect({
   );
 }
 
-export function FiltroInput({ label, name, defaultValue, type = "text", placeholder }: { label: string; name: string; defaultValue?: string; type?: string; placeholder?: string }) {
+export function FiltroInput({ label, name, defaultValue, type = "text", placeholder, className }: { label: string; name: string; defaultValue?: string; type?: string; placeholder?: string; className?: string }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
-      <input name={name} type={type} defaultValue={defaultValue} placeholder={placeholder} className={cls} />
+      <span className="mb-1 block text-xs text-slate-700">{label}</span>
+      <input name={name} type={type} defaultValue={defaultValue} placeholder={placeholder} className={cx(cls, className)} />
     </label>
   );
 }

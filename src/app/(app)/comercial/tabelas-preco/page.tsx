@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, LinkButton, PageHeader, Table, Td } from "@/components/ui";
@@ -11,15 +10,15 @@ export default async function TabelasPage() {
   return (
     <>
       <PageHeader title="Tabelas de preço" subtitle="Preço de venda por hospital. Sem item na tabela, vale o preço base do produto." actions={<LinkButton href="/comercial/tabelas-preco/nova">Nova tabela</LinkButton>} />
-      <Table head={["Nome", "Vigência", "Situação", "Produtos", "Hospitais", ""]} empty={tabelas.length === 0}>
+      <Table head={["Nome", "Vigência", "Situação", "Produtos", "Hospitais", "Ações"]} empty={tabelas.length === 0} emptyText="Nenhuma tabela de preço cadastrada. Sem tabela, vale o preço base do produto." emptyAction={<LinkButton href="/comercial/tabelas-preco/nova">Nova tabela</LinkButton>}>
         {tabelas.map((t) => (
-          <tr key={t.id} className="hover:bg-slate-50">
+          <tr key={t.id}>
             <Td className="font-medium">{t.nome}</Td>
             <Td>{t.vigenciaInicio || t.vigenciaFim ? `${date(t.vigenciaInicio)} a ${date(t.vigenciaFim)}` : "sem prazo"}</Td>
             <Td>{tabelaVigente(t) ? <Badge color="green">vigente</Badge> : <Badge>fora de vigência</Badge>}</Td>
-            <Td>{num(t._count.itens)}</Td>
-            <Td>{num(t._count.hospitais)}</Td>
-            <Td><Link href={`/comercial/tabelas-preco/${t.id}`} className="text-teal-700 hover:underline">Abrir</Link></Td>
+            <Td className="text-right">{num(t._count.itens)}</Td>
+            <Td className="text-right">{num(t._count.hospitais)}</Td>
+            <Td><LinkButton href={`/comercial/tabelas-preco/${t.id}`} variant="small">Abrir</LinkButton></Td>
           </tr>
         ))}
       </Table>

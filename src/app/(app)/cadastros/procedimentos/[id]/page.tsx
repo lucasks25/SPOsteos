@@ -31,7 +31,7 @@ export default async function EditarProcedimentoPage({ params }: { params: Promi
           )
         }
       />
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Dados do procedimento">
           <ProcedimentoForm proc={proc} />
         </Card>
@@ -39,12 +39,12 @@ export default async function EditarProcedimentoPage({ params }: { params: Promi
           <div className="mb-4">
             <ItemAdder action={adicionarItem.bind(null, id)} produtos={produtoOptions(produtos)} />
           </div>
-          <Table head={["Código", "Produto", "Qtd.", ""]} empty={proc.itens.length === 0}>
+          <Table head={["Código", "Produto", "Qtd.", ""]} empty={proc.itens.length === 0} emptyText="Nenhum material padrão. Use o campo acima para incluir o primeiro.">
             {proc.itens.map((i) => (
               <tr key={i.id}>
                 <Td className="font-mono text-xs">{i.produto.codigo}</Td>
                 <Td>{i.produto.descricao}</Td>
-                <Td>{i.quantidade}</Td>
+                <Td className="text-right">{i.quantidade}</Td>
                 <Td>
                   <ActionButton action={removerItem.bind(null, i.id)} variant="ghost">
                     Remover

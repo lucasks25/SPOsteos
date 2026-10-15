@@ -6,7 +6,7 @@ export default async function NovoMedicoPage() {
   await requireUser();
   return (
     <>
-      <PageHeader title="Novo médico" />
+      <PageHeader title="Novo médico" subtitle="Cadastre o cirurgião ou solicitante com CRM e contato." />
       <Card>
         <MedicoForm />
       </Card>

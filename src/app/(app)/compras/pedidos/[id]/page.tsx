@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton, Field, Form, Grid } from "@/components/form";
-import { Badge, Card, Dl, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, btn, Card, Dl, KpiGrid, PageHeader, SectionTitle, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
@@ -32,7 +32,7 @@ export default async function PedidoCompraPage({ params }: { params: Promise<{ i
     <>
       <PageHeader
         title={doc}
-        subtitle={pedido.fornecedor.nomeFantasia || pedido.fornecedor.razaoSocial}
+        subtitle={`Pedido de compra — ${pedido.fornecedor.nomeFantasia || pedido.fornecedor.razaoSocial}`}
         actions={
           <>
             <StatusBadge status={pedido.status} />
@@ -44,14 +44,14 @@ export default async function PedidoCompraPage({ params }: { params: Promise<{ i
           </>
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Stat label="Valor do pedido" value={money(total)} />
         <Stat label="Recebido" value={money(recebido)} hint="gera conta a pagar a cada recebimento" />
         <Stat label="Previsão" value={date(pedido.previsao)} />
         <Stat label="Criado em" value={date(pedido.criadoEm)} />
-      </div>
+      </KpiGrid>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Dados">
           <Dl
             items={[
@@ -64,22 +64,23 @@ export default async function PedidoCompraPage({ params }: { params: Promise<{ i
           />
         </Card>
 
-        <Card title="Itens">
-          <Table head={["Produto", "Pedido", "Recebido", "Pendente", "Custo unit.", "Subtotal"]}>
+        <div>
+          <SectionTitle>Itens</SectionTitle>
+          <Table head={["Produto", "Pedido", "Recebido", "Pendente", "Custo unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
             {pedido.itens.map((i) => (
               <tr key={i.id}>
                 <Td>
                   {i.produto.codigo} — {i.produto.descricao}
                 </Td>
-                <Td>{i.quantidade}</Td>
-                <Td>{i.recebido}</Td>
-                <Td>{i.quantidade - i.recebido}</Td>
-                <Td className="tabular-nums">{money(toNumber(i.custoUnit))}</Td>
-                <Td className="tabular-nums">{money(i.quantidade * toNumber(i.custoUnit))}</Td>
+                <Td className="text-right">{i.quantidade}</Td>
+                <Td className="text-right">{i.recebido}</Td>
+                <Td className="text-right">{i.quantidade - i.recebido}</Td>
+                <Td className="text-right">{money(toNumber(i.custoUnit))}</Td>
+                <Td className="text-right">{money(i.quantidade * toNumber(i.custoUnit))}</Td>
               </tr>
             ))}
           </Table>
-        </Card>
+        </div>
 
         {podeReceber &&
           pedido.itens
@@ -99,24 +100,25 @@ export default async function PedidoCompraPage({ params }: { params: Promise<{ i
             ))}
 
         {pedido.contasPagar.length > 0 && (
-          <Card title="Contas a pagar geradas">
+          <div>
+            <SectionTitle>Contas a pagar geradas</SectionTitle>
             <Table head={["Vencimento", "Valor", "Situação", ""]}>
               {pedido.contasPagar.map((c) => (
                 <tr key={c.id}>
                   <Td>{date(c.vencimento)}</Td>
-                  <Td className="tabular-nums">{money(toNumber(c.valor))}</Td>
+                  <Td className="text-right">{money(toNumber(c.valor))}</Td>
                   <Td>
                     <StatusBadge status={c.status} />
                   </Td>
                   <Td>
-                    <Link href={`/financeiro/pagar/${c.id}`} className="text-teal-700 hover:underline">
-                      abrir
+                    <Link href={`/financeiro/pagar/${c.id}`} className={btn.small}>
+                      Abrir
                     </Link>
                   </Td>
                 </tr>
               ))}
             </Table>
-          </Card>
+          </div>
         )}
       </div>
     </>

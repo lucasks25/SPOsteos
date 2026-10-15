@@ -1,4 +1,3 @@
-import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { LinkButton, PageHeader, Table, Td } from "@/components/ui";
@@ -12,19 +11,19 @@ export default async function KitsPage() {
     <>
       <PageHeader
         title="Caixas e kits"
-        subtitle="Conjuntos padrão de implantes e instrumentais enviados aos hospitais"
-        actions={podeEditar(user.perfil) && <LinkButton href="/estoque/kits/novo">Novo kit</LinkButton>}
+        subtitle="Conjuntos padrão de implantes e instrumentais enviados aos hospitais."
+        actions={podeEditar(user.perfil) && <LinkButton href="/estoque/kits/novo" icon="mais">Novo kit</LinkButton>}
       />
-      <Table head={["Código", "Descrição", "Itens", "Unidades", "Remessas", ""]} empty={kits.length === 0}>
+      <Table head={["Código", "Descrição", "Itens", "Unidades", "Remessas", "Ações"]} empty={kits.length === 0} emptyText="Nenhum kit cadastrado." emptyAction={podeEditar(user.perfil) ? <LinkButton href="/estoque/kits/novo" variant="secondary">Novo kit</LinkButton> : undefined}>
         {kits.map((k) => (
-          <tr key={k.id} className="hover:bg-slate-50">
+          <tr key={k.id}>
             <Td className="font-mono text-xs">{k.codigo}</Td>
             <Td className="font-medium">{k.descricao}</Td>
-            <Td>{num(k.itens.length)}</Td>
-            <Td>{num(k.itens.reduce((s, i) => s + i.quantidade, 0))}</Td>
-            <Td>{num(k._count.remessas)}</Td>
+            <Td className="text-right">{num(k.itens.length)}</Td>
+            <Td className="text-right">{num(k.itens.reduce((s, i) => s + i.quantidade, 0))}</Td>
+            <Td className="text-right">{num(k._count.remessas)}</Td>
             <Td>
-              <Link href={`/estoque/kits/${k.id}`} className="text-teal-700 hover:underline">Abrir</Link>
+              <LinkButton href={`/estoque/kits/${k.id}`} variant="small">Abrir</LinkButton>
             </Td>
           </tr>
         ))}

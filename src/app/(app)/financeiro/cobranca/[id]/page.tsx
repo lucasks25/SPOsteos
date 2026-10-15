@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Field, Form } from "@/components/form";
-import { Badge, Card, PageHeader, Stat, Table, Td, btn, type BadgeColor } from "@/components/ui";
+import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td, btn, type BadgeColor } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
@@ -47,14 +47,14 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
           )
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-3">
+      <KpiGrid cols={3}>
         <Stat label="Boletos" value={money(total)} hint={`${r.itens.filter((i) => i.ocorrencia === "01").length} título(s)`} />
         <Stat label="Gerada em" value={dateTime(r.criadaEm)} />
         <Stat label="Retorno" value={r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
-      </div>
-      {r.canceladaEm && <p className="mb-4 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">Remessa cancelada em {dateTime(r.canceladaEm)}: {r.canceladaMotivo}. Não envie este arquivo ao banco.</p>}
+      </KpiGrid>
+      {r.canceladaEm && <p className="mb-4 rounded border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">Remessa cancelada em {dateTime(r.canceladaEm)}: {r.canceladaMotivo}. Não envie este arquivo ao banco.</p>}
       {alertas.length > 0 && (
-        <div className="mb-4 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <div className="mb-4 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           <strong>Atenção, dinheiro envolvido:</strong>
           <ul className="mt-1 list-disc pl-5">
             {alertas.map((i) => (
@@ -65,7 +65,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
           </ul>
         </div>
       )}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {podeCancelar && (
           <Card title="Cancelar remessa">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa.</p>
@@ -92,7 +92,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
                 </Link>
               </Td>
               <Td className="max-w-[12rem] truncate">{i.contaReceber.hospital ? i.contaReceber.hospital.nomeFantasia || i.contaReceber.hospital.razaoSocial : "—"}</Td>
-              <Td className="text-right tabular-nums">{money(toNumber(i.valor))}</Td>
+              <Td className="text-right tnum">{money(toNumber(i.valor))}</Td>
               <Td>
                 <Badge color={COR[i.status]}>{i.status.toLowerCase()}</Badge>
               </Td>
@@ -100,7 +100,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
             </tr>
           ))}
         </Table>
-        <p className="text-xs text-slate-400">Vencimento de cada título: {r.itens.map((i) => date(i.contaReceber.vencimento)).slice(0, 3).join(", ")}{r.itens.length > 3 ? "…" : ""}</p>
+        <p className="text-xs text-slate-600">Vencimento de cada título: {r.itens.map((i) => date(i.contaReceber.vencimento)).slice(0, 3).join(", ")}{r.itens.length > 3 ? "…" : ""}</p>
       </div>
     </>
   );

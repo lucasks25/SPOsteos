@@ -1,6 +1,6 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Card, PageHeader, Table, Td, cx } from "@/components/ui";
+import { Card, KpiGrid, btn, PageHeader, SectionTitle, Stat, Table, Td, cx } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
 import { hojeUTC } from "./_lib/datas";
@@ -10,10 +10,8 @@ type Tom = "default" | "warn" | "danger";
 
 function Tile({ href, label, value, hint, tone = "default" }: { href: string; label: string; value: ReactNode; hint?: ReactNode; tone?: Tom }) {
   return (
-    <Link href={href} className="block rounded-lg border border-slate-200 bg-white p-4 transition-colors duration-150 hover:border-teal-600 hover:bg-teal-50/30">
-      <div className="text-xs font-medium text-slate-500">{label}</div>
-      <div className={cx("tnum mt-1 text-2xl font-semibold tracking-tight", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>{value}</div>
-      {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
+    <Link href={href} className="block rounded outline-offset-2 transition-colors duration-150 hover:[&>div]:border-teal-600">
+      <Stat label={label} value={value} hint={hint} tone={tone} />
     </Link>
   );
 }
@@ -30,20 +28,20 @@ function Faixas({ titulo, href, f, cor }: { titulo: string; href: string; f: Fai
     <Card
       title={titulo}
       actions={
-        <Link href={href} className="text-xs text-teal-700 hover:underline">
-          ver todos
+        <Link href={href} className={btn.small}>
+          Ver todos
         </Link>
       }
     >
-      <div className={cx("mb-3 text-2xl font-semibold", cor === "emerald" ? "text-emerald-700" : "text-rose-700")}>
+      <div className={cx("tnum mb-3 text-2xl font-bold", cor === "emerald" ? "text-emerald-700" : "text-rose-700")}>
         {money(f.total.valor)} <span className="text-sm font-normal text-slate-500">em aberto ({f.total.qtd})</span>
       </div>
       <dl className="space-y-1.5 text-sm">
         {linhas.map(([nome, v, classe]) => (
           <div key={nome} className="flex items-baseline justify-between gap-3">
             <dt className="text-slate-600">{nome}</dt>
-            <dd className={cx("tabular-nums", classe)}>
-              {money(v.valor)} <span className="text-xs text-slate-400">({v.qtd})</span>
+            <dd className={cx("tnum", classe)}>
+              {money(v.valor)} <span className="text-xs text-slate-500">({v.qtd})</span>
             </dd>
           </div>
         ))}
@@ -60,9 +58,9 @@ export default async function PainelFinanceiroPage() {
 
   return (
     <>
-      <PageHeader title="Financeiro" subtitle={`Visão geral em ${date(hoje)}. Valores em aberto já descontam baixas parciais.`} />
+      <PageHeader title="Financeiro" subtitle={`Visão geral em ${date(hoje)}. Os valores em aberto já descontam baixas parciais.`} />
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Tile href="/financeiro/contas" label="Saldo nas contas" value={money(p.saldoTotal)} tone={p.saldoTotal < 0 ? "danger" : "default"} hint={`${p.contas.length} conta(s) ativa(s)`} />
         <Tile
           href="/financeiro/fluxo"
@@ -73,24 +71,24 @@ export default async function PainelFinanceiroPage() {
         />
         <Tile href="/financeiro/contas" label="Entradas no mês" value={money(p.mes.entradas)} hint="dinheiro que entrou nas contas" />
         <Tile href="/financeiro/contas" label="Saídas no mês" value={money(p.mes.saidas)} hint={`resultado de caixa ${money(p.mes.resultado)}`} tone={p.mes.resultado < 0 ? "warn" : "default"} />
-      </div>
+      </KpiGrid>
 
-      <div className="mb-6 grid gap-4 lg:grid-cols-2">
+      <div className="mb-4 grid gap-4 lg:grid-cols-2">
         <Faixas titulo="A receber" href="/financeiro/receber" f={p.receber} cor="emerald" />
         <Faixas titulo="A pagar" href="/financeiro/pagar" f={p.pagar} cor="rose" />
       </div>
 
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Tile href="/financeiro/conciliacao" label="Extrato a conciliar" value={num(pend.extrato)} tone={pend.extrato ? "warn" : "default"} hint="linhas importadas sem vínculo" />
         <Tile href="/financeiro/conciliacao" label="Baixas sem extrato" value={num(pend.semExtrato)} hint="ainda não vistas no banco (contas bancárias)" />
         <Tile href="/financeiro/remessas" label="Pagamentos aguardando banco" value={num(pend.remessaAguardando)} tone={pend.remessaAguardando ? "warn" : "default"} hint="remessas SISPAG sem retorno ou agendadas" />
         <Tile href="/financeiro/remessas" label="Pagamentos rejeitados" value={num(pend.remessaRejeitada)} tone={pend.remessaRejeitada ? "danger" : "default"} hint="o banco recusou; corrigir e reenviar" />
-      </div>
+      </KpiGrid>
 
-      <div className="grid gap-6 lg:grid-cols-2">
+      <div className="grid gap-4 lg:grid-cols-2">
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Maiores valores vencidos a receber, por hospital</h2>
-          <Table head={["Hospital", "Vencido", "Títulos", "Atraso máx."]} empty={p.inadimplentes.length === 0}>
+          <SectionTitle>Maiores valores vencidos a receber, por hospital</SectionTitle>
+          <Table head={["Hospital", "Vencido", "Títulos", "Atraso máx."]} empty={p.inadimplentes.length === 0} emptyText="Nenhum hospital com valor vencido. Tudo em dia.">
             {p.inadimplentes.map((h) => (
               <tr key={h.id}>
                 <Td className="max-w-[14rem] truncate">
@@ -102,16 +100,16 @@ export default async function PainelFinanceiroPage() {
                     </Link>
                   )}
                 </Td>
-                <Td className="text-right tabular-nums text-rose-700">{money(h.valor)}</Td>
-                <Td>{h.qtd}</Td>
-                <Td>{h.diasAtraso} dia(s)</Td>
+                <Td className="text-right tnum text-rose-700">{money(h.valor)}</Td>
+                <Td className="text-right tnum">{h.qtd}</Td>
+                <Td className="text-right tnum">{h.diasAtraso} dia(s)</Td>
               </tr>
             ))}
           </Table>
         </section>
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">A pagar: atrasados e próximos 15 dias</h2>
-          <Table head={["Vencimento", "Descrição", "Fornecedor", "A pagar"]} empty={p.proximosPagar.length === 0}>
+          <SectionTitle>A pagar: atrasados e próximos 15 dias</SectionTitle>
+          <Table head={["Vencimento", "Descrição", "Fornecedor", "A pagar"]} empty={p.proximosPagar.length === 0} emptyText="Nada a pagar atrasado nem nos próximos 15 dias.">
             {p.proximosPagar.map((t) => (
               <tr key={t.id}>
                 <Td className={t.vencimento < hoje ? "text-rose-700" : undefined}>{date(t.vencimento)}</Td>
@@ -121,7 +119,7 @@ export default async function PainelFinanceiroPage() {
                   </Link>
                 </Td>
                 <Td className="max-w-[10rem] truncate">{t.fornecedor ?? "—"}</Td>
-                <Td className="text-right tabular-nums">{money(t.saldo)}</Td>
+                <Td className="text-right tnum">{money(t.saldo)}</Td>
               </tr>
             ))}
           </Table>

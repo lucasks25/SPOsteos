@@ -42,7 +42,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
                   <ActionButton action={enviarRemessaAction} hidden={{ id: r.id }} variant="primary" confirm="Confirmar o envio? O estoque sai do depósito para o consignado do hospital.">
                     Enviar ao hospital
                   </ActionButton>
-                  <ActionButton action={cancelarRemessaAction} hidden={{ id: r.id }} variant="danger" confirm="Cancelar esta remessa?">
+                  <ActionButton action={cancelarRemessaAction} hidden={{ id: r.id }} variant="secondary" confirm="Cancelar esta remessa?">
                     Cancelar
                   </ActionButton>
                 </>
@@ -59,7 +59,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="space-y-6">
-        <Card title="Destino e cirurgia">
+        <Card title="Destino e cirurgia" className="print:border-black">
           <Dl
             items={[
               ["Hospital", h ? `${h.razaoSocial} (CNPJ ${h.cnpj})` : r.local.nome],
@@ -84,8 +84,8 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           />
         </Card>
 
-        <Card title={`Itens (${total} unidade${total === 1 ? "" : "s"})`}>
-          <Table head={["Código", "Produto", "Fabricante", "Reg. ANVISA", "GTIN", "Lote", "Validade", "Qtd.", ...(r.status === "CONFERIDA" ? ["Devolvido", "Consumido", "Fica no hospital"] : [])]}>
+        <Card title={`Itens (${total} unidade${total === 1 ? "" : "s"})`} className="print:border-black">
+          <Table head={["Código", "Produto", "Fabricante", "Reg. ANVISA", "GTIN", "Lote", "Validade", "Qtd.", ...(r.status === "CONFERIDA" ? ["Devolvido", "Consumido", "Fica no hospital"] : [])]} empty={r.itens.length === 0} emptyText="Esta remessa não tem itens.">
             {r.itens.map((i) => {
               const dias = diasAte(i.lote.validade);
               return (
@@ -96,13 +96,13 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
                   <Td>{i.produto.registroAnvisa ?? "—"}</Td>
                   <Td className="font-mono text-xs">{i.produto.gtin ?? "—"}</Td>
                   <Td className="font-mono">{i.lote.numero}</Td>
-                  <Td className={dias < 0 ? "text-rose-600" : dias <= 30 ? "text-amber-600" : undefined}>{date(i.lote.validade)}</Td>
-                  <Td className="font-semibold">{i.quantidade}</Td>
+                  <Td className={dias < 0 ? "text-rose-600 print:text-black" : dias <= 30 ? "text-amber-600 print:text-black" : undefined}>{date(i.lote.validade)}</Td>
+                  <Td className="text-right font-semibold">{i.quantidade}</Td>
                   {r.status === "CONFERIDA" && (
                     <>
-                      <Td>{i.devolvido}</Td>
-                      <Td>{i.consumido}</Td>
-                      <Td>{i.quantidade - i.devolvido - i.consumido}</Td>
+                      <Td className="text-right">{i.devolvido}</Td>
+                      <Td className="text-right">{i.consumido}</Td>
+                      <Td className="text-right">{i.quantidade - i.devolvido - i.consumido}</Td>
                     </>
                   )}
                 </tr>
@@ -113,17 +113,17 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
 
         {edita && r.status === "ENVIADA" && (
           <Card title="Conferir retorno" className="print:hidden">
-            <p className="mb-4 text-sm text-slate-500">
+            <p className="mb-4 text-sm text-slate-600">
               Informe por item o que voltou ao depósito e o que foi consumido{r.cirurgia ? ` na cirurgia CIR-${r.cirurgia.numero}` : ""}. O que não for
               informado continua consignado no hospital.
             </p>
             <Form action={conferirRemessaAction.bind(null, r.id)} submitLabel="Concluir conferência">
               <div className="space-y-3">
                 {r.itens.map((i) => (
-                  <div key={i.id} className="grid grid-cols-1 items-end gap-3 rounded-lg border border-slate-100 p-3 sm:grid-cols-[1fr_8rem_8rem]">
+                  <div key={i.id} className="grid grid-cols-1 items-end gap-3 rounded border border-slate-200 p-3 sm:grid-cols-[1fr_8rem_8rem]">
                     <div className="text-sm">
                       <div className="font-medium text-slate-800">{i.produto.descricao}</div>
-                      <div className="text-xs text-slate-500">
+                      <div className="text-xs text-slate-600">
                         Lote {i.lote.numero} · enviado {i.quantidade}
                       </div>
                     </div>

@@ -7,9 +7,9 @@ import { Badge, btn, PageHeader, StatusBadge, Table, Td } from "@/components/ui"
 import { date, diasAte, num } from "@/lib/format";
 import { hojeUTC, PERFIS_QUALIDADE, somarDias } from "../_lib/datas";
 import { marcarVencidos } from "./actions";
+import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
 
 const STATUS: StatusLote[] = ["QUARENTENA", "LIBERADO", "NAO_CONFORME", "BLOQUEADO", "VENCIDO"];
-const inputCls = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm focus:border-teal-600 focus:outline-none";
 
 type SP = { q?: string; status?: string; dias?: string; vencidos?: string; comSaldo?: string };
 
@@ -54,7 +54,7 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Lotes e validades"
-        subtitle="Controle de lotes, status de qualidade e vencimentos"
+        subtitle="Acompanhe lotes, status de qualidade e vencimentos."
         actions={
           vencidosLiberados > 0 ? (
             <ActionButton action={marcarVencidos} variant="danger" confirm={`Marcar ${vencidosLiberados} lote(s) liberado(s) vencido(s) como VENCIDO?`}>
@@ -63,46 +63,36 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
           ) : undefined
         }
       />
-      <form className="mb-4 flex flex-wrap items-end gap-2">
-        <input name="q" defaultValue={sp.q} placeholder="Lote, série, produto ou GTIN" className={`${inputCls} w-full max-w-xs`} />
-        <select name="status" defaultValue={status ?? ""} className={inputCls}>
-          <option value="">Todos os status</option>
-          {STATUS.map((s) => (
-            <option key={s} value={s}>{s.replaceAll("_", " ").toLowerCase()}</option>
-          ))}
-        </select>
-        <label className="flex items-center gap-1 text-sm text-slate-600">
-          Vence em até
-          <input name="dias" type="number" min="0" defaultValue={sp.dias} className={`${inputCls} w-20`} />
-          dias
-        </label>
-        <label className="flex items-center gap-1.5 text-sm text-slate-600">
+      <Filtros limparHref="/qualidade/lotes">
+        <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Lote, série, produto ou GTIN" className="w-64" />
+        <FiltroSelect label="Status" name="status" defaultValue={status ?? ""} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.replaceAll("_", " ").toLowerCase() }))} />
+        <FiltroInput label="Vence em até (dias)" name="dias" type="number" defaultValue={sp.dias} className="w-28" />
+        <label className="flex h-8 items-center gap-1.5 text-[13px] text-slate-700">
           <input type="checkbox" name="vencidos" value="1" defaultChecked={!!sp.vencidos} /> Vencidos
         </label>
-        <label className="flex items-center gap-1.5 text-sm text-slate-600">
+        <label className="flex h-8 items-center gap-1.5 text-[13px] text-slate-700">
           <input type="checkbox" name="comSaldo" value="1" defaultChecked={!!sp.comSaldo} /> Somente com saldo
         </label>
-        <button className={btn.secondary}>Filtrar</button>
-      </form>
-      <Table head={["Produto", "Lote / série", "Validade", "Status", "Saldo total", "Saldo por local", ""]} empty={lotes.length === 0}>
+      </Filtros>
+      <Table head={["Produto", "Lote / série", "Validade", "Status", "Saldo total", "Saldo por local", ""]} empty={lotes.length === 0} emptyText="Nenhum lote encontrado com esses filtros.">
         {lotes.map((l) => {
           const total = l.saldos.reduce((s, x) => s + x.quantidade, 0);
           const d = diasAte(l.validade);
           return (
-            <tr key={l.id} className="align-top hover:bg-slate-50">
+            <tr key={l.id} className="align-top">
               <Td>
                 <span className="font-mono text-xs text-slate-500">{l.produto.codigo}</span> {l.produto.descricao}
               </Td>
               <Td className="font-mono text-xs">
                 {l.numero}
-                {l.serie && <span className="text-slate-400"> / {l.serie}</span>}
+                {l.serie && <span className="text-slate-500"> / {l.serie}</span>}
               </Td>
               <Td>
                 {date(l.validade)}{" "}
                 {l.validade < hoje ? <Badge color="red">vencido</Badge> : d <= 90 ? <Badge color="yellow">{d}d</Badge> : null}
               </Td>
               <Td><StatusBadge status={l.status} /></Td>
-              <Td className="font-medium">{num(total)}</Td>
+              <Td className="text-right font-medium tnum">{num(total)}</Td>
               <Td className="text-xs">
                 {l.saldos.length === 0
                   ? "—"
@@ -113,13 +103,13 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
                     ))}
               </Td>
               <Td>
-                <Link href={`/qualidade/lotes/${l.id}`} className="text-teal-700 hover:underline">Detalhes</Link>
+                <Link href={`/qualidade/lotes/${l.id}`} className={btn.small}>Detalhes</Link>
               </Td>
             </tr>
           );
         })}
       </Table>
-      {lotes.length === 300 && <p className="mt-2 text-xs text-slate-500">Exibindo os primeiros 300 lotes. Refine os filtros.</p>}
+      {lotes.length === 300 && <p className="mt-2 text-xs text-slate-600">Exibindo os primeiros 300 lotes. Refine os filtros.</p>}
     </>
   );
 }

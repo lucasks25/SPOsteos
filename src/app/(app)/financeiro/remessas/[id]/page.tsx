@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Field, Form } from "@/components/form";
-import { Badge, Card, Dl, PageHeader, Stat, StatusBadge, Table, Td, btn, type BadgeColor } from "@/components/ui";
+import { Badge, Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td, btn, type BadgeColor } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
@@ -38,19 +38,19 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           </a>
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Stat label="Total" value={money(total)} hint={`${r.itens.length} pagamento(s)`} />
         <Stat label="Pago" value={money(pagos.reduce((s, i) => s + toNumber(i.valor), 0))} hint={`${pagos.length} confirmado(s)`} />
         <Stat label="Data do pagamento" value={date(r.dataPagto)} />
         <Stat label="Retorno" value={r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
-      </div>
+      </KpiGrid>
       {r.canceladaEm && (
-        <p className="mb-4 rounded-lg border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">
+        <p className="mb-4 rounded border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">
           Remessa cancelada em {dateTime(r.canceladaEm)}: {r.canceladaMotivo}. Não envie este arquivo ao banco; os títulos ficaram livres para outra remessa.
         </p>
       )}
       {alertas.length > 0 && (
-        <div className="mb-4 rounded-lg border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <div className="mb-4 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
           <strong>Atenção, dinheiro envolvido:</strong>
           <ul className="mt-1 list-disc pl-5">
             {alertas.map((i) => (
@@ -61,7 +61,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           </ul>
         </div>
       )}
-      <div className="space-y-6">
+      <div className="space-y-4">
         {podeCancelar && (
           <Card title="Cancelar remessa">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa. Se o arquivo já foi enviado e autorizado no banco, cancele o pagamento lá primeiro.</p>
@@ -90,7 +90,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
               </Td>
               <Td className="max-w-[12rem] truncate">{i.contaPagar.fornecedor ? i.contaPagar.fornecedor.nomeFantasia || i.contaPagar.fornecedor.razaoSocial : "—"}</Td>
               <Td>{FORMAS_SISPAG[i.forma as FormaSispag] ?? i.forma}</Td>
-              <Td className="text-right tabular-nums">{money(toNumber(i.valor))}</Td>
+              <Td className="text-right tnum">{money(toNumber(i.valor))}</Td>
               <Td>
                 <Badge color={COR[i.status]}>{i.status.toLowerCase()}</Badge>
               </Td>

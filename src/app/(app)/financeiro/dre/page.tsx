@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Fragment } from "react";
-import { Card, PageHeader, Table, Td, cx } from "@/components/ui";
+import { Field, Select } from "@/components/form";
+import { Card, FilterBar, PageHeader, Table, Td, btn, cx } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
@@ -54,30 +55,23 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
 
   return (
     <>
-      <PageHeader title="DRE gerencial" subtitle="Resultado por competência (não é o caixa). Receita e despesa entram na data de competência do título." />
-      <div className="mb-4 flex flex-wrap items-center gap-3 text-sm">
-        <Link href={`/financeiro/dre${qs(anterior)}`} className="text-teal-700 hover:underline">← mês anterior</Link>
-        <Link href={`/financeiro/dre${qs(proximo)}`} className="text-teal-700 hover:underline">próximo mês →</Link>
-        <form className="flex items-center gap-2">
-          <input type="month" name="mes" defaultValue={ultimo} className="rounded-lg border border-slate-300 px-2 py-1" />
-          <select name="centro" defaultValue={centroId ?? ""} className="rounded-lg border border-slate-300 px-2 py-1">
-            <option value="">Todos os centros de custo</option>
-            {centros.map((c) => (
-              <option key={c.id} value={c.id}>{c.codigo} — {c.nome}</option>
-            ))}
-          </select>
-          <button className="rounded-lg bg-teal-700 px-3 py-1 text-white">Ver</button>
-        </form>
-      </div>
+      <PageHeader title="DRE gerencial" subtitle="Resultado por competência, não é o caixa: receita e despesa entram na data de competência do título." />
+      <FilterBar>
+        <Field label="Último mês exibido" name="mes" type="month" defaultValue={ultimo} className="w-44" />
+        <Select label="Centro de custo" name="centro" defaultValue={centroId ?? ""} options={centros.map((c) => ({ value: c.id, label: `${c.codigo} — ${c.nome}` }))} placeholder="Todos os centros de custo" className="w-64" />
+        <button className={btn.secondary}>Ver</button>
+        <Link href={`/financeiro/dre${qs(anterior)}`} className={btn.ghost}>← Mês anterior</Link>
+        <Link href={`/financeiro/dre${qs(proximo)}`} className={btn.ghost}>Próximo mês →</Link>
+      </FilterBar>
 
       {semClass && (
-        <p className="mb-3 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800">
-          Há lançamentos sem conta do plano. Eles somam no resultado na linha “Não classificado”; classifique-os em <Link href="/financeiro/classificar" className="underline">Classificar pendentes</Link>.
+        <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          Há lançamentos sem conta do plano. Eles somam no resultado na linha “Não classificado”; classifique-os em <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.
         </p>
       )}
       {centroId && <p className="mb-3 text-xs text-slate-500">Com o filtro de centro de custo, perdas e ajustes de estoque ficam de fora (o estoque não tem centro de custo).</p>}
 
-      <Table head={["", ...meses.map((m) => mesAno(new Date(`${m}-01T00:00:00Z`)) + (fechados.has(m) ? " (fechado)" : "")), "Total"]}>
+      <Table head={["Linha do resultado", ...meses.map((m) => mesAno(new Date(`${m}-01T00:00:00Z`)) + (fechados.has(m) ? " (fechado)" : "")), "Total"]}>
         {LINHAS.map((def) => {
           const detalhes = def.tipo ? colunas.map((c) => c.contas[def.tipo!] ?? []) : [];
           const ids = [...new Set(detalhes.flat().map((c) => c.planoId))];
@@ -86,14 +80,14 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
               <tr className={cx(def.forte && "bg-slate-50 font-semibold")}>
                 <Td>{def.rotulo}</Td>
                 {colunas.map((c, i) => (
-                  <Td key={i} className={cx("text-right tabular-nums", cor(c[def.campo] as number))}>{money(c[def.campo] as number)}</Td>
+                  <Td key={i} className={cx("text-right tnum", cor(c[def.campo] as number))}>{money(c[def.campo] as number)}</Td>
                 ))}
               </tr>
               {def.campo === "lucroBruto" && (
                 <tr className="text-xs text-slate-500">
                   <Td className="pl-8">Margem bruta</Td>
                   {colunas.map((c, i) => (
-                    <Td key={i} className="text-right">{pct(c.margemBruta)}</Td>
+                    <Td key={i} className="text-right tnum">{pct(c.margemBruta)}</Td>
                   ))}
                 </tr>
               )}
@@ -102,7 +96,7 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
                   <Td className="pl-8">{id ? (nomePlano.get(id) ?? "Conta removida") : "Sem conta do plano"}</Td>
                   {colunas.map((_, i) => {
                     const v = detalhes[i].find((c) => c.planoId === id)?.valor ?? 0;
-                    return <Td key={i} className="text-right tabular-nums">{v === 0 ? "—" : money(v)}</Td>;
+                    return <Td key={i} className="text-right tnum">{v === 0 ? "—" : money(v)}</Td>;
                   })}
                 </tr>
               ))}

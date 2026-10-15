@@ -8,7 +8,7 @@ export default async function NovoOrcamentoPage() {
   const [hospitais, convenios] = await Promise.all([opcoesHospitais(), opcoesConvenios()]);
   return (
     <>
-      <PageHeader title="Novo orçamento" subtitle="Depois de criar, inclua os itens" />
+      <PageHeader title="Novo orçamento" subtitle="Informe o destinatário. Depois de criar, inclua os itens do orçamento." />
       <Card>
         <OrcamentoForm hospitais={hospitais} convenios={convenios} />
       </Card>

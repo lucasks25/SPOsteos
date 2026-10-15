@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { LOCAIS } from "@/lib/estoque";
-import { Badge, PageHeader, SearchBar, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, btn, PageHeader, SearchBar, StatusBadge, Table, Td } from "@/components/ui";
 import { date, diasAte, num } from "@/lib/format";
 import { hojeUTC, PERFIS_QUALIDADE } from "../_lib/datas";
 
@@ -37,21 +37,21 @@ export default async function QuarentenaPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader title="Quarentena / inspeção" subtitle="Lotes recebidos aguardando inspeção de qualidade" />
+      <PageHeader title="Quarentena e inspeção" subtitle="Lotes recebidos que aguardam inspeção de qualidade." />
       <SearchBar placeholder="Lote, código ou descrição do produto" defaultValue={q} />
-      <Table head={["Produto", "Lote", "Validade", "Registro ANVISA", "Status", "Qtd. em quarentena", "Recebido em", ""]} empty={lotes.length === 0}>
+      <Table head={["Produto", "Lote", "Validade", "Registro ANVISA", "Status", "Qtd. em quarentena", "Recebido em", ""]} empty={lotes.length === 0} emptyText={q ? "Nenhum lote em quarentena corresponde à busca." : "Nenhum lote aguardando inspeção."}>
         {lotes.map((l) => {
           const qtd = l.saldos.reduce((s, x) => s + x.quantidade, 0);
           const vencido = l.validade < hoje;
           const regVencido = l.produto.validadeRegistro ? l.produto.validadeRegistro < hoje : false;
           return (
-            <tr key={l.id} className="hover:bg-slate-50">
+            <tr key={l.id}>
               <Td>
                 <span className="font-mono text-xs text-slate-500">{l.produto.codigo}</span> {l.produto.descricao}
               </Td>
               <Td className="font-mono text-xs">
                 {l.numero}
-                {l.serie && <span className="text-slate-400"> / {l.serie}</span>}
+                {l.serie && <span className="text-slate-500"> / {l.serie}</span>}
               </Td>
               <Td>
                 {date(l.validade)} {vencido ? <Badge color="red">vencido</Badge> : diasAte(l.validade) <= 90 && <Badge color="yellow">{diasAte(l.validade)}d</Badge>}
@@ -62,10 +62,10 @@ export default async function QuarentenaPage({ searchParams }: { searchParams: P
               <Td>
                 <StatusBadge status={l.status} />
               </Td>
-              <Td>{num(qtd)}</Td>
+              <Td className="text-right">{num(qtd)}</Td>
               <Td>{date(l.criadoEm)}</Td>
               <Td>
-                <Link href={`/qualidade/quarentena/${l.id}`} className="text-teal-700 hover:underline">
+                <Link href={`/qualidade/quarentena/${l.id}`} className={btn.small}>
                   Inspecionar
                 </Link>
               </Td>

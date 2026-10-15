@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
@@ -19,9 +19,9 @@ export default async function RepresentantesPage({ searchParams }: { searchParam
       <SearchBar placeholder="Nome" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Nome", "Contato", "Comissão", "Cirurgias", "Pedidos", ""]} empty={reps.length === 0}>
+      <Table head={["Nome", "Contato", "Comissão", "Cirurgias", "Pedidos", ""]} empty={reps.length === 0} emptyText={q ? "Nenhum representante encontrado para essa busca." : "Nenhum representante encontrado."} emptyAction={<LinkButton href="/cadastros/representantes/novo" variant="secondary" icon="mais">Cadastrar representante</LinkButton>}>
         {reps.map((r) => (
-          <tr key={r.id} className="hover:bg-slate-50">
+          <tr key={r.id}>
             <Td className="font-medium">
               {r.nome} {!r.ativo && <Badge>inativo</Badge>}
             </Td>
@@ -29,11 +29,11 @@ export default async function RepresentantesPage({ searchParams }: { searchParam
               <div>{r.telefone ?? "—"}</div>
               {r.email && <div className="text-xs text-slate-500">{r.email}</div>}
             </Td>
-            <Td>{r.comissaoPercent.toString()}%</Td>
-            <Td>{num(r._count.cirurgias)}</Td>
-            <Td>{num(r._count.pedidos)}</Td>
+            <Td className="text-right">{r.comissaoPercent.toString()}%</Td>
+            <Td className="text-right">{num(r._count.cirurgias)}</Td>
+            <Td className="text-right">{num(r._count.pedidos)}</Td>
             <Td>
-              <Link href={`/cadastros/representantes/${r.id}`} className="text-teal-700 hover:underline">Editar</Link>
+              <Link href={`/cadastros/representantes/${r.id}`} className={btn.small}>Editar</Link>
             </Td>
           </tr>
         ))}

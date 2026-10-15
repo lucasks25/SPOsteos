@@ -21,8 +21,8 @@ export function FornecedorForm({ fornecedor, podeBanco = false }: { fornecedor?:
         </div>
       </Grid>
       {podeBanco && (
-      <fieldset className="rounded-lg border border-slate-200 p-4">
-        <legend className="px-1 text-xs font-semibold uppercase tracking-wide text-slate-500">Dados para pagamento (SISPAG)</legend>
+      <fieldset className="rounded border border-slate-200 p-4">
+        <legend className="px-1 text-xs font-bold uppercase tracking-[.04em] text-slate-600">Dados para pagamento (SISPAG)</legend>
         <Grid cols={4}>
           <Field label="Banco (código)" name="bancoCodigo" defaultValue={f?.bancoCodigo ?? ""} maxLength={3} placeholder="341" />
           <Field label="Agência" name="agencia" defaultValue={f?.agencia ?? ""} maxLength={5} hint="Sem dígito" />

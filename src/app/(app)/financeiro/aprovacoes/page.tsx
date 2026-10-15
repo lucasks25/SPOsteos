@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Form } from "@/components/form";
-import { Card, PageHeader } from "@/components/ui";
+import { LinkButton, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -16,45 +16,30 @@ export default async function AprovacoesPage() {
   });
   return (
     <>
-      <PageHeader title="Aprovar contas a pagar" subtitle="Contas geradas pelo recebimento de compra ficam aguardando o financeiro. Só depois de aprovadas entram em remessa SISPAG. Confira o valor e o fornecedor com o pedido de compra." />
+      <PageHeader title="Aprovar contas a pagar" subtitle="Contas geradas pelo recebimento de compra esperam a aprovação do financeiro e só então entram em remessa de pagamento. Confira valor e fornecedor com o pedido." />
       {pendentes.length === 0 ? (
-        <Card>
-          <p className="text-sm text-slate-600">
-            Nada aguardando aprovação. Veja as <Link href="/financeiro/pagar" className="text-teal-700 hover:underline">contas a pagar</Link>.
-          </p>
-        </Card>
+        <Table head={["Vencimento", "Descrição", "Fornecedor", "Valor"]} empty emptyText="Nada aguardando aprovação." emptyAction={<LinkButton href="/financeiro/pagar" variant="secondary">Ver contas a pagar</LinkButton>}>
+          {null}
+        </Table>
       ) : (
         <Form action={aprovarContasPagar} submitLabel="Aprovar selecionadas" resetOnSuccess>
-          <div className="overflow-x-auto rounded-lg border border-slate-200">
-            <table className="min-w-full divide-y divide-slate-200 text-sm">
-              <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
-                <tr>
-                  <th scope="col" className="w-10 px-3 py-2"><span className="sr-only">Selecionar</span></th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Vencimento</th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Descrição</th>
-                  <th scope="col" className="px-3 py-2 text-left font-semibold">Fornecedor</th>
-                  <th scope="col" className="px-3 py-2 text-right font-semibold">Valor</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 [&>tr:hover]:bg-slate-50/70">
-                {pendentes.map((t) => (
-                  <tr key={t.id}>
-                    <td className="px-3 py-2">
-                      <input type="checkbox" name="id" value={t.id} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} />
-                    </td>
-                    <td className="px-3 py-2">{date(t.vencimento)}</td>
-                    <td className="max-w-xs truncate px-3 py-2">
-                      <Link href={`/financeiro/pagar/${t.id}`} className="text-teal-700 hover:underline">
-                        {t.descricao}
-                      </Link>
-                    </td>
-                    <td className="max-w-[14rem] truncate px-3 py-2">{t.fornecedor ? t.fornecedor.nomeFantasia || t.fornecedor.razaoSocial : "—"}</td>
-                    <td className="px-3 py-2 text-right tabular-nums">{money(toNumber(t.valor))}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+          <Table head={[<span key="s" className="sr-only">Selecionar</span>, "Vencimento", "Descrição", "Fornecedor", "Valor"]}>
+            {pendentes.map((t) => (
+              <tr key={t.id}>
+                <Td>
+                  <input type="checkbox" name="id" value={t.id} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} />
+                </Td>
+                <Td>{date(t.vencimento)}</Td>
+                <Td className="max-w-xs truncate">
+                  <Link href={`/financeiro/pagar/${t.id}`} className="text-teal-700 hover:underline">
+                    {t.descricao}
+                  </Link>
+                </Td>
+                <Td className="max-w-[14rem] truncate">{t.fornecedor ? t.fornecedor.nomeFantasia || t.fornecedor.razaoSocial : "—"}</Td>
+                <Td className="text-right tnum">{money(toNumber(t.valor))}</Td>
+              </tr>
+            ))}
+          </Table>
         </Form>
       )}
     </>

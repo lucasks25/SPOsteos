@@ -1,11 +1,11 @@
 import Link from "next/link";
-import { PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
+import { KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { FiltroInput, FiltroSelect, Filtros } from "../_components/filtros";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 
 const STATUS = ["ABERTO", "FATURADO", "CANCELADO"] as const;
-const inputCls = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
 
 export default async function PedidosVendaPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireUser(["COMERCIAL", "FINANCEIRO"]);
@@ -26,35 +26,18 @@ export default async function PedidosVendaPage({ searchParams }: { searchParams:
   return (
     <>
       <PageHeader title="Pedidos de venda" subtitle="Gerados ao faturar uma cirurgia realizada" />
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <KpiGrid cols={3}>
         <Stat label="Abertos (sem NF) na lista" value={money(aFaturar)} hint={`${pedidos.filter((p) => p.status === "ABERTO").length} pedido(s)`} tone={aFaturar > 0 ? "warn" : "default"} />
-      </div>
-      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Busca</span>
-          <input name="q" defaultValue={q} placeholder="PV-12, NF ou hospital" className={`${inputCls} w-64`} />
-        </label>
-        <label className="block">
-          <span className="mb-1 block text-xs font-medium text-slate-600">Status</span>
-          <select name="status" defaultValue={s ?? ""} className={inputCls}>
-            <option value="">Todos</option>
-            {STATUS.map((x) => (
-              <option key={x} value={x}>
-                {x.toLowerCase()}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className={btn.secondary}>Filtrar</button>
-        <Link href="/comercial/pedidos" className={btn.ghost}>
-          Limpar
-        </Link>
-      </form>
-      <Table head={["Pedido", "Hospital", "Cirurgia", "Criado", "NF", "Total", "Status"]} empty={pedidos.length === 0}>
+      </KpiGrid>
+      <Filtros limparHref="/comercial/pedidos">
+        <FiltroInput label="Busca" name="q" defaultValue={q} placeholder="PV-12, NF ou hospital" className="w-64" />
+        <FiltroSelect label="Status" name="status" defaultValue={s ?? ""} options={STATUS.map((x) => ({ value: x, label: x.toLowerCase() }))} />
+      </Filtros>
+      <Table head={["Pedido", "Hospital", "Cirurgia", "Criado", "NF", "Total", "Status"]} empty={pedidos.length === 0} emptyText="Nenhum pedido de venda encontrado. Pedidos são gerados ao faturar uma cirurgia realizada." emptyAction={<LinkButton href="/comercial/cirurgias?status=REALIZADA" variant="secondary">Ver cirurgias realizadas</LinkButton>}>
         {pedidos.map((p) => (
-          <tr key={p.id} className="hover:bg-slate-50">
+          <tr key={p.id}>
             <Td>
-              <Link href={`/comercial/pedidos/${p.id}`} className="text-teal-700 hover:underline">
+              <Link href={`/comercial/pedidos/${p.id}`} className="font-mono text-xs text-teal-700 hover:underline">
                 PV-{p.id}
               </Link>
             </Td>
@@ -62,7 +45,7 @@ export default async function PedidosVendaPage({ searchParams }: { searchParams:
             <Td>{p.cirurgia ? `CIR-${p.cirurgia.numero}` : "—"}</Td>
             <Td>{date(p.criadoEm)}</Td>
             <Td>{p.numeroNf ?? "—"}</Td>
-            <Td className="text-right tabular-nums">{money(toNumber(p.total))}</Td>
+            <Td className="text-right">{money(toNumber(p.total))}</Td>
             <Td>
               <StatusBadge status={p.status} />
             </Td>

@@ -17,7 +17,7 @@ let seq = 0;
 const novaChave = () => `r${++seq}`;
 
 const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-2 py-1.5 text-sm focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
+  "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
 
 /** Monta linhas por FEFO; linhas sem saldo ficam com lote vazio para o usuário resolver. */
 function montar(lotes: LoteDisp[], itens: ItemQtd[], existentes: Row[] = []): Row[] {
@@ -129,8 +129,8 @@ export function RemessaForm({
       <div>
         <div className="mb-2 flex flex-wrap items-end gap-2">
           <label className="block min-w-64 flex-1">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Adicionar produto</span>
-            <select value={addProduto} onChange={(e) => setAddProduto(e.target.value)} className={inputCls}>
+            <span className="mb-1 block text-xs text-slate-700">Adicionar produto</span>
+            <select aria-label="Produto a adicionar" value={addProduto} onChange={(e) => setAddProduto(e.target.value)} className={inputCls}>
               <option value="">Selecione...</option>
               {produtos.map((p) => (
                 <option key={p.id} value={p.id}>
@@ -140,26 +140,26 @@ export function RemessaForm({
             </select>
           </label>
           <label className="block w-24">
-            <span className="mb-1 block text-xs font-medium text-slate-600">Qtd.</span>
-            <input type="number" min={1} value={addQtd} onChange={(e) => setAddQtd(Number(e.target.value))} className={inputCls} />
+            <span className="mb-1 block text-xs text-slate-700">Qtd.</span>
+            <input aria-label="Quantidade a adicionar" type="number" min={1} value={addQtd} onChange={(e) => setAddQtd(Number(e.target.value))} className={inputCls} />
           </label>
-          <button type="button" onClick={adicionar} className={btn.secondary}>Adicionar (FEFO)</button>
+          <button type="button" onClick={adicionar} className={btn.secondary}>Adicionar produto (lote por FEFO)</button>
         </div>
 
-        <div className="overflow-x-auto rounded-lg border border-slate-200">
-          <table className="min-w-full divide-y divide-slate-200 text-sm">
-            <thead className="bg-slate-50 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
+        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
+          <table className="min-w-full text-[13px]">
+            <thead className="border-b border-slate-200 bg-slate-50">
               <tr>
-                <th className="px-3 py-2">Produto</th>
-                <th className="px-3 py-2">Lote (validade — disponível)</th>
-                <th className="w-28 px-3 py-2">Qtd.</th>
-                <th className="px-3 py-2"></th>
+                <th scope="col" className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">Produto</th>
+                <th scope="col" className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">Lote (validade — disponível)</th>
+                <th scope="col" className="w-28 px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">Qtd.</th>
+                <th scope="col" className="px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">Ações</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-100">
+            <tbody className="divide-y divide-slate-200">
               {rows.length === 0 && (
                 <tr>
-                  <td colSpan={4} className="px-3 py-6 text-center text-slate-400">Nenhum item. Escolha uma cirurgia, um kit ou adicione produtos.</td>
+                  <td colSpan={4} className="px-3 py-8 text-center text-sm text-slate-600">Nenhum item. Escolha uma cirurgia, um kit ou adicione produtos.</td>
                 </tr>
               )}
               {rows.map((r) => {
@@ -169,11 +169,11 @@ export function RemessaForm({
                 const excede = lote ? (usadoPorLote.get(lote.loteId) ?? 0) > lote.disponivel : false;
                 return (
                   <tr key={r.key}>
-                    <td className="px-3 py-2">
-                      <span className="font-mono text-xs text-slate-500">{p?.codigo}</span> {p?.descricao ?? r.produtoId}
+                    <td className="px-3 py-1.5 align-middle">
+                      <span className="font-mono text-xs text-slate-600">{p?.codigo}</span> {p?.descricao ?? r.produtoId}
                     </td>
-                    <td className="px-3 py-2">
-                      <select value={r.loteId} onChange={(e) => atualizar(r.key, { loteId: e.target.value })} className={inputCls}>
+                    <td className="px-3 py-1.5 align-middle">
+                      <select aria-label={`Lote de ${p?.descricao ?? "produto"}`} value={r.loteId} onChange={(e) => atualizar(r.key, { loteId: e.target.value })} className={inputCls}>
                         <option value="">{opcoes.length === 0 ? "Sem lote disponível" : "Selecione o lote..."}</option>
                         {opcoes.map((l) => (
                           <option key={l.loteId} value={l.loteId}>
@@ -184,17 +184,18 @@ export function RemessaForm({
                       {!r.loteId && <span className="mt-1 block text-xs text-rose-600">Sem saldo liberado suficiente — escolha um lote ou remova.</span>}
                       {excede && <span className="mt-1 block text-xs text-rose-600">Quantidade total do lote excede o disponível.</span>}
                     </td>
-                    <td className="px-3 py-2">
+                    <td className="px-3 py-1.5 align-middle">
                       <input
+                        aria-label={`Quantidade de ${p?.descricao ?? "produto"}`}
                         type="number"
                         min={1}
                         value={r.quantidade}
                         onChange={(e) => atualizar(r.key, { quantidade: Number(e.target.value) })}
-                        className={inputCls}
+                        className={`${inputCls} text-right`}
                       />
                     </td>
-                    <td className="px-3 py-2 text-right">
-                      <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className="text-xs text-rose-600 hover:underline">
+                    <td className="px-3 py-1.5 align-middle">
+                      <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className={btn.small}>
                         Remover
                       </button>
                     </td>
@@ -205,7 +206,7 @@ export function RemessaForm({
           </table>
         </div>
         {(pendentes > 0 || excedidos > 0) && (
-          <p className="mt-2 text-xs text-amber-700">
+          <p role="status" className="mt-2 text-xs text-amber-700">
             {pendentes > 0 && `${pendentes} item(ns) sem lote/quantidade. `}
             {excedidos > 0 && `${excedidos} lote(s) acima do disponível.`}
           </p>

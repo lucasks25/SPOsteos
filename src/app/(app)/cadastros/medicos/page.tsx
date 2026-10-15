@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
@@ -31,9 +31,9 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
       <SearchBar placeholder="Nome, CRM ou especialidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Nome", "CRM", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0}>
+      <Table head={["Nome", "CRM", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={<LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton>}>
         {medicos.map((m) => (
-          <tr key={m.id} className="hover:bg-slate-50">
+          <tr key={m.id}>
             <Td className="font-medium">
               {m.nome} {!m.ativo && <Badge>inativo</Badge>}
             </Td>
@@ -45,9 +45,9 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
               <div>{m.telefone ?? "—"}</div>
               {m.email && <div className="text-xs text-slate-500">{m.email}</div>}
             </Td>
-            <Td>{num(m._count.cirurgias)}</Td>
+            <Td className="text-right">{num(m._count.cirurgias)}</Td>
             <Td>
-              <Link href={`/cadastros/medicos/${m.id}`} className="text-teal-700 hover:underline">Editar</Link>
+              <Link href={`/cadastros/medicos/${m.id}`} className={btn.small}>Editar</Link>
             </Td>
           </tr>
         ))}

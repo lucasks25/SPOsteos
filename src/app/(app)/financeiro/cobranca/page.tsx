@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
+import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -25,13 +25,14 @@ export default async function CobrancaPage() {
 
   return (
     <>
-      <PageHeader title="Cobrança dos hospitais (boleto Itaú)" subtitle="Gere a remessa CNAB 400 de boletos registrados, envie no Itaú Empresas e importe o retorno: os boletos pagos são baixados automaticamente." />
-      <div className="space-y-6">
+      <PageHeader title="Cobrança dos hospitais (boleto Itaú)" subtitle="Gere a remessa de boletos registrados, envie no Itaú Empresas e importe o retorno: os boletos pagos são baixados automaticamente." />
+      <div className="space-y-4">
         {contas.length === 0 ? (
           <Card>
-            <p className="text-sm text-slate-600">
-              Nenhuma conta com cobrança habilitada. Em <Link href="/financeiro/contas" className="text-teal-700 hover:underline">Contas bancárias</Link>, abra a conta do Itaú e selecione a carteira de cobrança 109 (exige convênio de cobrança contratado no banco).
-            </p>
+            <EmptyState
+              text="Nenhuma conta com cobrança habilitada. Abra a conta do Itaú e selecione a carteira de cobrança 109 (exige convênio de cobrança contratado no banco)."
+              action={<LinkButton href="/financeiro/contas" variant="secondary">Ir para contas bancárias</LinkButton>}
+            />
           </Card>
         ) : (
           <Card title="Nova remessa de cobrança">
@@ -39,51 +40,34 @@ export default async function CobrancaPage() {
               <Grid cols={3}>
                 <Select label="Conta de cobrança *" name="contaId" options={contas.map((c) => ({ value: c.id, label: c.nome }))} defaultValue={contas.length === 1 ? contas[0].id : ""} required />
               </Grid>
-              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
-                <table className="min-w-full text-[13px]">
-                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
-                    <tr>
-                      <th scope="col" className="w-10 px-3 py-2"><span className="sr-only">Selecionar</span></th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Vencimento</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Título</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Hospital</th>
-                      <th scope="col" className="px-3 py-2 text-right font-semibold">Saldo</th>
-                      <th scope="col" className="px-3 py-2 text-left font-semibold">Situação</th>
+              <Table
+                head={[<span key="s" className="sr-only">Selecionar</span>, "Vencimento", "Título", "Hospital", "Saldo", "Situação"]}
+                empty={abertos.length === 0}
+                emptyText="Nenhum título a receber sem cobrança."
+              >
+                {abertos.map((t) => {
+                  const falta = t.hospital ? faltaNoPagador(t.hospital) : ["hospital"];
+                  const motivo = t.vencimento < hoje ? "vencimento já passou" : falta.length ? `falta ${falta.join(", ")} no hospital` : null;
+                  return (
+                    <tr key={t.id} className={motivo ? "bg-slate-50 text-slate-500" : ""}>
+                      <Td>
+                        <input type="checkbox" name="tituloId" value={t.id} disabled={!!motivo} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} />
+                      </Td>
+                      <Td>{date(t.vencimento)}</Td>
+                      <Td className="max-w-xs truncate">
+                        <Link href={`/financeiro/receber/${t.id}`} className="hover:underline">
+                          {t.descricao}
+                        </Link>
+                      </Td>
+                      <Td className="max-w-[14rem] truncate">{t.hospital ? t.hospital.nomeFantasia || t.hospital.razaoSocial : "—"}</Td>
+                      <Td className="text-right tnum">{money(toNumber(t.valor) - toNumber(t.valorBaixado))}</Td>
+                      <Td className="text-xs">{motivo ? <span className="text-amber-700">{motivo}</span> : t.cobrancaStatus === "REJEITADO" ? <Badge color="red">rejeitado: gerar de novo</Badge> : "pronto"}</Td>
                     </tr>
-                  </thead>
-                  <tbody className="divide-y divide-slate-100 [&>tr:hover]:bg-slate-50/70">
-                    {abertos.length === 0 && (
-                      <tr>
-                        <td colSpan={6} className="px-3 py-6 text-center text-slate-400">
-                          Nenhum título a receber sem cobrança.
-                        </td>
-                      </tr>
-                    )}
-                    {abertos.map((t) => {
-                      const falta = t.hospital ? faltaNoPagador(t.hospital) : ["hospital"];
-                      const motivo = t.vencimento < hoje ? "vencimento já passou" : falta.length ? `falta ${falta.join(", ")} no hospital` : null;
-                      return (
-                        <tr key={t.id} className={motivo ? "bg-slate-50 text-slate-400" : ""}>
-                          <td className="px-3 py-2">
-                            <input type="checkbox" name="tituloId" value={t.id} disabled={!!motivo} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} />
-                          </td>
-                          <td className="px-3 py-2">{date(t.vencimento)}</td>
-                          <td className="max-w-xs truncate px-3 py-2">
-                            <Link href={`/financeiro/receber/${t.id}`} className="hover:underline">
-                              {t.descricao}
-                            </Link>
-                          </td>
-                          <td className="max-w-[14rem] truncate px-3 py-2">{t.hospital ? t.hospital.nomeFantasia || t.hospital.razaoSocial : "—"}</td>
-                          <td className="px-3 py-2 text-right tabular-nums">{money(toNumber(t.valor) - toNumber(t.valorBaixado))}</td>
-                          <td className="px-3 py-2 text-xs">{motivo ? <span className="text-amber-700">{motivo}</span> : t.cobrancaStatus === "REJEITADO" ? <Badge color="red">rejeitado: gerar de novo</Badge> : "pronto"}</td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                  );
+                })}
+              </Table>
               {registrados.length > 0 && (
-                <div className="rounded-lg border border-amber-200 bg-amber-50 p-3">
+                <div className="rounded border border-amber-200 bg-amber-50 p-3">
                   <p className="mb-2 text-sm font-medium text-amber-900">Boletos registrados cujo título foi pago ou cancelado por outro meio: peça baixa para o hospital não pagar de novo.</p>
                   {registrados.map((t) => (
                     <label key={t.id} className="flex items-center gap-2 py-0.5 text-sm text-amber-900">
@@ -105,12 +89,12 @@ export default async function CobrancaPage() {
         </Card>
 
         <section>
-          <h2 className="mb-3 text-sm font-semibold text-slate-700">Remessas de cobrança</h2>
-          <Table head={["Remessa", "Conta", "Gerada em", "Itens", "Situação"]} empty={remessas.length === 0}>
+          <SectionTitle>Remessas de cobrança</SectionTitle>
+          <Table head={["Remessa", "Conta", "Gerada em", "Itens", "Situação"]} empty={remessas.length === 0} emptyText="Nenhuma remessa de cobrança gerada ainda.">
             {remessas.map((r) => {
               const n = (s: string) => r.itens.filter((i) => i.status === s).length;
               return (
-                <tr key={r.id} className="hover:bg-slate-50">
+                <tr key={r.id}>
                   <Td>
                     <Link href={`/financeiro/cobranca/${r.id}`} className="text-teal-700 hover:underline">
                       #{r.id}
@@ -118,7 +102,7 @@ export default async function CobrancaPage() {
                   </Td>
                   <Td>{r.conta.nome}</Td>
                   <Td>{date(r.criadaEm)}</Td>
-                  <Td>{r.itens.length}</Td>
+                  <Td className="text-right tnum">{r.itens.length}</Td>
                   <Td className="space-x-1">
                     {r.canceladaEm && <Badge color="gray">cancelada</Badge>}
                     {n("LIQUIDADO") > 0 && <Badge color="green">{n("LIQUIDADO")} pago(s)</Badge>}

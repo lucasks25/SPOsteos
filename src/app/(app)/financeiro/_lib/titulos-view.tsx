@@ -1,14 +1,12 @@
 import Link from "next/link";
-import { Badge, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
+import { Field, Select } from "@/components/form";
+import { Badge, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { date, money } from "@/lib/format";
 import { TIPOS, type Tipo, type TituloRow } from "./config";
 import { hojeUTC, ymd } from "./datas";
 import { listarParceiros, listarTitulos, parseFiltros, type Filtros } from "./queries";
 
 type SP = Record<string, string | string[] | undefined>;
-
-const inputCls =
-  "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
 
 /** Situação do título, destacando vencidos. */
 export function SituacaoTitulo({ t, hoje }: { t: Pick<TituloRow, "status" | "vencimento"> & { valorBaixado?: number }; hoje: Date }) {
@@ -23,48 +21,33 @@ export function SituacaoTitulo({ t, hoje }: { t: Pick<TituloRow, "status" | "ven
 function FiltrosForm({ tipo, f, parceiros }: { tipo: Tipo; f: Filtros; parceiros: { value: string; label: string }[] }) {
   const cfg = TIPOS[tipo];
   return (
-    <form className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">Descrição</span>
-        <input name="q" defaultValue={f.q} placeholder="Buscar..." className={`${inputCls} w-48`} />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">Status</span>
-        <select name="status" defaultValue={f.status} className={inputCls}>
-          <option value="ABERTO">Em aberto</option>
-          <option value="PAGO">{cfg.pagoLabel}</option>
-          <option value="CANCELADO">Cancelado</option>
-          <option value="TODOS">Todos</option>
-        </select>
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">{cfg.parceiro}</span>
-        <select name={cfg.parceiroParam} defaultValue={f.parceiroId ?? ""} className={`${inputCls} max-w-56`}>
-          <option value="">Todos</option>
-          {parceiros.map((p) => (
-            <option key={p.value} value={p.value}>
-              {p.label}
-            </option>
-          ))}
-        </select>
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">Vencimento de</span>
-        <input type="date" name="de" defaultValue={f.de ? ymd(f.de) : ""} className={inputCls} />
-      </label>
-      <label className="block">
-        <span className="mb-1 block text-xs font-medium text-slate-600">até</span>
-        <input type="date" name="ate" defaultValue={f.ate ? ymd(f.ate) : ""} className={inputCls} />
-      </label>
-      <label className="flex items-center gap-2 py-2 text-sm text-slate-700">
-        <input type="checkbox" name="vencidos" value="1" defaultChecked={f.vencidos} className="h-4 w-4 rounded border-slate-300" />
+    <FilterBar>
+      <Field label="Descrição" name="q" defaultValue={f.q} placeholder="Buscar..." className="w-48" />
+      <Select
+        label="Situação"
+        name="status"
+        defaultValue={f.status}
+        placeholder=""
+        className="w-40"
+        options={[
+          { value: "ABERTO", label: "Em aberto" },
+          { value: "PAGO", label: cfg.pagoLabel },
+          { value: "CANCELADO", label: "Cancelado" },
+          { value: "TODOS", label: "Todos" },
+        ]}
+      />
+      <Select label={cfg.parceiro} name={cfg.parceiroParam} defaultValue={f.parceiroId ?? ""} options={parceiros} placeholder="Todos" className="w-56" />
+      <Field label="Vencimento de" name="de" type="date" defaultValue={f.de ? ymd(f.de) : ""} className="w-40" />
+      <Field label="Vencimento até" name="ate" type="date" defaultValue={f.ate ? ymd(f.ate) : ""} className="w-40" />
+      <label className="flex h-8 items-center gap-2 text-sm text-slate-700">
+        <input type="checkbox" name="vencidos" value="1" defaultChecked={f.vencidos} className="h-4 w-4 rounded-sm border-slate-300" />
         Somente vencidos
       </label>
       <button className={btn.secondary}>Filtrar</button>
       <Link href={cfg.path} className={btn.ghost}>
         Limpar
       </Link>
-    </form>
+    </FilterBar>
   );
 }
 
@@ -77,26 +60,31 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
   const pagoPeriodo = `${date(totais.pago.de)} a ${date(totais.pago.ate)}`;
   const totalLista = rows.reduce((s, r) => s + (r.status === "PAGO" ? (r.valorPago ?? 0) : r.saldo || r.valor), 0);
 
-  const head = ["Vencimento", "Descrição", cfg.parceiro, "Conta do plano", "Valor", "Situação", cfg.pagoLabel, "Origem", ""];
+  const head = ["Vencimento", "Descrição", cfg.parceiro, "Conta do plano", "Valor", "Situação", cfg.pagoLabel, "Origem", "Ações"];
 
   return (
     <>
       <PageHeader
         title={cfg.titulo}
-        subtitle={tipo === "receber" ? "Títulos de hospitais e convênios" : "Obrigações com fornecedores e despesas"}
+        subtitle={tipo === "receber" ? "Títulos de hospitais e convênios: filtre, abra um título e registre a baixa." : "Obrigações com fornecedores e despesas: filtre, abra um título e registre a baixa."}
         actions={<LinkButton href={`${cfg.path}/novo`}>Novo título</LinkButton>}
       />
-      <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <KpiGrid cols={3}>
         <Stat label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
         <Link href={`${cfg.path}?vencidos=1`} className="block">
           <Stat label="Vencido" value={money(totais.vencido.valor)} hint={`${totais.vencido.qtd} título(s) — ver vencidos`} tone={totais.vencido.qtd ? "danger" : "default"} />
         </Link>
         <Stat label={`${cfg.pagoLabel} no período`} value={money(totais.pago.valor)} hint={`${totais.pago.qtd} baixa(s) — ${pagoPeriodo}`} />
-      </div>
+      </KpiGrid>
       <FiltrosForm tipo={tipo} f={f} parceiros={parceiros} />
-      <Table head={head} empty={rows.length === 0}>
+      <Table
+        head={head}
+        empty={rows.length === 0}
+        emptyText={tipo === "receber" ? "Nenhum título a receber com esses filtros." : "Nenhuma conta a pagar com esses filtros."}
+        emptyAction={<LinkButton href={`${cfg.path}/novo`} variant="secondary">Novo título</LinkButton>}
+      >
         {rows.map((t) => (
-          <tr key={t.id} className="hover:bg-slate-50">
+          <tr key={t.id}>
             <Td>{date(t.vencimento)}</Td>
             <Td className="max-w-xs truncate">
               <Link href={`${cfg.path}/${t.id}`} className="text-teal-700 hover:underline">
@@ -105,18 +93,18 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
             </Td>
             <Td className="max-w-[14rem] truncate">{t.parceiroNome ?? "—"}</Td>
             <Td className="max-w-[12rem] truncate">{t.categoria ?? <span className="text-amber-700">Não classificado</span>}</Td>
-            <Td className="text-right tabular-nums">{money(t.valor)}</Td>
+            <Td className="text-right tnum">{money(t.valor)}</Td>
             <Td>
               <SituacaoTitulo t={t} hoje={hoje} />
             </Td>
-            <Td>{t.valorPago ? `${money(t.valorPago)} em ${date(t.pagoEm)}` : "—"}</Td>
+            <Td className="text-right tnum">{t.valorPago ? `${money(t.valorPago)} em ${date(t.pagoEm)}` : "—"}</Td>
             <Td>
               {t.pedidoId ? (
                 <Link href={cfg.pedidoHref(t.pedidoId)} className="text-teal-700 hover:underline">
                   Pedido #{t.pedidoId}
                 </Link>
               ) : (
-                <span className="text-slate-400">manual</span>
+                <span className="text-slate-500">manual</span>
               )}
             </Td>
             <Td>
@@ -128,7 +116,7 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
         ))}
       </Table>
       {rows.length > 0 && (
-        <p className="mt-2 text-right text-sm text-slate-500">
+        <p className="tnum mt-2 text-right text-sm text-slate-600">
           {rows.length} título(s){rows.length === 500 && " (exibindo os 500 primeiros)"} — total listado <strong className="text-slate-800">{money(totalLista)}</strong>
         </p>
       )}

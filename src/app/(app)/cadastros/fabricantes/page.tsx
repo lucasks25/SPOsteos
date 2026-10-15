@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { LinkButton, PageHeader, SearchBar, Table, Td } from "@/components/ui";
+import { LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
 import { num } from "@/lib/format";
 
 export default async function FabricantesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -19,15 +19,15 @@ export default async function FabricantesPage({ searchParams }: { searchParams: 
     <>
       <PageHeader title="Fabricantes" subtitle="Fabricantes dos materiais OPME" actions={<LinkButton href="/cadastros/fabricantes/novo">Novo fabricante</LinkButton>} />
       <SearchBar placeholder="Nome, CNPJ ou país" defaultValue={q} />
-      <Table head={["Nome", "CNPJ", "País", "Produtos", ""]} empty={fabricantes.length === 0}>
+      <Table head={["Nome", "CNPJ", "País", "Produtos", ""]} empty={fabricantes.length === 0} emptyText={q ? "Nenhum fabricante encontrado para essa busca." : "Nenhum fabricante encontrado."} emptyAction={<LinkButton href="/cadastros/fabricantes/novo" variant="secondary" icon="mais">Cadastrar fabricante</LinkButton>}>
         {fabricantes.map((f) => (
-          <tr key={f.id} className="hover:bg-slate-50">
+          <tr key={f.id}>
             <Td className="font-medium">{f.nome}</Td>
             <Td>{f.cnpj ?? "—"}</Td>
             <Td>{f.pais ?? "—"}</Td>
-            <Td>{num(f._count.produtos)}</Td>
+            <Td className="text-right">{num(f._count.produtos)}</Td>
             <Td>
-              <Link href={`/cadastros/fabricantes/${f.id}`} className="text-teal-700 hover:underline">Editar</Link>
+              <Link href={`/cadastros/fabricantes/${f.id}`} className={btn.small}>Editar</Link>
             </Td>
           </tr>
         ))}

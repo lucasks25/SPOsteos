@@ -6,7 +6,7 @@ export default async function NovoFabricantePage() {
   await requireUser();
   return (
     <>
-      <PageHeader title="Novo fabricante" />
+      <PageHeader title="Novo fabricante" subtitle="Cadastre o fabricante dos materiais; o CNPJ é opcional para estrangeiros." />
       <Card>
         <FabricanteForm />
       </Card>

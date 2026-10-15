@@ -44,16 +44,16 @@ export default async function KitPage({ params }: { params: Promise<{ id: string
               <ItemAdder action={adicionarItemKit.bind(null, id)} produtos={produtoOptions(produtos)} />
             </div>
           )}
-          <Table head={["Código", "Produto", "Qtd. no kit", "Disponível no depósito", ""]} empty={kit.itens.length === 0}>
+          <Table head={["Código", "Produto", "Qtd. no kit", "Disponível no depósito", "Ações"]} empty={kit.itens.length === 0} emptyText="Este kit ainda não tem itens. Use o campo acima para incluir produtos.">
             {kit.itens.map((i) => {
               const d = disp.get(i.produtoId) ?? 0;
               return (
                 <tr key={i.id}>
                   <Td className="font-mono text-xs">{i.produto.codigo}</Td>
                   <Td>{i.produto.descricao}</Td>
-                  <Td>{i.quantidade}</Td>
-                  <Td className={d < i.quantidade ? "text-rose-600" : undefined}>{num(d)}</Td>
-                  <Td>{edita && <ActionButton action={removerItemKit.bind(null, i.id)} variant="ghost">Remover</ActionButton>}</Td>
+                  <Td className="text-right">{i.quantidade}</Td>
+                  <Td className={d < i.quantidade ? "text-right text-rose-600" : "text-right"}>{num(d)}</Td>
+                  <Td>{edita && <ActionButton action={removerItemKit.bind(null, i.id)} variant="small">Remover</ActionButton>}</Td>
                 </tr>
               );
             })}

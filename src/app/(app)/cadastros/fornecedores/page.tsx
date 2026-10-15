@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function FornecedoresPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
@@ -30,9 +30,9 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Razão social", "CNPJ", "Contato", "Cidade/UF", "AFE", ""]} empty={fornecedores.length === 0}>
+      <Table head={["Razão social", "CNPJ", "Contato", "Cidade/UF", "AFE", ""]} empty={fornecedores.length === 0} emptyText={q ? "Nenhum fornecedor encontrado para essa busca." : "Nenhum fornecedor encontrado."} emptyAction={<LinkButton href="/cadastros/fornecedores/novo" variant="secondary" icon="mais">Cadastrar fornecedor</LinkButton>}>
         {fornecedores.map((f) => (
-          <tr key={f.id} className="hover:bg-slate-50">
+          <tr key={f.id}>
             <Td>
               <div className="font-medium">
                 {f.razaoSocial} {!f.ativo && <Badge>inativo</Badge>}
@@ -47,7 +47,7 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
             <Td>{[f.cidade, f.uf].filter(Boolean).join("/") || "—"}</Td>
             <Td>{f.afe ? f.afe : <Badge color="yellow">sem AFE</Badge>}</Td>
             <Td>
-              <Link href={`/cadastros/fornecedores/${f.id}`} className="text-teal-700 hover:underline">Editar</Link>
+              <Link href={`/cadastros/fornecedores/${f.id}`} className={btn.small}>Editar</Link>
             </Td>
           </tr>
         ))}

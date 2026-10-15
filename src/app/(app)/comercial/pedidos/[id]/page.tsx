@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton, Field, Form, Grid } from "@/components/form";
-import { Card, Dl, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
@@ -35,7 +35,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
     <>
       <PageHeader
         title={`PV-${pedido.id}`}
-        subtitle={pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial}
+        subtitle={`${pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial} · pedido de venda gerado a partir de cirurgia realizada`}
         actions={
           <>
             <StatusBadge status={pedido.status} />
@@ -47,12 +47,12 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
           </>
         }
       />
-      <div className="mb-6 grid grid-cols-2 gap-4 lg:grid-cols-4">
+      <KpiGrid>
         <Stat label="Total" value={money(total)} />
         <Stat label="Custo" value={money(custo)} />
         <Stat label="Margem" value={money(margem)} hint={total > 0 ? `${((margem / total) * 100).toFixed(1)}%` : undefined} tone={margem < 0 ? "danger" : "default"} />
         <Stat label="Comissão" value={money(toNumber(pedido.comissao))} hint={pedido.representante?.nome} />
-      </div>
+      </KpiGrid>
 
       <div className="space-y-6">
         <Card title="Dados">
@@ -69,16 +69,16 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         </Card>
 
         <Card title="Itens">
-          <Table head={["Produto", "Lote", "Qtd.", "Preço unit.", "Subtotal"]}>
+          <Table head={["Produto", "Lote", "Qtd.", "Preço unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
             {pedido.itens.map((i) => (
               <tr key={i.id}>
                 <Td>
                   {i.produto.codigo} — {i.produto.descricao}
                 </Td>
                 <Td>{i.loteNumero ?? "—"}</Td>
-                <Td>{i.quantidade}</Td>
-                <Td className="tabular-nums">{money(toNumber(i.precoUnit))}</Td>
-                <Td className="tabular-nums">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
+                <Td className="text-right">{i.quantidade}</Td>
+                <Td className="text-right">{money(toNumber(i.precoUnit))}</Td>
+                <Td className="text-right">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
               </tr>
             ))}
           </Table>
@@ -86,7 +86,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
 
         {pedido.status === "ABERTO" && (
           <Card title="Registrar nota fiscal">
-            <p className="mb-3 text-sm text-slate-500">A emissão da NF-e ainda é feita fora do sistema. Informe o número para faturar e gerar a conta a receber.</p>
+            <p className="mb-3 text-sm text-slate-600">A emissão da NF-e ainda é feita fora do sistema. Informe o número para faturar e gerar a conta a receber.</p>
             <Form action={registrarNf.bind(null, pedido.id)} submitLabel="Registrar NF e gerar conta a receber">
               <Grid cols={3}>
                 <Field label="Número da NF *" name="numeroNf" required maxLength={30} />
@@ -98,17 +98,17 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
 
         {pedido.contasReceber.length > 0 && (
           <Card title="Contas a receber">
-            <Table head={["Vencimento", "Valor", "Situação", ""]}>
+            <Table head={["Vencimento", "Valor", "Situação", "Ações"]}>
               {pedido.contasReceber.map((c) => (
                 <tr key={c.id}>
                   <Td>{date(c.vencimento)}</Td>
-                  <Td className="tabular-nums">{money(toNumber(c.valor))}</Td>
+                  <Td className="text-right">{money(toNumber(c.valor))}</Td>
                   <Td>
                     <StatusBadge status={c.status} />
                   </Td>
                   <Td>
-                    <Link href={`/financeiro/receber/${c.id}`} className="text-teal-700 hover:underline">
-                      abrir
+                    <Link href={`/financeiro/receber/${c.id}`} className={btn.small}>
+                      Abrir
                     </Link>
                   </Td>
                 </tr>

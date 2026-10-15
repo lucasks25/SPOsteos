@@ -6,7 +6,7 @@ export default async function NovoRepresentantePage() {
   await requireUser();
   return (
     <>
-      <PageHeader title="Novo representante" />
+      <PageHeader title="Novo representante" subtitle="Cadastre o representante comercial e o percentual de comissão." />
       <Card>
         <RepresentanteForm />
       </Card>

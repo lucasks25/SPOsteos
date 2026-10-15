@@ -1,13 +1,12 @@
-import Link from "next/link";
 import type { Prisma, StatusRemessa } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { LinkButton, PageHeader, StatusBadge, Table, Td, btn } from "@/components/ui";
+import { LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
 import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
 
 const STATUS: StatusRemessa[] = ["ABERTA", "ENVIADA", "CONFERIDA", "CANCELADA"];
-const selCls = "rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm";
 
 export default async function RemessasPage({ searchParams }: { searchParams: Promise<{ status?: string; hospitalId?: string; q?: string }> }) {
   const user = await requireUser(PERFIS_VER);
@@ -48,46 +47,35 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
       <PageHeader
         title="Remessas / vales de consignação"
         subtitle="Materiais enviados aos hospitais para cirurgias"
-        actions={podeEditar(user.perfil) && <LinkButton href="/estoque/remessas/nova">Nova remessa</LinkButton>}
+        actions={podeEditar(user.perfil) && <LinkButton href="/estoque/remessas/nova" icon="mais">Nova remessa</LinkButton>}
       />
-      <form className="mb-4 flex flex-wrap gap-2">
-        <input name="q" defaultValue={sp.q} placeholder="Nº da remessa ou paciente" className={`${selCls} w-full max-w-xs`} />
-        <select name="status" defaultValue={status ?? ""} className={selCls}>
-          <option value="">Todos os status</option>
-          {STATUS.map((s) => (
-            <option key={s} value={s}>{s.toLowerCase()}</option>
-          ))}
-        </select>
-        <select name="hospitalId" defaultValue={sp.hospitalId ?? ""} className={selCls}>
-          <option value="">Todos os hospitais</option>
-          {hospitais.map((h) => (
-            <option key={h.id} value={h.id}>{h.nomeFantasia ?? h.razaoSocial}</option>
-          ))}
-        </select>
-        <button className={btn.secondary}>Filtrar</button>
-      </form>
-      <Table head={["Nº", "Hospital", "Cirurgia", "Kit", "Itens", "Status", "Criada", "Enviada", ""]} empty={remessas.length === 0}>
+      <Filtros limparHref="/estoque/remessas">
+        <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Nº da remessa ou paciente" className="w-60" />
+        <FiltroSelect label="Status" name="status" defaultValue={status} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.toLowerCase() }))} />
+        <FiltroSelect label="Hospital" name="hospitalId" defaultValue={sp.hospitalId} todos="Todos os hospitais" options={hospitais.map((h) => ({ value: h.id, label: h.nomeFantasia ?? h.razaoSocial }))} />
+      </Filtros>
+      <Table head={["Nº", "Hospital", "Cirurgia", "Kit", "Itens", "Status", "Criada", "Enviada", "Ações"]} empty={remessas.length === 0} emptyText="Nenhuma remessa encontrada para os filtros informados." emptyAction={podeEditar(user.perfil) ? <LinkButton href="/estoque/remessas/nova" variant="secondary">Nova remessa</LinkButton> : undefined}>
         {remessas.map((r) => (
-          <tr key={r.id} className="hover:bg-slate-50">
+          <tr key={r.id}>
             <Td className="font-mono text-xs">REM-{r.id}</Td>
             <Td>{r.local.hospital?.nomeFantasia ?? r.local.hospital?.razaoSocial ?? r.local.nome}</Td>
             <Td>
               {r.cirurgia ? (
                 <span>
                   nº {r.cirurgia.numero} — {r.cirurgia.paciente}
-                  <span className="block text-xs text-slate-400">{dateTime(r.cirurgia.dataHora)}</span>
+                  <span className="block text-xs text-slate-600">{dateTime(r.cirurgia.dataHora)}</span>
                 </span>
               ) : (
                 "—"
               )}
             </Td>
             <Td>{r.kit?.codigo ?? "—"}</Td>
-            <Td>{num(r.itens.reduce((s, i) => s + i.quantidade, 0))}</Td>
+            <Td className="text-right">{num(r.itens.reduce((s, i) => s + i.quantidade, 0))}</Td>
             <Td><StatusBadge status={r.status} /></Td>
             <Td>{date(r.criadoEm)}</Td>
             <Td>{r.enviadaEm ? dateTime(r.enviadaEm) : "—"}</Td>
             <Td>
-              <Link href={`/estoque/remessas/${r.id}`} className="text-teal-700 hover:underline">Abrir</Link>
+              <LinkButton href={`/estoque/remessas/${r.id}`} variant="small">Abrir</LinkButton>
             </Td>
           </tr>
         ))}

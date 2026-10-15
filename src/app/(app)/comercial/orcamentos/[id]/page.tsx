@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, Dl, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Card, Dl, cx, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
 import { ActionButton } from "@/components/form";
 import { ItemAdder, produtoOptions } from "@/components/item-adder";
 import { PrintButton } from "@/components/print-button";
@@ -54,7 +54,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
           }
         />
       </div>
-      <div className="mb-6 hidden print:block">
+      <div className="mb-4 hidden print:block">
         <h1 className="text-xl font-bold">Orçamento ORC-{o.id}</h1>
         <p className="text-sm">Emitido em {date(new Date())} · válido até {date(o.validade)}</p>
       </div>
@@ -65,7 +65,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
             <OrcamentoForm orc={o} hospitais={hospitais} convenios={convenios} />
           </Card>
         ) : null}
-        <Card title="Destinatário" className={edita && rascunho ? "hidden print:block" : undefined}>
+        <Card title="Destinatário" className={cx("print:shadow-none", edita && rascunho && "hidden print:block")}>
           <Dl
             items={[
               ["Hospital", `${o.hospital.razaoSocial} (CNPJ ${o.hospital.cnpj})`],
@@ -76,32 +76,32 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
             ]}
           />
         </Card>
-        <Card title="Itens">
+        <Card title="Itens" className="print:shadow-none">
           {edita && rascunho && (
             <div className="mb-4 print:hidden">
               <ItemAdder action={adicionarItemOrcamento.bind(null, id)} produtos={produtoOptions(produtos)} comPreco />
-              <p className="mt-1 text-xs text-slate-400">Preço vazio = tabela do hospital (ou preço base).</p>
+              <p className="mt-1 text-xs text-slate-600">Preço vazio = tabela do hospital (ou preço base).</p>
             </div>
           )}
-          <Table head={["Código", "Produto", "Fabricante", "Reg. ANVISA", "Qtd.", "Preço unit.", "Subtotal", ...(edita && rascunho ? [""] : [])]} empty={o.itens.length === 0}>
+          <Table head={["Código", "Produto", "Fabricante", "Reg. ANVISA", "Qtd.", "Preço unit.", "Subtotal", ...(edita && rascunho ? ["Ações"] : [])]} empty={o.itens.length === 0} emptyText="Nenhum item neste orçamento. Use o campo acima para incluir produtos.">
             {o.itens.map((i) => (
               <tr key={i.id}>
                 <Td className="font-mono text-xs">{i.produto.codigo}</Td>
                 <Td className="whitespace-normal">{i.produto.descricao}</Td>
                 <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
                 <Td>{i.produto.registroAnvisa ?? "—"}</Td>
-                <Td>{i.quantidade}</Td>
-                <Td>{money(i.precoUnit)}</Td>
-                <Td className="font-semibold">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
+                <Td className="text-right">{i.quantidade}</Td>
+                <Td className="text-right">{money(i.precoUnit)}</Td>
+                <Td className="text-right font-semibold">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
                 {edita && rascunho && (
                   <Td className="print:hidden">
-                    <ActionButton action={removerItemOrcamento.bind(null, i.id)} variant="ghost">Remover</ActionButton>
+                    <ActionButton action={removerItemOrcamento.bind(null, i.id)} variant="small">Remover</ActionButton>
                   </Td>
                 )}
               </tr>
             ))}
           </Table>
-          <div className="mt-4 text-right text-lg font-semibold text-slate-900">Total: {money(total)}</div>
+          <div className="tnum mt-4 text-right text-lg font-bold text-slate-900">Total: {money(total)}</div>
         </Card>
       </div>
     </>

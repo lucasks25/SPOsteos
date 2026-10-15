@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function HospitaisPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
@@ -31,9 +31,9 @@ export default async function HospitaisPage({ searchParams }: { searchParams: Pr
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Hospital", "CNPJ", "Cidade/UF", "Prazo pgto.", "Tabela de preço", ""]} empty={hospitais.length === 0}>
+      <Table head={["Hospital", "CNPJ", "Cidade/UF", "Prazo pgto.", "Tabela de preço", ""]} empty={hospitais.length === 0} emptyText={q ? "Nenhum hospital encontrado para essa busca." : "Nenhum hospital encontrado."} emptyAction={<LinkButton href="/cadastros/hospitais/novo" variant="secondary" icon="mais">Cadastrar hospital</LinkButton>}>
         {hospitais.map((h) => (
-          <tr key={h.id} className="hover:bg-slate-50">
+          <tr key={h.id}>
             <Td>
               <div className="font-medium">
                 {h.nomeFantasia ?? h.razaoSocial} {!h.ativo && <Badge>inativo</Badge>}
@@ -42,10 +42,10 @@ export default async function HospitaisPage({ searchParams }: { searchParams: Pr
             </Td>
             <Td className="font-mono text-xs">{h.cnpj}</Td>
             <Td>{[h.cidade, h.uf].filter(Boolean).join("/") || "—"}</Td>
-            <Td>{h.prazoPagamentoDias} dias</Td>
+            <Td className="text-right">{h.prazoPagamentoDias} dias</Td>
             <Td>{h.tabelaPreco?.nome ?? "—"}</Td>
             <Td>
-              <Link href={`/cadastros/hospitais/${h.id}`} className="text-teal-700 hover:underline">Abrir</Link>
+              <Link href={`/cadastros/hospitais/${h.id}`} className={btn.small}>Abrir</Link>
             </Td>
           </tr>
         ))}
