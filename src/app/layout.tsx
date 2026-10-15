@@ -1,17 +1,17 @@
 import type { Metadata } from "next";
-import { Figtree } from "next/font/google";
+import { cookies } from "next/headers";
 import "./globals.css";
-
-const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
 
 export const metadata: Metadata = {
   title: "Gestão OPME",
   description: "Sistema de gestão de órteses, próteses e materiais especiais",
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export default async function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+  // tema escolhido pelo usuário (cookie); sem escolha, segue o sistema operacional pelo CSS
+  const tema = (await cookies()).get("opme_tema")?.value;
   return (
-    <html lang="pt-BR" className={figtree.variable}>
+    <html lang="pt-BR" data-theme={tema === "escuro" ? "dark" : tema === "claro" ? "light" : undefined}>
       <body className="antialiased">{children}</body>
     </html>
   );

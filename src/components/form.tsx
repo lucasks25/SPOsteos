@@ -56,19 +56,19 @@ export function Form({
       <PendingCtx.Provider value={pending}>
         <form ref={formRef} onSubmit={onSubmit} className={cx("space-y-4", className)}>
           {state?.error && (
-            <div role="alert" className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800">
+            <div role="alert" className="flex items-start gap-2 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-rose-600" />
               <span>{state.error}</span>
             </div>
           )}
           {state?.ok && state.aviso && (
-            <div role="status" className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+            <div role="status" className="flex items-start gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-amber-600" />
               <span>{state.aviso}</span>
             </div>
           )}
           {state?.ok && !state.aviso && !redirectTo && (
-            <div role="status" className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+            <div role="status" className="flex items-center gap-2 rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-[13px] text-emerald-700">
               <Icon name="ok" size={16} className="shrink-0 text-emerald-600" />
               Salvo com sucesso.
             </div>
@@ -105,14 +105,14 @@ export function SubmitButton({ children, variant = "primary", confirm }: { child
 }
 
 const inputCls =
-  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:focus:ring-rose-500/20";
+  "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 placeholder:text-slate-500 transition-colors hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:focus:ring-rose-500/20";
 
 function Wrap({ label, name, children, className, hint }: { label: string; name: string; children: ReactNode; className?: string; hint?: string }) {
   const errors = useContext(ErrorsCtx);
   const obrigatorio = /\*\s*$/.test(label);
   return (
     <label className={cx("block", className)}>
-      <span className="mb-1 block text-xs font-medium text-slate-700">
+      <span className="mb-1 block text-xs text-slate-700">
         {obrigatorio ? label.replace(/\s*\*$/, "") : label}
         {obrigatorio && <span className="ml-0.5 text-rose-600" aria-hidden="true">*</span>}
       </span>
@@ -132,7 +132,7 @@ export function Field({ label, name, className, hint, ...rest }: InputProps) {
   if (rest.type === "checkbox") {
     return (
       <label className={cx("flex items-center gap-2 text-sm text-slate-700", className)}>
-        <input name={name} {...rest} className="h-4 w-4 rounded border-slate-300" />
+        <input name={name} {...rest} className="h-4 w-4 rounded-sm border-slate-300" />
         {label}
       </label>
     );

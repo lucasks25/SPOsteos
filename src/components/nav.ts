@@ -1,11 +1,11 @@
 import type { Perfil } from "@/generated/prisma/client";
 
 export type NavItem = { href: string; label: string };
-export type NavGroup = { label: string; perfis?: Perfil[]; items: NavItem[] };
+export type NavGroup = { label: string; perfis?: Perfil[]; items: NavItem[]; /** aba de módulo na barra superior; por padrão o próprio rótulo do grupo */ modulo?: string };
 
 /** Menu principal. `perfis` restringe a exibição (ADMIN vê tudo). */
 export const NAV: NavGroup[] = [
-  { label: "Geral", items: [{ href: "/", label: "Painel" }] },
+  { label: "Geral", modulo: "Painel", items: [{ href: "/", label: "Painel" }] },
   {
     label: "Comercial",
     perfis: ["COMERCIAL", "FINANCEIRO"],
@@ -49,6 +49,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Financeiro",
+    modulo: "Financeiro",
     perfis: ["FINANCEIRO"],
     items: [
       { href: "/financeiro", label: "Visão geral" },
@@ -57,6 +58,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Receber",
+    modulo: "Financeiro",
     perfis: ["FINANCEIRO"],
     items: [
       { href: "/financeiro/receber", label: "Contas a receber" },
@@ -65,6 +67,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Pagar",
+    modulo: "Financeiro",
     perfis: ["FINANCEIRO"],
     items: [
       { href: "/financeiro/pagar", label: "Contas a pagar" },
@@ -74,6 +77,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Banco",
+    modulo: "Financeiro",
     perfis: ["FINANCEIRO"],
     items: [
       { href: "/financeiro/contas", label: "Contas bancárias" },
@@ -82,6 +86,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Resultado",
+    modulo: "Financeiro",
     perfis: ["FINANCEIRO"],
     items: [
       { href: "/financeiro/dre", label: "DRE gerencial" },
@@ -106,6 +111,7 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Administração",
+    modulo: "Administração",
     perfis: [],
     items: [
       { href: "/admin/usuarios", label: "Usuários" },
