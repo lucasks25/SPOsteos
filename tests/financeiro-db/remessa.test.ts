@@ -37,7 +37,7 @@ after(async () => {
   await db.$disconnect();
 });
 
-const titulo = (valor = 1000) => db.contaPagar.create({ data: { descricao: "TESTEDB pagar", valor, vencimento: hoje, competencia: hoje, fornecedorId } });
+const titulo = (valor = 1000) => db.contaPagar.create({ data: { descricao: "TESTEDB pagar", valor, vencimento: hoje, competencia: hoje, fornecedorId, aprovadoEm: new Date() } });
 const gerar = (ids: string[]) => db.$transaction((tx) => gerarRemessaTx(tx, { conta, cd, modo: "TED_BOLETO", dataPagto: hoje, ids }));
 const retornoPago = (itemId: number, valor: number) => [{ seuNumero: `SP${itemId}`, segmento: "A" as const, ocorrencias: ["00"], nossoNumero: "", dataEfetiva: hoje, valorEfetivo: valor }];
 const aplicar = async (res: ReturnType<typeof retornoPago>) => {
@@ -93,4 +93,11 @@ test("banco pagou item de remessa cancelada: baixa feita e alerta CAN", async ()
   assert.equal(cont.canceladasPagas, 1);
   assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: t.id } })).status, "PAGO");
   assert.match((await db.remessaPagamentoItem.findUniqueOrThrow({ where: { id: item.id } })).ocorrencias ?? "", /CAN/);
+});
+
+test("conta a pagar sem aprovação do financeiro não entra em remessa; depois de aprovada entra", async () => {
+  const t = await db.contaPagar.create({ data: { descricao: "TESTEDB pendente", valor: 500, vencimento: hoje, competencia: hoje, fornecedorId } });
+  await assert.rejects(gerar([t.id]), /aguardando aprovação/);
+  await db.contaPagar.update({ where: { id: t.id }, data: { aprovadoEm: new Date() } });
+  await gerar([t.id]);
 });

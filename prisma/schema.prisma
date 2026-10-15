@@ -584,6 +584,9 @@ model ContaPagar {
   pedidoId      Int?
   pedido        PedidoCompra?          @relation(fields: [pedidoId], references: [id])
   categoria     String?
+  // Aprovação do financeiro: conta que nasce de recebimento de compra fica pendente (aprovadoEm nulo) e não entra em remessa SISPAG até ser aprovada.
+  aprovadoEm    DateTime?
+  aprovadoPor   String?
   codigoBarras  String? // boleto do fornecedor: 44 dígitos do código de barras
   valor         Decimal                @db.Decimal(14, 2)
   vencimento    DateTime

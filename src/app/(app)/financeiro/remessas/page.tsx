@@ -82,7 +82,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
                       </tr>
                     )}
                     {titulos.map((t) => {
-                      const f = formaPrevista(t, t.fornecedor, modo);
+                      const f = t.aprovadoEm ? formaPrevista(t, t.fornecedor, modo) : { erro: "aguardando aprovação do financeiro" };
                       const saldo = toNumber(t.valor) - toNumber(t.valorBaixado);
                       const ok = "forma" in f;
                       return (

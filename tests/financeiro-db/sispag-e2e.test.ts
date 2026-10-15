@@ -38,7 +38,7 @@ after(async () => {
   await db.$disconnect();
 });
 
-const titulo = (fornecedorId: string, valor: number) => db.contaPagar.create({ data: { descricao: "TESTEDB pagar", valor, vencimento: hoje, competencia: hoje, fornecedorId } });
+const titulo = (fornecedorId: string, valor: number) => db.contaPagar.create({ data: { descricao: "TESTEDB pagar", valor, vencimento: hoje, competencia: hoje, fornecedorId, aprovadoEm: new Date() } });
 const put = (s: string, ini: number, v: string) => s.slice(0, ini - 1) + v + s.slice(ini - 1 + v.length);
 const ddmmaaaa = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}${String(d.getUTCMonth() + 1).padStart(2, "0")}${d.getUTCFullYear()}`;
 

@@ -38,6 +38,7 @@ export async function gerarRemessaTx(
     const saldo = r2(toNumber(t.valor) - toNumber(t.valorBaixado));
     const f = formaPrevista(t, t.fornecedor, modo);
     if (t.status !== "ABERTO") erros.push(`${t.descricao}: não está em aberto`);
+    else if (!t.aprovadoEm) erros.push(`${t.descricao}: aguardando aprovação do financeiro`);
     else if (t.pagamentos.length) erros.push(`${t.descricao}: já está em outra remessa`);
     else if (saldo <= 0) erros.push(`${t.descricao}: sem saldo a pagar`);
     else if ("erro" in f) erros.push(`${t.descricao}: ${f.erro}`);

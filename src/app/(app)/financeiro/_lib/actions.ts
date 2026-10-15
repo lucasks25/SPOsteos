@@ -119,7 +119,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
         savedId = id;
       } else {
-        savedId = (await db.contaPagar.create({ data })).id;
+        savedId = (await db.contaPagar.create({ data: { ...data, aprovadoEm: new Date(), aprovadoPor: user.id } })).id;
       }
       await audit(user.id, id ? "editar" : "criar", "ContaPagar", savedId, `${data.descricao} — ${money(data.valor)}`);
     }

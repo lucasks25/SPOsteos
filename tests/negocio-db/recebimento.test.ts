@@ -47,6 +47,7 @@ test("recebimento: lote novo vai para QUARENTENA, entrada na quarentena, conta a
   assert.equal(cp[0].planoContaId, planoEstoque);
   assert.equal(cp[0].fornecedorId, fornecedorId);
   assert.equal(cp[0].status, "ABERTO");
+  assert.equal(cp[0].aprovadoEm, null); // nasce aguardando aprovação do financeiro
   assert.equal(cp[0].competencia.getTime(), hojeUTC().getTime());
   assert.equal(cp[0].vencimento.getTime(), dia(30).getTime());
   await conferirKardex(lote.id);
