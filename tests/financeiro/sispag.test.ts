@@ -55,7 +55,7 @@ test("remessa: estrutura, lotes por forma e posições dos campos", () => {
   const L = remessaMista().split("\r\n").filter(Boolean);
   for (const l of L) assert.equal(l.length, 240);
   assert.equal(c(L[0], 1, 8), "34100000");
-  assert.equal(c(L[0], 143, 157), "116102026130509");
+  assert.equal(c(L[0], 143, 157), "116102026100509");
   assert.equal(c(L[0], 53, 72), "00123 000000012345 6");
   // lote 1: forma 01 (crédito Itaú)
   assert.equal(c(L[1], 8, 16), "1C2001040");
@@ -123,4 +123,12 @@ test("regras: forma prevista e conta com dígito", () => {
   assert.ok("erro" in formaPrevista({ codigoBarras: null }, null, "TED_BOLETO"));
   assert.deepEqual(contaEDac("12345-6"), { conta: "12345", dac: "6" });
   assert.equal(contaEDac("7"), null);
+});
+
+test("header do arquivo usa data e hora de Brasília (23h em Brasília ainda é o mesmo dia)", () => {
+  const empresa = { cnpj: "12345678000195", nome: "EMPRESA", agencia: "1234", conta: "12345", dac: "6" };
+  const pg = [{ forma: "01" as const, seuNumero: "SP1", data: new Date("2026-10-20T00:00:00Z"), valor: 10, favorecido: { nome: "F", documento: "11222333000181", banco: "341", agencia: "4321", conta: "98765", digito: "0", chavePix: null } }];
+  const header = gerarRemessaSispag(empresa, pg, new Date("2026-10-15T02:30:00Z")).split(/\r?\n/)[0]; // 14/10 23:30 em Brasília
+  assert.equal(header.slice(143, 151), "14102026");
+  assert.equal(header.slice(151, 157), "233000");
 });

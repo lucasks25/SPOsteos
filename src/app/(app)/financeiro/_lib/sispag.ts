@@ -112,7 +112,9 @@ function contaFavorecido(p: { forma: FormaSispag; favorecido: Favorecido }): str
   return num(f.agencia, 5) + " " + num(f.conta, 12) + (dig.length === 2 ? alfa(dig, 2) : " " + alfa(dig, 1));
 }
 
-function headerArquivo(e: Empresa, agora: Date) {
+function headerArquivo(e: Empresa, instante: Date) {
+  // data e hora de geração em Brasília (UTC-3, sem horário de verão): depois das 21h o dia UTC já é o seguinte
+  const agora = new Date(instante.getTime() - 3 * 60 * 60 * 1000);
   const hora = `${String(agora.getUTCHours()).padStart(2, "0")}${String(agora.getUTCMinutes()).padStart(2, "0")}${String(agora.getUTCSeconds()).padStart(2, "0")}`;
   return reg([
     [1, 3, "341"], [4, 7, "0000"], [8, 8, "0"], [9, 14, brancos(6)], [15, 17, "080"],
