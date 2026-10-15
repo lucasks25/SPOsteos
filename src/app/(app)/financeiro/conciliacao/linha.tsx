@@ -10,7 +10,7 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
   const entrada = linha.valor > 0;
   const opcoesTitulo = titulos.map((t) => ({ value: t.id, label: `${t.label} — saldo ${money(t.saldo)}` }));
   return (
-    <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+    <div className="rounded-lg border border-slate-200 bg-white p-4">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
           <div className="text-sm font-medium text-slate-800">{linha.descricao}</div>

@@ -66,7 +66,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         {dias.map((dia, i) => {
           const doDia = cirurgias.filter((c) => diaSP(c.dataHora) === dia);
           return (
-            <div key={dia} className={cx("min-h-40 rounded-xl border bg-white p-2", dia === hoje ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200")}>
+            <div key={dia} className={cx("min-h-40 rounded-lg border bg-white p-2", dia === hoje ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200")}>
               <div className="mb-2 flex items-baseline justify-between px-1">
                 <span className="text-xs font-semibold uppercase text-slate-500">{DIAS[i]}</span>
                 <span className={cx("text-sm", dia === hoje ? "font-bold text-teal-700" : "text-slate-700")}>{fmt(dia)}</span>
@@ -79,9 +79,9 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
                     <div className="truncate text-slate-700">{nomeHospital(c.hospital)}</div>
                     <div className="truncate text-slate-500">{c.medico.nome}</div>
                     {c.procedimento && <div className="truncate text-slate-500">{c.procedimento.descricao}</div>}
-                    <div className="mt-1 flex justify-between text-[10px] uppercase text-slate-500">
-                      <span>{c.status.toLowerCase()}</span>
-                      <span>{c._count.remessas ? `${c._count.remessas} vale(s)` : "sem vale"}</span>
+                    <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[11px] text-slate-500">
+                      <span className="font-medium capitalize">{c.status.toLowerCase()}</span>
+                      <span>{c._count.remessas ? `${c._count.remessas} vale${c._count.remessas > 1 ? "s" : ""}` : "sem vale"}</span>
                     </div>
                   </Link>
                 ))}

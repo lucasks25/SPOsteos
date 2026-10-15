@@ -18,9 +18,9 @@ function hojeSP() {
 
 function Tile({ href, label, value, hint, tone = "default" }: { href: string; label: string; value: ReactNode; hint?: ReactNode; tone?: "default" | "warn" | "danger" }) {
   return (
-    <Link href={href} className="block rounded-xl border border-slate-200 bg-white p-4 shadow-sm transition hover:border-teal-600 hover:shadow">
-      <div className="text-xs font-medium uppercase tracking-wide text-slate-500">{label}</div>
-      <div className={cx("mt-1 text-2xl font-semibold", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>{value}</div>
+    <Link href={href} className="block rounded-lg border border-slate-200 bg-white p-4 transition-colors duration-150 hover:border-teal-600 hover:bg-teal-50/30">
+      <div className="text-xs font-medium text-slate-500">{label}</div>
+      <div className={cx("tnum mt-1 text-2xl font-semibold tracking-tight", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>{value}</div>
       {hint && <div className="mt-1 text-xs text-slate-500">{hint}</div>}
     </Link>
   );

@@ -35,7 +35,7 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
   return (
     <>
       <PageHeader title="Fluxo de caixa" subtitle={`${date(de)} a ${date(ate)} — previsto (títulos em aberto) mais realizado (baixas e lançamentos)`} />
-      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-slate-600">De</span>
           <input type="date" name="de" defaultValue={ymd(de)} className={inputCls} />
@@ -65,7 +65,7 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
       </div>
 
       {de <= hoje && (fluxo.atrasadosReceber > 0 || fluxo.atrasadosPagar > 0) && (
-        <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
+        <div className="mb-4 flex flex-wrap items-center gap-x-6 gap-y-1 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900">
           <strong>Atrasados (já incluídos no saldo acumulado):</strong>
           <span>
             a receber {money(fluxo.atrasadosReceber)} — <Link href="/financeiro/receber?vencidos=1" className="underline">ver</Link>

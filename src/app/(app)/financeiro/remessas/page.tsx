@@ -61,19 +61,19 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
                 <Select label="Conta a debitar *" name="contaId" options={contas.map((c) => ({ value: c.id, label: c.nome }))} defaultValue={contas.length === 1 ? contas[0].id : ""} required />
                 <Field label="Data do pagamento *" name="dataPagto" type="date" defaultValue={ymd(hoje)} min={ymd(hoje)} required />
               </Grid>
-              <div className="overflow-x-auto rounded-lg border border-slate-200">
-                <table className="min-w-full divide-y divide-slate-200 text-sm">
-                  <thead className="bg-slate-50 text-xs uppercase text-slate-500">
+              <div className="overflow-x-auto rounded-lg border border-slate-200 bg-white">
+                <table className="min-w-full text-[13px]">
+                  <thead className="border-b border-slate-200 bg-slate-50/80 text-[11px] uppercase tracking-wide text-slate-500">
                     <tr>
-                      <th className="w-10 px-3 py-2" />
-                      <th className="px-3 py-2 text-left">Vencimento</th>
-                      <th className="px-3 py-2 text-left">Descrição</th>
-                      <th className="px-3 py-2 text-left">Fornecedor</th>
-                      <th className="px-3 py-2 text-right">A pagar</th>
-                      <th className="px-3 py-2 text-left">Forma</th>
+                      <th scope="col" className="w-10 px-3 py-2"><span className="sr-only">Selecionar</span></th>
+                      <th scope="col" className="px-3 py-2 text-left font-semibold">Vencimento</th>
+                      <th scope="col" className="px-3 py-2 text-left font-semibold">Descrição</th>
+                      <th scope="col" className="px-3 py-2 text-left font-semibold">Fornecedor</th>
+                      <th scope="col" className="px-3 py-2 text-right font-semibold">A pagar</th>
+                      <th scope="col" className="px-3 py-2 text-left font-semibold">Forma</th>
                     </tr>
                   </thead>
-                  <tbody className="divide-y divide-slate-100">
+                  <tbody className="divide-y divide-slate-100 [&>tr:hover]:bg-slate-50/70">
                     {titulos.length === 0 && (
                       <tr>
                         <td colSpan={6} className="px-3 py-6 text-center text-slate-400">

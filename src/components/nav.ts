@@ -52,19 +52,43 @@ export const NAV: NavGroup[] = [
     perfis: ["FINANCEIRO"],
     items: [
       { href: "/financeiro", label: "Visão geral" },
+      { href: "/financeiro/fluxo", label: "Fluxo de caixa" },
+    ],
+  },
+  {
+    label: "Receber",
+    perfis: ["FINANCEIRO"],
+    items: [
       { href: "/financeiro/receber", label: "Contas a receber" },
       { href: "/financeiro/cobranca", label: "Cobrança dos hospitais" },
+    ],
+  },
+  {
+    label: "Pagar",
+    perfis: ["FINANCEIRO"],
+    items: [
       { href: "/financeiro/pagar", label: "Contas a pagar" },
       { href: "/financeiro/aprovacoes", label: "Aprovar contas a pagar" },
-      { href: "/financeiro/fluxo", label: "Fluxo de caixa" },
-      { href: "/financeiro/dre", label: "DRE gerencial" },
-      { href: "/financeiro/plano-contas", label: "Plano de contas" },
-      { href: "/financeiro/relatorios", label: "Relatórios" },
-      { href: "/financeiro/classificar", label: "Classificar pendentes" },
-      { href: "/financeiro/fechamento", label: "Fechamento de mês" },
+      { href: "/financeiro/remessas", label: "Pagamentos SISPAG" },
+    ],
+  },
+  {
+    label: "Banco",
+    perfis: ["FINANCEIRO"],
+    items: [
       { href: "/financeiro/contas", label: "Contas bancárias" },
       { href: "/financeiro/conciliacao", label: "Conciliação" },
-      { href: "/financeiro/remessas", label: "Pagamentos SISPAG" },
+    ],
+  },
+  {
+    label: "Resultado",
+    perfis: ["FINANCEIRO"],
+    items: [
+      { href: "/financeiro/dre", label: "DRE gerencial" },
+      { href: "/financeiro/relatorios", label: "Relatórios" },
+      { href: "/financeiro/classificar", label: "Classificar pendentes" },
+      { href: "/financeiro/plano-contas", label: "Plano de contas" },
+      { href: "/financeiro/fechamento", label: "Fechamento de mês" },
     ],
   },
   {

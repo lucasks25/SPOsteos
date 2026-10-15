@@ -29,7 +29,7 @@ export default async function PedidosVendaPage({ searchParams }: { searchParams:
       <div className="mb-4 grid grid-cols-1 gap-4 sm:grid-cols-3">
         <Stat label="Abertos (sem NF) na lista" value={money(aFaturar)} hint={`${pedidos.filter((p) => p.status === "ABERTO").length} pedido(s)`} tone={aFaturar > 0 ? "warn" : "default"} />
       </div>
-      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-slate-600">Busca</span>
           <input name="q" defaultValue={q} placeholder="PV-12, NF ou hospital" className={`${inputCls} w-64`} />

@@ -27,7 +27,7 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
   return (
     <>
       <PageHeader title="Pedidos de compra" subtitle="Compras nacionais e importações" actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
-      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+      <form className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
         <label className="block">
           <span className="mb-1 block text-xs font-medium text-slate-600">Busca</span>
           <input name="q" defaultValue={q} placeholder="PC-12, fornecedor ou invoice" className={`${inputCls} w-64`} />

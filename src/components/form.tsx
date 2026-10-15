@@ -3,6 +3,7 @@
 import { createContext, useActionState, useContext, useEffect, useRef, useTransition, type FormEvent, type ReactNode } from "react";
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
+import { Icon } from "@/components/icons";
 import { btn, cx } from "@/components/ui";
 
 export type ActionState = { ok?: boolean; aviso?: string; error?: string; fieldErrors?: Record<string, string> } | undefined;
@@ -55,15 +56,26 @@ export function Form({
       <PendingCtx.Provider value={pending}>
         <form ref={formRef} onSubmit={onSubmit} className={cx("space-y-4", className)}>
           {state?.error && (
-            <div className="rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">{state.error}</div>
+            <div role="alert" className="flex items-start gap-2 rounded-md border border-rose-200 bg-rose-50 px-3 py-2.5 text-sm text-rose-800">
+              <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-rose-600" />
+              <span>{state.error}</span>
+            </div>
           )}
-          {state?.ok && state.aviso && <div className="rounded-lg border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-900">{state.aviso}</div>}
+          {state?.ok && state.aviso && (
+            <div role="status" className="flex items-start gap-2 rounded-md border border-amber-300 bg-amber-50 px-3 py-2.5 text-sm text-amber-900">
+              <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-amber-600" />
+              <span>{state.aviso}</span>
+            </div>
+          )}
           {state?.ok && !state.aviso && !redirectTo && (
-            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">Salvo com sucesso.</div>
+            <div role="status" className="flex items-center gap-2 rounded-md border border-emerald-200 bg-emerald-50 px-3 py-2.5 text-sm text-emerald-800">
+              <Icon name="ok" size={16} className="shrink-0 text-emerald-600" />
+              Salvo com sucesso.
+            </div>
           )}
           {children}
           {submitLabel !== null && (
-            <div className="pt-2">
+            <div className="border-t border-slate-100 pt-4">
               <SubmitButton>{submitLabel}</SubmitButton>
             </div>
           )}
@@ -86,22 +98,31 @@ export function SubmitButton({ children, variant = "primary", confirm }: { child
         if (confirm && !window.confirm(confirm)) e.preventDefault();
       }}
     >
+      {pending && <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" aria-hidden="true" />}
       {pending ? "Processando..." : children}
     </button>
   );
 }
 
 const inputCls =
-  "w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-teal-600 focus:outline-none focus:ring-1 focus:ring-teal-600";
+  "h-9 w-full rounded-md border border-slate-300 bg-white px-3 text-sm text-slate-900 placeholder:text-slate-400 transition-colors hover:border-slate-400 focus:border-teal-600 focus:outline-none focus:ring-2 focus:ring-teal-600/20 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:focus:ring-rose-500/20";
 
 function Wrap({ label, name, children, className, hint }: { label: string; name: string; children: ReactNode; className?: string; hint?: string }) {
   const errors = useContext(ErrorsCtx);
+  const obrigatorio = /\*\s*$/.test(label);
   return (
     <label className={cx("block", className)}>
-      <span className="mb-1 block text-xs font-medium text-slate-600">{label}</span>
+      <span className="mb-1 block text-xs font-medium text-slate-700">
+        {obrigatorio ? label.replace(/\s*\*$/, "") : label}
+        {obrigatorio && <span className="ml-0.5 text-rose-600" aria-hidden="true">*</span>}
+      </span>
       {children}
-      {hint && !errors[name] && <span className="mt-1 block text-xs text-slate-400">{hint}</span>}
-      {errors[name] && <span className="mt-1 block text-xs text-rose-600">{errors[name]}</span>}
+      {hint && !errors[name] && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
+      {errors[name] && (
+        <span role="alert" className="mt-1 block text-xs font-medium text-rose-600">
+          {errors[name]}
+        </span>
+      )}
     </label>
   );
 }
@@ -111,7 +132,7 @@ export function Field({ label, name, className, hint, ...rest }: InputProps) {
   if (rest.type === "checkbox") {
     return (
       <label className={cx("flex items-center gap-2 text-sm text-slate-700", className)}>
-        <input name={name} {...rest} className="h-4 w-4 rounded border-slate-300 text-teal-700" />
+        <input name={name} {...rest} className="h-4 w-4 rounded border-slate-300" />
         {label}
       </label>
     );

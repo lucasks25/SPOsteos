@@ -1,7 +1,88 @@
 @import "tailwindcss";
 
+/* Fonte: Figtree (next/font define --font-figtree); cai para a fonte do sistema se não carregar */
+@theme inline {
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+}
+
+:root {
+  --fundo: #f6f8fa;
+  --texto: #0f172a;
+}
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
 body {
-  background: #f8fafc;
-  color: #0f172a;
-  font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+  background: var(--fundo);
+  color: var(--texto);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+/* Números alinhados em colunas (valores, quantidades, datas) */
+table,
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco visível e consistente para teclado */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid #0d9488;
+  outline-offset: 2px;
+  border-radius: 6px;
+}
+
+::selection {
+  background: #99f6e4;
+  color: #042f2e;
+}
+
+/* Barras de rolagem discretas */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e1 transparent;
+}
+
+button,
+[role="button"],
+summary,
+select,
+input[type="checkbox"],
+input[type="file"] {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+input[type="checkbox"] {
+  accent-color: #0f766e;
+}
+
+/* Seta própria nos selects (o padrão do navegador some com appearance:none) */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2364748b' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.6rem center;
+  padding-right: 2rem;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+  }
 }

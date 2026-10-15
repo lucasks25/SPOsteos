@@ -23,7 +23,7 @@ export function SituacaoTitulo({ t, hoje }: { t: Pick<TituloRow, "status" | "ven
 function FiltrosForm({ tipo, f, parceiros }: { tipo: Tipo; f: Filtros; parceiros: { value: string; label: string }[] }) {
   const cfg = TIPOS[tipo];
   return (
-    <form className="mb-4 flex flex-wrap items-end gap-2 rounded-xl border border-slate-200 bg-white p-3 shadow-sm">
+    <form className="mb-4 flex flex-wrap items-end gap-2 rounded-lg border border-slate-200 bg-white p-3">
       <label className="block">
         <span className="mb-1 block text-xs font-medium text-slate-600">Descrição</span>
         <input name="q" defaultValue={f.q} placeholder="Buscar..." className={`${inputCls} w-48`} />
