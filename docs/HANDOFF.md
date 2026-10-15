@@ -177,6 +177,8 @@ Rastreabilidade: do lote → entrada/fornecedor → remessas → cirurgias/pacie
 
 ---
 
+> **Entrega do MVP (15/10/2026): ver `docs/MVP.md`** (o que entrega, instalação do zero, limites). Esta seção 8 é o histórico da Fase 1; o financeiro evoluiu bastante desde então (DRE, glosa, fechamento etc.) e o estado atual está em `docs/MVP.md` e `docs/REVISAO.md`.
+
 ## 8. Status atual (13/10/2026, 21h30, todas as telas da Fase 1 prontas)
 
 Revisão de código e segurança, achados e o que foi ou não testado: **`docs/REVISAO.md`**.
