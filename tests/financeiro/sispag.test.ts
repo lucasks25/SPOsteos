@@ -132,3 +132,8 @@ test("header do arquivo usa data e hora de Brasília (23h em Brasília ainda é 
   assert.equal(header.slice(143, 151), "14102026");
   assert.equal(header.slice(151, 157), "233000");
 });
+
+test("chave Pix: telefone exige +55 e 11 dígitos; e-mail até 77 caracteres (nota 40)", () => {
+  assert.throws(() => tipoChavePix("+551187654321"), /inválido/);
+  assert.throws(() => tipoChavePix(`${"a".repeat(80)}@x.com`), /77/);
+});

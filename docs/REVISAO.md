@@ -188,3 +188,11 @@ Testes: `tests/financeiro-db/remessa.test.ts` (5: concorrência com dois pedidos
 **Ainda abertos da revisão (itens 4 a 10):** OFX e CNAB do mesmo período duplicam o extrato; boleto vencido sai pelo valor original; mesmo arquivo pode ser enviado duas vezes ao banco; numeração das linhas J/J-52 a confirmar com o validador do Itaú; retorno não confere agência/conta; dois envios simultâneos do mesmo retorno podem dar baixa parcial dupla. Limite conhecido da nova trava: se o banco agendar um item de remessa já cancelada enquanto o título está em outra remessa ativa, o retorno falha pelo índice único (aparece como erro, nada é gravado pela metade).
 
 **Corrigido depois:** data e hora do header do arquivo SISPAG agora em Brasília (teste: 23h30 em Brasília continua no mesmo dia). Os manuais públicos em download.itau.com.br/bankline (`sispag_cnab.pdf` v085 out/2020 e `conciliacao_bancaria_ 240.pdf` v5.0 fev/2011) são os mesmos em que o código foi baseado; não há versão mais nova nesses endereços.
+
+## 9. Conferência campo a campo contra os manuais (15/10/2026)
+
+Feita pelo `arquiteto` com o texto dos manuais públicos (SISPAG v085 out/2020; Extrato CNAB 240 v5.0 fev/2011). **Nenhuma posição de campo divergiu.** Confirmado: numeração sequencial (A+B e J+J-52 levam o mesmo número, nota 9), totais do trailer (nota 17), forma de cada lote, posições do retorno. Corrigido: telefone Pix agora exige `+55`+11 dígitos e e-mail até 77 caracteres (nota 40).
+
+**O manual não permite confirmar (só arquivo real ou Validador de Layout do Itaú):** se o segmento J do retorno traz data/valor efetivos; em que linha vêm as ocorrências TA e BI (o código ignora trailer, B e J-52); como lançamentos "a compensar" (tipo 2) entram no saldo e totais do extrato. **Conhecido e aceito:** ocorrências FC/FD (COMPROR) caem em REJEITADO; extrato não distingue conta investimento (tipo 0200).
+
+Teste ponta a ponta: `tests/financeiro-db/sispag-e2e.test.ts` (remessa mista 01+41 e remessa Pix → retorno simulado → baixas, caixa, reprocesso, rejeitado volta para nova remessa).
