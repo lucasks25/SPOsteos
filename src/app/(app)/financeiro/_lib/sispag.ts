@@ -259,6 +259,13 @@ function dataRet(s: string): Date | null {
 const ocorr = (s: string) => (s.match(/.{1,2}/g) ?? []).map((c) => c.trim()).filter(Boolean);
 
 /** Lê o arquivo de retorno do SISPAG e devolve o resultado de cada pagamento (segmentos A e J). */
+/** Agência, conta e DAC da empresa no header do arquivo (posições 53-57, 59-70 e 72), sem zeros à esquerda. */
+export function contaDoRetorno(texto: string) {
+  const h = (texto.split(/\r?\n/)[0] ?? "").padEnd(TAM, " ");
+  const n = (v: string) => v.trim().replace(/^0+/, "");
+  return { agencia: n(campo(h, 53, 57)), conta: n(campo(h, 59, 70)), dac: campo(h, 72, 72).trim() };
+}
+
 export function lerRetornoSispag(texto: string): ResultadoPagamento[] {
   const linhas = texto.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (linhas.length < 2) throw new SispagError("Arquivo vazio ou incompleto.");

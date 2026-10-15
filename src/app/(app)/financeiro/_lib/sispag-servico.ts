@@ -65,16 +65,27 @@ export async function gerarRemessaTx(
 }
 
 /** Aplica o resultado do retorno: atualiza cada item, baixa os pagos e marca duplicidade (DUP), divergência (DIV) e remessa cancelada paga (CAN). */
-export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[], cont: Contagem): Promise<Set<number>> {
+export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[], cont: Contagem, cabecalho?: { agencia: string; conta: string; dac: string }): Promise<Set<number>> {
   const remessas = new Set<number>();
   for (const r of resultados) {
     const m = /^SP(\d+)$/.exec(r.seuNumero);
-    const item = m ? await tx.remessaPagamentoItem.findUnique({ where: { id: Number(m[1]) }, include: { remessa: true, contaPagar: { select: { status: true, valor: true, valorBaixado: true } } } }) : null;
+    const item = m ? await tx.remessaPagamentoItem.findUnique({ where: { id: Number(m[1]) }, include: { remessa: { include: { conta: { select: { agencia: true, numero: true, nome: true } } } }, contaPagar: { select: { status: true, valor: true, valorBaixado: true } } } }) : null;
     if (!item) {
       cont.ignorados++;
       continue;
     }
     remessas.add(item.remessaId);
+    if (cabecalho) {
+      // o retorno precisa ser da conta que gerou a remessa (agência e conta sem zeros à esquerda; DAC só se a conta o tiver)
+      const c = item.remessa.conta;
+      const num = (c.numero ?? "").replace(/\D/g, "");
+      const contaSem = num.slice(0, -1).replace(/^0+/, "");
+      const dac = num.slice(-1);
+      const ag = (c.agencia ?? "").replace(/\D/g, "").replace(/^0+/, "");
+      if (ag !== cabecalho.agencia || contaSem !== cabecalho.conta || (cabecalho.dac && dac !== cabecalho.dac)) {
+        throw new ErroNegocio(`O retorno é da agência ${cabecalho.agencia} conta ${cabecalho.conta}-${cabecalho.dac}, mas a remessa #${item.remessaId} foi gerada pela conta "${c.nome}". Confira o arquivo.`);
+      }
+    }
     if (item.status === "PAGO") continue; // retorno reprocessado: não baixa de novo
     const status = situacaoRetorno(r.ocorrencias);
     // CAN: o banco pagou um item de remessa que foi cancelada aqui (o arquivo chegou a ser enviado): o dinheiro saiu de verdade

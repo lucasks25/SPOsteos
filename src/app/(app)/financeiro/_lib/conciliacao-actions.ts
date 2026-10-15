@@ -60,6 +60,12 @@ export async function importarExtrato(_: ActionState, fd: FormData): Promise<Act
       if (r.ignoradas) detalhe = ` — ${r.ignoradas} linha(s) inválida(s) ignorada(s)`;
     }
     if (linhas.length === 0) return { error: "Nenhuma transação válida no arquivo." };
+    // OFX e CNAB identificam o mesmo lançamento de jeitos diferentes: misturar os dois no mesmo período duplicaria o extrato
+    const datas = linhas.map((l) => l.data.getTime());
+    const outroFormato = await db.extratoLinha.count({ where: { contaId, origem: origem === "OFX" ? "CNAB" : "OFX", data: { gte: new Date(Math.min(...datas)), lte: new Date(Math.max(...datas)) } } });
+    if (outroFormato > 0) {
+      return { error: `Esta conta já tem extrato ${origem === "OFX" ? "CNAB" : "OFX"} importado neste período. Use um único formato por conta para não duplicar os lançamentos.` };
+    }
     const r = await db.extratoLinha.createMany({
       data: linhas.map((l) => ({ contaId, data: l.data, valor: l.valor, descricao: l.descricao, fitid: l.fitid, origem })),
       skipDuplicates: true,

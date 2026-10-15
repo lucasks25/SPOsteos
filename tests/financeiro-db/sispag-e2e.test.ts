@@ -8,7 +8,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
 import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
-import { lerRetornoSispag } from "@/app/(app)/financeiro/_lib/sispag";
+import { contaDoRetorno, lerRetornoSispag } from "@/app/(app)/financeiro/_lib/sispag";
 import { aplicarRetornoTx, contagemVazia, gerarRemessaTx } from "@/app/(app)/financeiro/_lib/sispag-servico";
 
 const hoje = hojeUTC();
@@ -102,4 +102,18 @@ test("SISPAG Pix: remessa própria com forma 45, retorno pago baixa o título co
   const x = await db.contaPagar.findUniqueOrThrow({ where: { id: t.id }, include: { lancamentos: true } });
   assert.equal(x.status, "PAGO");
   assert.equal(x.lancamentos[0].forma, "PIX");
+});
+
+test("retorno de outra conta é recusado e nada é baixado; da conta certa passa", async () => {
+  const t = await titulo(fItau, 77);
+  const r = await db.$transaction((tx) => gerarRemessaTx(tx, { conta, cd, modo: "TED_BOLETO", dataPagto: hoje, ids: [t.id] }));
+  const rem = await db.remessaPagamento.findUniqueOrThrow({ where: { id: r.remessaId }, include: { itens: true } });
+  const sn = `SP${rem.itens[0].id}`;
+  const ret = simularRetorno(rem.conteudo, { [sn]: "00" }, { [sn]: 77 });
+  assert.deepEqual(contaDoRetorno(ret), { agencia: "1234", conta: "12345", dac: "6" });
+  const outra = ret.split("\r\n").map((l, i) => (i === 0 ? put(l, 53, "09999") : l)).join("\r\n");
+  await assert.rejects(db.$transaction((tx) => aplicarRetornoTx(tx, lerRetornoSispag(outra), contagemVazia(), contaDoRetorno(outra))), /agência 9999/);
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: t.id } })).status, "ABERTO");
+  await db.$transaction((tx) => aplicarRetornoTx(tx, lerRetornoSispag(ret), contagemVazia(), contaDoRetorno(ret)));
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: t.id } })).status, "PAGO");
 });

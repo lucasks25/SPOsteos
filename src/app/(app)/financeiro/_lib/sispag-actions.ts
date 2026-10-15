@@ -8,7 +8,7 @@ import { money } from "@/lib/format";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { addDias, hojeUTC, parseDia } from "./datas";
 import { decodificarOfx, OFX_MAX_BYTES } from "./ofx";
-import { lerRetornoSispag } from "./sispag";
+import { contaDoRetorno, lerRetornoSispag } from "./sispag";
 import { contaEDac, type ModoRemessa } from "./sispag-regras";
 import { aplicarRetornoTx, cancelarRemessaTx, contagemVazia, gerarRemessaTx } from "./sispag-servico";
 
@@ -62,10 +62,12 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
   const cont = contagemVazia();
   const remessas = new Set<number>();
   try {
-    const resultados = lerRetornoSispag(decodificarOfx(new Uint8Array(await file.arrayBuffer())));
+    const texto = decodificarOfx(new Uint8Array(await file.arrayBuffer()));
+    const resultados = lerRetornoSispag(texto);
+    const cabecalho = contaDoRetorno(texto);
     if (resultados.length === 0) return { error: "O retorno não traz nenhum pagamento." };
     await db.$transaction(async (tx) => {
-      for (const id of await aplicarRetornoTx(tx, resultados, cont)) remessas.add(id);
+      for (const id of await aplicarRetornoTx(tx, resultados, cont, cabecalho)) remessas.add(id);
     });
     await audit(
       user.id,
