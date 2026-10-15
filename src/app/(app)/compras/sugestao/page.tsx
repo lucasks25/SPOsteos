@@ -73,11 +73,12 @@ export default async function SugestaoPage({ searchParams }: { searchParams: Pro
           <Link href="/compras/sugestao?todos=1" className={btn.secondary}>Mostrar todos os produtos</Link>
         )}
       </div>
-      <Table head={["Produto", "Disponível", "Quarentena", "Pendente", `Consumo ${DIAS_CONSUMO}d`, "Média/mês", "Mínimo", "Sugestão", "Valor", ""]} empty={exibidas.length === 0} emptyText={todos ? "Nenhum produto ativo cadastrado." : "Nenhum produto precisa de compra agora: o estoque disponível cobre o mínimo e o consumo."}>
+      <Table titulo="Produtos" icone="tendencia" contagem={exibidas.length} head={["Produto", "Disponível", "Quarentena", "Pendente", `Consumo ${DIAS_CONSUMO}d`, "Média/mês", "Mínimo", "Sugestão", "Valor", ""]} empty={exibidas.length === 0} emptyText={todos ? "Nenhum produto ativo cadastrado." : "Nenhum produto precisa de compra agora: o estoque disponível cobre o mínimo e o consumo."}>
         {exibidas.map((l) => (
           <tr key={l.id}>
             <Td className="max-w-sm truncate">
-              <span className="font-mono text-xs text-slate-500">{l.codigo}</span> {l.descricao}
+              <div className="font-medium">{l.descricao}</div>
+              <div className="font-mono text-xs text-slate-500">{l.codigo}</div>
             </Td>
             <Td className={l.d < l.estoqueMinimo ? "text-right text-rose-600" : "text-right"}>{num(l.d)}</Td>
             <Td className="text-right">{num(l.q)}</Td>

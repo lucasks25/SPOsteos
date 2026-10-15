@@ -1,8 +1,8 @@
 import Link from "next/link";
-import { Badge, FilterBar, LinkButton, PageHeader, StatusBadge, Table, Td, btn } from "@/components/ui";
+import { Badge, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { date, money, toNumber } from "@/lib/format";
+import { date, money, num as fmtNum, toNumber } from "@/lib/format";
 import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
 
 const STATUS = ["ABERTO", "PARCIAL", "RECEBIDO", "CANCELADO"] as const;
@@ -24,9 +24,17 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
     take: 200,
     include: { fornecedor: { select: { razaoSocial: true, nomeFantasia: true } }, itens: { select: { quantidade: true, recebido: true, custoUnit: true } } },
   });
+  const valorPedido = (p: (typeof pedidos)[number]) => p.itens.reduce((a, i) => a + i.quantidade * toNumber(i.custoUnit), 0);
+  const emAberto = pedidos.filter((p) => p.status === "ABERTO" || p.status === "PARCIAL");
   return (
     <>
       <PageHeader title="Pedidos de compra" subtitle="Acompanhe compras nacionais e importações, do pedido ao recebimento." actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
+      <KpiGrid cols={4}>
+        <Stat label="Pedidos listados" value={fmtNum(pedidos.length)} />
+        <Stat label="Em aberto" value={fmtNum(emAberto.length)} tone={emAberto.length ? "warn" : "default"} hint="abertos ou parciais" />
+        <Stat label="Valor em aberto" value={money(emAberto.reduce((a, p) => a + valorPedido(p), 0))} />
+        <Stat label="Importações" value={fmtNum(pedidos.filter((p) => p.importacao).length)} />
+      </KpiGrid>
       <FilterBar>
         <label className="block">
           <span className="mb-1 block text-xs text-slate-700">Busca</span>
@@ -48,7 +56,7 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
           Limpar
         </Link>
       </FilterBar>
-      <Table head={["Pedido", "Fornecedor", "Criado", "Previsão", "Recebido / pedido", "Valor", "Status"]} empty={pedidos.length === 0} emptyText={q || s ? "Nenhum pedido encontrado com esses filtros." : "Nenhum pedido de compra registrado."} emptyAction={!q && !s ? <LinkButton href="/compras/pedidos/novo" variant="secondary" icon="mais">Criar o primeiro pedido</LinkButton> : undefined}>
+      <Table titulo="Pedidos" icone="carrinho" contagem={pedidos.length} head={["Pedido", "Fornecedor", "Criado", "Previsão", "Recebido / pedido", "Valor", "Status", ""]} empty={pedidos.length === 0} emptyText={q || s ? "Nenhum pedido encontrado com esses filtros." : "Nenhum pedido de compra registrado."} emptyAction={!q && !s ? <LinkButton href="/compras/pedidos/novo" variant="secondary" icon="mais">Criar o primeiro pedido</LinkButton> : undefined}>
         {pedidos.map((p) => {
           const qtd = p.itens.reduce((a, i) => a + i.quantidade, 0);
           const rec = p.itens.reduce((a, i) => a + i.recebido, 0);
@@ -61,7 +69,10 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
                 </Link>{" "}
                 {p.importacao && <Badge color="purple">importação</Badge>}
               </Td>
-              <Td className="max-w-[16rem] truncate">{p.fornecedor.nomeFantasia || p.fornecedor.razaoSocial}</Td>
+              <Td className="max-w-[16rem] truncate">
+                <div>{p.fornecedor.nomeFantasia || p.fornecedor.razaoSocial}</div>
+                {p.fornecedor.nomeFantasia && <div className="text-xs text-slate-500">{p.fornecedor.razaoSocial}</div>}
+              </Td>
               <Td>{date(p.criadoEm)}</Td>
               <Td>{date(p.previsao)}</Td>
               <Td className="text-right tnum">
@@ -70,6 +81,9 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
               <Td className="text-right">{money(valor)}</Td>
               <Td>
                 <StatusBadge status={p.status} />
+              </Td>
+              <Td>
+                <Link href={`/compras/pedidos/${p.id}`} className={btn.small}>Abrir</Link>
               </Td>
             </tr>
           );

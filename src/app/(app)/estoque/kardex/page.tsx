@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, PageHeader, Table, Td, btn, type BadgeColor } from "@/components/ui";
+import { Badge, KpiGrid, PageHeader, Stat, Table, Td, btn, type BadgeColor } from "@/components/ui";
 import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
 import { dateTime, money, num } from "@/lib/format";
 import { PERFIS_VER } from "../_lib/perfis";
@@ -63,6 +63,11 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
   return (
     <>
       <PageHeader title="Kardex" subtitle="Histórico de movimentações por lote. Filtre por produto e local para ver o saldo corrente." />
+      <KpiGrid cols={3}>
+        <Stat label="Movimentos no filtro" value={num(total)} hint={`página ${page} de ${paginas}`} />
+        <Stat label="Entradas na página" value={num(movs.filter((m) => m.tipo === "ENTRADA").reduce((n, m) => n + m.quantidade, 0))} hint={<span className="text-emerald-700">unidades</span>} />
+        <Stat label="Perdas e ajustes na página" value={num(movs.filter((m) => m.tipo === "PERDA" || m.tipo === "AJUSTE").length)} hint={<span className="text-amber-700">lançamento(s)</span>} />
+      </KpiGrid>
       <Filtros limparHref="/estoque/kardex">
         <FiltroSelect label="Produto" name="produto" defaultValue={sp.produto} todos="Todos os produtos" options={produtos.map((p) => ({ value: p.id, label: `${p.codigo} — ${p.descricao}` }))} />
         <FiltroSelect label="Local" name="local" defaultValue={sp.local} todos="Todos os locais" options={locais.map((l) => ({ value: l.id, label: l.nome }))} />
@@ -72,29 +77,43 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
         <FiltroInput label="Até" name="ate" type="date" defaultValue={sp.ate} />
       </Filtros>
 
-      <Table head={["Data/hora", "Tipo", "Produto", "Lote", "Origem", "Destino", "Qtd.", "Custo unit.", "Documento", "Usuário", ...(comSaldo ? ["Saldo"] : [])]} empty={movs.length === 0} emptyText="Nenhuma movimentação encontrada para os filtros informados.">
+      <Table
+        titulo="Movimentações"
+        icone="livro"
+        contagem={total}
+        head={["Data/hora", "Tipo", "Produto", "Lote", "Origem → destino", "Qtd.", "Custo unit.", "Documento", ...(comSaldo ? ["Saldo"] : [])]}
+        empty={movs.length === 0}
+        emptyText="Nenhuma movimentação encontrada para os filtros informados."
+      >
         {movs.map((m, idx) => {
           const sinal = deltas[idx] > 0 ? "+" : deltas[idx] < 0 ? "−" : "";
           return (
             <tr key={m.id}>
-              <Td className="text-xs">{dateTime(m.criadoEm)}</Td>
+              <Td>
+                <div>{dateTime(m.criadoEm)}</div>
+                <div className="text-[11px] text-slate-500">{m.usuario ?? "—"}</div>
+              </Td>
               <Td><Badge color={COR[m.tipo]}>{m.tipo.toLowerCase()}</Badge></Td>
-              <Td className="max-w-xs truncate">{m.produto.codigo} — {m.produto.descricao}</Td>
+              <Td className="max-w-xs">
+                <div className="truncate font-medium">{m.produto.descricao}</div>
+                <div className="font-mono text-[11px] text-slate-500">{m.produto.codigo}</div>
+              </Td>
               <Td className="font-mono text-xs">
                 <Link href={`/qualidade/lotes/${m.loteId}`} className="text-teal-700 hover:underline">{m.lote.numero}</Link>
               </Td>
-              <Td>{m.origem?.nome ?? "—"}</Td>
-              <Td>{m.destino?.nome ?? (m.tipo === "CONSUMO" ? "paciente" : "—")}</Td>
-              <Td className="text-right font-semibold">{sinal}{num(m.quantidade)}</Td>
-              <Td className="text-right">{money(m.custoUnit)}</Td>
+              <Td>
+                <div>{m.origem?.nome ?? "—"}</div>
+                <div className="text-xs text-slate-500">→ {m.destino?.nome ?? (m.tipo === "CONSUMO" ? "paciente" : "—")}</div>
+              </Td>
+              <Td className="tnum text-right font-semibold">{sinal}{num(m.quantidade)}</Td>
+              <Td className="tnum text-right">{money(m.custoUnit)}</Td>
               <Td className="font-mono text-xs">{m.documento ?? "—"}</Td>
-              <Td className="text-xs">{m.usuario ?? "—"}</Td>
-              {comSaldo && <Td className="text-right font-semibold">{num(saldos[idx])}</Td>}
+              {comSaldo && <Td className="tnum text-right font-semibold">{num(saldos[idx])}</Td>}
             </tr>
           );
         })}
       </Table>
-      <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
+      <div className="mt-3 flex items-center justify-between text-sm text-slate-600">
         <span className="tnum">{num(total)} movimento(s) · página {page} de {paginas}</span>
         <div className="flex gap-2">
           {page > 1 && <Link href={link(page - 1)} className={btn.secondary}>Anterior</Link>}

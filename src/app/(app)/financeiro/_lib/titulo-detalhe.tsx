@@ -63,7 +63,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
       </KpiGrid>
 
       <div className="space-y-4">
-        <Card title="Dados">
+        <Card title="Dados do título" icon="documento">
           <Dl
             items={[
               [cfg.parceiro, titulo.parceiroNome],
@@ -88,8 +88,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           />
         </Card>
 
-        <Card title={`Baixas (${baixas.length})`}>
-          <Table head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", "Ações"]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
+          <Table titulo="Baixas" icone="ok" contagem={baixas.length} head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
             {baixas.map((b) => (
               <tr key={b.id}>
                 <Td>{date(b.data)}</Td>
@@ -103,7 +102,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 <Td>{b.extrato ? <Badge color="green">conciliada</Badge> : <Badge>pendente</Badge>}</Td>
                 <Td>
                   {!b.extrato && (
-                    <ActionButton action={estornarBaixaAction.bind(null, tipo)} hidden={{ id: b.id }} variant="secondary" confirm="Estornar esta baixa?">
+                    <ActionButton action={estornarBaixaAction.bind(null, tipo)} hidden={{ id: b.id }} variant="small" confirm="Estornar esta baixa?">
                       Estornar
                     </ActionButton>
                   )}
@@ -111,36 +110,33 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
               </tr>
             ))}
           </Table>
-        </Card>
 
         {glosas.length > 0 && (
-          <Card title={`Glosas (${glosas.length})`}>
-            <Table head={["Data", "Valor", "Motivo", "Ações"]}>
+            <Table titulo="Glosas" icone="alerta" contagem={glosas.length} head={["Data", "Valor", "Motivo", ""]}>
               {glosas.map((g) => (
                 <tr key={g.id}>
                   <Td>{date(g.data)}</Td>
                   <Td className="text-right tnum">{money(toNumber(g.valor))}</Td>
                   <Td className="max-w-md whitespace-normal">{g.motivo}</Td>
                   <Td>
-                    <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="secondary" confirm="Estornar esta glosa?">
+                    <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="small" confirm="Estornar esta glosa?">
                       Estornar
                     </ActionButton>
                   </Td>
                 </tr>
               ))}
             </Table>
-          </Card>
         )}
 
         {tipo === "receber" && titulo.status === "ABERTO" && (
-          <Card title="Registrar glosa">
+          <Card title="Registrar glosa" icon="alerta">
             <p className="mb-3 text-sm text-slate-600">Use quando o hospital não reconhece parte da cobrança. Abate o saldo sem movimentar dinheiro e aparece em Deduções no DRE (não é desconto).</p>
             <GlosaForm titulo={titulo} hoje={hoje} />
           </Card>
         )}
 
         {titulo.status === "ABERTO" && (
-          <Card title={cfg.baixaLabel}>
+          <Card title={cfg.baixaLabel} icon="ok">
             {contas.length === 0 ? (
               <EmptyState text="Nenhuma conta bancária ou caixa cadastrada. Cadastre uma antes de registrar baixas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta</LinkButton>} />
             ) : (
@@ -150,13 +146,13 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         )}
 
         {titulo.status !== "CANCELADO" && !editavel && (
-          <Card title="Classificação (DRE)">
+          <Card title="Classificação (DRE)" icon="etiqueta">
             <ClassificarForm tipo={tipo} titulo={titulo} planos={planos} centros={centros} />
           </Card>
         )}
 
         {editavel && (
-          <Card title="Editar título">
+          <Card title="Editar título" icon="ajustes">
             <TituloForm tipo={tipo} titulo={titulo} parceiros={parceiros} planos={planos} centros={centros} hoje={hoje} />
           </Card>
         )}

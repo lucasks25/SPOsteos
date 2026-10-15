@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, Dl, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { ActionButton, Field, Form } from "@/components/form";
 import { PrintButton } from "@/components/print-button";
 import { date, dateTime, diasAte } from "@/lib/format";
@@ -50,6 +50,12 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
             </>
           }
         />
+        <KpiGrid>
+          <Stat label="Situação" value={<StatusBadge status={r.status} />} hint={r.enviadaEm ? `enviada em ${dateTime(r.enviadaEm)}` : "ainda não enviada"} />
+          <Stat label="Unidades" value={total} hint={`${r.itens.length} item(ns)`} />
+          <Stat label="Cirurgia" value={<span className="text-base">{r.cirurgia ? `CIR-${r.cirurgia.numero}` : "—"}</span>} hint={r.cirurgia?.paciente} />
+          <Stat label="Kit / caixa" value={<span className="text-base">{r.kit?.codigo ?? "—"}</span>} hint={r.kit?.descricao} />
+        </KpiGrid>
       </div>
 
       {/* Cabeçalho do vale impresso */}
@@ -58,8 +64,8 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
         <p className="text-sm">Emitido em {dateTime(new Date())}</p>
       </div>
 
-      <div className="space-y-6">
-        <Card title="Destino e cirurgia" className="print:border-black">
+      <div className="space-y-3">
+        <Card title="Destino e cirurgia" icon="predio" className="print:border-black">
           <Dl
             items={[
               ["Hospital", h ? `${h.razaoSocial} (CNPJ ${h.cnpj})` : r.local.nome],
@@ -84,35 +90,42 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           />
         </Card>
 
-        <Card title={`Itens (${total} unidade${total === 1 ? "" : "s"})`} className="print:border-black">
-          <Table head={["Código", "Produto", "Fabricante", "Reg. ANVISA", "GTIN", "Lote", "Validade", "Qtd.", ...(r.status === "CONFERIDA" ? ["Devolvido", "Consumido", "Fica no hospital"] : [])]} empty={r.itens.length === 0} emptyText="Esta remessa não tem itens.">
-            {r.itens.map((i) => {
-              const dias = diasAte(i.lote.validade);
-              return (
-                <tr key={i.id}>
-                  <Td className="font-mono text-xs">{i.produto.codigo}</Td>
-                  <Td className="whitespace-normal">{i.produto.descricao}</Td>
-                  <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
-                  <Td>{i.produto.registroAnvisa ?? "—"}</Td>
-                  <Td className="font-mono text-xs">{i.produto.gtin ?? "—"}</Td>
-                  <Td className="font-mono">{i.lote.numero}</Td>
-                  <Td className={dias < 0 ? "text-rose-600 print:text-black" : dias <= 30 ? "text-amber-600 print:text-black" : undefined}>{date(i.lote.validade)}</Td>
-                  <Td className="text-right font-semibold">{i.quantidade}</Td>
-                  {r.status === "CONFERIDA" && (
-                    <>
-                      <Td className="text-right">{i.devolvido}</Td>
-                      <Td className="text-right">{i.consumido}</Td>
-                      <Td className="text-right">{i.quantidade - i.devolvido - i.consumido}</Td>
-                    </>
-                  )}
-                </tr>
-              );
-            })}
-          </Table>
-        </Card>
+        <Table
+          titulo="Itens do vale"
+          icone="lista"
+          contagem={r.itens.length}
+          head={["Produto", "Fabricante", "Reg. ANVISA", "GTIN", "Lote", "Validade", "Qtd.", ...(r.status === "CONFERIDA" ? ["Devolvido", "Consumido", "Fica no hospital"] : [])]}
+          empty={r.itens.length === 0}
+          emptyText="Esta remessa não tem itens."
+        >
+          {r.itens.map((i) => {
+            const dias = diasAte(i.lote.validade);
+            return (
+              <tr key={i.id}>
+                <Td className="whitespace-normal">
+                  <div className="font-medium text-teal-700 print:text-black">{i.produto.descricao}</div>
+                  <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                </Td>
+                <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
+                <Td>{i.produto.registroAnvisa ?? "—"}</Td>
+                <Td className="font-mono text-xs">{i.produto.gtin ?? "—"}</Td>
+                <Td className="font-mono">{i.lote.numero}</Td>
+                <Td className={dias < 0 ? "text-rose-600 print:text-black" : dias <= 30 ? "text-amber-600 print:text-black" : undefined}>{date(i.lote.validade)}</Td>
+                <Td className="tnum text-right font-semibold">{i.quantidade}</Td>
+                {r.status === "CONFERIDA" && (
+                  <>
+                    <Td className="tnum text-right">{i.devolvido}</Td>
+                    <Td className="tnum text-right">{i.consumido}</Td>
+                    <Td className="tnum text-right">{i.quantidade - i.devolvido - i.consumido}</Td>
+                  </>
+                )}
+              </tr>
+            );
+          })}
+        </Table>
 
         {edita && r.status === "ENVIADA" && (
-          <Card title="Conferir retorno" className="print:hidden">
+          <Card title="Conferir retorno" icon="ok" className="print:hidden">
             <p className="mb-4 text-sm text-slate-600">
               Informe por item o que voltou ao depósito e o que foi consumido{r.cirurgia ? ` na cirurgia CIR-${r.cirurgia.numero}` : ""}. O que não for
               informado continua consignado no hospital.

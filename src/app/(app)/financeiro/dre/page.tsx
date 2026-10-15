@@ -71,7 +71,7 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
       )}
       {centroId && <p className="mb-3 text-xs text-slate-500">Com o filtro de centro de custo, perdas e ajustes de estoque ficam de fora (o estoque não tem centro de custo).</p>}
 
-      <Table head={["Linha do resultado", ...meses.map((m) => mesAno(new Date(`${m}-01T00:00:00Z`)) + (fechados.has(m) ? " (fechado)" : "")), "Total"]}>
+      <Table titulo="Resultado por competência" icone="tendencia" contagem={LINHAS.length} head={["Linha do resultado", ...meses.map((m) => mesAno(new Date(`${m}-01T00:00:00Z`)) + (fechados.has(m) ? " (fechado)" : "")), "Total"]}>
         {LINHAS.map((def) => {
           const detalhes = def.tipo ? colunas.map((c) => c.contas[def.tipo!] ?? []) : [];
           const ids = [...new Set(detalhes.flat().map((c) => c.planoId))];
@@ -104,7 +104,7 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
           );
         })}
       </Table>
-      <Card className="mt-4">
+      <Card className="mt-3" title="Como ler" icon="info">
         <p className="text-xs text-slate-500">
           Custo da mercadoria = custo médio congelado no faturamento de cada pedido. Compras de mercadoria vão para o estoque (fora do resultado). Juros e multas pagos ou recebidos e descontos obtidos ou concedidos entram no resultado financeiro, na data da baixa.
         </p>

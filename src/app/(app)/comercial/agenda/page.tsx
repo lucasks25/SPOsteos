@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Icon } from "@/components/icons";
-import { LinkButton, PageHeader, btn, cx } from "@/components/ui";
+import { KpiGrid, LinkButton, PageHeader, Stat, btn, cx } from "@/components/ui";
 import { Filtros, FiltroSelect } from "../_components/filtros";
 import { diaSP, inicioDiaSP, segundaDaSemana, somaDias } from "../_lib/datas";
 import { nomeHospital, opcoesHospitais, opcoesRepresentantes } from "../_lib/opcoes";
@@ -44,11 +44,14 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
   const fmt = (dia: string) => dia.split("-").reverse().slice(0, 2).join("/");
   const hora = (d: Date) => d.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit", timeZone: "America/Sao_Paulo" });
 
+  const ativas = cirurgias.filter((c) => c.status !== "CANCELADA");
+  const semVale = ativas.filter((c) => (c.status === "AGENDADA" || c.status === "CONFIRMADA") && c._count.remessas === 0).length;
+
   return (
     <>
       <PageHeader
         title="Agenda cirúrgica"
-        subtitle={`Semana de ${fmt(dias[0])} a ${fmt(dias[6])} · ${cirurgias.length} cirurgia(s) — navegue pelas semanas ou filtre por hospital e representante`}
+        subtitle={`Semana de ${fmt(dias[0])} a ${fmt(dias[6])} — navegue pelas semanas ou filtre por hospital e representante`}
         actions={
           <>
             <Link href={qs(somaDias(seg, -7))} className={btn.secondary}><Icon name="direita" size={16} className="rotate-180" aria-hidden="true" />Anterior</Link>
@@ -58,6 +61,12 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
           </>
         }
       />
+      <KpiGrid>
+        <Stat label="Cirurgias na semana" value={cirurgias.length} hint={`${fmt(dias[0])} a ${fmt(dias[6])}`} />
+        <Stat label="Agendadas / confirmadas" value={ativas.filter((c) => c.status === "AGENDADA" || c.status === "CONFIRMADA").length} hint={<span className="text-sky-700">{ativas.filter((c) => c.status === "CONFIRMADA").length} confirmada(s)</span>} />
+        <Stat label="Realizadas / faturadas" value={ativas.filter((c) => c.status === "REALIZADA" || c.status === "FATURADA").length} hint={<span className="text-emerald-700">na semana</span>} />
+        <Stat label="Sem vale de consignação" value={semVale} hint={<span className={semVale ? "text-amber-700" : undefined}>agendadas sem remessa</span>} tone={semVale ? "warn" : "default"} />
+      </KpiGrid>
       <Filtros limparHref="/comercial/agenda">
         <input type="hidden" name="semana" value={seg} />
         <FiltroSelect label="Hospital" name="hospital" options={hospitais} defaultValue={sp.hospital} />
@@ -67,22 +76,22 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
         {dias.map((dia, i) => {
           const doDia = cirurgias.filter((c) => diaSP(c.dataHora) === dia);
           return (
-            <div key={dia} className={cx("min-h-40 rounded border bg-white p-2", dia === hoje ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200")}>
-              <div className="mb-2 flex items-baseline justify-between px-1">
+            <div key={dia} className={cx("min-h-40 overflow-hidden rounded border bg-white shadow-sm", dia === hoje ? "border-teal-600 ring-1 ring-teal-600" : "border-slate-200")}>
+              <div className="flex items-baseline justify-between border-b border-slate-200 bg-slate-50 px-3 py-2">
                 <span className="text-xs font-semibold uppercase text-slate-600">{DIAS[i]}</span>
                 <span className={cx("text-sm", dia === hoje ? "font-bold text-teal-700" : "text-slate-700")}>{fmt(dia)}</span>
               </div>
-              <div className="space-y-2">
-                {doDia.length === 0 && <div className="px-1 text-xs text-slate-500">Sem cirurgias</div>}
+              <div className="space-y-2 p-2">
+                {doDia.length === 0 && <div className="px-1 py-2 text-xs text-slate-500">Sem cirurgias neste dia</div>}
                 {doDia.map((c) => (
                   <Link key={c.id} href={`/comercial/cirurgias/${c.id}`} className={cx("block rounded border p-2 text-xs hover:shadow-sm", COR[c.status])}>
-                    <div className="font-semibold text-slate-800">{hora(c.dataHora)} · CIR-{c.numero}</div>
+                    <div className="font-semibold text-teal-700">{hora(c.dataHora)} · CIR-{c.numero}</div>
                     <div className="truncate text-slate-700">{nomeHospital(c.hospital)}</div>
                     <div className="truncate text-slate-600">{c.medico.nome}</div>
                     {c.procedimento && <div className="truncate text-slate-600">{c.procedimento.descricao}</div>}
                     <div className="mt-1.5 flex flex-wrap items-center justify-between gap-x-2 gap-y-0.5 text-[11px] text-slate-600">
                       <span className="font-medium capitalize">{c.status.toLowerCase()}</span>
-                      <span>{c._count.remessas ? `${c._count.remessas} vale${c._count.remessas > 1 ? "s" : ""}` : "sem vale"}</span>
+                      <span className={!c._count.remessas && (c.status === "AGENDADA" || c.status === "CONFIRMADA") ? "font-medium text-amber-700" : undefined}>{c._count.remessas ? `${c._count.remessas} vale${c._count.remessas > 1 ? "s" : ""}` : "sem vale"}</span>
                     </div>
                   </Link>
                 ))}

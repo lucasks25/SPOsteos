@@ -58,7 +58,7 @@ export default async function AuditoriaPage({
         <button className={btn.secondary}>Filtrar</button>
         <Link href="/admin/auditoria" className={btn.ghost}>Limpar</Link>
       </FilterBar>
-      <Table head={["Data/hora", "Usuário", "Ação", "Entidade", "ID", "Detalhes"]} empty={logs.length === 0} emptyText="Nenhum registro de auditoria para esses filtros.">
+      <Table titulo="Registros" icone="lista" contagem={total} head={["Data/hora", "Usuário", "Ação", "Entidade", "ID", "Detalhes"]} empty={logs.length === 0} emptyText="Nenhum registro de auditoria para esses filtros.">
         {logs.map((l) => (
           <tr key={l.id}>
             <Td className="tnum">{dateTime(l.criadoEm)}</Td>

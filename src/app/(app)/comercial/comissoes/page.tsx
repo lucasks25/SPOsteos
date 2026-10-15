@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { money, num, toNumber } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "../_components/filtros";
 import { diaSP, periodo } from "../_lib/datas";
@@ -56,17 +56,27 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
   const tot = porRep.reduce((a, l) => ({ total: a.total + l.total, custo: a.custo + l.custo, comissao: a.comissao + l.comissao }), { total: 0, custo: 0, comissao: 0 });
   const margem = tot.total - tot.custo;
 
-  const tabela = (linhas: Linha[], titulo: string) => (
-    <Table head={[titulo, "Pedidos", "Vendido", "Custo", "Margem (R$)", "Margem %", "Comissão"]} empty={linhas.length === 0} emptyText="Nenhum pedido faturado no período selecionado.">
+  const tabela = (linhas: Linha[], titulo: string, rotulo: string, icone: "usuarios" | "predio") => (
+    <Table
+      titulo={titulo}
+      icone={icone}
+      contagem={linhas.length}
+      head={[rotulo, "Pedidos", "Vendido", "Custo", "Margem (R$)", "Margem %", "Comissão"]}
+      empty={linhas.length === 0}
+      emptyText="Nenhum pedido faturado no período selecionado."
+    >
       {linhas.map((l) => (
         <tr key={l.nome}>
-          <Td className="font-medium">{l.nome}</Td>
-          <Td className="text-right">{num(l.pedidos)}</Td>
-          <Td className="text-right">{money(l.total)}</Td>
-          <Td className="text-right">{money(l.custo)}</Td>
-          <Td className="text-right">{money(l.total - l.custo)}</Td>
-          <Td className="text-right">{pct(l.total - l.custo, l.total)}</Td>
-          <Td className="text-right font-semibold">{money(l.comissao)}</Td>
+          <Td>
+            <div className="font-medium text-teal-700">{l.nome}</div>
+            <div className="text-xs text-slate-500">{num(l.pedidos)} pedido(s) faturado(s)</div>
+          </Td>
+          <Td className="tnum text-right">{num(l.pedidos)}</Td>
+          <Td className="tnum text-right">{money(l.total)}</Td>
+          <Td className="tnum text-right">{money(l.custo)}</Td>
+          <Td className={`tnum text-right ${l.total - l.custo < 0 ? "text-rose-600" : ""}`}>{money(l.total - l.custo)}</Td>
+          <Td className="tnum text-right">{pct(l.total - l.custo, l.total)}</Td>
+          <Td className="tnum text-right font-semibold">{money(l.comissao)}</Td>
         </tr>
       ))}
     </Table>
@@ -75,35 +85,38 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <PageHeader title="Comissões e margem" subtitle="Pedidos de venda faturados no período (data da NF)" />
+      <KpiGrid>
+        <Stat label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
+        <Stat label="Custo" value={money(tot.custo)} />
+        <Stat label="Margem de contribuição" value={money(margem)} hint={<span className={margem < 0 ? "text-rose-600" : "text-emerald-700"}>{pct(margem, tot.total)}</span>} tone={margem < 0 ? "danger" : "default"} />
+        <Stat label="Comissões" value={money(tot.comissao)} />
+      </KpiGrid>
       <Filtros limparHref="/comercial/comissoes">
         <FiltroInput label="De" name="de" type="date" defaultValue={de} />
         <FiltroInput label="Até" name="ate" type="date" defaultValue={ate} />
         <FiltroSelect label="Representante" name="representante" options={representantes} defaultValue={sp.representante} />
       </Filtros>
-      <KpiGrid>
-        <Stat label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
-        <Stat label="Custo" value={money(tot.custo)} />
-        <Stat label="Margem de contribuição" value={money(margem)} hint={pct(margem, tot.total)} tone={margem < 0 ? "danger" : "default"} />
-        <Stat label="Comissões" value={money(tot.comissao)} />
-      </KpiGrid>
-      <div className="space-y-6">
-        <Card title="Por representante">{tabela(porRep, "Representante")}</Card>
-        <Card title="Vendas por hospital">{tabela(porHospital, "Hospital")}</Card>
-        <Card title="Cirurgias por médico (no período)">
-          <Table head={["Médico", "Realizadas/faturadas", "Agendadas/confirmadas", "Total"]} empty={porMedico.size === 0} emptyText="Nenhuma cirurgia no período selecionada.">
-            {[...porMedico.values()].sort((a, b) => b.realizadas + b.agendadas - (a.realizadas + a.agendadas)).map((m) => (
-              <tr key={m.nome}>
-                <Td className="font-medium">{m.nome}</Td>
-                <Td className="text-right">{num(m.realizadas)}</Td>
-                <Td className="text-right">{num(m.agendadas)}</Td>
-                <Td className="text-right font-semibold">{num(m.realizadas + m.agendadas)}</Td>
-              </tr>
-            ))}
-          </Table>
-          <p className="mt-2 text-xs text-slate-600">
-            Ver cirurgias em <Link href="/comercial/cirurgias" className="text-teal-700 hover:underline">Cirurgias</Link>.
-          </p>
-        </Card>
+      <div className="space-y-3">
+        {tabela(porRep, "Por representante", "Representante", "usuarios")}
+        {tabela(porHospital, "Vendas por hospital", "Hospital", "predio")}
+        <Table
+          titulo="Cirurgias por médico (no período)"
+          icone="medico"
+          contagem={porMedico.size}
+          acoes={<Link href="/comercial/cirurgias" className={btn.small}>Ver cirurgias</Link>}
+          head={["Médico", "Realizadas/faturadas", "Agendadas/confirmadas", "Total"]}
+          empty={porMedico.size === 0}
+          emptyText="Nenhuma cirurgia no período selecionada."
+        >
+          {[...porMedico.values()].sort((a, b) => b.realizadas + b.agendadas - (a.realizadas + a.agendadas)).map((m) => (
+            <tr key={m.nome}>
+              <Td className="font-medium text-teal-700">{m.nome}</Td>
+              <Td className="tnum text-right">{num(m.realizadas)}</Td>
+              <Td className="tnum text-right">{num(m.agendadas)}</Td>
+              <Td className="tnum text-right font-semibold">{num(m.realizadas + m.agendadas)}</Td>
+            </tr>
+          ))}
+        </Table>
       </div>
     </>
   );

@@ -5,6 +5,7 @@ import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td, btn, type BadgeColor
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
+import { Celula } from "../../_lib/visual";
 import { cancelarRemessaCobranca } from "../../_lib/cobranca-actions";
 import { MOTIVOS_POR_OCORRENCIA } from "../../_lib/cobranca-tabelas";
 
@@ -67,32 +68,29 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
       )}
       <div className="space-y-4">
         {podeCancelar && (
-          <Card title="Cancelar remessa">
+          <Card title="Cancelar remessa" icon="alerta">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa.</p>
             <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa">
               <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} />
             </Form>
           </Card>
         )}
-        <Card title="Como enviar">
+        <Card title="Como enviar" icon="info">
           <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
             <li>Itaú Empresas &gt; Transmissão de arquivos &gt; Validação: valide o layout antes do primeiro envio.</li>
             <li>Transmissão de arquivos: envie o arquivo (ambiente de teste na implantação, depois produção).</li>
             <li>Baixe o retorno do banco e importe em <Link href="/financeiro/cobranca" className="text-teal-700 hover:underline">Cobrança</Link>. Quando o registro for confirmado, o boleto fica disponível na conta a receber.</li>
           </ol>
         </Card>
-        <Table head={["Nosso número", "Operação", "Título", "Hospital", "Valor", "Situação", "Observações"]}>
+        <Table titulo="Boletos da remessa" icone="receber" contagem={r.itens.length} head={["Nosso número", "Operação", "Título", "Valor", "Situação", "Observações"]}>
           {r.itens.map((i) => (
             <tr key={i.id}>
               <Td className="font-mono text-xs">{i.nossoNumero}</Td>
               <Td>{i.ocorrencia === "01" ? "Registro" : "Pedido de baixa"}</Td>
-              <Td className="max-w-xs truncate">
-                <Link href={`/financeiro/receber/${i.contaReceber.id}`} className="text-teal-700 hover:underline">
-                  {i.contaReceber.descricao}
-                </Link>
+              <Td className="max-w-xs">
+                <Celula href={`/financeiro/receber/${i.contaReceber.id}`} principal={i.contaReceber.hospital ? i.contaReceber.hospital.nomeFantasia || i.contaReceber.hospital.razaoSocial : "Sem hospital"} sub={`${i.contaReceber.descricao} · vence ${date(i.contaReceber.vencimento)}`} />
               </Td>
-              <Td className="max-w-[12rem] truncate">{i.contaReceber.hospital ? i.contaReceber.hospital.nomeFantasia || i.contaReceber.hospital.razaoSocial : "—"}</Td>
-              <Td className="text-right tnum">{money(toNumber(i.valor))}</Td>
+              <Td className="text-right tnum font-medium">{money(toNumber(i.valor))}</Td>
               <Td>
                 <Badge color={COR[i.status]}>{i.status.toLowerCase()}</Badge>
               </Td>
@@ -100,7 +98,6 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
             </tr>
           ))}
         </Table>
-        <p className="text-xs text-slate-600">Vencimento de cada título: {r.itens.map((i) => date(i.contaReceber.vencimento)).slice(0, 3).join(", ")}{r.itens.length > 3 ? "…" : ""}</p>
       </div>
     </>
   );

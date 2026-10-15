@@ -28,5 +28,6 @@ export function EyebrowDaPagina() {
     const bate = i.href === "/" ? pathname === "/" : pathname === i.href || pathname.startsWith(i.href + "/");
     if (bate && (!melhor || i.href.length > melhor.href.length)) melhor = { href: i.href, modulo: g.modulo ?? g.label };
   }
-  return melhor ? <span className="block text-[11px] leading-none text-slate-500">{melhor.modulo}</span> : null;
+  if (!melhor || pathname === "/") return null; // no painel o módulo e o título são a mesma palavra
+  return <span className="block text-[11px] leading-none text-slate-500">{melhor.modulo}</span>;
 }

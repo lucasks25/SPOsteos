@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { num } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function HospitaisPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
@@ -28,14 +29,19 @@ export default async function HospitaisPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <PageHeader title="Hospitais" subtitle="Clientes e locais de consignação" actions={<LinkButton href="/cadastros/hospitais/novo">Novo hospital</LinkButton>} />
+      <KpiGrid cols={3}>
+        <Stat label="Listados" value={hospitais.length} />
+        <Stat label="Com tabela de preço" value={hospitais.filter((h) => h.tabelaPreco).length} hint="preço negociado" />
+        <Stat label="Inativos" value={hospitais.filter((h) => !h.ativo).length} hint="na lista atual" />
+      </KpiGrid>
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Hospital", "CNPJ", "Cidade/UF", "Prazo pgto.", "Tabela de preço", ""]} empty={hospitais.length === 0} emptyText={q ? "Nenhum hospital encontrado para essa busca." : "Nenhum hospital encontrado."} emptyAction={<LinkButton href="/cadastros/hospitais/novo" variant="secondary" icon="mais">Cadastrar hospital</LinkButton>}>
+      <Table titulo="Hospitais" icone="predio" contagem={hospitais.length} head={["Hospital", "CNPJ", "Cidade/UF", "Prazo pgto.", "Tabela de preço", ""]} empty={hospitais.length === 0} emptyText={q ? "Nenhum hospital encontrado para essa busca." : "Nenhum hospital encontrado."} emptyAction={<LinkButton href="/cadastros/hospitais/novo" variant="secondary" icon="mais">Cadastrar hospital</LinkButton>}>
         {hospitais.map((h) => (
           <tr key={h.id}>
             <Td>
-              <div className="font-medium">
+              <div className="font-medium text-teal-700">
                 {h.nomeFantasia ?? h.razaoSocial} {!h.ativo && <Badge>inativo</Badge>}
               </div>
               {h.nomeFantasia && <div className="text-xs text-slate-500">{h.razaoSocial}</div>}

@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
+import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { date, dateTime, money, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
@@ -21,9 +21,14 @@ export default async function AjustesPage() {
   return (
     <>
       <PageHeader title="Ajustes e perdas" subtitle="Correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex." />
-      <div className="space-y-6">
+      <KpiGrid cols={3}>
+        <Stat label="Lançamentos recentes" value={num(ultimos.length)} hint="últimos 50" />
+        <Stat label="Perdas" value={num(ultimos.filter((m) => m.tipo === "PERDA").length)} hint={<span className="text-rose-600">{money(ultimos.filter((m) => m.tipo === "PERDA").reduce((v, m) => v + Number(m.custoUnit) * m.quantidade, 0))}</span>} />
+        <Stat label="Ajustes" value={num(ultimos.filter((m) => m.tipo === "AJUSTE").length)} hint="entradas e saídas de inventário" />
+      </KpiGrid>
+      <div className="space-y-3">
         {podeEditar(user.perfil) && (
-          <Card title="Novo lançamento">
+          <Card title="Novo lançamento" icon="ajustes">
             <Form action={registrarAjuste} submitLabel="Registrar" resetOnSuccess>
               <Grid cols={3}>
                 <Select
@@ -50,26 +55,28 @@ export default async function AjustesPage() {
             </Form>
           </Card>
         )}
-        <Card title="Últimos 50 lançamentos">
-          <Table head={["Data/hora", "Tipo", "Produto", "Lote", "Local", "Qtd.", "Valor", "Motivo", "Usuário"]} empty={ultimos.length === 0} emptyText="Nenhum ajuste ou perda lançado até agora.">
-            {ultimos.map((m) => {
-              const entrada = !!m.destinoId;
-              return (
-                <tr key={m.id}>
-                  <Td className="text-xs">{dateTime(m.criadoEm)}</Td>
-                  <Td>{m.tipo === "PERDA" ? <Badge color="red">perda</Badge> : <Badge color="yellow">ajuste {entrada ? "+" : "−"}</Badge>}</Td>
-                  <Td className="max-w-xs truncate">{m.produto.codigo} — {m.produto.descricao}</Td>
-                  <Td className="font-mono text-xs">{m.lote.numero}</Td>
-                  <Td>{(entrada ? m.destino : m.origem)?.nome ?? "—"}</Td>
-                  <Td className="text-right font-semibold">{entrada ? "+" : "−"}{num(m.quantidade)}</Td>
-                  <Td className="text-right">{money(Number(m.custoUnit) * m.quantidade)}</Td>
-                  <Td className="max-w-xs truncate text-xs">{m.observacao ?? "—"}</Td>
-                  <Td className="text-xs">{m.usuario ?? "—"}</Td>
-                </tr>
-              );
-            })}
-          </Table>
-        </Card>
+        <Table titulo="Últimos 50 lançamentos" icone="lista" contagem={ultimos.length} head={["Data/hora", "Tipo", "Produto", "Local", "Qtd.", "Valor", "Motivo"]} empty={ultimos.length === 0} emptyText="Nenhum ajuste ou perda lançado até agora.">
+          {ultimos.map((m) => {
+            const entrada = !!m.destinoId;
+            return (
+              <tr key={m.id}>
+                <Td>
+                  <div>{dateTime(m.criadoEm)}</div>
+                  <div className="text-[11px] text-slate-500">{m.usuario ?? "—"}</div>
+                </Td>
+                <Td>{m.tipo === "PERDA" ? <Badge color="red">perda</Badge> : <Badge color="yellow">ajuste {entrada ? "+" : "−"}</Badge>}</Td>
+                <Td className="max-w-xs">
+                  <div className="truncate font-medium text-teal-700">{m.produto.descricao}</div>
+                  <div className="font-mono text-[11px] text-slate-500">{m.produto.codigo} · lote {m.lote.numero}</div>
+                </Td>
+                <Td>{(entrada ? m.destino : m.origem)?.nome ?? "—"}</Td>
+                <Td className="tnum text-right font-semibold">{entrada ? "+" : "−"}{num(m.quantidade)}</Td>
+                <Td className="tnum text-right">{money(Number(m.custoUnit) * m.quantidade)}</Td>
+                <Td className="max-w-xs truncate text-xs">{m.observacao ?? "—"}</Td>
+              </tr>
+            );
+          })}
+        </Table>
       </div>
     </>
   );

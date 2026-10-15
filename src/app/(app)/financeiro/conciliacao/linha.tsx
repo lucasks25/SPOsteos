@@ -10,13 +10,13 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
   const entrada = linha.valor > 0;
   const opcoesTitulo = titulos.map((t) => ({ value: t.id, label: `${t.label} — saldo ${money(t.saldo)}` }));
   return (
-    <div className="rounded border border-slate-200 bg-white p-3 shadow-sm">
+    <div className="px-3 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-sm font-medium text-slate-800">{linha.descricao}</div>
-          <div className="text-xs text-slate-500">{date(linha.data)}</div>
+          <div className="text-[13px] font-medium text-slate-900">{linha.descricao}</div>
+          <div className="text-[11px] text-slate-500">{date(linha.data)} · {entrada ? "entrada" : "saída"} sem vínculo</div>
         </div>
-        <div className={`tnum text-lg font-bold ${entrada ? "text-emerald-700" : "text-rose-700"}`}>{money(linha.valor)}</div>
+        <div className={`tnum text-sm font-bold ${entrada ? "text-emerald-700" : "text-rose-600"}`}>{entrada ? "+ " : "− "}{money(Math.abs(linha.valor))}</div>
       </div>
 
       {(sugLanc.length > 0 || exatos.length > 0) && (
@@ -27,7 +27,7 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
               <span className="text-slate-700">
                 {s.descricao} ({date(s.data)})
               </span>
-              <ActionButton action={conciliarComLancamento.bind(null, linha.id, s.id)} variant="primary">
+              <ActionButton action={conciliarComLancamento.bind(null, linha.id, s.id)} variant="small">
                 Conciliar
               </ActionButton>
             </div>
@@ -43,7 +43,7 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
       )}
 
       <details className="mt-3 border-t border-slate-100 pt-3">
-        <summary className="cursor-pointer text-sm font-medium text-teal-700">Outras opções</summary>
+        <summary className="cursor-pointer text-xs font-semibold text-teal-700">Outras opções: baixar título, lançamento avulso ou excluir</summary>
         <div className="mt-3 grid gap-4 lg:grid-cols-2">
           <div>
             <h3 className="mb-2 text-xs font-bold text-slate-600">Baixar um título {entrada ? "a receber" : "a pagar"}</h3>
@@ -69,7 +69,7 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
           </div>
         </div>
         <div className="mt-4">
-          <ActionButton action={excluirLinhaExtrato.bind(null, linha.id)} variant="secondary" confirm="Excluir esta linha do extrato? Use se foi importada na conta errada.">
+          <ActionButton action={excluirLinhaExtrato.bind(null, linha.id)} variant="small" confirm="Excluir esta linha do extrato? Use se foi importada na conta errada.">
             Excluir linha
           </ActionButton>
         </div>
@@ -80,9 +80,8 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
 
 function ConfirmarBaixa({ linhaId, tituloId }: { linhaId: string; tituloId: string }) {
   return (
-    <Form action={baixarEConciliar.bind(null, linhaId)} submitLabel="Baixar e conciliar" className="inline-flex">
-      <input type="hidden" name="tituloId" value={tituloId} />
-    </Form>
+    <ActionButton action={baixarEConciliar.bind(null, linhaId)} hidden={{ tituloId }} variant="small">
+      Baixar e conciliar
+    </ActionButton>
   );
 }
-

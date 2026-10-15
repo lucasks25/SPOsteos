@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
@@ -28,17 +28,20 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
   return (
     <>
       <PageHeader title="Médicos" subtitle="Cirurgiões e solicitantes de materiais" actions={<LinkButton href="/cadastros/medicos/novo">Novo médico</LinkButton>} />
+      <KpiGrid cols={3}>
+        <Stat label="Listados" value={medicos.length} />
+        <Stat label="Cirurgias" value={num(medicos.reduce((s, m) => s + m._count.cirurgias, 0))} hint="dos médicos listados" />
+        <Stat label="Inativos" value={medicos.filter((m) => !m.ativo).length} hint="na lista atual" />
+      </KpiGrid>
       <SearchBar placeholder="Nome, CRM ou especialidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Nome", "CRM", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={<LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton>}>
+      <Table titulo="Médicos" icone="medico" contagem={medicos.length} head={["Médico", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={<LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton>}>
         {medicos.map((m) => (
           <tr key={m.id}>
-            <Td className="font-medium">
-              {m.nome} {!m.ativo && <Badge>inativo</Badge>}
-            </Td>
-            <Td className="font-mono text-xs">
-              {m.crm}/{m.ufCrm}
+            <Td>
+              <Link href={`/cadastros/medicos/${m.id}`} className="font-medium text-teal-700 hover:underline">{m.nome}</Link> {!m.ativo && <Badge>inativo</Badge>}
+              <div className="text-xs text-slate-500">CRM <span className="font-mono">{m.crm}/{m.ufCrm}</span></div>
             </Td>
             <Td>{m.especialidade ?? "—"}</Td>
             <Td>

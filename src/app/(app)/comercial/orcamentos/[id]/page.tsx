@@ -1,11 +1,11 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, Dl, cx, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Card, Dl, KpiGrid, Stat, cx, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
 import { ActionButton } from "@/components/form";
 import { ItemAdder, produtoOptions } from "@/components/item-adder";
 import { PrintButton } from "@/components/print-button";
-import { date, dateTime, money, toNumber } from "@/lib/format";
+import { date, dateTime, diasAte, money, toNumber } from "@/lib/format";
 import { opcoesConvenios, opcoesHospitais } from "../../_lib/opcoes";
 import { OrcamentoForm } from "../orcamento-form";
 import { adicionarItemOrcamento, mudarStatusOrcamento, removerItemOrcamento } from "../actions";
@@ -53,6 +53,12 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
             </>
           }
         />
+        <KpiGrid>
+          <Stat label="Total" value={money(total)} hint={`${o.itens.length} item(ns)`} />
+          <Stat label="Situação" value={<StatusBadge status={o.status} />} />
+          <Stat label="Validade" value={o.validade ? date(o.validade) : "—"} hint={o.validade && diasAte(o.validade) < 0 && o.status !== "APROVADO" ? <span className="text-rose-600">vencida</span> : undefined} />
+          <Stat label="Convênio" value={<span className="text-base">{o.convenio?.nome ?? "Particular"}</span>} hint={o.paciente ? `Paciente: ${o.paciente}` : undefined} />
+        </KpiGrid>
       </div>
       <div className="mb-4 hidden print:block">
         <h1 className="text-xl font-bold">Orçamento ORC-{o.id}</h1>
@@ -61,11 +67,11 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
 
       <div className="space-y-6">
         {edita && rascunho ? (
-          <Card title="Dados do orçamento" className="print:hidden">
+          <Card title="Dados do orçamento" icon="documento" className="print:hidden">
             <OrcamentoForm orc={o} hospitais={hospitais} convenios={convenios} />
           </Card>
         ) : null}
-        <Card title="Destinatário" className={cx("print:shadow-none", edita && rascunho && "hidden print:block")}>
+        <Card title="Destinatário" icon="predio" className={cx("print:shadow-none", edita && rascunho && "hidden print:block")}>
           <Dl
             items={[
               ["Hospital", `${o.hospital.razaoSocial} (CNPJ ${o.hospital.cnpj})`],
@@ -76,33 +82,40 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
             ]}
           />
         </Card>
-        <Card title="Itens" className="print:shadow-none">
-          {edita && rascunho && (
-            <div className="mb-4 print:hidden">
-              <ItemAdder action={adicionarItemOrcamento.bind(null, id)} produtos={produtoOptions(produtos)} comPreco />
-              <p className="mt-1 text-xs text-slate-600">Preço vazio = tabela do hospital (ou preço base).</p>
-            </div>
-          )}
-          <Table head={["Código", "Produto", "Fabricante", "Reg. ANVISA", "Qtd.", "Preço unit.", "Subtotal", ...(edita && rascunho ? ["Ações"] : [])]} empty={o.itens.length === 0} emptyText="Nenhum item neste orçamento. Use o campo acima para incluir produtos.">
-            {o.itens.map((i) => (
-              <tr key={i.id}>
-                <Td className="font-mono text-xs">{i.produto.codigo}</Td>
-                <Td className="whitespace-normal">{i.produto.descricao}</Td>
-                <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
-                <Td>{i.produto.registroAnvisa ?? "—"}</Td>
-                <Td className="text-right">{i.quantidade}</Td>
-                <Td className="text-right">{money(i.precoUnit)}</Td>
-                <Td className="text-right font-semibold">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
-                {edita && rascunho && (
-                  <Td className="print:hidden">
-                    <ActionButton action={removerItemOrcamento.bind(null, i.id)} variant="small">Remover</ActionButton>
-                  </Td>
-                )}
-              </tr>
-            ))}
-          </Table>
-          <div className="tnum mt-4 text-right text-lg font-bold text-slate-900">Total: {money(total)}</div>
-        </Card>
+        {edita && rascunho && (
+          <Card title="Incluir item" icon="mais" className="print:hidden">
+            <ItemAdder action={adicionarItemOrcamento.bind(null, id)} produtos={produtoOptions(produtos)} comPreco />
+            <p className="mt-1 text-xs text-slate-600">Preço vazio = tabela do hospital (ou preço base).</p>
+          </Card>
+        )}
+        <Table
+          titulo="Itens"
+          icone="lista"
+          contagem={o.itens.length}
+          head={["Produto", "Fabricante", "Reg. ANVISA", "Qtd.", "Preço unit.", "Subtotal", ...(edita && rascunho ? ["Ações"] : [])]}
+          empty={o.itens.length === 0}
+          emptyText="Nenhum item neste orçamento. Use o campo acima para incluir produtos."
+        >
+          {o.itens.map((i) => (
+            <tr key={i.id}>
+              <Td className="whitespace-normal">
+                <div className="font-medium text-teal-700 print:text-black">{i.produto.descricao}</div>
+                <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+              </Td>
+              <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
+              <Td>{i.produto.registroAnvisa ?? "—"}</Td>
+              <Td className="tnum text-right">{i.quantidade}</Td>
+              <Td className="tnum text-right">{money(i.precoUnit)}</Td>
+              <Td className="tnum text-right font-semibold">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
+              {edita && rascunho && (
+                <Td className="print:hidden">
+                  <ActionButton action={removerItemOrcamento.bind(null, i.id)} variant="small">Remover</ActionButton>
+                </Td>
+              )}
+            </tr>
+          ))}
+        </Table>
+        <div className="tnum text-right text-lg font-bold text-slate-900">Total: {money(total)}</div>
       </div>
     </>
   );

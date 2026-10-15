@@ -3,6 +3,7 @@ import { Badge, Card, KpiGrid, LinkButton, PageHeader, Stat, Table, Td, btn } fr
 import { requireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
 import { Field, Form, Grid, Select } from "@/components/form";
+import { Celula } from "../_lib/visual";
 import { transferirEntreContas } from "../_lib/contas-actions";
 import { hojeUTC, ymd } from "../_lib/datas";
 import { listarContas } from "../_lib/contas";
@@ -18,22 +19,19 @@ export default async function ContasPage() {
         subtitle="Onde o dinheiro entra e sai. O saldo vem dos lançamentos (baixas e avulsos)."
         actions={<LinkButton href="/financeiro/contas/nova">Nova conta</LinkButton>}
       />
-      <KpiGrid cols={4}>
+      <KpiGrid cols={3}>
         <Stat label="Disponibilidade total" value={money(total)} hint={`${contas.filter((c) => c.ativo).length} conta(s) ativa(s)`} tone={total < 0 ? "danger" : "default"} />
       </KpiGrid>
-      <Table head={["Conta", "Tipo", "Banco / agência / número", "Saldo", "Situação", "Ações"]} empty={contas.length === 0} emptyText="Nenhuma conta cadastrada ainda." emptyAction={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar a primeira conta</LinkButton>}>
+      <Table titulo="Contas" icone="banco" contagem={contas.length} head={["Conta", "Tipo", "Saldo", "Situação", ""]} empty={contas.length === 0} emptyText="Nenhuma conta cadastrada ainda." emptyAction={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar a primeira conta</LinkButton>}>
         {contas.map((c) => (
           <tr key={c.id}>
             <Td>
-              <Link href={`/financeiro/contas/${c.id}`} className="text-teal-700 hover:underline">
-                {c.nome}
-              </Link>
+              <Celula href={`/financeiro/contas/${c.id}`} principal={c.nome} sub={[c.banco, c.agencia, c.numero].filter(Boolean).join(" / ") || "sem dados bancários"} />
             </Td>
             <Td>{c.tipo === "CAIXA" ? "Caixa" : "Banco"}</Td>
-            <Td>{[c.banco, c.agencia, c.numero].filter(Boolean).join(" / ") || "—"}</Td>
-            <Td className="text-right tnum">{money(c.saldo)}</Td>
+            <Td className={`text-right tnum font-medium ${c.saldo < 0 ? "text-rose-600" : ""}`}>{money(c.saldo)}</Td>
             <Td>{c.ativo ? <Badge color="green">ativa</Badge> : <Badge>inativa</Badge>}</Td>
-            <Td>
+            <Td className="text-right">
               <Link href={`/financeiro/contas/${c.id}`} className={btn.small}>
                 Movimentos
               </Link>
@@ -44,7 +42,7 @@ export default async function ContasPage() {
 
       {contas.filter((c) => c.ativo).length >= 2 && (
         <div className="mt-4">
-          <Card title="Transferência entre contas">
+          <Card title="Transferência entre contas" icon="conciliar">
             <p className="mb-3 text-sm text-slate-600">Move dinheiro entre contas suas. Muda o saldo de cada conta, mas não conta como receita nem despesa no painel e no fluxo de caixa.</p>
             <Form action={transferirEntreContas} submitLabel="Transferir" resetOnSuccess>
               <Grid cols={4}>

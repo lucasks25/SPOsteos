@@ -5,6 +5,7 @@ import { Badge, Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td, btn
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
+import { Celula } from "../../_lib/visual";
 import { cancelarRemessa } from "../../_lib/sispag-actions";
 import { descreverOcorrencias, FORMAS_SISPAG, type FormaSispag } from "../../_lib/sispag";
 
@@ -63,14 +64,14 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
       )}
       <div className="space-y-4">
         {podeCancelar && (
-          <Card title="Cancelar remessa">
+          <Card title="Cancelar remessa" icon="alerta">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa. Se o arquivo já foi enviado e autorizado no banco, cancele o pagamento lá primeiro.</p>
             <Form action={cancelarRemessa.bind(null, r.id)} submitLabel="Cancelar remessa">
               <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} />
             </Form>
           </Card>
         )}
-        <Card title="Como enviar">
+        <Card title="Como enviar" icon="info">
           <Dl
             items={[
               ["1. Validar", "Itaú Empresas > Transmissão de arquivos > Validação (recomendado pelo manual antes do primeiro envio)"],
@@ -79,18 +80,15 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
             ]}
           />
         </Card>
-        <Table head={["Seu número", "Conta a pagar", "Fornecedor", "Forma", "Valor", "Situação no banco", "Ocorrências", "Título"]}>
+        <Table titulo="Pagamentos da remessa" icone="pagar" contagem={r.itens.length} head={["Seu número", "Conta a pagar", "Forma", "Valor", "Situação no banco", "Ocorrências", "Título"]}>
           {r.itens.map((i) => (
             <tr key={i.id}>
               <Td className="font-mono text-xs">SP{i.id}</Td>
-              <Td className="max-w-xs truncate">
-                <Link href={`/financeiro/pagar/${i.contaPagar.id}`} className="text-teal-700 hover:underline">
-                  {i.contaPagar.descricao}
-                </Link>
+              <Td className="max-w-xs">
+                <Celula href={`/financeiro/pagar/${i.contaPagar.id}`} principal={i.contaPagar.descricao} sub={i.contaPagar.fornecedor ? i.contaPagar.fornecedor.nomeFantasia || i.contaPagar.fornecedor.razaoSocial : "Sem fornecedor"} />
               </Td>
-              <Td className="max-w-[12rem] truncate">{i.contaPagar.fornecedor ? i.contaPagar.fornecedor.nomeFantasia || i.contaPagar.fornecedor.razaoSocial : "—"}</Td>
               <Td>{FORMAS_SISPAG[i.forma as FormaSispag] ?? i.forma}</Td>
-              <Td className="text-right tnum">{money(toNumber(i.valor))}</Td>
+              <Td className="text-right tnum font-medium">{money(toNumber(i.valor))}</Td>
               <Td>
                 <Badge color={COR[i.status]}>{i.status.toLowerCase()}</Badge>
               </Td>

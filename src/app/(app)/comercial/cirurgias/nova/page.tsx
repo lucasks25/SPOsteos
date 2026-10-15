@@ -9,7 +9,7 @@ export default async function NovaCirurgiaPage() {
   return (
     <>
       <PageHeader title="Nova cirurgia" subtitle="Preencha os dados do procedimento. Depois de salvar, gere a remessa/vale de consignação." />
-      <Card>
+      <Card title="Dados" icon="documento">
         <CirurgiaForm opcoes={opcoes} />
       </Card>
     </>

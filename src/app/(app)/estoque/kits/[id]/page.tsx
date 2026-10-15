@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, PageHeader, Table, Td } from "@/components/ui";
+import { Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { ActionButton } from "@/components/form";
 import { ItemAdder, produtoOptions } from "@/components/item-adder";
 import { num } from "@/lib/format";
@@ -32,33 +32,38 @@ export default async function KitPage({ params }: { params: Promise<{ id: string
           )
         }
       />
-      <div className="space-y-6">
+      <KpiGrid cols={3}>
+        <Stat label="Itens no kit" value={kit.itens.length} hint={`${num(kit.itens.reduce((n, i) => n + i.quantidade, 0))} unidade(s)`} />
+        <Stat label="Kits completos no depósito" value={montaveis} hint={<span className={montaveis > 0 ? "text-emerald-700" : "text-amber-700"}>{montaveis > 0 ? "disponíveis" : "falta material"}</span>} tone={montaveis > 0 ? "default" : "warn"} />
+        <Stat label="Remessas geradas" value={kit._count.remessas} />
+      </KpiGrid>
+      <div className="space-y-3">
         {edita && (
-          <Card title="Dados do kit">
+          <Card title="Dados do kit" icon="pacote">
             <KitForm kit={kit} />
           </Card>
         )}
-        <Card title="Itens do kit">
-          {edita && (
-            <div className="mb-4">
-              <ItemAdder action={adicionarItemKit.bind(null, id)} produtos={produtoOptions(produtos)} />
-            </div>
-          )}
-          <Table head={["Código", "Produto", "Qtd. no kit", "Disponível no depósito", "Ações"]} empty={kit.itens.length === 0} emptyText="Este kit ainda não tem itens. Use o campo acima para incluir produtos.">
-            {kit.itens.map((i) => {
-              const d = disp.get(i.produtoId) ?? 0;
-              return (
-                <tr key={i.id}>
-                  <Td className="font-mono text-xs">{i.produto.codigo}</Td>
-                  <Td>{i.produto.descricao}</Td>
-                  <Td className="text-right">{i.quantidade}</Td>
-                  <Td className={d < i.quantidade ? "text-right text-rose-600" : "text-right"}>{num(d)}</Td>
-                  <Td>{edita && <ActionButton action={removerItemKit.bind(null, i.id)} variant="small">Remover</ActionButton>}</Td>
-                </tr>
-              );
-            })}
-          </Table>
-        </Card>
+        {edita && (
+          <Card title="Incluir item" icon="mais">
+            <ItemAdder action={adicionarItemKit.bind(null, id)} produtos={produtoOptions(produtos)} />
+          </Card>
+        )}
+        <Table titulo="Itens do kit" icone="lista" contagem={kit.itens.length} head={["Produto", "Qtd. no kit", "Disponível no depósito", ...(edita ? ["Ações"] : [])]} empty={kit.itens.length === 0} emptyText="Este kit ainda não tem itens. Use o campo acima para incluir produtos.">
+          {kit.itens.map((i) => {
+            const d = disp.get(i.produtoId) ?? 0;
+            return (
+              <tr key={i.id}>
+                <Td>
+                  <div className="font-medium">{i.produto.descricao}</div>
+                  <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                </Td>
+                <Td className="tnum text-right">{i.quantidade}</Td>
+                <Td className={d < i.quantidade ? "tnum text-right text-rose-600" : "tnum text-right"}>{num(d)}</Td>
+                {edita && <Td><ActionButton action={removerItemKit.bind(null, i.id)} variant="small">Remover</ActionButton></Td>}
+              </tr>
+            );
+          })}
+        </Table>
       </div>
     </>
   );

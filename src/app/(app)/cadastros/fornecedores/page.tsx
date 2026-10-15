@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
+import { num } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function FornecedoresPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
@@ -27,14 +28,19 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
   return (
     <>
       <PageHeader title="Fornecedores" subtitle="Fornecedores e importadores de materiais" actions={<LinkButton href="/cadastros/fornecedores/novo">Novo fornecedor</LinkButton>} />
+      <KpiGrid cols={3}>
+        <Stat label="Listados" value={fornecedores.length} />
+        <Stat label="Sem AFE" value={fornecedores.filter((f) => !f.afe).length} hint="autorização pendente" />
+        <Stat label="Inativos" value={fornecedores.filter((f) => !f.ativo).length} hint="na lista atual" />
+      </KpiGrid>
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Razão social", "CNPJ", "Contato", "Cidade/UF", "AFE", ""]} empty={fornecedores.length === 0} emptyText={q ? "Nenhum fornecedor encontrado para essa busca." : "Nenhum fornecedor encontrado."} emptyAction={<LinkButton href="/cadastros/fornecedores/novo" variant="secondary" icon="mais">Cadastrar fornecedor</LinkButton>}>
+      <Table titulo="Fornecedores" icone="caminhao" contagem={fornecedores.length} head={["Razão social", "CNPJ", "Contato", "Cidade/UF", "AFE", ""]} empty={fornecedores.length === 0} emptyText={q ? "Nenhum fornecedor encontrado para essa busca." : "Nenhum fornecedor encontrado."} emptyAction={<LinkButton href="/cadastros/fornecedores/novo" variant="secondary" icon="mais">Cadastrar fornecedor</LinkButton>}>
         {fornecedores.map((f) => (
           <tr key={f.id}>
             <Td>
-              <div className="font-medium">
+              <div className="font-medium text-teal-700">
                 {f.razaoSocial} {!f.ativo && <Badge>inativo</Badge>}
               </div>
               {f.nomeFantasia && <div className="text-xs text-slate-500">{f.nomeFantasia}</div>}

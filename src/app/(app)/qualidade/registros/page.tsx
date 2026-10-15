@@ -65,16 +65,15 @@ export default async function RegistrosPage({ searchParams }: { searchParams: Pr
           {inativos ? "Ocultar inativos" : "Incluir inativos"}
         </Link>
       </div>
-      <Table head={["Código", "Descrição", "Fabricante", "Classe", "Registro ANVISA", "Validade", "Situação", ""]} empty={lista.length === 0} emptyText="Nenhum produto nesta situação de registro.">
+      <Table titulo="Produtos e registros" icone="livro" contagem={lista.length} head={["Produto", "Classe", "Registro ANVISA", "Validade", "Situação", ""]} empty={lista.length === 0} emptyText="Nenhum produto nesta situação de registro.">
         {lista.map(({ p, s }) => {
           const d = p.validadeRegistro ? diasAte(p.validadeRegistro) : null;
           return (
             <tr key={p.id} className={cx(s === "vencido" && "bg-rose-50/60", s === "90" && "bg-amber-50/60")}>
-              <Td className="font-mono text-xs">{p.codigo}</Td>
               <Td>
-                {p.descricao} {!p.ativo && <Badge>inativo</Badge>}
+                <Link href={`/cadastros/produtos/${p.id}`} className="font-medium text-teal-700 hover:underline">{p.descricao}</Link> {!p.ativo && <Badge>inativo</Badge>}
+                <div className="text-xs text-slate-500"><span className="font-mono">{p.codigo}</span> · {p.fabricante?.nome ?? "sem fabricante"}</div>
               </Td>
-              <Td>{p.fabricante?.nome ?? "—"}</Td>
               <Td>{p.classeRisco ?? "—"}</Td>
               <Td>{p.registroAnvisa ?? "—"}</Td>
               <Td>{date(p.validadeRegistro)}</Td>

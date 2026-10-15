@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Field, Select } from "@/components/form";
-import { FilterBar, KpiGrid, LinkButton, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
+import { FilterBar, KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money } from "@/lib/format";
 import { addDias, diaMes, hojeUTC, mesAno, parseDia, ymd } from "../_lib/datas";
@@ -64,7 +64,7 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
         </div>
       )}
 
-      <Table head={[g === "semana" ? "Semana" : "Mês", "Entradas", "Saídas", "Comparativo", "Saldo do período", "Acumulado"]} empty={fluxo.faixas.length === 0} emptyText="Nenhuma movimentação prevista ou realizada neste período.">
+      <Table titulo={g === "semana" ? "Fluxo por semana" : "Fluxo por mês"} icone="tendencia" contagem={fluxo.faixas.length} acoes={<Link href="/financeiro/contas" className={btn.small}>Contas bancárias</Link>} head={[g === "semana" ? "Semana" : "Mês", "Entradas", "Saídas", "Comparativo", "Saldo do período", "Acumulado"]} empty={fluxo.faixas.length === 0} emptyText="Nenhuma movimentação prevista ou realizada neste período.">
         {fluxo.faixas.map((f) => {
           const ent = f.recPrev + f.recReal;
           const sai = f.pagPrev + f.pagReal;
@@ -94,11 +94,6 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
       <p className="mt-2 text-xs text-slate-500">
         Previsto = saldo dos títulos em aberto por vencimento. Realizado = baixas e lançamentos já feitos nas contas ativas.
       </p>
-      <div className="mt-4">
-        <LinkButton href="/financeiro/contas" variant="secondary">
-          Contas bancárias
-        </LinkButton>
-      </div>
     </>
   );
 }

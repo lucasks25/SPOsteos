@@ -47,14 +47,13 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
       </KpiGrid>
 
       <div className="space-y-4">
-        <Card title="Movimentos (últimos 100)">
-          <Table head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", "Ações"]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
+        <Table titulo="Movimentos (últimos 100)" icone="lista" contagem={movimentos.length} head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", ""]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
             {movimentos.map((m) => {
               const tituloHref = m.contaReceberId ? `/financeiro/receber/${m.contaReceberId}` : m.contaPagarId ? `/financeiro/pagar/${m.contaPagarId}` : null;
               return (
                 <tr key={m.id}>
                   <Td>{date(m.data)}</Td>
-                  <Td className="max-w-xs truncate">{m.descricao}</Td>
+                  <Td className="max-w-xs truncate font-medium">{m.descricao}</Td>
                   <Td>
                     {tituloHref ? (
                       <Link href={tituloHref} className="text-teal-700 hover:underline">
@@ -67,16 +66,16 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                     )}
                   </Td>
                   <Td className="text-right tnum text-emerald-700">{m.sentido === "ENTRADA" ? money(toNumber(m.valor)) : ""}</Td>
-                  <Td className="text-right tnum text-rose-700">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
+                  <Td className="text-right tnum text-rose-600">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
                   <Td>{m.extrato ? <Badge color="green">conciliado</Badge> : <Badge>pendente</Badge>}</Td>
                   <Td>
                     {m.transferenciaId && (
-                      <ActionButton action={estornarTransferenciaAction} hidden={{ id: m.transferenciaId }} confirm="Estornar a transferência inteira (as duas contas)?">
+                      <ActionButton variant="small" action={estornarTransferenciaAction} hidden={{ id: m.transferenciaId }} confirm="Estornar a transferência inteira (as duas contas)?">
                         Estornar
                       </ActionButton>
                     )}
                     {!tituloHref && !m.transferenciaId && !m.extrato && (
-                      <ActionButton action={excluirAvulso} hidden={{ id: m.id }} confirm="Excluir este lançamento?">
+                      <ActionButton variant="small" action={excluirAvulso} hidden={{ id: m.id }} confirm="Excluir este lançamento?">
                         Excluir
                       </ActionButton>
                     )}
@@ -84,11 +83,10 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                 </tr>
               );
             })}
-          </Table>
-        </Card>
+        </Table>
 
         {conta.ativo && (
-          <Card title="Lançamento avulso (tarifa, rendimento, transferência...)">
+          <Card title="Lançamento avulso (tarifa, rendimento, transferência...)" icon="mais">
             <Form action={lancarAvulso.bind(null, id)} submitLabel="Lançar" resetOnSuccess>
               <Grid cols={4}>
                 <Select
@@ -111,7 +109,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
           </Card>
         )}
 
-        <Card title="Dados da conta">
+        <Card title="Dados da conta" icon="engrenagem">
           <ContaForm conta={{ ...conta, ...extra }} />
         </Card>
       </div>

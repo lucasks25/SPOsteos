@@ -2,10 +2,11 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, PageHeader, Table, Td } from "@/components/ui";
+import { Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { ActionButton } from "@/components/form";
 import { ItemAdder, produtoOptions } from "@/components/item-adder";
-import { money, toNumber } from "@/lib/format";
+import { date, money, toNumber } from "@/lib/format";
+import { tabelaVigente } from "../../_lib/precos";
 import { TabelaForm } from "../tabela-form";
 import { excluirTabela, incluirTodos, removerPreco, salvarPreco } from "../actions";
 
@@ -37,40 +38,43 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
           )
         }
       />
+      <KpiGrid cols={3}>
+        <Stat label="Produtos com preço" value={t.itens.length} />
+        <Stat label="Hospitais vinculados" value={t.hospitais.length} />
+        <Stat label="Vigência" value={<span className="text-base">{t.vigenciaInicio || t.vigenciaFim ? `${date(t.vigenciaInicio)} a ${date(t.vigenciaFim)}` : "sem prazo"}</span>} hint={tabelaVigente(t) ? <span className="text-emerald-700">vigente</span> : <span className="text-amber-700">fora de vigência</span>} />
+      </KpiGrid>
       <div className="space-y-6">
         {edita && (
-          <Card title="Dados da tabela">
+          <Card title="Dados da tabela" icon="etiqueta">
             <TabelaForm tabela={t} />
           </Card>
         )}
-        <Card title="Preços">
-          {edita && (
-            <div className="mb-4">
-              <ItemAdder action={salvarPreco.bind(null, id)} produtos={produtoOptions(produtos)} comPreco comQuantidade={false} label="Salvar preço" />
-              <p className="mt-1 text-xs text-slate-600">Se o produto já estiver na tabela, o preço é atualizado.</p>
-            </div>
-          )}
-          <Table head={["Código", "Produto", "Custo médio", "Preço base", "Preço na tabela", "Margem", "Ações"]} empty={t.itens.length === 0} emptyText="Nenhum preço nesta tabela. Os produtos usam o preço base até serem incluídos." emptyAction={edita ? <ActionButton action={incluirTodos.bind(null, id)}>Incluir todos pelo preço base</ActionButton> : undefined}>
-            {t.itens.map((i) => {
-              const preco = toNumber(i.preco);
-              const custo = toNumber(i.produto.custoMedio);
-              const margem = preco > 0 ? ((preco - custo) / preco) * 100 : 0;
-              return (
-                <tr key={i.id}>
-                  <Td className="font-mono text-xs">
-                    <Link href={`/cadastros/produtos/${i.produtoId}`} className="text-teal-700 hover:underline">{i.produto.codigo}</Link>
-                  </Td>
-                  <Td className="max-w-sm truncate">{i.produto.descricao}</Td>
-                  <Td className="text-right">{money(custo)}</Td>
-                  <Td className="text-right">{money(i.produto.precoBase)}</Td>
-                  <Td className="text-right font-semibold">{money(preco)}</Td>
-                  <Td className={margem < 20 ? "text-right text-rose-600" : "text-right text-emerald-700"}>{margem.toFixed(1)}%</Td>
-                  <Td>{edita && <ActionButton action={removerPreco.bind(null, i.id)} variant="small">Remover</ActionButton>}</Td>
-                </tr>
-              );
-            })}
-          </Table>
-        </Card>
+        {edita && (
+          <Card title="Incluir ou atualizar preço" icon="mais">
+            <ItemAdder action={salvarPreco.bind(null, id)} produtos={produtoOptions(produtos)} comPreco comQuantidade={false} label="Salvar preço" />
+            <p className="mt-1 text-xs text-slate-600">Se o produto já estiver na tabela, o preço é atualizado.</p>
+          </Card>
+        )}
+        <Table titulo="Preços" icone="etiqueta" contagem={t.itens.length} head={["Produto", "Custo médio", "Preço base", "Preço na tabela", "Margem", ...(edita ? ["Ações"] : [])]} empty={t.itens.length === 0} emptyText="Nenhum preço nesta tabela. Os produtos usam o preço base até serem incluídos." emptyAction={edita ? <ActionButton action={incluirTodos.bind(null, id)}>Incluir todos pelo preço base</ActionButton> : undefined}>
+          {t.itens.map((i) => {
+            const preco = toNumber(i.preco);
+            const custo = toNumber(i.produto.custoMedio);
+            const margem = preco > 0 ? ((preco - custo) / preco) * 100 : 0;
+            return (
+              <tr key={i.id}>
+                <Td className="max-w-sm">
+                  <Link href={`/cadastros/produtos/${i.produtoId}`} className="block truncate font-medium text-teal-700 hover:underline">{i.produto.descricao}</Link>
+                  <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                </Td>
+                <Td className="tnum text-right">{money(custo)}</Td>
+                <Td className="tnum text-right">{money(i.produto.precoBase)}</Td>
+                <Td className="tnum text-right font-semibold">{money(preco)}</Td>
+                <Td className={margem < 20 ? "tnum text-right text-rose-600" : "tnum text-right text-emerald-700"}>{margem.toFixed(1)}%</Td>
+                {edita && <Td><ActionButton action={removerPreco.bind(null, i.id)} variant="small">Remover</ActionButton></Td>}
+              </tr>
+            );
+          })}
+        </Table>
       </div>
     </>
   );

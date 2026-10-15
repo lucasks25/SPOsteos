@@ -236,14 +236,17 @@ export function FilterBar({ children, className }: { children: ReactNode; classN
 export function KpiGrid({ children, cols = 4 }: { children: ReactNode; cols?: 3 | 4 | 5 }) {
   const c = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" }[cols];
   return (
-    <div
-      className={cx(
-        "kpi-strip mb-3 grid grid-cols-2 gap-px overflow-hidden rounded border border-slate-200 bg-slate-200 shadow-sm",
-        "[&>*]:rounded-none [&>*]:border-0 [&>*]:bg-white [&>*]:shadow-none",
-        c,
-      )}
-    >
-      {children}
+    <div className="kpi-strip mb-3 overflow-hidden rounded border border-slate-200 bg-white shadow-sm">
+      {/* as linhas finas vêm das bordas das células; -mr/-mb escondem a borda da última coluna e linha, e célula faltante não vira quadro vazio */}
+      <div
+        className={cx(
+          "-mb-px -mr-px grid grid-cols-2",
+          "[&>*]:rounded-none [&>*]:border-0 [&>*]:border-b [&>*]:border-r [&>*]:border-slate-200 [&>*]:bg-white [&>*]:shadow-none",
+          c,
+        )}
+      >
+        {children}
+      </div>
     </div>
   );
 }

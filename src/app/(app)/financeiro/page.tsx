@@ -1,8 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
-import { Card, KpiGrid, btn, PageHeader, SectionTitle, Stat, Table, Td, cx } from "@/components/ui";
+import { Card, KpiGrid, btn, PageHeader, Stat, Table, Td, cx } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
+import { Celula, VerTudo } from "./_lib/visual";
 import { hojeUTC } from "./_lib/datas";
 import { painelFinanceiro, type Faixas } from "./_lib/painel";
 
@@ -25,18 +26,11 @@ function Faixas({ titulo, href, f, cor }: { titulo: string; href: string; f: Fai
     ["Depois de 30 dias", f.depois],
   ];
   return (
-    <Card
-      title={titulo}
-      actions={
-        <Link href={href} className={btn.small}>
-          Ver todos
-        </Link>
-      }
-    >
+    <Card title={titulo} icon={cor === "emerald" ? "receber" : "pagar"}>
       <div className={cx("tnum mb-3 text-2xl font-bold", cor === "emerald" ? "text-emerald-700" : "text-rose-700")}>
         {money(f.total.valor)} <span className="text-sm font-normal text-slate-500">em aberto ({f.total.qtd})</span>
       </div>
-      <dl className="space-y-1.5 text-sm">
+      <dl className="divide-y divide-slate-100 text-[13px] [&>div]:py-1.5">
         {linhas.map(([nome, v, classe]) => (
           <div key={nome} className="flex items-baseline justify-between gap-3">
             <dt className="text-slate-600">{nome}</dt>
@@ -46,6 +40,7 @@ function Faixas({ titulo, href, f, cor }: { titulo: string; href: string; f: Fai
           </div>
         ))}
       </dl>
+      <VerTudo href={href} />
     </Card>
   );
 }
@@ -58,7 +53,7 @@ export default async function PainelFinanceiroPage() {
 
   return (
     <>
-      <PageHeader title="Financeiro" subtitle={`Visão geral em ${date(hoje)}. Os valores em aberto já descontam baixas parciais.`} />
+      <PageHeader title="Visão geral" subtitle={`Visão geral em ${date(hoje)}. Os valores em aberto já descontam baixas parciais.`} />
 
       <KpiGrid>
         <Tile href="/financeiro/contas" label="Saldo nas contas" value={money(p.saldoTotal)} tone={p.saldoTotal < 0 ? "danger" : "default"} hint={`${p.contas.length} conta(s) ativa(s)`} />
@@ -86,44 +81,44 @@ export default async function PainelFinanceiroPage() {
       </KpiGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">
-        <section>
-          <SectionTitle>Maiores valores vencidos a receber, por hospital</SectionTitle>
-          <Table head={["Hospital", "Vencido", "Títulos", "Atraso máx."]} empty={p.inadimplentes.length === 0} emptyText="Nenhum hospital com valor vencido. Tudo em dia.">
-            {p.inadimplentes.map((h) => (
-              <tr key={h.id}>
-                <Td className="max-w-[14rem] truncate">
-                  {h.id === "sem" ? (
-                    h.nome
-                  ) : (
-                    <Link href={`/financeiro/receber?hospital=${h.id}&vencidos=1`} className="text-teal-700 hover:underline">
-                      {h.nome}
-                    </Link>
-                  )}
-                </Td>
-                <Td className="text-right tnum text-rose-700">{money(h.valor)}</Td>
-                <Td className="text-right tnum">{h.qtd}</Td>
-                <Td className="text-right tnum">{h.diasAtraso} dia(s)</Td>
-              </tr>
-            ))}
-          </Table>
-        </section>
-        <section>
-          <SectionTitle>A pagar: atrasados e próximos 15 dias</SectionTitle>
-          <Table head={["Vencimento", "Descrição", "Fornecedor", "A pagar"]} empty={p.proximosPagar.length === 0} emptyText="Nada a pagar atrasado nem nos próximos 15 dias.">
-            {p.proximosPagar.map((t) => (
-              <tr key={t.id}>
-                <Td className={t.vencimento < hoje ? "text-rose-700" : undefined}>{date(t.vencimento)}</Td>
-                <Td className="max-w-[12rem] truncate">
-                  <Link href={`/financeiro/pagar/${t.id}`} className="text-teal-700 hover:underline">
-                    {t.descricao}
-                  </Link>
-                </Td>
-                <Td className="max-w-[10rem] truncate">{t.fornecedor ?? "—"}</Td>
-                <Td className="text-right tnum">{money(t.saldo)}</Td>
-              </tr>
-            ))}
-          </Table>
-        </section>
+        <Table
+          titulo="Maiores valores vencidos a receber"
+          icone="alerta"
+          contagem={p.inadimplentes.length}
+          head={["Hospital", "Vencido", "Atraso máx."]}
+          empty={p.inadimplentes.length === 0}
+          emptyText="Nenhum hospital com valor vencido. Tudo em dia."
+          acoes={<Link href="/financeiro/receber?vencidos=1" className={btn.small}>Ver tudo</Link>}
+        >
+          {p.inadimplentes.map((h) => (
+            <tr key={h.id}>
+              <Td className="max-w-[16rem]">
+                <Celula href={h.id === "sem" ? undefined : `/financeiro/receber?hospital=${h.id}&vencidos=1`} principal={h.nome} sub={`${h.qtd} título(s)`} />
+              </Td>
+              <Td className="text-right tnum font-medium text-rose-600">{money(h.valor)}</Td>
+              <Td className="text-right tnum">{h.diasAtraso} dia(s)</Td>
+            </tr>
+          ))}
+        </Table>
+        <Table
+          titulo="A pagar: atrasados e próximos 15 dias"
+          icone="pagar"
+          contagem={p.proximosPagar.length}
+          head={["Vencimento", "Descrição", "A pagar"]}
+          empty={p.proximosPagar.length === 0}
+          emptyText="Nada a pagar atrasado nem nos próximos 15 dias."
+          acoes={<Link href="/financeiro/pagar" className={btn.small}>Ver tudo</Link>}
+        >
+          {p.proximosPagar.map((t) => (
+            <tr key={t.id}>
+              <Td className={t.vencimento < hoje ? "font-medium text-rose-600" : undefined}>{date(t.vencimento)}</Td>
+              <Td className="max-w-[16rem]">
+                <Celula href={`/financeiro/pagar/${t.id}`} principal={t.descricao} sub={t.fornecedor ?? "Sem fornecedor"} />
+              </Td>
+              <Td className="text-right tnum font-medium">{money(t.saldo)}</Td>
+            </tr>
+          ))}
+        </Table>
       </div>
     </>
   );

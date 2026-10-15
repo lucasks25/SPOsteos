@@ -55,7 +55,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
       </KpiGrid>
 
       <div className="space-y-6">
-        <Card title="Dados">
+        <Card title="Dados do pedido" icon="carrinho">
           <Dl
             items={[
               ["Hospital", <Link key="h" href={`/cadastros/hospitais/${pedido.hospital.id}`} className="text-teal-700 hover:underline">{pedido.hospital.razaoSocial}</Link>],
@@ -68,24 +68,23 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
           />
         </Card>
 
-        <Card title="Itens">
-          <Table head={["Produto", "Lote", "Qtd.", "Preço unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
-            {pedido.itens.map((i) => (
-              <tr key={i.id}>
-                <Td>
-                  {i.produto.codigo} — {i.produto.descricao}
-                </Td>
-                <Td>{i.loteNumero ?? "—"}</Td>
-                <Td className="text-right">{i.quantidade}</Td>
-                <Td className="text-right">{money(toNumber(i.precoUnit))}</Td>
-                <Td className="text-right">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
-              </tr>
-            ))}
-          </Table>
-        </Card>
+        <Table titulo="Itens" icone="lista" contagem={pedido.itens.length} head={["Produto", "Lote", "Qtd.", "Preço unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
+          {pedido.itens.map((i) => (
+            <tr key={i.id}>
+              <Td>
+                <div className="font-medium">{i.produto.descricao}</div>
+                <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+              </Td>
+              <Td>{i.loteNumero ?? "—"}</Td>
+              <Td className="tnum text-right">{i.quantidade}</Td>
+              <Td className="tnum text-right">{money(toNumber(i.precoUnit))}</Td>
+              <Td className="tnum text-right font-semibold">{money(i.quantidade * toNumber(i.precoUnit))}</Td>
+            </tr>
+          ))}
+        </Table>
 
         {pedido.status === "ABERTO" && (
-          <Card title="Registrar nota fiscal">
+          <Card title="Registrar nota fiscal" icon="documento">
             <p className="mb-3 text-sm text-slate-600">A emissão da NF-e ainda é feita fora do sistema. Informe o número para faturar e gerar a conta a receber.</p>
             <Form action={registrarNf.bind(null, pedido.id)} submitLabel="Registrar NF e gerar conta a receber">
               <Grid cols={3}>
@@ -97,24 +96,22 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         )}
 
         {pedido.contasReceber.length > 0 && (
-          <Card title="Contas a receber">
-            <Table head={["Vencimento", "Valor", "Situação", "Ações"]}>
-              {pedido.contasReceber.map((c) => (
-                <tr key={c.id}>
-                  <Td>{date(c.vencimento)}</Td>
-                  <Td className="text-right">{money(toNumber(c.valor))}</Td>
-                  <Td>
-                    <StatusBadge status={c.status} />
-                  </Td>
-                  <Td>
-                    <Link href={`/financeiro/receber/${c.id}`} className={btn.small}>
-                      Abrir
-                    </Link>
-                  </Td>
-                </tr>
-              ))}
-            </Table>
-          </Card>
+          <Table titulo="Contas a receber" icone="receber" contagem={pedido.contasReceber.length} head={["Vencimento", "Valor", "Situação", "Ações"]}>
+            {pedido.contasReceber.map((c) => (
+              <tr key={c.id}>
+                <Td>{date(c.vencimento)}</Td>
+                <Td className="tnum text-right">{money(toNumber(c.valor))}</Td>
+                <Td>
+                  <StatusBadge status={c.status} />
+                </Td>
+                <Td>
+                  <Link href={`/financeiro/receber/${c.id}`} className={btn.small}>
+                    Abrir
+                  </Link>
+                </Td>
+              </tr>
+            ))}
+          </Table>
         )}
       </div>
     </>

@@ -3,7 +3,7 @@ import type { Prisma, StatusLote } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { ActionButton } from "@/components/form";
-import { Badge, btn, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, btn, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, diasAte, num } from "@/lib/format";
 import { hojeUTC, PERFIS_QUALIDADE, somarDias } from "../_lib/datas";
 import { marcarVencidos } from "./actions";
@@ -63,6 +63,12 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
           ) : undefined
         }
       />
+      <KpiGrid cols={4}>
+        <Stat label="Lotes listados" value={num(lotes.length)} />
+        <Stat label="Em quarentena" value={num(lotes.filter((l) => l.status === "QUARENTENA").length)} tone={lotes.some((l) => l.status === "QUARENTENA") ? "warn" : "default"} />
+        <Stat label="Vencidos" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} hint={vencidosLiberados ? `${vencidosLiberados} ainda liberado(s)` : undefined} />
+        <Stat label="Vencem em 90 dias" value={num(lotes.filter((l) => l.validade >= hoje && diasAte(l.validade) <= 90).length)} />
+      </KpiGrid>
       <Filtros limparHref="/qualidade/lotes">
         <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Lote, série, produto ou GTIN" className="w-64" />
         <FiltroSelect label="Status" name="status" defaultValue={status ?? ""} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.replaceAll("_", " ").toLowerCase() }))} />
@@ -74,14 +80,15 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
           <input type="checkbox" name="comSaldo" value="1" defaultChecked={!!sp.comSaldo} /> Somente com saldo
         </label>
       </Filtros>
-      <Table head={["Produto", "Lote / série", "Validade", "Status", "Saldo total", "Saldo por local", ""]} empty={lotes.length === 0} emptyText="Nenhum lote encontrado com esses filtros.">
+      <Table titulo="Lotes" icone="pacote" contagem={lotes.length} head={["Produto", "Lote / série", "Validade", "Status", "Saldo total", "Saldo por local", ""]} empty={lotes.length === 0} emptyText="Nenhum lote encontrado com esses filtros.">
         {lotes.map((l) => {
           const total = l.saldos.reduce((s, x) => s + x.quantidade, 0);
           const d = diasAte(l.validade);
           return (
             <tr key={l.id} className="align-top">
               <Td>
-                <span className="font-mono text-xs text-slate-500">{l.produto.codigo}</span> {l.produto.descricao}
+                <Link href={`/qualidade/lotes/${l.id}`} className="font-medium text-teal-700 hover:underline">{l.produto.descricao}</Link>
+                <div className="text-xs text-slate-500"><span className="font-mono">{l.produto.codigo}</span></div>
               </Td>
               <Td className="font-mono text-xs">
                 {l.numero}

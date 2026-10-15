@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { ActionButton, Field, Form, Select } from "@/components/form";
-import { Badge, Card, Dl, LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { nomeHospital } from "../../_lib/opcoes";
 import { hojeUTC } from "../../_lib/datas";
@@ -66,8 +66,15 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
         }
       />
 
-      <div className="space-y-6">
-        <Card title="Dados da cirurgia" actions={<StatusBadge status={c.status} />}>
+      <KpiGrid>
+        <Stat label="Situação" value={<StatusBadge status={c.status} />} hint={dateTime(c.dataHora)} />
+        <Stat label="Remessas / vales" value={c.remessas.length} hint={<span className={c.remessas.length === 0 && editavel ? "text-amber-700" : undefined}>{c.remessas.length ? `${c.remessas.filter((r) => r.status === "CONFERIDA").length} conferida(s)` : "nenhum vale gerado"}</span>} />
+        <Stat label="Material consumido" value={`${num(c.consumos.reduce((n, k) => n + k.quantidade, 0))} un.`} hint={`${c.consumos.length} lote(s)`} />
+        <Stat label="Pedido de venda" value={<span className="text-base">{c.pedido ? `PV-${c.pedido.id}` : "—"}</span>} hint={c.pedido ? (c.pedido.numeroNf ? `NF ${c.pedido.numeroNf}` : c.pedido.status.toLowerCase()) : podeFaturar ? <span className="text-amber-700">pronta para faturar</span> : "ainda não faturada"} />
+      </KpiGrid>
+
+      <div className="space-y-3">
+        <Card title="Dados da cirurgia" icon="atividade" actions={<StatusBadge status={c.status} />}>
           <Dl
             items={[
               ["Data/hora", dateTime(c.dataHora)],
@@ -83,48 +90,61 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           />
         </Card>
 
-        <Card
-          title="Remessas / vales de consignação"
-          actions={editavel && c.status !== "REALIZADA" ? <LinkButton href={`/estoque/remessas/nova?cirurgiaId=${c.id}`} variant="secondary" icon="mais">Gerar remessa/vale</LinkButton> : undefined}
+        <Table
+          titulo="Remessas / vales de consignação"
+          icone="caminhao"
+          contagem={c.remessas.length}
+          acoes={editavel && c.status !== "REALIZADA" ? <LinkButton href={`/estoque/remessas/nova?cirurgiaId=${c.id}`} variant="secondary" icon="mais">Gerar remessa/vale</LinkButton> : undefined}
+          head={["Remessa", "Local", "Itens", "Situação", "Enviada em", "Ações"]}
+          empty={c.remessas.length === 0}
+          emptyText="Nenhuma remessa/vale gerado para esta cirurgia."
         >
-          <Table head={["Remessa", "Local", "Itens", "Status", "Criada em", "Enviada em", "Ações"]} empty={c.remessas.length === 0} emptyText="Nenhuma remessa/vale gerado para esta cirurgia.">
-            {c.remessas.map((r) => (
-              <tr key={r.id}>
-                <Td className="font-mono text-xs">REM-{r.id}</Td>
-                <Td>{r.local.nome}</Td>
-                <Td className="text-right">{r._count.itens}</Td>
-                <Td><StatusBadge status={r.status} /></Td>
-                <Td>{dateTime(r.criadoEm)}</Td>
-                <Td>{dateTime(r.enviadaEm)}</Td>
-                <Td><LinkButton href={`/estoque/remessas/${r.id}`} variant="small">Abrir</LinkButton></Td>
-              </tr>
-            ))}
-          </Table>
-        </Card>
+          {c.remessas.map((r) => (
+            <tr key={r.id}>
+              <Td>
+                <Link href={`/estoque/remessas/${r.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">REM-{r.id}</Link>
+                <div className="text-[11px] text-slate-500">criada em {dateTime(r.criadoEm)}</div>
+              </Td>
+              <Td>{r.local.nome}</Td>
+              <Td className="tnum text-right">{r._count.itens}</Td>
+              <Td><StatusBadge status={r.status} /></Td>
+              <Td>{r.enviadaEm ? dateTime(r.enviadaEm) : "—"}</Td>
+              <Td><LinkButton href={`/estoque/remessas/${r.id}`} variant="small">Abrir</LinkButton></Td>
+            </tr>
+          ))}
+        </Table>
 
-        <Card title="Consumo (material utilizado)">
-          <Table head={["Código", "Produto", "Lote", "Validade", "Qtd.", "Ações"]} empty={c.consumos.length === 0} emptyText="Nenhum material consumido registrado ainda.">
-            {c.consumos.map((k) => (
-              <tr key={k.id}>
-                <Td className="font-mono text-xs">{k.produto.codigo}</Td>
-                <Td>{k.produto.descricao}</Td>
-                <Td>{k.lote.numero}{k.lote.serie ? ` / série ${k.lote.serie}` : ""}</Td>
-                <Td>{date(k.lote.validade)}</Td>
-                <Td className="text-right">{num(k.quantidade)}</Td>
-                <Td>
-                  {editavel && pode(["COMERCIAL", "ESTOQUE"]) && (
-                    <ActionButton action={removerConsumo.bind(null, k.id)} variant="small" confirm="Remover este consumo e estornar ao estoque consignado do hospital?">
-                      Remover
-                    </ActionButton>
-                  )}
-                </Td>
-              </tr>
-            ))}
-          </Table>
+        <Table
+          titulo="Consumo (material utilizado)"
+          icone="frasco"
+          contagem={c.consumos.length}
+          head={["Produto", "Lote", "Validade", "Qtd.", "Ações"]}
+          empty={c.consumos.length === 0}
+          emptyText="Nenhum material consumido registrado ainda."
+        >
+          {c.consumos.map((k) => (
+            <tr key={k.id}>
+              <Td>
+                <div className="font-medium">{k.produto.descricao}</div>
+                <div className="font-mono text-[11px] text-slate-500">{k.produto.codigo}</div>
+              </Td>
+              <Td>{k.lote.numero}{k.lote.serie ? ` / série ${k.lote.serie}` : ""}</Td>
+              <Td>{date(k.lote.validade)}</Td>
+              <Td className="tnum text-right font-semibold">{num(k.quantidade)}</Td>
+              <Td>
+                {editavel && pode(["COMERCIAL", "ESTOQUE"]) && (
+                  <ActionButton action={removerConsumo.bind(null, k.id)} variant="small" confirm="Remover este consumo e estornar ao estoque consignado do hospital?">
+                    Remover
+                  </ActionButton>
+                )}
+              </Td>
+            </tr>
+          ))}
+        </Table>
 
-          {podeConsumir && (
-            <div className="mt-5 border-t border-slate-200 pt-4">
-              <h3 className="mb-1 text-sm font-bold text-slate-900">Registrar consumo direto</h3>
+        {podeConsumir && (
+          <Card title="Registrar consumo direto" icon="mais">
+            <div>
               <p className="mb-3 text-xs text-slate-600">
                 Baixa a partir do estoque consignado já existente no hospital (lotes liberados e dentro da validade). Para material enviado em vale, registre o retorno na remessa.
               </p>
@@ -147,10 +167,10 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
                 </Form>
               )}
             </div>
-          )}
-        </Card>
+          </Card>
+        )}
 
-        <Card title="Anexos" actions={<span className="text-xs text-slate-600">PDF, JPG ou PNG até 10 MB</span>}>
+        <Card title="Anexos" icon="documento" actions={<span className="text-xs text-slate-600">PDF, JPG ou PNG até 10 MB</span>}>
           {c.anexos.length === 0 ? (
             <p className="text-sm text-slate-600">Nenhum anexo.</p>
           ) : (
@@ -179,7 +199,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           )}
         </Card>
 
-        <Card title="Pedido de venda">
+        <Card title="Pedido de venda" icon="carrinho">
           {c.pedido ? (
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <Link href={`/comercial/pedidos/${c.pedido.id}`} className="font-mono text-xs text-teal-700 hover:underline">PV-{c.pedido.id}</Link>

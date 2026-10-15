@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
+import { LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 
 export default async function ProcedimentosPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
@@ -17,12 +17,19 @@ export default async function ProcedimentosPage({ searchParams }: { searchParams
   return (
     <>
       <PageHeader title="Procedimentos" subtitle="Perfis de procedimento com os materiais padrão de cada cirurgia" actions={<LinkButton href="/cadastros/procedimentos/novo">Novo procedimento</LinkButton>} />
+      <KpiGrid cols={3}>
+        <Stat label="Listados" value={procs.length} />
+        <Stat label="Sem materiais padrão" value={procs.filter((p) => p._count.itens === 0).length} hint="perfil ainda vazio" />
+        <Stat label="Cirurgias" value={num(procs.reduce((s, p) => s + p._count.cirurgias, 0))} hint="dos procedimentos listados" />
+      </KpiGrid>
       <SearchBar placeholder="Descrição, TUSS ou especialidade" defaultValue={q} />
-      <Table head={["TUSS", "Descrição", "Especialidade", "Materiais", "Cirurgias", ""]} empty={procs.length === 0} emptyText={q ? "Nenhum procedimento encontrado para essa busca." : "Nenhum procedimento encontrado."} emptyAction={<LinkButton href="/cadastros/procedimentos/novo" variant="secondary" icon="mais">Cadastrar procedimento</LinkButton>}>
+      <Table titulo="Procedimentos" icone="documento" contagem={procs.length} head={["Procedimento", "Especialidade", "Materiais", "Cirurgias", ""]} empty={procs.length === 0} emptyText={q ? "Nenhum procedimento encontrado para essa busca." : "Nenhum procedimento encontrado."} emptyAction={<LinkButton href="/cadastros/procedimentos/novo" variant="secondary" icon="mais">Cadastrar procedimento</LinkButton>}>
         {procs.map((p) => (
           <tr key={p.id}>
-            <Td className="font-mono text-xs">{p.codigoTuss ?? "—"}</Td>
-            <Td className="font-medium">{p.descricao}</Td>
+            <Td>
+              <Link href={`/cadastros/procedimentos/${p.id}`} className="font-medium text-teal-700 hover:underline">{p.descricao}</Link>
+              <div className="text-xs text-slate-500">TUSS <span className="font-mono">{p.codigoTuss ?? "—"}</span></div>
+            </Td>
             <Td>{p.especialidade ?? "—"}</Td>
             <Td className="text-right">{num(p._count.itens)}</Td>
             <Td className="text-right">{num(p._count.cirurgias)}</Td>

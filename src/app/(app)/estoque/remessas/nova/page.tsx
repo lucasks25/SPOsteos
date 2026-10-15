@@ -48,7 +48,7 @@ export default async function NovaRemessaPage({ searchParams }: { searchParams: 
         title="Nova remessa"
         subtitle="Separação de materiais em consignação. Os lotes são sugeridos por FEFO (vence primeiro, sai primeiro)."
       />
-      <Card>
+      <Card title="Separação de materiais" icon="caminhao">
         <RemessaForm
           hospitais={hospitais.map((h) => ({ value: h.id, label: h.nomeFantasia ?? h.razaoSocial }))}
           cirurgias={cirOpts}

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
@@ -22,10 +22,15 @@ export default async function ConveniosPage({ searchParams }: { searchParams: Pr
   return (
     <>
       <PageHeader title="Convênios" subtitle="Operadoras de planos de saúde" actions={<LinkButton href="/cadastros/convenios/novo">Novo convênio</LinkButton>} />
+      <KpiGrid cols={3}>
+        <Stat label="Listados" value={convenios.length} />
+        <Stat label="Cirurgias" value={num(convenios.reduce((s, c) => s + c._count.cirurgias, 0))} hint="dos convênios listados" />
+        <Stat label="Inativos" value={convenios.filter((c) => !c.ativo).length} hint="na lista atual" />
+      </KpiGrid>
       <SearchBar placeholder="Nome, registro ANS ou CNPJ" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table head={["Nome", "Registro ANS", "CNPJ", "Cirurgias", ""]} empty={convenios.length === 0} emptyText={q ? "Nenhum convênio encontrado para essa busca." : "Nenhum convênio encontrado."} emptyAction={<LinkButton href="/cadastros/convenios/novo" variant="secondary" icon="mais">Cadastrar convênio</LinkButton>}>
+      <Table titulo="Convênios" icone="escudo" contagem={convenios.length} head={["Nome", "Registro ANS", "CNPJ", "Cirurgias", ""]} empty={convenios.length === 0} emptyText={q ? "Nenhum convênio encontrado para essa busca." : "Nenhum convênio encontrado."} emptyAction={<LinkButton href="/cadastros/convenios/novo" variant="secondary" icon="mais">Cadastrar convênio</LinkButton>}>
         {convenios.map((c) => (
           <tr key={c.id}>
             <Td className="font-medium">

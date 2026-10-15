@@ -2,6 +2,7 @@ import Link from "next/link";
 import { Field, Select } from "@/components/form";
 import { Badge, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { date, money } from "@/lib/format";
+import { Celula } from "./visual";
 import { TIPOS, type Tipo, type TituloRow } from "./config";
 import { hojeUTC, ymd } from "./datas";
 import { listarParceiros, listarTitulos, parseFiltros, type Filtros } from "./queries";
@@ -60,66 +61,72 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
   const pagoPeriodo = `${date(totais.pago.de)} a ${date(totais.pago.ate)}`;
   const totalLista = rows.reduce((s, r) => s + (r.status === "PAGO" ? (r.valorPago ?? 0) : r.saldo || r.valor), 0);
 
-  const head = ["Vencimento", "Descrição", cfg.parceiro, "Conta do plano", "Valor", "Situação", cfg.pagoLabel, "Origem", "Ações"];
+  const head = ["Vencimento", "Descrição", cfg.parceiro, "Origem", "Valor", "Situação", cfg.pagoLabel, ""];
+  const icone = tipo === "receber" ? "receber" : "pagar";
 
   return (
     <>
       <PageHeader
         title={cfg.titulo}
         subtitle={tipo === "receber" ? "Títulos de hospitais e convênios: filtre, abra um título e registre a baixa." : "Obrigações com fornecedores e despesas: filtre, abra um título e registre a baixa."}
-        actions={<LinkButton href={`${cfg.path}/novo`}>Novo título</LinkButton>}
+        actions={<LinkButton href={`${cfg.path}/novo`} icon="mais">Novo título</LinkButton>}
       />
       <KpiGrid cols={3}>
         <Stat label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
         <Link href={`${cfg.path}?vencidos=1`} className="block">
-          <Stat label="Vencido" value={money(totais.vencido.valor)} hint={`${totais.vencido.qtd} título(s) — ver vencidos`} tone={totais.vencido.qtd ? "danger" : "default"} />
+          <Stat label="Vencido" value={money(totais.vencido.valor)} hint={<span className={totais.vencido.qtd ? "text-rose-600" : undefined}>{totais.vencido.qtd} título(s) — ver vencidos</span>} tone={totais.vencido.qtd ? "danger" : "default"} />
         </Link>
-        <Stat label={`${cfg.pagoLabel} no período`} value={money(totais.pago.valor)} hint={`${totais.pago.qtd} baixa(s) — ${pagoPeriodo}`} />
+        <Stat label={`${cfg.pagoLabel} no período`} value={money(totais.pago.valor)} hint={<span className="text-emerald-700">{totais.pago.qtd} baixa(s) — {pagoPeriodo}</span>} />
       </KpiGrid>
       <FiltrosForm tipo={tipo} f={f} parceiros={parceiros} />
       <Table
         head={head}
+        titulo={tipo === "receber" ? "Títulos a receber" : "Títulos a pagar"}
+        icone={icone}
+        contagem={rows.length}
+        acoes={rows.length > 0 ? <span className="tnum text-xs text-slate-600">total listado <strong className="text-slate-900">{money(totalLista)}</strong>{rows.length === 500 && " (500 primeiros)"}</span> : undefined}
         empty={rows.length === 0}
-        emptyText={tipo === "receber" ? "Nenhum título a receber com esses filtros." : "Nenhuma conta a pagar com esses filtros."}
-        emptyAction={<LinkButton href={`${cfg.path}/novo`} variant="secondary">Novo título</LinkButton>}
+        emptyText={tipo === "receber" ? "Nenhum título a receber com esses filtros. Limpe os filtros ou cadastre um título." : "Nenhuma conta a pagar com esses filtros. Limpe os filtros ou cadastre um título."}
+        emptyAction={<LinkButton href={`${cfg.path}/novo`} variant="secondary" icon="mais">Novo título</LinkButton>}
       >
-        {rows.map((t) => (
-          <tr key={t.id}>
-            <Td>{date(t.vencimento)}</Td>
-            <Td className="max-w-xs truncate">
-              <Link href={`${cfg.path}/${t.id}`} className="text-teal-700 hover:underline">
-                {t.descricao}
-              </Link>
-            </Td>
-            <Td className="max-w-[14rem] truncate">{t.parceiroNome ?? "—"}</Td>
-            <Td className="max-w-[12rem] truncate">{t.categoria ?? <span className="text-amber-700">Não classificado</span>}</Td>
-            <Td className="text-right tnum">{money(t.valor)}</Td>
-            <Td>
-              <SituacaoTitulo t={t} hoje={hoje} />
-            </Td>
-            <Td className="text-right tnum">{t.valorPago ? `${money(t.valorPago)} em ${date(t.pagoEm)}` : "—"}</Td>
-            <Td>
-              {t.pedidoId ? (
-                <Link href={cfg.pedidoHref(t.pedidoId)} className="text-teal-700 hover:underline">
-                  Pedido #{t.pedidoId}
+        {rows.map((t) => {
+          const atrasado = t.status === "ABERTO" && t.vencimento < hoje;
+          return (
+            <tr key={t.id}>
+              <Td className={atrasado ? "font-medium text-rose-600" : undefined}>{date(t.vencimento)}</Td>
+              <Td className="max-w-xs">
+                <Celula href={`${cfg.path}/${t.id}`} principal={t.descricao} sub={t.categoria ?? <span className="text-amber-700">Não classificado</span>} />
+              </Td>
+              <Td className="max-w-[14rem] truncate">{t.parceiroNome ?? "—"}</Td>
+              <Td>
+                {t.pedidoId ? (
+                  <Link href={cfg.pedidoHref(t.pedidoId)} className="text-teal-700 hover:underline">
+                    Pedido #{t.pedidoId}
+                  </Link>
+                ) : (
+                  <span className="text-slate-500">manual</span>
+                )}
+              </Td>
+              <Td className="text-right tnum font-medium">{money(t.valor)}</Td>
+              <Td>
+                <SituacaoTitulo t={t} hoje={hoje} />
+              </Td>
+              <Td className="text-right tnum">
+                {t.valorPago ? (
+                  <Celula className="text-right" principal={money(t.valorPago)} sub={`em ${date(t.pagoEm)}`} />
+                ) : (
+                  "—"
+                )}
+              </Td>
+              <Td className="text-right">
+                <Link href={`${cfg.path}/${t.id}`} className={btn.small}>
+                  {t.status === "ABERTO" ? "Baixar" : "Abrir"}
                 </Link>
-              ) : (
-                <span className="text-slate-500">manual</span>
-              )}
-            </Td>
-            <Td>
-              <Link href={`${cfg.path}/${t.id}`} className={btn.small}>
-                {t.status === "ABERTO" ? "Baixar / editar" : "Abrir"}
-              </Link>
-            </Td>
-          </tr>
-        ))}
+              </Td>
+            </tr>
+          );
+        })}
       </Table>
-      {rows.length > 0 && (
-        <p className="tnum mt-2 text-right text-sm text-slate-600">
-          {rows.length} título(s){rows.length === 500 && " (exibindo os 500 primeiros)"} — total listado <strong className="text-slate-800">{money(totalLista)}</strong>
-        </p>
-      )}
     </>
   );
 }

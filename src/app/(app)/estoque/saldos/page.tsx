@@ -53,8 +53,8 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
       <KpiGrid>
         <Stat label="Unidades" value={num(saldos.reduce((n, s) => n + s.quantidade, 0))} hint={`${grupos.size} produto(s)`} />
         <Stat label="Valor a custo médio" value={money(valorTotal)} />
-        <Stat label="Vencendo em 30 dias" value={num(vencendo)} tone={vencendo ? "warn" : "default"} />
-        <Stat label="Vencidos com saldo" value={num(vencidos)} tone={vencidos ? "danger" : "default"} />
+        <Stat label="Vencendo em 30 dias" value={num(vencendo)} hint={<span className={vencendo ? "text-amber-700" : undefined}>unidades</span>} tone={vencendo ? "warn" : "default"} />
+        <Stat label="Vencidos com saldo" value={num(vencidos)} hint={<span className={vencidos ? "text-rose-600" : undefined}>unidades</span>} tone={vencidos ? "danger" : "default"} />
       </KpiGrid>
 
       <Filtros limparHref="/estoque/saldos">
@@ -70,9 +70,9 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
       </Filtros>
 
       {!sp.local && porLocal.size > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2 text-xs">
+        <div className="mb-3 flex flex-wrap gap-2 text-xs">
           {[...porLocal.entries()].map(([id, l]) => (
-            <Link key={id} href={`/estoque/saldos?local=${id}`} className="rounded border border-slate-200 bg-white px-3 py-1.5 hover:border-teal-700">
+            <Link key={id} href={`/estoque/saldos?local=${id}`} className="rounded border border-slate-200 bg-white px-3 py-1.5 shadow-sm hover:border-teal-700">
               <span className="font-medium text-slate-700">{l.nome}</span>
               <span className="tnum ml-2 text-slate-600">{num(l.qtd)} un · {money(l.valor)}</span>
             </Link>
@@ -80,7 +80,7 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
         </div>
       )}
 
-      <Table head={["Produto", "Lote", "Validade", "Status", "Local", "Qtd.", "Valor"]} empty={saldos.length === 0} emptyText="Nenhum saldo encontrado para os filtros informados.">
+      <Table titulo="Saldos por produto e lote" icone="caixa" contagem={grupos.size} head={["Produto", "Lote", "Validade", "Situação", "Local", "Qtd.", "Valor"]} empty={saldos.length === 0} emptyText="Nenhum saldo encontrado para os filtros informados. Ajuste o local ou o status do lote.">
         {[...grupos.values()].map((g) =>
           g.linhas.map((s, idx) => {
             const dias = diasAte(s.lote.validade);
@@ -89,7 +89,7 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
                 <Td className="whitespace-normal">
                   {idx === 0 && (
                     <>
-                      <div className="font-medium">{g.produto.descricao}</div>
+                      <div className="font-medium text-teal-700">{g.produto.descricao}</div>
                       <div className="text-xs text-slate-600">
                         {g.produto.codigo} · total {num(g.qtd)}
                         {g.qtd < g.produto.estoqueMinimo && <span className="ml-1 text-rose-600">(abaixo do mínimo {g.produto.estoqueMinimo})</span>}
@@ -105,8 +105,8 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
                 </Td>
                 <Td><StatusBadge status={s.lote.status} /></Td>
                 <Td>{s.local.nome}</Td>
-                <Td className="text-right font-semibold">{num(s.quantidade)}</Td>
-                <Td className="text-right">{money(s.quantidade * toNumber(g.produto.custoMedio))}</Td>
+                <Td className="tnum text-right font-semibold">{num(s.quantidade)}</Td>
+                <Td className="tnum text-right">{money(s.quantidade * toNumber(g.produto.custoMedio))}</Td>
               </tr>
             );
           }),

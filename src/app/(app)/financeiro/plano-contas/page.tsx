@@ -23,7 +23,7 @@ export default async function PlanoContasPage() {
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
       {uso > 0 && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</p>}
       <div className="space-y-4">
-        <Table head={["Código", "Conta", "Tipo", "Natureza", "Situação", "Ações"]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
+        <Table titulo="Plano de contas" icone="livro" contagem={ordenadas.length} head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
           {ordenadas.map((c) => (
             <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
               <Td>{c.codigo}</Td>
@@ -37,7 +37,7 @@ export default async function PlanoContasPage() {
                 <Badge color={c.ativo ? "green" : "gray"}>{c.ativo ? "Ativa" : "Inativa"}</Badge>
               </Td>
               <Td>
-                <ActionButton action={alternarContaPlano} hidden={{ id: c.id }} variant="secondary">
+                <ActionButton action={alternarContaPlano} hidden={{ id: c.id }} variant="small">
                   {c.ativo ? "Inativar" : "Reativar"}
                 </ActionButton>
               </Td>
@@ -45,7 +45,7 @@ export default async function PlanoContasPage() {
           ))}
         </Table>
 
-        <Card title="Nova conta ou grupo">
+        <Card title="Nova conta ou grupo" icon="mais">
           <Form action={criarContaPlano} submitLabel="Criar" resetOnSuccess>
             <Grid cols={4}>
               <Field label="Código *" name="codigo" required hint="Ex.: 4.08 dentro do grupo 4" />
@@ -59,8 +59,7 @@ export default async function PlanoContasPage() {
           </Form>
         </Card>
 
-        <Card title="Centros de custo">
-          <Table head={["Código", "Nome", "Situação", "Ações"]} empty={centros.length === 0} emptyText="Nenhum centro de custo cadastrado. Crie o primeiro abaixo.">
+        <Table titulo="Centros de custo" icone="camadas" contagem={centros.length} head={["Código", "Nome", "Situação", ""]} empty={centros.length === 0} emptyText="Nenhum centro de custo cadastrado. Crie o primeiro abaixo.">
             {centros.map((c) => (
               <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
                 <Td>{c.codigo}</Td>
@@ -69,14 +68,15 @@ export default async function PlanoContasPage() {
                   <Badge color={c.ativo ? "green" : "gray"}>{c.ativo ? "Ativo" : "Inativo"}</Badge>
                 </Td>
                 <Td>
-                  <ActionButton action={alternarCentroCusto} hidden={{ id: c.id }} variant="secondary">
+                  <ActionButton action={alternarCentroCusto} hidden={{ id: c.id }} variant="small">
                     {c.ativo ? "Inativar" : "Reativar"}
                   </ActionButton>
                 </Td>
               </tr>
             ))}
-          </Table>
-          <div className="mt-4">
+        </Table>
+        <Card title="Novo centro de custo" icon="mais">
+          <div>
             <Form action={criarCentroCusto} submitLabel="Criar centro de custo" resetOnSuccess>
               <Grid cols={3}>
                 <Field label="Código *" name="codigo" required hint="Ex.: COL (coluna), TRA (trauma)" />
