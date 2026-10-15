@@ -5,12 +5,12 @@ import { Badge, Card, Dl, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
-import { cancelarTitulo, estornarBaixaAction } from "./actions";
+import { cancelarTitulo, estornarBaixaAction, estornarGlosaAction } from "./actions";
 import { hojeUTC } from "./datas";
 import { opcoesContas } from "./contas";
 import { listarParceiros, obterTitulo } from "./queries";
 import { opcoesClassificacao } from "./plano";
-import { BaixaForm, ClassificarForm, TituloForm } from "./titulo-form";
+import { BaixaForm, ClassificarForm, GlosaForm, TituloForm } from "./titulo-form";
 import { SituacaoTitulo } from "./titulos-view";
 
 const formaLabel = (f: string | null) => FORMAS_PAGAMENTO.find((x) => x.value === f)?.label ?? "—";
@@ -21,7 +21,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
   const hoje = hojeUTC();
   const titulo = await obterTitulo(tipo, id);
   if (!titulo) notFound();
-  const [baixas, contas, parceiros, { planos, centros }] = await Promise.all([
+  const [baixas, contas, parceiros, { planos, centros }, glosas] = await Promise.all([
     db.lancamento.findMany({
       where: tipo === "receber" ? { contaReceberId: id } : { contaPagarId: id },
       orderBy: [{ data: "asc" }, { criadoEm: "asc" }],
@@ -30,9 +30,10 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
     opcoesContas(),
     listarParceiros(tipo, titulo.parceiroId),
     opcoesClassificacao(db, [titulo.planoContaId, titulo.centroCustoId]),
+    tipo === "receber" ? db.glosa.findMany({ where: { contaReceberId: id }, orderBy: { data: "asc" } }) : Promise.resolve([]),
   ]);
   const semBaixas = baixas.length === 0;
-  const editavel = titulo.status === "ABERTO" && semBaixas;
+  const editavel = titulo.status === "ABERTO" && semBaixas && glosas.length === 0;
 
   return (
     <>
@@ -114,6 +115,32 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
             ))}
           </Table>
         </Card>
+
+        {glosas.length > 0 && (
+          <Card title={`Glosas (${glosas.length})`}>
+            <Table head={["Data", "Valor", "Motivo", ""]}>
+              {glosas.map((g) => (
+                <tr key={g.id}>
+                  <Td>{date(g.data)}</Td>
+                  <Td className="tabular-nums">{money(toNumber(g.valor))}</Td>
+                  <Td className="max-w-md whitespace-normal">{g.motivo}</Td>
+                  <Td>
+                    <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="secondary" confirm="Estornar esta glosa?">
+                      Estornar
+                    </ActionButton>
+                  </Td>
+                </tr>
+              ))}
+            </Table>
+          </Card>
+        )}
+
+        {tipo === "receber" && titulo.status === "ABERTO" && (
+          <Card title="Registrar glosa">
+            <p className="mb-3 text-sm text-slate-600">Use quando o hospital não reconhece parte da cobrança. Abate o saldo sem movimentar dinheiro e aparece em Deduções no DRE (não é desconto).</p>
+            <GlosaForm titulo={titulo} hoje={hoje} />
+          </Card>
+        )}
 
         {titulo.status === "ABERTO" && (
           <Card title={cfg.baixaLabel}>

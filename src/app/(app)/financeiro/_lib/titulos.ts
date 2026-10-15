@@ -79,12 +79,16 @@ const filtroLancamentos = (tipo: Tipo, id: string) => (tipo === "receber" ? { co
 export async function recalcularTitulo(tx: Tx, tipo: Tipo, id: string) {
   const titulo = await carregar(tx, tipo, id);
   const s = await tx.lancamento.aggregate({ where: filtroLancamentos(tipo, id), _sum: { valor: true, principal: true, desconto: true }, _max: { data: true }, _count: true });
+  // glosa (só contas a receber) extingue parte do título sem dinheiro, como o desconto, mas não conta como baixa de caixa
+  const g = tipo === "receber" ? await tx.glosa.aggregate({ where: { contaReceberId: id }, _sum: { valor: true }, _max: { data: true }, _count: true }) : null;
+  const glosado = toNumber(g?._sum.valor);
   const pago = toNumber(s._sum.valor);
-  const baixado = arredondar(toNumber(s._sum.principal) + toNumber(s._sum.desconto));
+  const baixado = arredondar(toNumber(s._sum.principal) + toNumber(s._sum.desconto) + glosado);
+  const ultima = [s._max.data, g?._max.data].filter((d): d is Date => !!d).sort((a, b) => b.getTime() - a.getTime())[0] ?? null;
   const data = {
     valorPago: s._count > 0 ? pago : null,
-    valorBaixado: s._count > 0 ? baixado : null,
-    pagoEm: s._max.data ?? null,
+    valorBaixado: s._count > 0 || (g?._count ?? 0) > 0 ? baixado : null,
+    pagoEm: ultima,
     status: situacaoTitulo(titulo.valor, baixado),
   };
   if (tipo === "receber") await tx.contaReceber.update({ where: { id }, data });
@@ -146,6 +150,35 @@ export async function estornarBaixa(tx: Tx, tipo: Tipo, lancamentoId: string) {
   await tx.lancamento.delete({ where: { id: lancamentoId } });
   await recalcularTitulo(tx, tipo, tituloId);
   return tituloId;
+}
+
+// ───────────── glosa (só contas a receber) ─────────────
+
+export type GlosaInput = { tituloId: string; valor: number; data: Date; motivo: string };
+
+/** Registra a glosa: abate o saldo do título sem mexer no caixa. Não pode passar do saldo. */
+export async function registrarGlosa(tx: Tx, input: GlosaInput) {
+  const motivo = input.motivo.trim();
+  const valor = arredondar(input.valor);
+  if (!Number.isFinite(valor) || !(cent(valor) > 0)) throw new FinanceiroError("Informe um valor de glosa maior que zero.");
+  if (motivo.length < 5) throw new FinanceiroError("Explique o motivo da glosa (mínimo 5 letras).");
+  const titulo = await carregar(tx, "receber", input.tituloId, true);
+  if (titulo.status !== "ABERTO") throw new FinanceiroError("O título não está em aberto.");
+  const saldo = saldoTitulo(titulo.valor, titulo.valorBaixado);
+  if (cent(valor) > cent(saldo)) throw new FinanceiroError(`A glosa (${money(valor)}) é maior que o saldo do título (${money(saldo)}).`);
+  const g = await tx.glosa.create({ data: { contaReceberId: input.tituloId, valor, data: input.data, motivo } });
+  await recalcularTitulo(tx, "receber", input.tituloId);
+  return g;
+}
+
+/** Estorna a glosa e reabre o título se ele deixar de estar quitado. */
+export async function estornarGlosa(tx: Tx, glosaId: string) {
+  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true } });
+  if (!g) throw new FinanceiroError("Glosa não encontrada.");
+  await carregar(tx, "receber", g.contaReceberId, true);
+  await tx.glosa.delete({ where: { id: glosaId } });
+  await recalcularTitulo(tx, "receber", g.contaReceberId);
+  return g.contaReceberId;
 }
 
 // ───────────── transferência entre contas ─────────────

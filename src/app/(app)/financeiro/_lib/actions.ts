@@ -12,7 +12,7 @@ import { FORMAS, TIPOS, isTipo, type Tipo } from "./config";
 import { addDias, hojeUTC } from "./datas";
 import { lerBoleto } from "./boleto";
 import { validarClassificacao } from "./plano";
-import { estornarBaixa, registrarBaixa } from "./titulos";
+import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa } from "./titulos";
 import { ErroNegocio } from "@/lib/erros";
 
 const positivo = () => zf.money().refine((v) => v > 0, "Informe um valor maior que zero");
@@ -92,7 +92,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const data = parsed.data;
       await validarClassificacao(db, data.planoContaId, data.centroCustoId);
       if (id) {
-        const r = await db.contaReceber.updateMany({ where: { id, status: "ABERTO", valorPago: null }, data });
+        const r = await db.contaReceber.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
         savedId = id;
       } else {
@@ -105,7 +105,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const data = parsed.data;
       await validarClassificacao(db, data.planoContaId, data.centroCustoId);
       if (id) {
-        const r = await db.contaPagar.updateMany({ where: { id, status: "ABERTO", valorPago: null }, data });
+        const r = await db.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
         if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
         savedId = id;
       } else {
@@ -169,7 +169,7 @@ export async function cancelarTitulo(tipoArg: Tipo, _: ActionState, fd: FormData
       const t = await db.contaReceber.findUnique({ where: { id }, select: { pedido: { select: { status: true } } } });
       if (t?.pedido?.status === "FATURADO") return { error: "Este título vem de uma NF emitida. Para desfazê-lo é preciso cancelar a NF ou registrar uma devolução." };
     }
-    const where = { id, status: "ABERTO" as const, valorPago: null };
+    const where = { id, status: "ABERTO" as const, valorBaixado: null };
     const r = tipo === "receber" ? await db.contaReceber.updateMany({ where, data }) : await db.contaPagar.updateMany({ where, data });
     if (r.count === 0) return { error: "Só é possível cancelar títulos em aberto e sem baixas. Estorne as baixas antes." };
     await audit(user.id, "cancelar", TIPOS[tipo].entidade, id);
@@ -199,5 +199,40 @@ export async function classificarTitulo(tipoArg: Tipo, id: string, _: ActionStat
   }
   revalidar(tipo, id);
   revalidatePath("/financeiro/dre");
+  return { ok: true };
+}
+
+const schemaGlosa = z.object({ valor: positivo(), data: zf.date("Informe a data"), motivo: zf.text("Informe o motivo") });
+
+/** Registra glosa (o hospital não reconhece parte da cobrança): abate o título sem dinheiro e vai para Deduções no DRE. */
+export async function glosarTitulo(id: string, _: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser(["FINANCEIRO"]);
+  const parsed = parseForm(schemaGlosa, fd);
+  if (!parsed.success) return parsed.state;
+  const { valor, data, motivo } = parsed.data;
+  if (data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
+  try {
+    const g = await db.$transaction((tx) => registrarGlosa(tx, { tituloId: id, valor, data, motivo }));
+    await audit(user.id, "glosar", "ContaReceber", id, `${money(valor)} — ${motivo} (glosa ${g.id})`);
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
+  revalidar("receber", id);
+  revalidatePath("/financeiro/dre");
+  return { ok: true };
+}
+
+export async function estornarGlosaAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser(["FINANCEIRO"]);
+  const parsed = parseForm(schemaId, fd);
+  if (!parsed.success) return { error: "Glosa inválida." };
+  try {
+    const tituloId = await db.$transaction((tx) => estornarGlosa(tx, parsed.data.id));
+    await audit(user.id, "estornar glosa", "ContaReceber", tituloId, parsed.data.id);
+    revalidar("receber", tituloId);
+    revalidatePath("/financeiro/dre");
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
   return { ok: true };
 }

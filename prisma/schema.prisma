@@ -557,6 +557,7 @@ model ContaReceber {
   valorBaixado  Decimal?     @db.Decimal(14, 2) // Σ(principal + desconto) das baixas: quanto do título foi extinto
   criadoEm      DateTime     @default(now())
   lancamentos   Lancamento[]
+  glosas        Glosa[]
   planoContaId  String?
   planoConta    PlanoConta?  @relation(fields: [planoContaId], references: [id], onDelete: Restrict)
   centroCustoId String?
@@ -776,4 +777,19 @@ model CentroCusto {
   contasPagar   ContaPagar[]
   lancamentos   Lancamento[]
   pedidosVenda  PedidoVenda[]
+}
+
+// Glosa: o hospital não reconhece parte da cobrança. Extingue parte do título sem dinheiro (entra em valorBaixado)
+// e vai para Deduções no DRE (conta GLOSA), na data da glosa. Não é desconto: desconto vai para o resultado financeiro.
+model Glosa {
+  id             String       @id @default(cuid())
+  contaReceberId String
+  contaReceber   ContaReceber @relation(fields: [contaReceberId], references: [id], onDelete: Restrict)
+  valor          Decimal      @db.Decimal(14, 2)
+  data           DateTime
+  motivo         String
+  criadoEm       DateTime     @default(now())
+
+  @@index([contaReceberId])
+  @@index([data])
 }

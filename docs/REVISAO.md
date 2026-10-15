@@ -170,7 +170,7 @@ Desenho feito pelo agente `arquiteto` (Opus), implementado e conferido por teste
 - `custoUnit` da compra: não foi conferido se está em reais ou na moeda da invoice (importação). O CMV depende disso.
 - Custos de importação (frete, II, IPI) entram como custo no mês em que ocorrem, não no custo médio.
 - Centro de custo do pedido de venda (para filtrar o CMV) ainda não tem campo na tela de pedido; hoje o CMV só aparece sem filtro de centro.
-- Glosa: conta GLOSA existe, mas o registro de glosa (extingue título sem dinheiro, vai para Deduções) ainda não foi feito.
+- Glosa: feita em 15/10/2026 (seção 10).
 - Fechamento de período (bloquear estorno e edição em meses fechados): não existe; estornar uma baixa muda o DRE do mês antigo.
 - Drill-down da linha do DRE até o documento: hoje só até a conta do plano.
 - Lançamento avulso antigo sem conta do plano permanece "Não classificado" até alguém classificar (não há tela de classificação em lote).
@@ -196,3 +196,13 @@ Feita pelo `arquiteto` com o texto dos manuais públicos (SISPAG v085 out/2020; 
 **O manual não permite confirmar (só arquivo real ou Validador de Layout do Itaú):** se o segmento J do retorno traz data/valor efetivos; em que linha vêm as ocorrências TA e BI (o código ignora trailer, B e J-52); como lançamentos "a compensar" (tipo 2) entram no saldo e totais do extrato. **Conhecido e aceito:** ocorrências FC/FD (COMPROR) caem em REJEITADO; extrato não distingue conta investimento (tipo 0200).
 
 Teste ponta a ponta: `tests/financeiro-db/sispag-e2e.test.ts` (remessa mista 01+41 e remessa Pix → retorno simulado → baixas, caixa, reprocesso, rejeitado volta para nova remessa).
+
+## 10. Glosa (15/10/2026)
+
+Tabela `Glosa` (migration `20261015200000_glosa`, CHECK valor > 0). Só em contas a receber. Regras:
+- Extingue parte do título **sem dinheiro**: entra em `valorBaixado` (único escritor continua sendo `recalcularTitulo`), não em `valorPago`. Título 100% glosado fica PAGO com `valorPago` nulo.
+- Não passa do saldo; exige motivo; trava de linha como as baixas. Depois da glosa, baixa com desconto também respeita o novo saldo.
+- DRE: vai para Deduções (conta do sistema GLOSA), na **data da glosa**, sem reabrir o mês do faturamento. Não vai para o resultado financeiro (diferença para desconto).
+- Título com glosa não pode ser editado nem cancelado (estorne a glosa antes); as travas agora usam `valorBaixado IS NULL`.
+- Tela: cartão "Registrar glosa" e lista de glosas com estorno no detalhe da conta a receber. Testes: `tests/financeiro-db/glosa.test.ts` (4).
+- Não feito: glosa por item do pedido, recurso/reapresentação ao hospital, relatório de glosas por hospital/motivo.

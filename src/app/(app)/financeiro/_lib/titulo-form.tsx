@@ -1,7 +1,7 @@
 import { Field, Form, Grid, Select } from "@/components/form";
 import { inputDate, money } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo, type TituloRow } from "./config";
-import { baixarTitulo, classificarTitulo, salvarTitulo } from "./actions";
+import { baixarTitulo, classificarTitulo, glosarTitulo, salvarTitulo } from "./actions";
 import { linhaDigitavel } from "./boleto";
 import { ymd } from "./datas";
 
@@ -104,6 +104,19 @@ export function ClassificarForm({
         <Select label="Conta do plano *" name="planoContaId" defaultValue={titulo.planoContaId ?? ""} options={planos} placeholder="Selecione..." required />
         <Select label="Centro de custo" name="centroCustoId" defaultValue={titulo.centroCustoId ?? ""} options={centros} placeholder="(nenhum)" />
         <Field label="Competência *" name="competencia" type="date" defaultValue={inputDate(titulo.competencia)} required />
+      </Grid>
+    </Form>
+  );
+}
+
+/** Glosa: parte da cobrança que o hospital não reconhece. Abate o saldo sem dinheiro e vai para Deduções no DRE. */
+export function GlosaForm({ titulo, hoje }: { titulo: TituloRow; hoje: Date }) {
+  return (
+    <Form action={glosarTitulo.bind(null, titulo.id)} submitLabel="Registrar glosa" resetOnSuccess>
+      <Grid cols={3}>
+        <Field label="Valor glosado (R$) *" name="valor" type="number" step="0.01" min="0.01" max={titulo.saldo.toFixed(2)} required hint={`Saldo do título: ${money(titulo.saldo)}`} />
+        <Field label="Data *" name="data" type="date" defaultValue={ymd(hoje)} max={ymd(hoje)} required />
+        <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} hint="Ex.: item não autorizado pelo convênio" />
       </Grid>
     </Form>
   );

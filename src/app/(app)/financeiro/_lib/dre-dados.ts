@@ -27,7 +27,7 @@ export async function carregarLinhasDre(inicio: Date, fim: Date, centroCustoId: 
   const mesBrasilia = (d: Date) => chaveMes(diaBrasilia(d));
   const out: LinhaDre[] = [];
 
-  const [receber, pagar, avulsos, baixas, pedidos, movs] = await Promise.all([
+  const [receber, pagar, avulsos, baixas, pedidos, movs, glosas] = await Promise.all([
     db.contaReceber.findMany({ where: { status: { not: "CANCELADO" }, competencia, ...centro }, select: { competencia: true, planoContaId: true, valor: true } }),
     db.contaPagar.findMany({ where: { status: { not: "CANCELADO" }, competencia, ...centro }, select: { competencia: true, planoContaId: true, valor: true } }),
     db.lancamento.findMany({
@@ -48,6 +48,7 @@ export async function carregarLinhasDre(inicio: Date, fim: Date, centroCustoId: 
       where: { tipo: { in: ["PERDA", "AJUSTE"] }, criadoEm: { gte: instIni, lt: instFim } },
       select: { criadoEm: true, quantidade: true, custoUnit: true, origemId: true, destinoId: true },
     }),
+    db.glosa.findMany({ where: { data: competencia, contaReceber: { is: centroCustoId ? { centroCustoId } : {} } }, select: { data: true, valor: true } }),
   ]);
 
   for (const t of receber) out.push(linha(chaveMes(t.competencia), t.planoContaId, toNumber(t.valor)));
@@ -57,6 +58,7 @@ export async function carregarLinhasDre(inicio: Date, fim: Date, centroCustoId: 
     const efeitos = efeitosDaBaixa({ tipo: b.contaReceberId ? "receber" : "pagar", juros: toNumber(b.juros), multa: toNumber(b.multa), desconto: toNumber(b.desconto) });
     for (const e of efeitos) out.push(daChave(chaveMes(b.data), e.chave, e.valor));
   }
+  for (const g of glosas) out.push(daChave(chaveMes(g.data), "GLOSA", -toNumber(g.valor))); // dedução da receita, na data da glosa
   for (const p of pedidos) out.push(daChave(mesBrasilia(p.faturadoEm!), "CMV", -toNumber(p.custoTotal)));
   // perda ou ajuste de saída (só origem) = custo; ajuste de entrada (só destino) = ganho; entre locais = neutro
   // movimento de estoque não tem centro de custo: com o filtro ligado ele fica de fora
