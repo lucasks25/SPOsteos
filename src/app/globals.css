@@ -549,3 +549,16 @@ select {
     color: #000;
   }
 }
+
+/* Cabeçalho de página + faixa de indicadores formam um só cartão (Vionex V2) */
+.page-head:has(+ .kpi-strip) {
+  margin-bottom: 0;
+  border-bottom-left-radius: 0;
+  border-bottom-right-radius: 0;
+  border-bottom-color: var(--c-slate-200);
+}
+.page-head + .kpi-strip {
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+  border-top: 0;
+}

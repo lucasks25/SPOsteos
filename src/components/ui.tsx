@@ -1,29 +1,42 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
+import { EyebrowDaPagina, MarcaDaPagina } from "@/components/page-head";
 
 export function cx(...c: (string | false | null | undefined)[]) {
   return c.filter(Boolean).join(" ");
 }
 
+/** Cabeçalho de página (Vionex V2): cartão com ícone da tela, módulo, título e ações; a faixa de indicadores (KpiGrid) cola embaixo. */
 export function PageHeader({ title, subtitle, actions }: { title: string; subtitle?: string; actions?: ReactNode }) {
   return (
-    <div className="mb-4 flex flex-wrap items-start justify-between gap-3 print:mb-3">
-      <div className="min-w-0">
-        <h1 className="text-lg font-bold leading-tight text-slate-900">{title}</h1>
-        {subtitle && <p className="mt-0.5 max-w-3xl text-[13px] text-slate-600">{subtitle}</p>}
+    <div className="page-head mb-3 flex flex-wrap items-center justify-between gap-3 rounded border border-slate-200 bg-white px-3 py-2.5 shadow-sm print:mb-3 print:border-0 print:p-0 print:shadow-none">
+      <div className="flex min-w-0 items-center gap-3">
+        <span className="print:hidden"><MarcaDaPagina /></span>
+        <div className="min-w-0">
+          <span className="print:hidden"><EyebrowDaPagina /></span>
+          <h1 className="text-lg font-bold leading-tight text-slate-900">{title}</h1>
+          {subtitle && <p className="mt-0.5 max-w-3xl text-xs text-slate-600">{subtitle}</p>}
+        </div>
       </div>
       {actions && <div className="flex flex-wrap items-center gap-2 print:hidden">{actions}</div>}
     </div>
   );
 }
 
-export function Card({ title, actions, children, className }: { title?: string; actions?: ReactNode; children: ReactNode; className?: string }) {
+export function Card({ title, icon, actions, children, className }: { title?: string; icon?: IconName; actions?: ReactNode; children: ReactNode; className?: string }) {
   return (
     <section className={cx("rounded border border-slate-200 bg-white shadow-sm print:shadow-none", className)}>
       {(title || actions) && (
         <div className="flex min-h-10 items-center justify-between gap-3 border-b border-slate-200 px-3 py-2">
-          {title && <h2 className="text-sm font-bold text-slate-900">{title}</h2>}
+          <div className="flex min-w-0 items-center gap-2">
+            {icon && (
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-teal-700 text-white" aria-hidden="true">
+                <Icon name={icon} size={14} />
+              </span>
+            )}
+            {title && <h2 className="truncate text-sm font-bold text-slate-900">{title}</h2>}
+          </div>
           {actions}
         </div>
       )}
@@ -39,7 +52,7 @@ export const btn = {
   secondary: cx(btnBase, "border border-slate-300 bg-white text-slate-800 hover:bg-slate-50 active:bg-slate-100"),
   danger: cx(btnBase, "bg-rose-600 text-white hover:bg-rose-700 active:bg-rose-800"),
   ghost: cx(btnBase, "text-teal-700 hover:bg-teal-50"),
-  small: "inline-flex h-7 items-center rounded px-2 text-xs font-semibold text-teal-700 transition-colors hover:bg-teal-50",
+  small: "inline-flex h-7 items-center whitespace-nowrap rounded border border-slate-300 bg-white px-2 text-xs font-semibold text-slate-800 transition-colors hover:bg-slate-50",
 };
 
 export function LinkButton({ href, children, variant = "primary", icon }: { href: string; children: ReactNode; variant?: keyof typeof btn; icon?: IconName }) {
@@ -51,9 +64,49 @@ export function LinkButton({ href, children, variant = "primary", icon }: { href
   );
 }
 
-export function Table({ head, children, empty, emptyText, emptyAction }: { head: ReactNode[]; children: ReactNode; empty?: boolean; emptyText?: string; emptyAction?: ReactNode }) {
+export function Table({
+  head,
+  children,
+  empty,
+  emptyText,
+  emptyAction,
+  titulo,
+  icone,
+  contagem,
+  acoes,
+}: {
+  head: ReactNode[];
+  children: ReactNode;
+  empty?: boolean;
+  emptyText?: string;
+  emptyAction?: ReactNode;
+  /** barra de título do cartão da lista: ícone, título, contagem de itens e ações à direita */
+  titulo?: string;
+  icone?: IconName;
+  contagem?: number;
+  acoes?: ReactNode;
+}) {
   return (
-    <div className="overflow-x-auto rounded border border-slate-200 bg-white shadow-sm print:shadow-none">
+    <div className="overflow-hidden rounded border border-slate-200 bg-white shadow-sm print:shadow-none">
+      {(titulo || contagem !== undefined || acoes) && (
+        <div className="flex min-h-10 items-center justify-between gap-3 border-b border-slate-200 px-3 py-2">
+          <div className="flex min-w-0 items-center gap-2">
+            {icone && (
+              <span className="flex h-6 w-6 shrink-0 items-center justify-center rounded bg-teal-700 text-white" aria-hidden="true">
+                <Icon name={icone} size={14} />
+              </span>
+            )}
+            {titulo && <h2 className="truncate text-sm font-bold text-slate-900">{titulo}</h2>}
+            {contagem !== undefined && (
+              <span className="tnum shrink-0 text-xs text-slate-600">
+                {contagem} {contagem === 1 ? "item" : "itens"}
+              </span>
+            )}
+          </div>
+          {acoes}
+        </div>
+      )}
+      <div className="overflow-x-auto">
       <table className="min-w-full text-[13px]">
         <thead className="border-b border-slate-200 bg-slate-50">
           <tr>
@@ -76,6 +129,7 @@ export function Table({ head, children, empty, emptyText, emptyAction }: { head:
           )}
         </tbody>
       </table>
+      </div>
     </div>
   );
 }
@@ -128,7 +182,7 @@ export function Stat({ label, value, hint, tone = "default" }: { label: string; 
   return (
     <div className="rounded border border-slate-200 bg-white p-3 shadow-sm">
       <div className="text-xs text-slate-600">{label}</div>
-      <div className={cx("tnum mt-1 text-2xl font-bold", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>
+      <div className={cx("tnum mt-0.5 text-xl font-bold", tone === "warn" ? "text-amber-600" : tone === "danger" ? "text-rose-600" : "text-slate-900")}>
         {value}
       </div>
       {hint && <div className="mt-1 text-xs text-slate-600">{hint}</div>}
@@ -178,10 +232,20 @@ export function FilterBar({ children, className }: { children: ReactNode; classN
   );
 }
 
-/** Faixa de indicadores (Stat) no topo da tela. */
+/** Faixa de indicadores colada ao cabeçalho (Vionex V2): rótulo pequeno, valor em destaque e nota; células separadas por linhas finas. */
 export function KpiGrid({ children, cols = 4 }: { children: ReactNode; cols?: 3 | 4 | 5 }) {
   const c = { 3: "lg:grid-cols-3", 4: "lg:grid-cols-4", 5: "lg:grid-cols-5" }[cols];
-  return <div className={cx("mb-4 grid grid-cols-2 gap-3", c)}>{children}</div>;
+  return (
+    <div
+      className={cx(
+        "kpi-strip mb-3 grid grid-cols-2 gap-px overflow-hidden rounded border border-slate-200 bg-slate-200 shadow-sm",
+        "[&>*]:rounded-none [&>*]:border-0 [&>*]:bg-white [&>*]:shadow-none",
+        c,
+      )}
+    >
+      {children}
+    </div>
+  );
 }
 
 /** Título de uma seção dentro da tela (acima de uma tabela, por exemplo). */
