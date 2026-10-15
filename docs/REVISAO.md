@@ -250,3 +250,10 @@ Revisão feita pelo `arquiteto` sobre o sistema inteiro (autenticação, as 29 S
 1. `ajustarSaldo` (estoque) lia o saldo e gravava o valor absoluto: saídas simultâneas perdiam atualização e podiam vender estoque inexistente. Agora é um `UPDATE` atômico que recusa saldo negativo.
 2. `hojeUTC` de compras, qualidade e comercial usava a data UTC; entre 21h e 23h59 (Brasília) a competência caía no dia seguinte. Os três agora usam o dia de Brasília.
 Também: regra de registrar NF extraída para `comercial/_lib/nf.ts` e testada.
+
+## 15. Fechamento dos pendentes do MVP (16/10/2026)
+
+- **M4 (separação de funções em compras):** `ContaPagar.aprovadoEm/aprovadoPor` (migration `20261016100000`). Conta que nasce do recebimento de compra fica **aguardando aprovação** e é recusada na geração da remessa SISPAG até o FINANCEIRO aprovar em `/financeiro/aprovacoes` (em lote, com auditoria). Contas lançadas à mão pelo financeiro já nascem aprovadas; as existentes foram aprovadas na migration. Quem recebe a compra (COMPRAS/ESTOQUE) não aprova.
+- **CSP:** `proxy.ts` gera nonce por requisição e envia `Content-Security-Policy` (scripts só com nonce + strict-dynamic, `object-src 'none'`, `frame-ancestors 'none'`, `upgrade-insecure-requests` em produção). A página de login passou a ser dinâmica (`connection()`) porque página estática não recebe nonce. Testado em build de produção no navegador: login e navegação sem violações. `style-src` aceita inline (atributos `style` do React).
+- **M5:** mantido COMERCIAL registrando NF (faturamento do comercial); é decisão de negócio, trocar `PERFIS` em `registrarNf` se o cliente quiser só o financeiro.
+- **B3** (amarrar ID de item ao registro pai) e **B1** (`npm audit` só no CLI do Prisma) não foram alterados: efeito limitado / risco de subir o Prisma para 8.x.

@@ -1,7 +1,10 @@
+import { connection } from "next/server";
 import { Form, Field } from "@/components/form";
 import { login } from "./actions";
 
-export default function LoginPage() {
+export default async function LoginPage() {
+  // renderização dinâmica: a CSP com nonce só funciona em páginas geradas a cada requisição
+  await connection();
   return (
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-teal-900 to-slate-900 p-4">
       <div className="w-full max-w-sm rounded-2xl bg-white p-8 shadow-xl">
