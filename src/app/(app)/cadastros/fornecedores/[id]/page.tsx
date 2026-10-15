@@ -3,17 +3,19 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "@/components/form";
+import { podeDadosBancarios } from "../../_lib/permissoes";
 import { FornecedorForm } from "../fornecedor-form";
 import { alternarAtivoFornecedor, excluirFornecedor } from "../actions";
 
 export default async function EditarFornecedorPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
   const fornecedor = await db.fornecedor.findUnique({
     where: { id },
     include: { _count: { select: { pedidos: true, contasPagar: true } } },
   });
   if (!fornecedor) notFound();
+  if (!podeDadosBancarios(user.perfil)) Object.assign(fornecedor, { bancoCodigo: null, agencia: null, conta: null, contaDigito: null, chavePix: null });
   const vinculos = fornecedor._count.pedidos + fornecedor._count.contasPagar;
   return (
     <>
@@ -33,7 +35,7 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
         }
       />
       <Card>
-        <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} />
+        <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} podeBanco={podeDadosBancarios(user.perfil)} />
       </Card>
     </>
   );

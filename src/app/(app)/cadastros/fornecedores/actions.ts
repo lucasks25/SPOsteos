@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj, UFS } from "../_lib/documentos";
 import { deleteErrorMessage, PERFIS_SUPRIMENTOS } from "../_lib/acoes";
+import { mascarar, podeDadosBancarios } from "../_lib/permissoes";
 import { tipoChavePix } from "../../financeiro/_lib/sispag";
 
 const schema = z.object({
@@ -41,18 +42,26 @@ const schema = z.object({
 });
 
 export async function salvarFornecedor(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
-  const user = await requireUser(PERFIS_SUPRIMENTOS);
+  const user = await requireUser([...PERFIS_SUPRIMENTOS, "FINANCEIRO"]);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
-  const data = parsed.data;
+  const data: Record<string, unknown> & typeof parsed.data = parsed.data;
+  const BANCARIOS = ["bancoCodigo", "agencia", "conta", "contaDigito", "chavePix"] as const;
+  // quem não paga não vê nem altera os dados bancários: ignora o que vier no formulário (o update não toca nesses campos)
+  if (!podeDadosBancarios(user.perfil)) for (const k of BANCARIOS) delete data[k];
   try {
     const atual = id ? await db.fornecedor.findUnique({ where: { id } }) : null;
     if (id && !atual) return { error: "Fornecedor não encontrado." };
     const c = checarCnpj(data.cnpj, atual?.cnpj);
     if (!c.ok) return { error: "Verifique os campos destacados.", fieldErrors: { cnpj: c.error } };
     data.cnpj = c.value;
-    const saved = id ? await db.fornecedor.update({ where: { id }, data }) : await db.fornecedor.create({ data });
-    const detalhe = atual && atual.ativo !== saved.ativo ? ` (${saved.ativo ? "ativado" : "inativado"})` : "";
+    const saved = id ? await db.fornecedor.update({ where: { id }, data: data as typeof parsed.data }) : await db.fornecedor.create({ data: data as typeof parsed.data });
+    let detalhe = atual && atual.ativo !== saved.ativo ? ` (${saved.ativo ? "ativado" : "inativado"})` : "";
+    // troca de dados bancários é o golpe clássico de desvio de pagamento: fica na auditoria com antes e depois (mascarados)
+    if (atual) {
+      const mudou = BANCARIOS.filter((k) => (atual[k] ?? null) !== (saved[k] ?? null));
+      if (mudou.length) detalhe += ` — DADOS BANCÁRIOS ALTERADOS: ${mudou.map((k) => `${k} ${mascarar(atual[k])} → ${mascarar(saved[k])}`).join("; ")}`;
+    }
     await audit(user.id, id ? "editar" : "criar", "Fornecedor", saved.id, `${saved.razaoSocial}${detalhe}`);
   } catch (e) {
     return { error: errorMessage(e) };

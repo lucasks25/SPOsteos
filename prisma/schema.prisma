@@ -21,14 +21,25 @@ enum Perfil {
 }
 
 model Usuario {
-  id        String         @id @default(cuid())
-  nome      String
-  email     String         @unique
-  senhaHash String
-  perfil    Perfil         @default(COMERCIAL)
-  ativo     Boolean        @default(true)
-  criadoEm  DateTime       @default(now())
-  logs      LogAuditoria[]
+  id           String         @id @default(cuid())
+  nome         String
+  email        String         @unique
+  senhaHash    String
+  perfil       Perfil         @default(COMERCIAL)
+  ativo        Boolean        @default(true)
+  // Sobe a cada troca de senha e a cada logout: sessões (JWT) emitidas antes deixam de valer.
+  sessaoVersao Int            @default(0)
+  criadoEm     DateTime       @default(now())
+  logs         LogAuditoria[]
+}
+
+// Tentativas de login que falharam (por e-mail e por IP) para limitar força bruta.
+model TentativaLogin {
+  id       String   @id @default(cuid())
+  chave    String // "email:x@y" ou "ip:1.2.3.4"
+  criadaEm DateTime @default(now())
+
+  @@index([chave, criadaEm])
 }
 
 model LogAuditoria {

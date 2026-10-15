@@ -3,7 +3,7 @@ import { inputDate } from "@/lib/format";
 import type { Produto } from "@/generated/prisma/client";
 import { salvarProduto } from "./actions";
 
-export function ProdutoForm({ produto, fabricantes }: { produto?: Produto; fabricantes: { id: string; nome: string }[] }) {
+export function ProdutoForm({ produto, fabricantes, podePreco = false }: { produto?: Produto; fabricantes: { id: string; nome: string }[]; podePreco?: boolean }) {
   const p = produto;
   return (
     <Form action={salvarProduto.bind(null, p?.id ?? null)} redirectTo="/cadastros/produtos">
@@ -18,7 +18,7 @@ export function ProdutoForm({ produto, fabricantes }: { produto?: Produto; fabri
         <Select label="Classe de risco" name="classeRisco" defaultValue={p?.classeRisco ?? ""} options={["I", "II", "III", "IV"].map((c) => ({ value: c, label: `Classe ${c}` }))} />
         <Field label="GTIN (UDI-GS1)" name="gtin" defaultValue={p?.gtin ?? ""} />
         <Field label="NCM" name="ncm" defaultValue={p?.ncm ?? ""} />
-        <Field label="Preço base (R$)" name="precoBase" type="number" step="0.01" min="0" defaultValue={p ? p.precoBase.toString() : "0"} />
+        <Field label="Preço base (R$)" name="precoBase" type="number" step="0.01" min="0" defaultValue={p ? p.precoBase.toString() : "0"} disabled={!podePreco} hint={podePreco ? undefined : "Só o comercial altera o preço"} />
         <Field label="Estoque mínimo" name="estoqueMinimo" type="number" min="0" defaultValue={p?.estoqueMinimo ?? 0} />
       </Grid>
       <div className="flex gap-6">

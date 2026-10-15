@@ -11,7 +11,7 @@ export default async function EditarUsuarioPage({ params }: { params: Promise<{ 
   const admin = await requireUser([]);
   const { id } = await params;
   const [u, ultimoLogin] = await Promise.all([
-    db.usuario.findUnique({ where: { id } }),
+    db.usuario.findUnique({ where: { id }, select: { id: true, nome: true, email: true, perfil: true, ativo: true, criadoEm: true } }),
     db.logAuditoria.findFirst({ where: { usuarioId: id, acao: "login" }, orderBy: { criadoEm: "desc" } }),
   ]);
   if (!u) notFound();

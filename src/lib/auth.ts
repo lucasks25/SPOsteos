@@ -8,19 +8,20 @@ import { db } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 
 export const SESSION_COOKIE = "opme_session";
-const SESSION_DAYS = 7;
+const SESSION_DAYS = 1;
 
 function secretKey() {
   const secret = process.env.AUTH_SECRET;
-  if (!secret || secret.length < 16) throw new Error("AUTH_SECRET não configurado");
+  // o valor do .env.example é público: nunca pode valer. Gere um com `openssl rand -hex 32`.
+  if (!secret || secret.length < 32 || /troque/i.test(secret)) throw new Error("AUTH_SECRET ausente, curto (mínimo 32 caracteres) ou de exemplo. Gere um com: openssl rand -hex 32");
   return new TextEncoder().encode(secret);
 }
 
 export type SessionUser = { id: string; nome: string; email: string; perfil: Perfil };
 
-export async function createSession(userId: string) {
+export async function createSession(userId: string, versao: number) {
   const expires = new Date(Date.now() + SESSION_DAYS * 24 * 60 * 60 * 1000);
-  const token = await new SignJWT({ sub: userId })
+  const token = await new SignJWT({ sub: userId, v: versao })
     .setProtectedHeader({ alg: "HS256" })
     .setIssuedAt()
     .setExpirationTime(expires)
@@ -44,7 +45,7 @@ export async function verifyToken(token: string | undefined) {
   if (!token) return null;
   try {
     const { payload } = await jwtVerify(token, secretKey(), { algorithms: ["HS256"] });
-    return typeof payload.sub === "string" ? payload.sub : null;
+    return typeof payload.sub === "string" ? { id: payload.sub, versao: typeof payload.v === "number" ? payload.v : -1 } : null;
   } catch {
     return null;
   }
@@ -53,13 +54,13 @@ export async function verifyToken(token: string | undefined) {
 /** Usuário logado (memoizado por request) ou null. */
 export const getUser = cache(async (): Promise<SessionUser | null> => {
   const store = await cookies();
-  const userId = await verifyToken(store.get(SESSION_COOKIE)?.value);
-  if (!userId) return null;
+  const tok = await verifyToken(store.get(SESSION_COOKIE)?.value);
+  if (!tok) return null;
   const user = await db.usuario.findUnique({
-    where: { id: userId },
-    select: { id: true, nome: true, email: true, perfil: true, ativo: true },
+    where: { id: tok.id },
+    select: { id: true, nome: true, email: true, perfil: true, ativo: true, sessaoVersao: true },
   });
-  if (!user || !user.ativo) return null;
+  if (!user || !user.ativo || user.sessaoVersao !== tok.versao) return null; // senha trocada ou logout: sessão antiga não vale
   return { id: user.id, nome: user.nome, email: user.email, perfil: user.perfil };
 });
 

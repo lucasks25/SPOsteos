@@ -5,6 +5,8 @@ import { PrismaClient, type Perfil } from "../src/generated/prisma/client";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
+// Usuários de demonstração com senha fixa: nunca em produção.
+if (process.env.NODE_ENV === "production") throw new Error("O seed cria usuários de demonstração e não pode rodar em produção. Crie o primeiro admin com: npm run admin:criar");
 const DEMO_PASSWORD = process.env.SEED_PASSWORD ?? "opme1234";
 const addDays = (n: number) => new Date(Date.now() + n * 86400000);
 

@@ -221,3 +221,32 @@ Testes: `tests/financeiro-db/fechamento.test.ts` (3).
 ## 12. Classificar pendentes em lote (15/10/2026)
 
 `/financeiro/classificar` lista títulos a receber, a pagar e lançamentos avulsos sem conta do plano (até 300 de cada, do mais antigo). Marca-se vários, escolhe-se conta (e centro de custo, opcional) e aplica-se de uma vez (`_lib/classificar.ts`). Tudo ou nada; não sobrescreve item já classificado (outra pessoa pode ter feito); recusa conta de grupo/inativa, baixa de título tratada como avulso e itens em mês fechado. A competência não muda. Testes: `tests/financeiro-db/classificar.test.ts` (4). A base de desenvolvimento hoje não tem nenhum item pendente, então a tela só foi vista no estado vazio; o fluxo com itens foi validado nos testes de banco, não pelo navegador.
+
+## 13. Correções da revisão de segurança do MVP (15/10/2026)
+
+Revisão feita pelo `arquiteto` sobre o sistema inteiro (autenticação, as 29 Server Actions e 3 rotas, uploads, injeção, cabeçalhos, dependências). Confirmado OK: toda action/rota tem `requireUser` dentro da função, `$queryRaw` parametrizado, sem `dangerouslySetInnerHTML`, upload de anexo seguro, cookie httpOnly, CSRF por Origin do Next, nenhum segredo no git.
+
+**Corrigido nesta rodada**
+- **A1** Dados bancários e Pix de fornecedor: só FINANCEIRO/ADMIN veem e alteram (servidor ignora o campo vindo de outro perfil; a página nem envia o dado ao navegador). Troca de dado bancário vai para a auditoria com antes e depois mascarados.
+- **A2** `AUTH_SECRET` exige 32+ caracteres e recusa o valor de exemplo. `.env.example` agora vem vazio com instrução (`openssl rand -hex 32`).
+- **A3** Limite de login: 5 falhas em 15 min por e-mail (e por IP quando há proxy com `x-forwarded-for`); falhas auditadas; comparação de hash mesmo com e-mail inexistente. Testado no navegador (6ª tentativa bloqueada).
+- **A4** O seed não roda em produção. Novo `npm run admin:criar` cria os locais de estoque e o primeiro administrador (senha 12 a 72 caracteres, via variáveis de ambiente).
+- **M1** Sessão: coluna `Usuario.sessaoVersao` dentro do JWT; troca de senha e logout invalidam todas as sessões; validade caiu de 7 para 1 dia. Testado (sessão derrubada pelo banco volta ao login).
+- **M2** Cabeçalhos: X-Frame-Options DENY, nosniff, Referrer-Policy, Permissions-Policy, HSTS; `X-Powered-By` removido.
+- **M3** Páginas de fornecedor não levam banco/Pix a quem não é FINANCEIRO/ADMIN.
+- **M6** Preço base de produto só o COMERCIAL/ADMIN altera.
+- **B2** Telas de usuário não carregam `senhaHash`. **B4** Senha limitada a 72 caracteres (limite real do bcrypt), mínimo 10.
+
+**Não corrigido (decisão de negócio ou melhoria posterior)**
+- **M4** Separação de funções em compras: ESTOQUE pode criar/receber pedido com custo inflado e gerar conta a pagar sem aprovação do financeiro. Ideal: conta a pagar nasce "pendente de aprovação". Decidir com o cliente.
+- **M5** COMERCIAL registra NF e gera conta a receber. Parece intencional; se o faturamento for só do financeiro, trocar `PERFIS` de `registrarNf`.
+- **CSP** (Content-Security-Policy) completa: exige nonce no Next; seguir `node_modules/next/dist/docs/01-app/02-guides/content-security-policy.md`.
+- **B1** `npm audit`: 4 HIGH só no CLI do Prisma (deepmerge-ts, mysql2); o runtime usa Postgres/adapter-pg. Não rodar `npm audit fix --force` (sobe o Prisma para 8.x).
+- **B3** IDs de item sem amarrar ao registro pai (efeito limitado ao que o perfil já pode fazer). **B5** Política de retenção/LGPD de anexos e remessas; anexos em disco local (em hospedagem serverless, usar bucket privado). **Atrás de proxy**: configurar o proxy para sobrescrever `x-forwarded-for` e, com mais de uma instância, definir `NEXT_SERVER_ACTIONS_ENCRYPTION_KEY`.
+
+## 14. Bugs achados pelos testes de negócio (15/10/2026)
+
+22 testes de integração em `tests/negocio-db/` (estoque, remessa em consignação, recebimento de compra, faturamento e NF) acharam 2 bugs reais, corrigidos:
+1. `ajustarSaldo` (estoque) lia o saldo e gravava o valor absoluto: saídas simultâneas perdiam atualização e podiam vender estoque inexistente. Agora é um `UPDATE` atômico que recusa saldo negativo.
+2. `hojeUTC` de compras, qualidade e comercial usava a data UTC; entre 21h e 23h59 (Brasília) a competência caía no dia seguinte. Os três agora usam o dia de Brasília.
+Também: regra de registrar NF extraída para `comercial/_lib/nf.ts` e testada.

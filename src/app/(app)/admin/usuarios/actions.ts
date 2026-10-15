@@ -8,7 +8,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 
-const senha = z.string({ error: "Senha obrigatória" }).min(8, "Mínimo de 8 caracteres").max(128);
+const senha = z.string({ error: "Senha obrigatória" }).min(10, "Mínimo de 10 caracteres").max(72, "Máximo de 72 caracteres");
 
 const criarSchema = z.object({
   nome: zf.text(),
@@ -63,7 +63,7 @@ export async function redefinirSenha(id: string, _: ActionState, fd: FormData): 
   const parsed = parseForm(z.object({ senha }), fd);
   if (!parsed.success) return parsed.state;
   try {
-    const u = await db.usuario.update({ where: { id }, data: { senhaHash: await bcrypt.hash(parsed.data.senha, 10) } });
+    const u = await db.usuario.update({ where: { id }, data: { senhaHash: await bcrypt.hash(parsed.data.senha, 10), sessaoVersao: { increment: 1 } } });
     await audit(admin.id, "redefinir senha", "Usuario", id, u.email);
   } catch (e) {
     return { error: errorMessage(e) };

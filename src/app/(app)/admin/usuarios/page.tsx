@@ -6,7 +6,7 @@ import { date } from "@/lib/format";
 
 export default async function UsuariosPage() {
   await requireUser([]);
-  const usuarios = await db.usuario.findMany({ orderBy: [{ ativo: "desc" }, { nome: "asc" }] });
+  const usuarios = await db.usuario.findMany({ select: { id: true, nome: true, email: true, perfil: true, ativo: true, criadoEm: true }, orderBy: [{ ativo: "desc" }, { nome: "asc" }] });
   return (
     <>
       <PageHeader title="Usuários" subtitle="Contas de acesso e perfis" actions={<LinkButton href="/admin/usuarios/novo">Novo usuário</LinkButton>} />
