@@ -298,6 +298,8 @@ Para cada cadastro: lista com busca, novo, editar, e ativar/inativar quando houv
 
 **Plano de contas e DRE (14/10/2026):** `/financeiro/plano-contas` (árvore + centros de custo) e `/financeiro/dre` (6 meses + total, filtro por centro). Todo título e lançamento avulso novo exige conta do plano e competência. Detalhes, regras e pendências em `docs/REVISAO.md` seção 7.
 
+**Relatórios (15/10/2026):** `/financeiro/relatorios` traz o aging (a vencer, 1-30, 31-60, 61-90, +90 dias) por hospital (inadimplência) e por fornecedor, com exportação CSV (`;`, vírgula decimal, BOM; neutraliza fórmulas). Lógica pura em `_lib/aging.ts`, testada.
+
 ## 10. Próximas fases (depois do MVP)
 
 1. **NF-e/NFS-e reais**: integrar uma API emissora (Focus NFe, PlugNotas, NFe.io etc.) para NF de remessa em consignação (CFOP 5917/6917), retorno (5918/6918), venda de consignado (5114/6114) e faturamento; CC-e; DANFE.
