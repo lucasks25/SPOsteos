@@ -41,7 +41,5 @@ export function periodo(de?: string, ate?: string) {
   };
 }
 
-export function hojeUTC(): Date {
-  const d = new Date();
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
-}
+/** Dia de hoje em Brasília como meia-noite UTC (datas de validade, vigência e competência são gravadas assim). */
+export { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";

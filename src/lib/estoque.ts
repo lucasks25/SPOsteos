@@ -24,19 +24,19 @@ export type MovimentoInput = {
 export class EstoqueError extends ErroNegocio {}
 
 async function ajustarSaldo(tx: Tx, produtoId: string, loteId: string, localId: string, delta: number) {
-  const atual = await tx.saldo.findUnique({ where: { loteId_localId: { loteId, localId } } });
-  const novo = (atual?.quantidade ?? 0) + delta;
-  if (novo < 0) {
-    const lote = await tx.lote.findUnique({ where: { id: loteId }, include: { produto: true } });
-    throw new EstoqueError(
-      `Saldo insuficiente do lote ${lote?.numero ?? loteId} (${lote?.produto.descricao ?? ""}). Disponível: ${atual?.quantidade ?? 0}.`,
-    );
+  // Atualização atômica no banco: o UPDATE trava a linha, soma e só vale se o saldo não ficar negativo.
+  // (ler o saldo e gravar o valor absoluto perdia atualizações quando duas saídas rodavam ao mesmo tempo)
+  const n = await tx.$executeRaw`UPDATE "Saldo" SET "quantidade" = "quantidade" + ${delta} WHERE "loteId" = ${loteId} AND "localId" = ${localId} AND "quantidade" + ${delta} >= 0`;
+  if (n > 0) return;
+  const existe = await tx.saldo.findUnique({ where: { loteId_localId: { loteId, localId } }, select: { quantidade: true } });
+  if (!existe && delta >= 0) {
+    // primeira entrada neste lote/local; se duas chegarem juntas a segunda cai no conflito e soma
+    await tx.$executeRaw`INSERT INTO "Saldo" ("id", "produtoId", "loteId", "localId", "quantidade") VALUES (${crypto.randomUUID()}, ${produtoId}, ${loteId}, ${localId}, ${delta})
+      ON CONFLICT ("loteId", "localId") DO UPDATE SET "quantidade" = "Saldo"."quantidade" + ${delta}`;
+    return;
   }
-  await tx.saldo.upsert({
-    where: { loteId_localId: { loteId, localId } },
-    create: { produtoId, loteId, localId, quantidade: novo },
-    update: { quantidade: novo },
-  });
+  const lote = await tx.lote.findUnique({ where: { id: loteId }, include: { produto: true } });
+  throw new EstoqueError(`Saldo insuficiente do lote ${lote?.numero ?? loteId} (${lote?.produto.descricao ?? ""}). Disponível: ${existe?.quantidade ?? 0}.`);
 }
 
 export async function movimentar(tx: Tx, m: MovimentoInput) {
