@@ -1,6 +1,8 @@
 /** Helpers dos testes de integração de negócio (estoque/compras/comercial). Dados com prefixo TESTEDB. */
 import "dotenv/config";
 import assert from "node:assert/strict";
+import { rm } from "node:fs/promises";
+import path from "node:path";
 import { db } from "@/lib/db";
 
 export const P = "TESTEDB";
@@ -14,6 +16,7 @@ export const uid = () => `${Date.now().toString(36)}${(seq++).toString(36)}`;
 
 /** Apaga tudo que os testes criam (ordem respeita as FKs). */
 export async function limparTudo() {
+  await limparDocumentos();
   const prod = { produto: { codigo: { startsWith: P } } };
   const hosp = { razaoSocial: { startsWith: P } };
   await db.contaReceber.deleteMany({ where: { descricao: { startsWith: P } } });
@@ -86,4 +89,18 @@ export async function contagens() {
     hospital: await db.hospital.count(),
     localEstoque: await db.localEstoque.count(),
   };
+}
+
+/** Documentos de teste (título TESTEDB ou ligados a fornecedor/fabricante/produto TESTEDB), seus arquivos no banco e no disco. */
+export async function limparDocumentos() {
+  const docs = await db.documento.findMany({
+    where: { OR: [{ titulo: { startsWith: P } }, { fornecedor: { razaoSocial: { startsWith: P } } }, { fabricante: { nome: { startsWith: P } } }, { produto: { codigo: { startsWith: P } } }] },
+    select: { id: true },
+  });
+  const ids = docs.map((d) => d.id);
+  if (ids.length === 0) return;
+  await db.documento.updateMany({ where: { id: { in: ids } }, data: { substituidoPorId: null, substituidoEm: null } });
+  await db.documentoArquivo.deleteMany({ where: { documentoId: { in: ids } } });
+  await db.documento.deleteMany({ where: { id: { in: ids } } });
+  for (const id of ids) await rm(path.join(process.cwd(), "storage", "uploads", "documentos", id), { recursive: true, force: true });
 }

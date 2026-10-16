@@ -5,6 +5,7 @@ import type { Perfil } from "@/generated/prisma/client";
 import type { IconName } from "@/components/icons";
 import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
 import { faixasAbertas } from "@/app/(app)/financeiro/_lib/painel";
+import { contarAlertas } from "@/app/(app)/qualidade/_lib/documentos-servico";
 
 const DIA = 24 * 60 * 60 * 1000;
 
@@ -22,6 +23,7 @@ export function areasDoPerfil(p: Perfil) {
     comercial: ve(p, "COMERCIAL", "FINANCEIRO"),
     financeiro: ve(p, "FINANCEIRO"),
     estoque: ve(p, "ESTOQUE", "QUALIDADE", "COMPRAS", "COMERCIAL"),
+    documentos: ve(p, "QUALIDADE", "COMPRAS"),
   };
 }
 
@@ -37,25 +39,28 @@ export type DadosPendencias = {
   quarentena: number;
   registros: number;
   aprovacoes: number;
+  /** documentos/licenças vencidos e a vencer em até 30 dias (QUALIDADE, COMPRAS e ADMIN) */
+  documentos: { vencidos: number; vencendo30: number; total: number };
 };
 
 export type Pendencia = { key: string; href: string; icon: IconName; tom: "warn" | "danger"; titulo: string; nota: string; acao: string; qtd: number };
 
 const vazia = { qtd: 0, valor: 0 };
+const semDocumentos = { vencidos: 0, vencendo30: 0, total: 0 };
 
 /**
  * Números que alimentam o painel e o sino de pendências. Só consulta o que o perfil enxerga
  * (o resto volta zerado). Única fonte: o painel e GET /api/pendencias usam esta função.
  */
 export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencias> {
-  const { comercial, financeiro, estoque } = areasDoPerfil(perfil);
+  const { comercial, financeiro, estoque, documentos } = areasDoPerfil(perfil);
   const hoje = hojeSP();
   const hojeFin = hojeUTC();
   const em30 = new Date(hoje.getTime() + 30 * DIA);
   const em90 = new Date(hoje.getTime() + 90 * DIA);
   const zero = Promise.resolve(0);
 
-  const [recFaixas, pagarFaixas, aFaturar, quarentena, lotesVencendo, produtos, saldosLib, registros, remessas, aprovacoes] = await Promise.all([
+  const [recFaixas, pagarFaixas, aFaturar, quarentena, lotesVencendo, produtos, saldosLib, registros, remessas, aprovacoes, docs] = await Promise.all([
     financeiro ? faixasAbertas("receber", hojeFin) : Promise.resolve(null),
     financeiro ? faixasAbertas("pagar", hojeFin) : Promise.resolve(null),
     comercial ? db.cirurgia.count({ where: { status: "REALIZADA" } }) : zero,
@@ -68,6 +73,7 @@ export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencia
     estoque ? db.produto.count({ where: { ativo: true, validadeRegistro: { lt: em90 } } }) : zero,
     estoque ? db.remessa.count({ where: { status: "ENVIADA" } }) : zero,
     financeiro ? db.contaPagar.count({ where: { aprovadoEm: null, status: "ABERTO" } }) : zero,
+    documentos ? contarAlertas(hojeFin) : Promise.resolve(semDocumentos),
   ]);
 
   const saldoMap = new Map(saldosLib.map((s) => [s.produtoId, s._sum.quantidade ?? 0]));
@@ -85,6 +91,7 @@ export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencia
     quarentena,
     registros,
     aprovacoes,
+    documentos: docs,
   };
 }
 
@@ -102,6 +109,8 @@ export function listarPendencias(d: DadosPendencias): Pendencia[] {
   add("fat", d.aFaturar, { href: "/comercial/cirurgias?status=REALIZADA", icon: "documento", tom: "warn", titulo: `${d.aFaturar} cirurgia(s) a faturar`, nota: "realizadas sem pedido de venda", acao: "Faturar" });
   add("rem", d.remessas, { href: "/estoque/remessas?status=ENVIADA", icon: "caminhao", tom: "warn", titulo: `${d.remessas} remessa(s) a conferir`, nota: "vales enviados aos hospitais", acao: "Conferir" });
   add("qua", d.quarentena, { href: "/qualidade/quarentena", icon: "frasco", tom: "warn", titulo: `${d.quarentena} lote(s) em quarentena`, nota: "aguardando inspeção", acao: "Inspecionar" });
+  const dv = d.documentos;
+  add("doc", dv.total, { href: `/qualidade/documentos?situacao=ATENCAO`, icon: "documento", tom: dv.vencidos > 0 ? "danger" : "warn", titulo: `${dv.total} documento(s) vencido(s) ou a vencer em 30 dias`, nota: dv.vencidos > 0 ? `${dv.vencidos} já vencido(s)` : "licenças e certificados a renovar", acao: "Renovar" });
   add("reg", d.registros, { href: "/qualidade/registros", icon: "livro", tom: "warn", titulo: `${d.registros} registro(s) ANVISA a vencer`, nota: "vencidos ou vencendo em 90 dias", acao: "Revisar" });
   return itens;
 }

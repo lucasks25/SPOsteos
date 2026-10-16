@@ -1,7 +1,9 @@
 import "server-only";
 import path from "node:path";
 
-export const ID_SEGURO = /^[a-z0-9]+$/i;
+import { ID_SEGURO, NOME_ARQUIVO_SEGURO } from "@/lib/upload-seguro";
+
+export { ID_SEGURO, MIME_POR_EXT } from "@/lib/upload-seguro";
 
 /**
  * Pasta dos anexos da cirurgia. Fica FORA de `public/` de propósito: anexos podem ter dados de
@@ -15,8 +17,6 @@ export function pastaUploads(cirurgiaId: string) {
 export function caminhoAnexo(cirurgiaId: string, url: string): string | null {
   if (!ID_SEGURO.test(cirurgiaId)) return null;
   const nome = path.basename(url);
-  if (!/^[a-f0-9-]{36}\.(pdf|png|jpg)$/.test(nome)) return null;
+  if (!NOME_ARQUIVO_SEGURO.test(nome)) return null;
   return path.join(pastaUploads(cirurgiaId), nome);
 }
-
-export const MIME_POR_EXT: Record<string, string> = { pdf: "application/pdf", png: "image/png", jpg: "image/jpeg" };

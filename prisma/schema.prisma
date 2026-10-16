@@ -58,11 +58,12 @@ model LogAuditoria {
 // ───────────────────────── Cadastros ─────────────────────────
 
 model Fabricante {
-  id       String    @id @default(cuid())
-  nome     String
-  cnpj     String?
-  pais     String?
-  produtos Produto[]
+  id         String      @id @default(cuid())
+  nome       String
+  cnpj       String?
+  pais       String?
+  produtos   Produto[]
+  documentos Documento[]
 }
 
 model Fornecedor {
@@ -86,13 +87,14 @@ model Fornecedor {
   criadoEm     DateTime       @default(now())
   pedidos      PedidoCompra[]
   contasPagar  ContaPagar[]
+  documentos   Documento[]
 }
 
 model Hospital {
-  id                 String         @id @default(cuid())
+  id                 String                  @id @default(cuid())
   razaoSocial        String
   nomeFantasia       String?
-  cnpj               String         @unique
+  cnpj               String                  @unique
   ie                 String?
   email              String?
   telefone           String?
@@ -101,9 +103,9 @@ model Hospital {
   cep                String?
   cidade             String?
   uf                 String?
-  prazoPagamentoDias Int            @default(30)
-  ativo              Boolean        @default(true)
-  criadoEm           DateTime       @default(now())
+  prazoPagamentoDias Int                     @default(30)
+  ativo              Boolean                 @default(true)
+  criadoEm           DateTime                @default(now())
   local              LocalEstoque?
   inventarios        InventarioConsignacao[]
   cirurgias          Cirurgia[]
@@ -111,7 +113,7 @@ model Hospital {
   orcamentos         Orcamento[]
   contasReceber      ContaReceber[]
   tabelaPrecoId      String?
-  tabelaPreco        TabelaPreco?   @relation(fields: [tabelaPrecoId], references: [id])
+  tabelaPreco        TabelaPreco?            @relation(fields: [tabelaPrecoId], references: [id])
 }
 
 model Medico {
@@ -170,24 +172,24 @@ model Representante {
 }
 
 model Produto {
-  id                String             @id @default(cuid())
-  codigo            String             @unique
+  id                String                      @id @default(cuid())
+  codigo            String                      @unique
   descricao         String
   referencia        String? // referência do fabricante
   fabricanteId      String?
-  fabricante        Fabricante?        @relation(fields: [fabricanteId], references: [id])
+  fabricante        Fabricante?                 @relation(fields: [fabricanteId], references: [id])
   registroAnvisa    String?
   validadeRegistro  DateTime?
   classeRisco       String? // I, II, III, IV
   gtin              String? // GTIN / código de barras UDI-GS1
   ncm               String?
-  unidade           String             @default("UN")
-  custoMedio        Decimal            @default(0) @db.Decimal(14, 2)
-  precoBase         Decimal            @default(0) @db.Decimal(14, 2)
-  estoqueMinimo     Int                @default(0)
-  controlaLote      Boolean            @default(true)
-  ativo             Boolean            @default(true)
-  criadoEm          DateTime           @default(now())
+  unidade           String                      @default("UN")
+  custoMedio        Decimal                     @default(0) @db.Decimal(14, 2)
+  precoBase         Decimal                     @default(0) @db.Decimal(14, 2)
+  estoqueMinimo     Int                         @default(0)
+  controlaLote      Boolean                     @default(true)
+  ativo             Boolean                     @default(true)
+  criadoEm          DateTime                    @default(now())
   lotes             Lote[]
   saldos            Saldo[]
   movimentos        Movimento[]
@@ -200,6 +202,7 @@ model Produto {
   remessaItens      RemessaItem[]
   consumos          CirurgiaConsumo[]
   inventarioItens   InventarioConsignacaoItem[]
+  documentos        Documento[]
 }
 
 // ───────────────────────── Qualidade / Lotes ─────────────────────────
@@ -213,20 +216,20 @@ enum StatusLote {
 }
 
 model Lote {
-  id           String            @id @default(cuid())
-  produtoId    String
-  produto      Produto           @relation(fields: [produtoId], references: [id])
-  numero       String
-  serie        String?
-  fabricacao   DateTime?
-  validade     DateTime
-  status       StatusLote        @default(QUARENTENA)
-  criadoEm     DateTime          @default(now())
-  saldos       Saldo[]
-  movimentos   Movimento[]
-  inspecoes    Inspecao[]
-  remessaItens RemessaItem[]
-  consumos     CirurgiaConsumo[]
+  id              String                      @id @default(cuid())
+  produtoId       String
+  produto         Produto                     @relation(fields: [produtoId], references: [id])
+  numero          String
+  serie           String?
+  fabricacao      DateTime?
+  validade        DateTime
+  status          StatusLote                  @default(QUARENTENA)
+  criadoEm        DateTime                    @default(now())
+  saldos          Saldo[]
+  movimentos      Movimento[]
+  inspecoes       Inspecao[]
+  remessaItens    RemessaItem[]
+  consumos        CirurgiaConsumo[]
   inventarioItens InventarioConsignacaoItem[]
 
   @@unique([produtoId, numero])
@@ -255,15 +258,15 @@ enum TipoLocal {
 }
 
 model LocalEstoque {
-  id         String      @id @default(cuid())
-  nome       String
-  tipo       TipoLocal
-  hospitalId String?     @unique
-  hospital   Hospital?   @relation(fields: [hospitalId], references: [id])
-  saldos     Saldo[]
-  movOrigem  Movimento[] @relation("origem")
-  movDestino Movimento[] @relation("destino")
-  remessas   Remessa[]
+  id          String                  @id @default(cuid())
+  nome        String
+  tipo        TipoLocal
+  hospitalId  String?                 @unique
+  hospital    Hospital?               @relation(fields: [hospitalId], references: [id])
+  saldos      Saldo[]
+  movOrigem   Movimento[]             @relation("origem")
+  movDestino  Movimento[]             @relation("destino")
+  remessas    Remessa[]
   inventarios InventarioConsignacao[]
 }
 
@@ -1001,4 +1004,79 @@ model InventarioConsignacaoItem {
 
   @@unique([inventarioId, loteId])
   @@index([produtoId])
+}
+
+// ───────────────────────── Documentos e licenças ─────────────────────────
+
+enum TipoDocumento {
+  AFE
+  LICENCA_SANITARIA
+  CBPAD
+  ALVARA
+  CERTIFICADO_BPF
+  AUTORIZACAO_COMERCIALIZACAO
+  REGISTRO_ANVISA
+  IFU
+  LAUDO
+  CONTRATO
+  OUTRO
+}
+
+enum EscopoDocumento {
+  EMPRESA
+  FORNECEDOR
+  FABRICANTE
+  PRODUTO
+}
+
+// Documento regulatório (licença, certificado, registro...). Nunca é apagado: vira inativo ou substituído (histórico regulatório).
+// CHECKs na migration: exatamente a FK do escopo preenchida (nenhuma para EMPRESA); validade >= emissão; não substitui a si mesmo.
+model Documento {
+  id               String             @id
+  tipo             TipoDocumento
+  titulo           String
+  numero           String?
+  orgaoEmissor     String?
+  emissao          DateTime?
+  validade         DateTime? // nulo = sem vencimento
+  escopo           EscopoDocumento
+  fornecedorId     String?
+  fornecedor       Fornecedor?        @relation(fields: [fornecedorId], references: [id], onDelete: Restrict)
+  fabricanteId     String?
+  fabricante       Fabricante?        @relation(fields: [fabricanteId], references: [id], onDelete: Restrict)
+  produtoId        String?
+  produto          Produto?           @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  observacao       String?
+  ativo            Boolean            @default(true)
+  // renovação: o documento antigo aponta para o novo que o substituiu
+  substituidoPorId String?            @unique
+  substituidoPor   Documento?         @relation("Renovacao", fields: [substituidoPorId], references: [id], onDelete: Restrict)
+  substituiu       Documento?         @relation("Renovacao")
+  substituidoEm    DateTime?
+  criadoEm         DateTime           @default(now())
+  criadoPor        String?
+  atualizadoEm     DateTime           @updatedAt
+  arquivos         DocumentoArquivo[]
+
+  @@index([escopo, tipo])
+  @@index([validade])
+  @@index([fornecedorId])
+  @@index([fabricanteId])
+  @@index([produtoId])
+}
+
+// Arquivo (versão) de um documento. O mais recente é o vigente. Caminho gerado pelo servidor (UUID), fora de public/.
+model DocumentoArquivo {
+  id          String    @id @default(cuid())
+  documentoId String
+  documento   Documento @relation(fields: [documentoId], references: [id])
+  nome        String // nome de exibição (sanitizado)
+  caminho     String // <uuid>.<ext> dentro de storage/uploads/documentos/<documentoId>/
+  mime        String
+  tamanho     Int
+  hash        String // sha256 hex
+  criadoEm    DateTime  @default(now())
+  criadoPor   String?
+
+  @@index([documentoId, criadoEm])
 }

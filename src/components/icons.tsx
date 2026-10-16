@@ -83,6 +83,7 @@ export const ICONE_ITEM: Record<string, IconName> = {
   "/qualidade/lotes": "pacote",
   "/qualidade/rastreabilidade": "busca",
   "/qualidade/registros": "livro",
+  "/qualidade/documentos": "escudo",
   "/compras/pedidos": "carrinho",
   "/compras/sugestao": "tendencia",
   "/financeiro": "painel",

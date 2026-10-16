@@ -2,6 +2,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, Card, PageHeader } from "@/components/ui";
+import { DocumentosCard } from "@/app/(app)/qualidade/documentos/documentos-card";
 import { ActionButton } from "@/components/form";
 import { podeDadosBancarios } from "../../_lib/permissoes";
 import { FornecedorForm } from "../fornecedor-form";
@@ -37,6 +38,7 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
       <Card>
         <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} podeBanco={podeDadosBancarios(user.perfil)} />
       </Card>
+      <DocumentosCard escopo="FORNECEDOR" id={id} perfil={user.perfil} />
     </>
   );
 }

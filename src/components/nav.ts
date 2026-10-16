@@ -41,6 +41,12 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    label: "Conformidade",
+    modulo: "Qualidade",
+    perfis: ["QUALIDADE", "ESTOQUE", "COMPRAS", "COMERCIAL"],
+    items: [{ href: "/qualidade/documentos", label: "Documentos e licenças" }],
+  },
+  {
     label: "Compras",
     perfis: ["COMPRAS", "ESTOQUE"],
     items: [
