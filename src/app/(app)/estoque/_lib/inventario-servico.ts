@@ -1,7 +1,7 @@
 import "server-only";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
-import { localDoHospital, movimentar } from "@/lib/estoque";
+import { localDoHospital, MARCA_COBRAR_HOSPITAL, movimentar } from "@/lib/estoque";
 import { toNumber } from "@/lib/format";
 import { calcularItem, planoMovimento, resumirInventario, validarResolucao, valorACobrar, type Resolucao } from "./inventario";
 
@@ -157,7 +157,8 @@ export async function fecharInventario(tx: Tx, id: number, resolucoes: Resolucao
         destinoId: plano.entrada ? inv.localId : null,
         custoUnit: unit,
         documento: docInventario(id),
-        observacao: `Inventário ${docInventario(id)}: ${resolucao === "COBRAR_HOSPITAL" ? "falta a cobrar do hospital" : d < 0 ? "falta" : "sobra"} (contado ${i.contado}, sistema ${i.saldoAtual})`,
+        // a marca no início tira a falta cobrada do DRE ("Perdas e ajustes de estoque"); ver MARCA_COBRAR_HOSPITAL
+        observacao: `${resolucao === "COBRAR_HOSPITAL" ? `${MARCA_COBRAR_HOSPITAL} — ` : ""}Inventário ${docInventario(id)}: ${resolucao === "COBRAR_HOSPITAL" ? "falta a cobrar do hospital" : d < 0 ? "falta" : "sobra"} (contado ${i.contado}, sistema ${i.saldoAtual})`,
         usuario,
       });
     }

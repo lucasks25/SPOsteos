@@ -176,14 +176,26 @@ export async function registrarGlosa(tx: Tx, input: GlosaInput) {
   return g;
 }
 
+/**
+ * Lê a glosa já com o título travado (FOR UPDATE): toda mudança de glosa (estorno, recurso) trava o título antes e relê
+ * a glosa sob a trava, então duas decisões simultâneas sobre a mesma glosa não passam (a segunda vê o estado novo).
+ */
+async function glosaTravada(tx: Tx, glosaId: string) {
+  const ref = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true } });
+  if (!ref) throw new FinanceiroError("Glosa não encontrada.");
+  await carregar(tx, "receber", ref.contaReceberId, true);
+  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true, recurso: true } });
+  if (!g) throw new FinanceiroError("Glosa não encontrada (foi estornada por outra pessoa).");
+  return g;
+}
+
 /** Estorna a glosa e reabre o título se ele deixar de estar quitado. */
 export async function estornarGlosa(tx: Tx, glosaId: string) {
-  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true, recurso: true } });
-  if (!g) throw new FinanceiroError("Glosa não encontrada.");
+  const g = await glosaTravada(tx, glosaId);
   if (g.recurso === "REVERTIDA") throw new FinanceiroError("Esta glosa já foi revertida (o título já foi reaberto). Ela fica no histórico.");
   await garantirMesAberto(tx, [g.data], "estornar uma glosa dessa data");
-  await carregar(tx, "receber", g.contaReceberId, true);
-  await tx.glosa.delete({ where: { id: glosaId } });
+  const r = await tx.glosa.deleteMany({ where: { id: glosaId, recurso: g.recurso } });
+  if (r.count === 0) throw new FinanceiroError("A glosa mudou enquanto você a estornava. Recarregue a página.");
   await recalcularTitulo(tx, "receber", g.contaReceberId);
   return g.contaReceberId;
 }
@@ -197,25 +209,28 @@ export type RecursoAcao = "RECORRER" | "REVERTER" | "MANTER";
  * REVERTER é a única que mexe em dinheiro: o hospital aceitou pagar, então a glosa deixa de abater o título
  * (recalcularTitulo ignora REVERTIDA) e ele reabre com o saldo de volta. É o mesmo efeito do estorno, com a
  * diferença de que o registro fica no histórico e no relatório. Por isso exige mês aberto na data da glosa
- * (como o estorno) e trava a linha do título. RECORRER e MANTER não alteram saldo nem DRE (sem trava de mês).
- * O desfecho só vale depois de registrar o recurso.
+ * (como o estorno). RECORRER e MANTER não alteram saldo nem DRE (sem trava de mês).
+ * Toda ação trava o título e só grava se a glosa ainda estiver no estado esperado (REVERTER e MANTER ao mesmo tempo:
+ * a segunda é recusada). O desfecho só vale depois de registrar o recurso.
  */
 export async function registrarRecurso(tx: Tx, glosaId: string, acao: RecursoAcao, quando: Date) {
-  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true, recurso: true } });
-  if (!g) throw new FinanceiroError("Glosa não encontrada.");
+  const g = await glosaTravada(tx, glosaId);
+  const mudar = async (de: "NENHUM" | "EM_RECURSO", para: "EM_RECURSO" | "MANTIDA" | "REVERTIDA") => {
+    const r = await tx.glosa.updateMany({ where: { id: glosaId, recurso: de }, data: { recurso: para, recursoEm: quando } });
+    if (r.count === 0) throw new FinanceiroError("A glosa mudou enquanto você registrava o recurso. Recarregue a página.");
+  };
   if (acao === "RECORRER") {
     if (g.recurso !== "NENHUM") throw new FinanceiroError("Esta glosa já teve recurso registrado.");
-    await tx.glosa.update({ where: { id: glosaId }, data: { recurso: "EM_RECURSO", recursoEm: quando } });
+    await mudar("NENHUM", "EM_RECURSO");
     return g.contaReceberId;
   }
   if (g.recurso !== "EM_RECURSO") throw new FinanceiroError("Registre primeiro o recurso (glosa em recurso) para informar o resultado.");
   if (acao === "MANTER") {
-    await tx.glosa.update({ where: { id: glosaId }, data: { recurso: "MANTIDA", recursoEm: quando } });
+    await mudar("EM_RECURSO", "MANTIDA");
     return g.contaReceberId;
   }
   await garantirMesAberto(tx, [g.data], "reverter uma glosa dessa data");
-  await carregar(tx, "receber", g.contaReceberId, true); // trava a linha do título
-  await tx.glosa.update({ where: { id: glosaId }, data: { recurso: "REVERTIDA", recursoEm: quando } });
+  await mudar("EM_RECURSO", "REVERTIDA");
   await recalcularTitulo(tx, "receber", g.contaReceberId);
   return g.contaReceberId;
 }

@@ -79,14 +79,14 @@ test("aprovação em lote: aprova as pendentes, ignora já aprovadas/pagas e rec
   await assert.rejects(tx((x) => aprovarContasPagarTx(x, Array.from({ length: 501 }, (_, i) => `id${i}`), "u")), /Máximo de 500/);
 });
 
-test("aprovação em lote com uma conta de mês fechado recusa o lote inteiro", async () => {
+test("aprovação em lote não depende de mês fechado (aprovar não muda DRE nem caixa; decisão M7 de 16/10/2026)", async () => {
   const ok = await pagarPendente();
   const fechada = await pagarPendente(100, DIA_FECHADO);
   await comMesFechado(async () => {
-    await assert.rejects(tx((x) => aprovarContasPagarTx(x, [ok.id, fechada.id], "u")), /está fechado/);
+    assert.equal(await tx((x) => aprovarContasPagarTx(x, [ok.id, fechada.id], "u")), 2);
   });
-  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: ok.id } })).aprovadoEm, null);
-  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: fechada.id } })).aprovadoEm, null);
+  assert.ok((await db.contaPagar.findUniqueOrThrow({ where: { id: ok.id } })).aprovadoEm);
+  assert.ok((await db.contaPagar.findUniqueOrThrow({ where: { id: fechada.id } })).aprovadoEm);
 });
 
 test("salvar conta a receber: cria, edita em aberto, recusa com baixa, grupo do plano e mês fechado", async () => {

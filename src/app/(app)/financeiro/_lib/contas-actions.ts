@@ -9,7 +9,7 @@ import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
 import { addDias, hojeUTC } from "@/lib/datas";
-import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx } from "./contas-servico";
+import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx, salvarContaTx } from "./contas-servico";
 import { estornarTransferencia, transferir } from "./titulos";
 
 const schemaConta = z.object({
@@ -40,11 +40,9 @@ export async function salvarConta(id: string | null, _: ActionState, fd: FormDat
   }
   let savedId: string;
   try {
-    const saved = id
-      ? await db.contaBancaria.update({ where: { id }, data: parsed.data })
-      : await db.contaBancaria.create({ data: parsed.data });
+    const saved = await db.$transaction((tx) => salvarContaTx(tx, id, parsed.data));
     savedId = saved.id;
-    await audit(user.id, id ? "editar" : "criar", "ContaBancaria", savedId, saved.nome);
+    await audit(user.id, id ? "editar" : "criar", "ContaBancaria", savedId, saved.mudancas ? `${saved.nome} — ${saved.mudancas}` : saved.nome);
   } catch (e) {
     return { error: errorMessage(e) };
   }

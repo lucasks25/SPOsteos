@@ -62,6 +62,13 @@ export async function movimentar(tx: Tx, m: MovimentoInput) {
   });
 }
 
+/**
+ * Marca no início da observação do AJUSTE de saída que o inventário de consignado grava quando a falta será cobrada do
+ * hospital. O DRE (financeiro/_lib/dre-dados.ts) não conta esse movimento como perda: o hospital responde pelo valor.
+ * A conta a receber NÃO é gerada automaticamente (depende de NF/negociação): o valor fica em InventarioConsignacaoItem.valorCobrar.
+ */
+export const MARCA_COBRAR_HOSPITAL = "COBRAR_HOSPITAL";
+
 /** Locais fixos criados pelo seed. */
 export const LOCAIS = {
   DEPOSITO: "local-deposito",

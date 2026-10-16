@@ -2,6 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 import { diaBrasilia, inicioDiaBrasilia } from "@/lib/datas";
+import { MARCA_COBRAR_HOSPITAL } from "@/lib/estoque";
 import { chaveMes, efeitosDaBaixa, type LinhaDre, type TipoPlano } from "./dre";
 import type { ChaveSistema } from "./plano";
 
@@ -46,7 +47,7 @@ export async function carregarLinhasDre(inicio: Date, fim: Date, centroCustoId: 
     db.pedidoVenda.findMany({ where: { status: "FATURADO", faturadoEm: { gte: instIni, lt: instFim }, ...centro }, select: { faturadoEm: true, custoTotal: true } }),
     db.movimento.findMany({
       where: { tipo: { in: ["PERDA", "AJUSTE"] }, criadoEm: { gte: instIni, lt: instFim } },
-      select: { criadoEm: true, quantidade: true, custoUnit: true, origemId: true, destinoId: true },
+      select: { tipo: true, criadoEm: true, quantidade: true, custoUnit: true, origemId: true, destinoId: true, documento: true, observacao: true },
     }),
     db.glosa.findMany({ where: { data: competencia, recurso: { not: "REVERTIDA" }, contaReceber: { is: centroCustoId ? { centroCustoId } : {} } }, select: { data: true, valor: true } }),
   ]);
@@ -62,7 +63,10 @@ export async function carregarLinhasDre(inicio: Date, fim: Date, centroCustoId: 
   for (const p of pedidos) out.push(daChave(mesBrasilia(p.faturadoEm!), "CMV", -toNumber(p.custoTotal)));
   // perda ou ajuste de saída (só origem) = custo; ajuste de entrada (só destino) = ganho; entre locais = neutro
   // movimento de estoque não tem centro de custo: com o filtro ligado ele fica de fora
+  // falta de inventário cobrada do hospital (AJUSTE de saída marcado) não é perda da distribuidora: fica de fora
+  const cobradaDoHospital = (m: (typeof movs)[number]) => m.tipo === "AJUSTE" && !!m.documento?.startsWith("INV-") && !!m.observacao?.startsWith(MARCA_COBRAR_HOSPITAL);
   for (const m of centroCustoId ? [] : movs) {
+    if (cobradaDoHospital(m)) continue;
     const valor = m.quantidade * toNumber(m.custoUnit);
     if (m.origemId && !m.destinoId) out.push(daChave(mesBrasilia(m.criadoEm), "PERDA_ESTOQUE", -valor));
     else if (m.destinoId && !m.origemId) out.push(daChave(mesBrasilia(m.criadoEm), "PERDA_ESTOQUE", valor));

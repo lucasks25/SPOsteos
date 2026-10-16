@@ -28,7 +28,7 @@ async function limpar() {
 }
 before(async () => {
   await limpar();
-  contaId = (await db.contaBancaria.create({ data: { nome: "TESTEDB cobranca", tipo: "BANCO", banco: "341", agencia: "0057", numero: "721920", titularCnpj: "12345678000195", titularNome: "EMPRESA TESTE", carteiraCobranca: "109", saldoInicial: 0 } })).id;
+  contaId = (await db.contaBancaria.create({ data: { nome: "TESTEDB cobranca", tipo: "BANCO", banco: "341", agencia: "0099", numero: "990012", titularCnpj: "12345678000195", titularNome: "EMPRESA TESTE", carteiraCobranca: "109", saldoInicial: 0 } })).id;
   hospitalId = (await db.hospital.create({ data: { razaoSocial: "TESTEDB Hospital", cnpj: "11222333000181", endereco: "Rua das Flores 100", bairro: "Centro", cep: "01001000", cidade: "Sao Paulo", uf: "SP" } })).id;
   semEndId = (await db.hospital.create({ data: { razaoSocial: "TESTEDB Sem Endereco", cnpj: "22333444000172" } })).id;
 });
@@ -43,7 +43,7 @@ const gerar = (ids: string[], baixaIds: string[] = []) => tx((x) => gerarRemessa
 const put = (s: string, ini: number, v: string) => s.slice(0, ini - 1) + v + s.slice(ini - 1 + v.length);
 const ddmmaa = (d: Date) => `${String(d.getUTCDate()).padStart(2, "0")}${String(d.getUTCMonth() + 1).padStart(2, "0")}${String(d.getUTCFullYear()).slice(2)}`;
 const v13 = (n: number) => String(Math.round(n * 100)).padStart(13, "0");
-const BEN = { agencia: "0057", conta: "72192", carteira: "109" as const };
+const BEN = { agencia: "0099", conta: "99001", carteira: "109" as const };
 
 /** retorno a partir da remessa: um evento por registro tipo 1 (na ordem), com ocorrência e campos pedidos. */
 function simular(remessa: string, eventos: { nn: string; cod: string; extra?: [number, string][] }[]) {
@@ -191,6 +191,6 @@ test("retorno de conta não cadastrada para cobrança é recusado", async () => 
   const r = await gerar([t.id]);
   const remessa = (await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId } })).conteudo;
   const nn = (await lerT(t.id)).nossoNumero!;
-  const txt = simular(remessa, [{ nn, cod: "02" }]).replace(/^(.{26})0057/, "$10099");
-  await assert.rejects(aplicar(txt), /agência 0099|não é uma conta/);
+  const txt = simular(remessa, [{ nn, cod: "02" }]).replace(/^(.{26})0099/, "$10098");
+  await assert.rejects(aplicar(txt), /agência 0098|não é uma conta/);
 });

@@ -281,3 +281,27 @@ Também: regra de registrar NF extraída para `comercial/_lib/nf.ts` e testada.
 
 **UX:** máscaras (CNPJ/CPF/CEP/telefone), campo de seleção com busca (mais de 12 opções), diálogo de confirmação próprio, avisos (toast), alerta de alterações não salvas; busca global de dados, "+ Novo" por perfil, sino de pendências (`lib/pendencias.ts`) e atalhos de teclado (Ctrl+K, G+letra, N, ?); módulo Gestão (curva ABC, giro/cobertura, margem, vencimentos, vendas por mês, com CSV e ordenação por coluna).
 Limitações conhecidas: agência e conta bancária aceitam só dígitos (hífen é removido ao digitar); aviso de alterações não salvas só vale ao fechar a aba; faltou conferir no navegador o modo escuro do sino e o atalho G+letra.
+
+## 18. Correção dos defeitos da revisão de consistência financeira (16/10/2026)
+
+Os 10 testes "BUG" de `tests/negocio-db/financeiro-invariantes.test.ts` agora passam e foram renomeados para a regra que provam. Regras novas em `tests/negocio-db/financeiro-correcoes.test.ts` (6) e `tests/financeiro/boleto-titulo.test.ts` (3).
+
+**Altos**
+- **A1 conciliação concorrente:** `linhaPendente` trava a `ExtratoLinha` (`FOR UPDATE`, sempre antes do título) e `ligar` só grava se `lancamentoId` ainda for nulo ("A linha já foi conciliada.").
+- **A2 retorno SISPAG em paralelo:** trava o `RemessaPagamentoItem` antes de ler; o segundo processamento vê PAGO e pula; a atualização do item é condicional (`status <> PAGO`).
+- **A3 aprovação:** `alterarContaPagarGeradaTx` zera `aprovadoEm/aprovadoPor` quando muda valor, fornecedor ou vencimento (a conta volta para `/financeiro/aprovacoes`; a remessa já recusa conta sem aprovação). Descrição e conta do plano não derrubam.
+- **A4 DRE do estorno de consumo:** `removerConsumoTx` grava RETORNO (antes AJUSTE só com destino = "ganho" no DRE).
+
+**Médios**
+- **M1 glosa:** recurso e estorno travam o título, relêem a glosa sob a trava e gravam condicionado ao `recurso` esperado.
+- **M2/M3:** conta a pagar em remessa SISPAG ENVIADO/AGENDADO não é editada nem cancelada; título a receber com boleto ENVIADO/REGISTRADO/BAIXA_ENVIADA não muda valor, vencimento nem hospital (cancelar continua permitido). As duas travam a linha do título.
+- **M4 retorno de cobrança:** recusa se mais de uma conta ativa casar com agência/conta; índice único parcial normalizado (só dígitos, sem zeros à esquerda) em `ContaBancaria` ativa tipo BANCO. Cadastro e reativação de conta dão mensagem clara. A fixture de `cobranca.test.ts` usava a mesma agência/conta da conta DEMO (0057/72192-0): passou a 0099/99001-2.
+- **M5 fluxo:** previsto conta vencimentos a partir de `max(de, hoje)`; o que venceu antes de hoje fica só em "atrasados".
+- **M6 (decisão: a mais segura) inventário "cobrar do hospital":** não gera conta a receber (depende de NF/negociação). O AJUSTE de saída leva a marca `COBRAR_HOSPITAL — ` no início da observação (documento `INV-n`) e o DRE não o conta como perda (`MARCA_COBRAR_HOSPITAL` em `lib/estoque.ts`). A lista de inventários ganhou a coluna/filtro "A cobrar" (só leitura) e o FINANCEIRO passou a ver a lista e o detalhe do inventário (`/estoque/inventario?cobrar=1`), sem editar.
+- **M7 (decisão):** aprovar conta a pagar não confere mês fechado (não muda DRE nem caixa; a baixa é que respeita o fechamento).
+
+**Baixos:** saldo inicial travado em conta com lançamentos e auditoria "campo: antes → depois" (`salvarContaTx`); retorno SISPAG "pago" com valor efetivo zero vira DIV (não assume o valor da remessa); trocar centro de custo de título com baixa/glosa em mês fechado é recusado.
+
+**Tela:** B1 boleto do fornecedor tem de ter valor e vencimento (fator) iguais aos do título (`divergenciaBoleto`, na criação/edição e de novo na geração da remessa SISPAG; boleto sem valor impresso não é conferido); o detalhe da conta a pagar mostra linha digitável e código de barras. B2 o formulário de baixa limpa após salvar (o valor volta ao saldo novo). B3 conciliação avisa (diálogo) ao lançar avulso com título aberto de mesmo valor e ao baixar título quando já há lançamento igual pendente.
+
+**Migrations:** `20261016190000_estornos_fora_do_dre` (só dados: AJUSTE `CIR-%`/"estorno" → RETORNO; marca nas faltas cobradas de inventário) — **altera o DRE ("Perdas e ajustes de estoque") dos meses afetados, inclusive fechados**; na base de desenvolvimento, 0 linhas. `20261016190100_conta_bancaria_agencia_numero_unica` (índice único parcial por expressão, fora do schema.prisma; o `migrate diff` saiu vazio depois de aplicado; se a migration falhar por duplicata, inative a conta repetida). Sem mudança no schema, `prisma generate` não foi necessário.

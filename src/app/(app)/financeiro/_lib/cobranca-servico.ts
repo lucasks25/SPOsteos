@@ -125,10 +125,14 @@ export async function aplicarRetornoCobrancaTx(tx: Tx, ret: RetornoCobranca, con
   const ag = ret.agencia.replace(/^0+/, "");
   const cc = ret.conta.replace(/^0+/, "");
   const contas = await tx.contaBancaria.findMany({ where: { carteiraCobranca: "109", ativo: true } });
-  const conta = contas.find((c) => {
+  const candidatas = contas.filter((c) => {
     const cd = contaEDac(c.numero);
     return cd && (c.agencia ?? "").replace(/\D/g, "").replace(/^0+/, "") === ag && cd.conta.replace(/^0+/, "") === cc && (!ret.dac || cd.dac === ret.dac);
   });
+  // Duas contas ativas com a mesma agência/conta tornariam a baixa ambígua (o nosso número é por conta). O índice único
+  // "ContaBancaria_banco_agencia_numero_ativa_key" impede o cadastro; esta checagem cobre bases antigas.
+  if (candidatas.length > 1) throw new ErroNegocio(`Há ${candidatas.length} contas ativas com a agência ${ret.agencia} conta ${ret.conta}-${ret.dac} (${candidatas.map((c) => c.nome).join(", ")}). Inative a duplicada antes de importar o retorno.`);
+  const conta = candidatas[0];
   if (!conta) throw new ErroNegocio(`O retorno é da agência ${ret.agencia} conta ${ret.conta}-${ret.dac}, que não é uma conta com cobrança habilitada neste sistema.`);
 
   const remessas = new Set<number>();
