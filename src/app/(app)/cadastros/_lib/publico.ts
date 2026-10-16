@@ -24,6 +24,12 @@ export async function opcoesConvenios(): Promise<Opcao[]> {
   return rows.map((c) => ({ value: c.id, label: c.nome }));
 }
 
+/** Linhas de produto por ordem. Ativas por padrão; `apenasAtivas=false` para filtros de relatório (linha inativa ainda tem histórico). */
+export async function opcoesLinhas(apenasAtivas = true): Promise<Opcao[]> {
+  const rows = await db.linhaProduto.findMany({ where: apenasAtivas ? { ativo: true } : undefined, orderBy: [{ ordem: "asc" }, { nome: "asc" }] });
+  return rows.map((l) => ({ value: l.id, label: l.nome }));
+}
+
 export async function opcoesProcedimentos(): Promise<Opcao[]> {
   const rows = await db.procedimento.findMany({ orderBy: { descricao: "asc" } });
   return rows.map((p) => ({ value: p.id, label: p.codigoTuss ? `${p.codigoTuss} — ${p.descricao}` : p.descricao }));

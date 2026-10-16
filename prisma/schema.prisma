@@ -181,6 +181,16 @@ model Representante {
   pedidos         PedidoVenda[]
 }
 
+model LinhaProduto {
+  id       String    @id @default(cuid())
+  codigo   String    @unique
+  nome     String
+  grupo    String // categoria do site: Implantáveis, Biológicos, Descartáveis, Instrumentais
+  ativo    Boolean   @default(true)
+  ordem    Int       @default(0)
+  produtos Produto[]
+}
+
 model Produto {
   id                String                      @id @default(cuid())
   codigo            String                      @unique
@@ -188,6 +198,9 @@ model Produto {
   referencia        String? // referência do fabricante
   fabricanteId      String?
   fabricante        Fabricante?                 @relation(fields: [fabricanteId], references: [id])
+  // Linha de produto (dimensão de gestão: vendas, margem e comissão por linha). Opcional: sem linha = "Sem linha".
+  linhaId           String?
+  linha             LinhaProduto?               @relation(fields: [linhaId], references: [id], onDelete: Restrict)
   registroAnvisa    String?
   validadeRegistro  DateTime?
   classeRisco       String? // I, II, III, IV

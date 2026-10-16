@@ -39,6 +39,7 @@ export async function limparTudo() {
   await db.tabelaPrecoItem.deleteMany({ where: prod });
   await db.lote.deleteMany({ where: prod });
   await db.produto.deleteMany({ where: { codigo: { startsWith: P } } });
+  await db.linhaProduto.deleteMany({ where: { codigo: { startsWith: P } } });
   await db.localEstoque.deleteMany({ where: { hospital: hosp } });
   await db.hospital.deleteMany({ where: hosp });
   await db.tabelaPreco.deleteMany({ where: { nome: { startsWith: P } } });

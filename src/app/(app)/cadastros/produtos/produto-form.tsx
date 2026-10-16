@@ -3,7 +3,7 @@ import { inputDate } from "@/lib/format";
 import type { Produto } from "@/generated/prisma/client";
 import { salvarProduto } from "./actions";
 
-export function ProdutoForm({ produto, fabricantes, podePreco = false }: { produto?: Produto; fabricantes: { id: string; nome: string }[]; podePreco?: boolean }) {
+export function ProdutoForm({ produto, fabricantes, linhas = [], podePreco = false }: { produto?: Produto; fabricantes: { id: string; nome: string }[]; linhas?: { value: string; label: string }[]; podePreco?: boolean }) {
   const p = produto;
   return (
     <Form action={salvarProduto.bind(null, p?.id ?? null)} redirectTo="/cadastros/produtos">
@@ -12,6 +12,7 @@ export function ProdutoForm({ produto, fabricantes, podePreco = false }: { produ
         <Field label="Descrição *" name="descricao" defaultValue={p?.descricao} required className="sm:col-span-2" />
         <Field label="Referência do fabricante" name="referencia" defaultValue={p?.referencia ?? ""} />
         <Select label="Fabricante" name="fabricanteId" defaultValue={p?.fabricanteId ?? ""} options={fabricantes.map((f) => ({ value: f.id, label: f.nome }))} />
+        <Select label="Linha de produto" name="linhaId" defaultValue={p?.linhaId ?? ""} options={linhas} hint="Para vendas, margem e comissão por linha" />
         <Field label="Unidade *" name="unidade" defaultValue={p?.unidade ?? "UN"} required />
         <Field label="Registro ANVISA" name="registroAnvisa" defaultValue={p?.registroAnvisa ?? ""} />
         <Field label="Validade do registro" name="validadeRegistro" type="date" defaultValue={inputDate(p?.validadeRegistro)} />

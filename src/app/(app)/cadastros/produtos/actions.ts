@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { argIdOuNulo } from "@/lib/auth-args";
 import { PERFIS_PRODUTO } from "../_lib/acoes";
 import { podeAlterarPreco } from "../_lib/permissoes";
+import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 
 const schema = z.object({
@@ -14,6 +15,7 @@ const schema = z.object({
   descricao: zf.text(),
   referencia: zf.optText(),
   fabricanteId: zf.optText(),
+  linhaId: zf.optText(),
   registroAnvisa: zf.optText(),
   validadeRegistro: zf.optDate(),
   classeRisco: zf.optText(),
@@ -38,6 +40,12 @@ export async function salvarProduto(id: string | null, _: ActionState, fd: FormD
     else data.precoBase = 0;
   }
   try {
+    if (data.linhaId) {
+      // linha inativa só vale se o produto já estava nela (a edição não "perde" a linha); para trocar, só linha ativa
+      const [linha, atual] = await Promise.all([db.linhaProduto.findUnique({ where: { id: data.linhaId } }), id ? db.produto.findUnique({ where: { id }, select: { linhaId: true } }) : null]);
+      if (!linha) throw new ErroNegocio("Linha de produto não encontrada.");
+      if (!linha.ativo && atual?.linhaId !== linha.id) throw new ErroNegocio("Essa linha está inativa. Escolha uma linha ativa.");
+    }
     const saved = id
       ? await db.produto.update({ where: { id }, data: data as typeof parsed.data })
       : await db.produto.create({ data: data as typeof parsed.data });

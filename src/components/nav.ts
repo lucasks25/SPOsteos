@@ -129,6 +129,7 @@ export const NAV: NavGroup[] = [
     label: "Cadastros",
     items: [
       { href: "/cadastros/produtos", label: "Produtos" },
+      { href: "/cadastros/linhas", label: "Linhas de produto" },
       { href: "/cadastros/fabricantes", label: "Fabricantes" },
       { href: "/cadastros/fornecedores", label: "Fornecedores" },
       { href: "/cadastros/hospitais", label: "Hospitais" },
