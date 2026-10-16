@@ -204,13 +204,3 @@ export async function contarAlertas(hoje: Date) {
   ]);
   return { vencidos, vencendo30, total: vencidos + vencendo30 };
 }
-
-/** Documentos vigentes de um cadastro (fornecedor, fabricante ou produto) para o cartão "Documentos". */
-export function documentosDoCadastro(escopo: Exclude<EscopoDoc, "EMPRESA">, id: string) {
-  const fk = { FORNECEDOR: "fornecedorId", FABRICANTE: "fabricanteId", PRODUTO: "produtoId" }[escopo];
-  return db.documento.findMany({
-    where: { ...VIGENTES, escopo, [fk]: id },
-    orderBy: [{ validade: { sort: "asc", nulls: "last" } }, { titulo: "asc" }],
-    select: { id: true, tipo: true, titulo: true, numero: true, validade: true },
-  });
-}

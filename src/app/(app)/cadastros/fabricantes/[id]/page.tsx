@@ -1,7 +1,8 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { DocumentosCard } from "@/app/(app)/qualidade/documentos/documentos-card";
+import { podeIrParaDocumentos } from "../../_lib/permissoes";
+import { VerDocumentos } from "../../_lib/link-documentos";
 import { Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "@/components/form";
 import { FabricanteForm } from "../fabricante-form";
@@ -28,7 +29,7 @@ export default async function EditarFabricantePage({ params }: { params: Promise
       <Card>
         <FabricanteForm fabricante={fabricante} />
       </Card>
-      <DocumentosCard escopo="FABRICANTE" id={id} perfil={user.perfil} />
+      {podeIrParaDocumentos(user.perfil) && <VerDocumentos campo="fabricanteId" id={id} />}
     </>
   );
 }

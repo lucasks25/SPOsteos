@@ -2,8 +2,8 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Card, PageHeader } from "@/components/ui";
-import { DocumentosCard } from "@/app/(app)/qualidade/documentos/documentos-card";
-import { podeAlterarPreco } from "../../_lib/permissoes";
+import { VerDocumentos } from "../../_lib/link-documentos";
+import { podeAlterarPreco, podeIrParaDocumentos } from "../../_lib/permissoes";
 import { ProdutoForm } from "../produto-form";
 
 export default async function EditarProdutoPage({ params }: { params: Promise<{ id: string }> }) {
@@ -20,7 +20,7 @@ export default async function EditarProdutoPage({ params }: { params: Promise<{ 
       <Card>
         <ProdutoForm produto={produto} fabricantes={fabricantes} podePreco={podeAlterarPreco(user.perfil)} />
       </Card>
-      <DocumentosCard escopo="PRODUTO" id={id} perfil={user.perfil} />
+      {podeIrParaDocumentos(user.perfil) && <VerDocumentos campo="produtoId" id={id} />}
     </>
   );
 }

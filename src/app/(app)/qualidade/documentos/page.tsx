@@ -26,10 +26,14 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
     q: um(sp.q)?.trim().slice(0, 80) || undefined,
     inativos: um(sp.inativos) === "1",
   };
-  const filtrado = !!(f.escopo || f.tipo || f.situacao || f.q || f.inativos);
+  // Vínculo (vindo dos cadastros por querystring): fornecedor, fabricante ou produto.
+  const vinculo = (["fornecedorId", "fabricanteId", "produtoId"] as const)
+    .map((campo) => ({ campo, id: um(sp[campo])?.slice(0, 40) }))
+    .find((v) => v.id);
+  const filtrado = !!(f.escopo || f.tipo || f.situacao || f.q || f.inativos || vinculo);
   const [docs, cont] = await Promise.all([
     db.documento.findMany({
-      where: whereLista(f, hoje),
+      where: { ...whereLista(f, hoje), ...(vinculo ? { [vinculo.campo]: vinculo.id } : {}) },
       orderBy: [{ validade: { sort: "asc", nulls: "last" } }, { titulo: "asc" }],
       take: 300,
       include: {
@@ -42,6 +46,9 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
     contarPorSituacao(hoje),
   ]);
   const pode = podeEditarDocumentos(user.perfil);
+  const novoHref = vinculo
+    ? `/qualidade/documentos/novo?escopo=${{ fornecedorId: "FORNECEDOR", fabricanteId: "FABRICANTE", produtoId: "PRODUTO" }[vinculo.campo]}&${vinculo.campo}=${encodeURIComponent(vinculo.id!)}`
+    : "/qualidade/documentos/novo";
   const alvo = (d: (typeof docs)[number]) => d.fornecedor ? (d.fornecedor.nomeFantasia ?? d.fornecedor.razaoSocial) : d.fabricante ? d.fabricante.nome : d.produto ? `${d.produto.codigo} · ${d.produto.descricao}` : "Empresa";
 
   return (
@@ -49,7 +56,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
       <PageHeader
         title="Documentos e licenças"
         subtitle="AFE, licenças, certificados e registros da empresa, dos fornecedores, dos fabricantes e dos produtos, com alerta de vencimento."
-        actions={pode && <LinkButton href="/qualidade/documentos/novo" icon="mais">Novo documento</LinkButton>}
+        actions={pode && <LinkButton href={novoHref} icon="mais">Novo documento</LinkButton>}
       />
       <KpiGrid cols={4}>
         <Stat label="Vencidos" value={cont.VENCIDO} tone={cont.VENCIDO ? "danger" : "default"} hint="exigem renovação" />
@@ -58,6 +65,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         <Stat label="Sem vencimento" value={cont.SEM_VENCIMENTO} />
       </KpiGrid>
       <FilterBar>
+        {vinculo && <input type="hidden" name={vinculo.campo} value={vinculo.id} />}
         <label className="block">
           <span className="mb-1 block text-xs text-slate-700">Busca</span>
           <input name="q" defaultValue={f.q} placeholder="Título, número, órgão ou vínculo" className={`${inputCls} w-64`} />

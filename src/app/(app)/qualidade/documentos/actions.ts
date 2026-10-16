@@ -31,9 +31,6 @@ const schemaNovo = z.object({
 function revalidar(id?: string) {
   revalidatePath("/qualidade/documentos");
   if (id) revalidatePath(`/qualidade/documentos/${id}`);
-  revalidatePath("/cadastros/fornecedores/[id]", "page");
-  revalidatePath("/cadastros/fabricantes/[id]", "page");
-  revalidatePath("/cadastros/produtos/[id]", "page");
   revalidatePath("/");
 }
 
