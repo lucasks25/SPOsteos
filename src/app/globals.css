@@ -1,8 +1,8 @@
 @import "tailwindcss";
 
 /*
- * Tema "Bling médico": verde-petróleo da marca, acento menta, neutros claros com leve tom verde,
- * cartões brancos de raio grande, botões em pílula. Especificação e regras: docs/DESIGN-SYSTEM.md.
+ * Tema SP OSTEOS: azul e roxo da marca, menu azul-marinho, neutros frios; layout de ERP denso (bordas finas,
+ * raios de 6–8 px, sem sombra em cartões internos). Especificação e regras: docs/DESIGN-SYSTEM.md.
  *   estilos/tokens.css      cores (claro e escuro), fontes, raios, tamanhos e sombras
  *   estilos/base.css        corpo, foco, seleção, rolagem e elementos nativos
  *   estilos/componentes.css conteúdo, faixa de indicadores, tabela com cabeçalho fixo, barra lateral, impressão
