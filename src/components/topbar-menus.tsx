@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyEvent, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
-import { atalhosDoPerfil } from "@/components/novo-atalhos";
 
-export type MenuId = "novo" | "ajuda" | "sino";
+export type MenuId = "ajuda" | "sino";
 
 /** Dropdown da barra superior: fecha com Esc (devolvendo o foco ao botão) e ao clicar fora. */
 function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", children }: {
@@ -61,49 +60,12 @@ function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", chil
 
 const botaoIcone = "relative flex h-8 w-8 items-center justify-center rounded border border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-teal-700";
 
-/** Botão azul "+ Novo": atalhos de criação conforme o perfil. */
-export function MenuNovo({ perfil, aberto, setAberto }: { perfil: string; aberto: boolean; setAberto: (a: boolean) => void }) {
-  const itens = atalhosDoPerfil(perfil);
-  const primeiro = useRef<HTMLAnchorElement>(null);
-  useEffect(() => {
-    if (aberto) primeiro.current?.focus();
-  }, [aberto]);
-  if (itens.length === 0) return null;
-  return (
-    <Suspenso
-      id="novo"
-      aberto={aberto}
-      setAberto={setAberto}
-      rotulo="Criar novo"
-      botao={() => (
-        <button type="button" data-gatilho onClick={() => setAberto(!aberto)} aria-haspopup="dialog" aria-expanded={aberto} aria-controls="menu-novo" className="flex h-8 items-center gap-1.5 rounded bg-teal-700 px-2.5 text-[13px] font-semibold text-white hover:bg-teal-800 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-teal-700">
-          <Icon name="mais" size={15} />
-          <span className="hidden sm:inline">Novo</span>
-          <span className="sr-only sm:hidden">Novo</span>
-        </button>
-      )}
-    >
-      <ul className="py-1">
-        {itens.map((a, n) => (
-          <li key={a.href}>
-            <Link ref={n === 0 ? primeiro : undefined} data-item href={a.href} onClick={() => setAberto(false)} className="flex items-center gap-2.5 px-3 py-1.5 text-[13px] text-slate-700 hover:bg-slate-50 focus:bg-teal-50 focus:outline-none">
-              <Icon name="mais" size={14} className="text-slate-500" />
-              {a.label}
-            </Link>
-          </li>
-        ))}
-      </ul>
-    </Suspenso>
-  );
-}
-
 const ATALHOS_AJUDA: [string, string][] = [
   ["Ctrl K", "Buscar telas e dados"],
   ["G depois P", "Ir para o Painel"],
   ["G depois C", "Ir para Comercial"],
   ["G depois E", "Ir para Estoque"],
   ["G depois F", "Ir para Financeiro"],
-  ["N", "Abrir o menu Novo"],
   ["?", "Abrir esta ajuda"],
   ["Esc", "Fechar menu ou busca"],
 ];
@@ -240,7 +202,7 @@ export function Sino({ aberto, setAberto }: { aberto: boolean; setAberto: (a: bo
   );
 }
 
-/** Atalhos globais: G depois P/C/E/F navega, N abre "Novo", ? abre a ajuda. Ignora campos de digitação. */
+/** Atalhos globais: G depois P/C/E/F navega, ? abre a ajuda. Ignora campos de digitação. */
 export function useAtalhosGlobais({ irPara, abrir }: { irPara: (letra: string) => void; abrir: (m: MenuId) => void }) {
   const cbs = useRef({ irPara, abrir });
   useEffect(() => {
@@ -262,10 +224,7 @@ export function useAtalhosGlobais({ irPara, abrir }: { irPara: (letra: string) =
         }
       }
       if (k === "g") g = Date.now();
-      else if (k === "n") {
-        e.preventDefault();
-        cbs.current.abrir("novo");
-      } else if (e.key === "?") {
+      else if (e.key === "?") {
         e.preventDefault();
         cbs.current.abrir("ajuda");
       }

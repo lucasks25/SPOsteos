@@ -5,9 +5,9 @@ import { usePathname, useRouter } from "next/navigation";
 import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { Icon } from "@/components/icons";
 import { BuscaGlobal } from "@/components/busca-global";
-import { MenuAjuda, MenuNovo, Sino, useAtalhosGlobais, type MenuId } from "@/components/topbar-menus";
+import { MenuAjuda, Sino, useAtalhosGlobais, type MenuId } from "@/components/topbar-menus";
 import type { NavGroup } from "@/components/nav";
-import { definirTema } from "@/app/tema-actions";
+import { definirTema } from "@/lib/tema-actions";
 
 type Modulo = { nome: string; grupos: NavGroup[]; href: string };
 
@@ -151,7 +151,6 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
             <BuscaGlobal groups={groups} />
           </div>
           <div className="flex shrink-0 items-center gap-1">
-            <MenuNovo perfil={perfil} aberto={menu === "novo"} setAberto={alternar("novo")} />
             <MenuAjuda aberto={menu === "ajuda"} setAberto={alternar("ajuda")} />
             <Sino aberto={menu === "sino"} setAberto={alternar("sino")} />
           </div>

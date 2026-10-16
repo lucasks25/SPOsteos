@@ -1,7 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { criarLimitador, numeroDoDocumento, validarConsulta } from "@/lib/busca-util";
-import { atalhosDoPerfil } from "@/components/novo-atalhos";
 
 test("validarConsulta: mínimo 2, máximo 60, normaliza espaços", () => {
   assert.equal(validarConsulta(null), null);
@@ -28,13 +27,4 @@ test("limitador: 30 a cada 10 s por chave, janela deslizante", () => {
   assert.equal(ok("u1", 5000), false);
   assert.equal(ok("u2", 5000), true, "outro usuário não é afetado");
   assert.equal(ok("u1", 11_500), true, "libera depois da janela");
-});
-
-test("atalhos Novo respeitam o perfil", () => {
-  const rotulos = (p: string) => atalhosDoPerfil(p).map((a) => a.label);
-  assert.equal(atalhosDoPerfil("ADMIN").length, 8);
-  assert.deepEqual(rotulos("FINANCEIRO"), ["Novo título a receber", "Novo título a pagar", "Novo hospital"]);
-  assert.ok(rotulos("COMERCIAL").includes("Nova cirurgia"));
-  assert.ok(!rotulos("COMPRAS").includes("Nova cirurgia"));
-  assert.ok(rotulos("ESTOQUE").includes("Nova remessa"));
 });
