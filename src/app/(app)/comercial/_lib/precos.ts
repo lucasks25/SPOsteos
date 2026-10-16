@@ -1,4 +1,5 @@
 import "server-only";
+import { diaBrasilia } from "@/app/(app)/financeiro/_lib/datas";
 import { db, type Tx } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 
@@ -6,9 +7,11 @@ type Client = Tx | typeof db;
 
 /** A tabela está vigente na data de referência? */
 export function tabelaVigente(t: { vigenciaInicio: Date | null; vigenciaFim: Date | null }, ref = new Date()) {
-  if (t.vigenciaInicio && t.vigenciaInicio.getTime() > ref.getTime()) return false;
-  // vigenciaFim é uma data (00:00 UTC): vale até o fim desse dia
-  if (t.vigenciaFim && t.vigenciaFim.getTime() + 24 * 60 * 60 * 1000 <= ref.getTime()) return false;
+  // início e fim são datas (meia-noite UTC do dia em Brasília): compara por DIA de Brasília, não pelo instante UTC
+  // (entre 21h e 24h de Brasília o dia UTC já é o seguinte). A tabela vale até o fim do último dia.
+  const dia = diaBrasilia(ref);
+  if (t.vigenciaInicio && t.vigenciaInicio.getTime() > dia.getTime()) return false;
+  if (t.vigenciaFim && t.vigenciaFim.getTime() < dia.getTime()) return false;
   return true;
 }
 

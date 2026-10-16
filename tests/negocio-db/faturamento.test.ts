@@ -122,3 +122,12 @@ test("registrar NF: pedido vira FATURADO, nasce a conta a receber (RECEITA_VENDA
   await assert.rejects(db.$transaction((tx) => registrarNfTx(tx, pv.id, "NF-TESTE-2", venc)), /pedidos abertos/);
   assert.equal(await db.contaReceber.count({ where: { pedidoId: pv.id } }), 1);
 });
+
+test("vigência da tabela por dia de Brasília: 21h20 de 15/10 (00h20 UTC de 16/10) ainda é 15/10", () => {
+  const ref = new Date("2026-10-16T00:20:00Z");
+  const d = (x: string) => new Date(`${x}T00:00:00Z`);
+  assert.equal(tabelaVigente({ vigenciaInicio: d("2026-10-16"), vigenciaFim: null }, ref), false); // começa amanhã
+  assert.equal(tabelaVigente({ vigenciaInicio: d("2026-10-15"), vigenciaFim: null }, ref), true);
+  assert.equal(tabelaVigente({ vigenciaInicio: null, vigenciaFim: d("2026-10-15") }, ref), true); // vale até o fim de hoje
+  assert.equal(tabelaVigente({ vigenciaInicio: null, vigenciaFim: d("2026-10-14") }, ref), false);
+});

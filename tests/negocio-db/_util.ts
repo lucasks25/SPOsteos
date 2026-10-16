@@ -5,12 +5,12 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/lib/db";
 
+import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+
 export const P = "TESTEDB";
 export const num = (v: unknown) => Number(String(v ?? 0));
-export const dia = (offsetDias: number) => {
-  const h = new Date(new Date().toISOString().slice(0, 10));
-  return new Date(h.getTime() + offsetDias * 86400000);
-};
+/** Dia de hoje em Brasília (como o sistema) mais `offsetDias`, à meia-noite UTC. O dia UTC diverge entre 21h e 24h de Brasília. */
+export const dia = (offsetDias: number) => new Date(hojeUTC().getTime() + offsetDias * 86400000);
 let seq = 0;
 export const uid = () => `${Date.now().toString(36)}${(seq++).toString(36)}`;
 
@@ -24,6 +24,7 @@ export async function limparTudo() {
   await db.contaPagar.deleteMany({ where: { fornecedor: { razaoSocial: { startsWith: P } } } });
   await db.contaPagar.deleteMany({ where: { descricao: { startsWith: P } } });
   await db.inventarioConsignacao.deleteMany({ where: { hospital: hosp } }); // itens em cascata
+  await db.recolhimento.deleteMany({ where: { OR: [{ lotes: { some: { lote: prod } } }, { motivo: { startsWith: P } }] } }); // lotes, alvos, pacientes e ações em cascata
   await db.remessaItem.deleteMany({ where: prod });
   await db.remessa.deleteMany({ where: { OR: [{ local: { hospital: hosp } }, { cirurgia: { paciente: { startsWith: P } } }] } });
   await db.pedidoVenda.deleteMany({ where: { hospital: hosp } });

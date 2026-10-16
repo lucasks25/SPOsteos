@@ -41,6 +41,13 @@ export const NAV: NavGroup[] = [
     ],
   },
   {
+    // Qualidade e Estoque operam; o Comercial só consulta (sem dados de paciente)
+    label: "Ação de campo",
+    modulo: "Qualidade",
+    perfis: ["QUALIDADE", "ESTOQUE", "COMERCIAL"],
+    items: [{ href: "/qualidade/recolhimentos", label: "Recolhimentos" }],
+  },
+  {
     label: "Conformidade",
     modulo: "Qualidade",
     perfis: ["QUALIDADE", "ESTOQUE", "COMPRAS", "COMERCIAL"],

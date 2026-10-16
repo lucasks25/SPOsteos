@@ -174,6 +174,7 @@ export function StatusBadge({ status }: { status: string }) {
     ABERTA: "yellow", ENVIADA: "blue", CONFERIDA: "green",
     ABERTO: "yellow", PARCIAL: "blue", RECEBIDO: "green", FATURADO: "green", CANCELADO: "gray", PAGO: "green",
     CONTADO: "blue", FECHADO: "green",
+    EM_ANDAMENTO: "blue", CONCLUIDO: "green", PENDENTE: "yellow", COMUNICADO: "blue", RECOLHIDO: "green", SEM_SALDO: "gray",
     RASCUNHO: "gray", ENVIADO: "blue", APROVADO: "green", RECUSADO: "red",
   };
   return <Badge color={map[status] ?? "gray"}>{status.replaceAll("_", " ").toLowerCase()}</Badge>;

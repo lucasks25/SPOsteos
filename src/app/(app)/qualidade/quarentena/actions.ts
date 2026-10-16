@@ -10,6 +10,8 @@ import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/form
 import { date } from "@/lib/format";
 import { hojeUTC, PERFIS_QUALIDADE } from "../_lib/datas";
 import { ErroNegocio } from "@/lib/erros";
+import { recolhimentoAtivoDoLote } from "../_lib/recolhimento-servico";
+import { docRecolhimento } from "../_lib/recolhimento";
 
 const schema = z.object({
   resultado: z.enum(["LIBERADO", "NAO_CONFORME", "BLOQUEADO"], { error: "Selecione o resultado" }),
@@ -37,6 +39,8 @@ export async function inspecionarLote(loteId: string, _: ActionState, fd: FormDa
     await db.$transaction(async (tx) => {
       const lote = await tx.lote.findUnique({ where: { id: loteId }, include: { produto: true } });
       if (!lote) throw new ErroNegocio("Lote não encontrado.");
+      const rec = await recolhimentoAtivoDoLote(tx, loteId);
+      if (rec) throw new ErroNegocio(`Lote em recolhimento (${docRecolhimento(rec)}): não pode ser inspecionado nem liberado até o recolhimento terminar.`);
       const hoje = hojeUTC();
       if (data.resultado === "LIBERADO") {
         if (lote.validade < hoje) throw new ErroNegocio(`Lote vencido em ${date(lote.validade)} — não pode ser liberado.`);

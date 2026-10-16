@@ -216,21 +216,24 @@ enum StatusLote {
 }
 
 model Lote {
-  id              String                      @id @default(cuid())
-  produtoId       String
-  produto         Produto                     @relation(fields: [produtoId], references: [id])
-  numero          String
-  serie           String?
-  fabricacao      DateTime?
-  validade        DateTime
-  status          StatusLote                  @default(QUARENTENA)
-  criadoEm        DateTime                    @default(now())
-  saldos          Saldo[]
-  movimentos      Movimento[]
-  inspecoes       Inspecao[]
-  remessaItens    RemessaItem[]
-  consumos        CirurgiaConsumo[]
-  inventarioItens InventarioConsignacaoItem[]
+  id                    String                      @id @default(cuid())
+  produtoId             String
+  produto               Produto                     @relation(fields: [produtoId], references: [id])
+  numero                String
+  serie                 String?
+  fabricacao            DateTime?
+  validade              DateTime
+  status                StatusLote                  @default(QUARENTENA)
+  criadoEm              DateTime                    @default(now())
+  saldos                Saldo[]
+  movimentos            Movimento[]
+  inspecoes             Inspecao[]
+  remessaItens          RemessaItem[]
+  consumos              CirurgiaConsumo[]
+  inventarioItens       InventarioConsignacaoItem[]
+  recolhimentoLotes     RecolhimentoLote[]
+  recolhimentoAlvos     RecolhimentoAlvo[]
+  recolhimentoPacientes RecolhimentoPaciente[]
 
   @@unique([produtoId, numero])
 }
@@ -258,16 +261,17 @@ enum TipoLocal {
 }
 
 model LocalEstoque {
-  id          String                  @id @default(cuid())
-  nome        String
-  tipo        TipoLocal
-  hospitalId  String?                 @unique
-  hospital    Hospital?               @relation(fields: [hospitalId], references: [id])
-  saldos      Saldo[]
-  movOrigem   Movimento[]             @relation("origem")
-  movDestino  Movimento[]             @relation("destino")
-  remessas    Remessa[]
-  inventarios InventarioConsignacao[]
+  id                String                  @id @default(cuid())
+  nome              String
+  tipo              TipoLocal
+  hospitalId        String?                 @unique
+  hospital          Hospital?               @relation(fields: [hospitalId], references: [id])
+  saldos            Saldo[]
+  movOrigem         Movimento[]             @relation("origem")
+  movDestino        Movimento[]             @relation("destino")
+  remessas          Remessa[]
+  inventarios       InventarioConsignacao[]
+  recolhimentoAlvos RecolhimentoAlvo[]
 }
 
 model Saldo {
@@ -403,29 +407,30 @@ enum StatusCirurgia {
 }
 
 model Cirurgia {
-  id              String            @id @default(cuid())
-  numero          Int               @unique @default(autoincrement())
-  dataHora        DateTime
-  hospitalId      String
-  hospital        Hospital          @relation(fields: [hospitalId], references: [id])
-  medicoId        String
-  medico          Medico            @relation(fields: [medicoId], references: [id])
-  convenioId      String?
-  convenio        Convenio?         @relation(fields: [convenioId], references: [id])
-  procedimentoId  String?
-  procedimento    Procedimento?     @relation(fields: [procedimentoId], references: [id])
-  representanteId String?
-  representante   Representante?    @relation(fields: [representanteId], references: [id])
-  paciente        String
-  carteirinha     String?
-  sus             Boolean           @default(false)
-  status          StatusCirurgia    @default(AGENDADA)
-  observacao      String?
-  criadoEm        DateTime          @default(now())
-  remessas        Remessa[]
-  consumos        CirurgiaConsumo[]
-  pedido          PedidoVenda?
-  anexos          Anexo[]
+  id                    String                 @id @default(cuid())
+  numero                Int                    @unique @default(autoincrement())
+  dataHora              DateTime
+  hospitalId            String
+  hospital              Hospital               @relation(fields: [hospitalId], references: [id])
+  medicoId              String
+  medico                Medico                 @relation(fields: [medicoId], references: [id])
+  convenioId            String?
+  convenio              Convenio?              @relation(fields: [convenioId], references: [id])
+  procedimentoId        String?
+  procedimento          Procedimento?          @relation(fields: [procedimentoId], references: [id])
+  representanteId       String?
+  representante         Representante?         @relation(fields: [representanteId], references: [id])
+  paciente              String
+  carteirinha           String?
+  sus                   Boolean                @default(false)
+  status                StatusCirurgia         @default(AGENDADA)
+  observacao            String?
+  criadoEm              DateTime               @default(now())
+  remessas              Remessa[]
+  consumos              CirurgiaConsumo[]
+  pedido                PedidoVenda?
+  anexos                Anexo[]
+  recolhimentoPacientes RecolhimentoPaciente[]
 }
 
 // Material efetivamente utilizado na cirurgia (folha de consumo / pós-cirúrgico)
@@ -1079,4 +1084,121 @@ model DocumentoArquivo {
   criadoPor   String?
 
   @@index([documentoId, criadoEm])
+}
+
+// ───────────────────────── Recolhimento de lote / tecnovigilância ─────────────────────────
+
+enum OrigemRecolhimento {
+  ANVISA
+  FABRICANTE
+  INTERNO
+}
+
+enum ClasseRecolhimento {
+  I // maior risco à saúde (classificação da ação de campo; confirmar critérios com a Qualidade)
+  II
+  III
+}
+
+enum StatusRecolhimento {
+  ABERTO
+  EM_ANDAMENTO
+  CONCLUIDO
+  CANCELADO
+}
+
+enum StatusAlvoRecolhimento {
+  PENDENTE
+  COMUNICADO
+  RECOLHIDO
+  SEM_SALDO
+}
+
+// Documento "REC-<id>". Ao abrir, os lotes são BLOQUEADOS (ver RecolhimentoLote). CONCLUIDO e CANCELADO são imutáveis.
+model Recolhimento {
+  id                 Int                    @id @default(autoincrement())
+  origem             OrigemRecolhimento
+  classe             ClasseRecolhimento
+  motivo             String
+  referencia         String? // número do alerta sanitário / comunicado do fabricante
+  prazo              DateTime? // data limite (meia-noite UTC, como validades)
+  status             StatusRecolhimento     @default(ABERTO)
+  observacao         String?
+  abertoEm           DateTime               @default(now())
+  abertoPor          String
+  concluidoEm        DateTime?
+  concluidoPor       String?
+  conclusao          String? // parecer final
+  canceladoEm        DateTime?
+  canceladoPor       String?
+  motivoCancelamento String?
+  lotes              RecolhimentoLote[]
+  alvos              RecolhimentoAlvo[]
+  pacientes          RecolhimentoPaciente[]
+  acoes              RecolhimentoAcao[]
+
+  @@index([status])
+}
+
+model RecolhimentoLote {
+  id               String       @id @default(cuid())
+  recolhimentoId   Int
+  recolhimento     Recolhimento @relation(fields: [recolhimentoId], references: [id], onDelete: Cascade)
+  loteId           String
+  lote             Lote         @relation(fields: [loteId], references: [id])
+  statusAnterior   StatusLote // status do lote antes do bloqueio
+  bloqueadoPorEste Boolean // false = o lote já estava BLOQUEADO; o cancelamento não o desbloqueia
+
+  @@unique([recolhimentoId, loteId])
+  @@index([loteId])
+}
+
+model RecolhimentoAlvo {
+  id                  String                 @id @default(cuid())
+  recolhimentoId      Int
+  recolhimento        Recolhimento           @relation(fields: [recolhimentoId], references: [id], onDelete: Cascade)
+  loteId              String
+  lote                Lote                   @relation(fields: [loteId], references: [id])
+  localId             String
+  local               LocalEstoque           @relation(fields: [localId], references: [id])
+  saldoAbertura       Int // saldo do lote no local quando entrou no recolhimento
+  quantidadeRecolhida Int                    @default(0)
+  status              StatusAlvoRecolhimento @default(PENDENTE)
+  comunicadoEm        DateTime?
+  recolhidoEm         DateTime? // última baixa física
+  justificativa       String? // permite concluir com saldo que não foi recolhido
+  saldoFinal          Int? // saldo no local ao concluir (congela o relatório)
+
+  @@unique([recolhimentoId, loteId, localId])
+  @@index([localId])
+}
+
+// Uma linha por CirurgiaConsumo que usou o lote. Dado sensível (LGPD): só QUALIDADE e ADMIN veem.
+model RecolhimentoPaciente {
+  id             String       @id @default(cuid())
+  recolhimentoId Int
+  recolhimento   Recolhimento @relation(fields: [recolhimentoId], references: [id], onDelete: Cascade)
+  consumoId      String // CirurgiaConsumo.id (sem FK: o consumo pode ser estornado depois)
+  cirurgiaId     String
+  cirurgia       Cirurgia     @relation(fields: [cirurgiaId], references: [id])
+  loteId         String
+  lote           Lote         @relation(fields: [loteId], references: [id])
+  quantidade     Int
+  comunicadoEm   DateTime?
+  observacao     String?
+
+  @@unique([recolhimentoId, consumoId])
+  @@index([cirurgiaId])
+}
+
+model RecolhimentoAcao {
+  id             String       @id @default(cuid())
+  recolhimentoId Int
+  recolhimento   Recolhimento @relation(fields: [recolhimentoId], references: [id], onDelete: Cascade)
+  criadoEm       DateTime     @default(now())
+  usuario        String
+  tipo           String // ABERTURA, ATUALIZACAO, COMUNICADO, RECOLHIMENTO, JUSTIFICATIVA, PACIENTE, NOTA, CONCLUSAO, CANCELAMENTO
+  descricao      String
+
+  @@index([recolhimentoId, criadoEm])
 }
