@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { LOCAIS } from "@/lib/estoque";
 import { Badge, btn, KpiGrid, PageHeader, SearchBar, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, diasAte, num } from "@/lib/format";
-import { hojeUTC, PERFIS_QUALIDADE } from "../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
+import { PERFIS_QUALIDADE } from "../_lib/perfis";
 
 export default async function QuarentenaPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireUser(PERFIS_QUALIDADE);

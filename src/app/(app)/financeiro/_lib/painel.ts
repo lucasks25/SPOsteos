@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 import { listarContas } from "./contas";
-import { addDias, inicioMes } from "./datas";
+import { addDias, inicioMes } from "@/lib/datas";
 import type { Tipo } from "./config";
 
 const r2 = (n: number) => Math.round(n * 100) / 100;

@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { money, num, toNumber } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "../_components/filtros";
-import { diaSP, periodo } from "../_lib/datas";
+import { diaSP, periodo } from "@/lib/datas";
 import { nomeHospital, opcoesRepresentantes } from "../_lib/opcoes";
 
 type Linha = { nome: string; pedidos: number; total: number; custo: number; comissao: number };

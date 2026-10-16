@@ -5,7 +5,7 @@ import { Card, FilterBar, PageHeader, Table, Td, btn, cx } from "@/components/ui
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
-import { addMeses, hojeUTC, inicioMes, mesAno } from "../_lib/datas";
+import { addMeses, hojeUTC, inicioMes, mesAno } from "@/lib/datas";
 import { dreDoMes, dreTotal, mesesDe, type DreMes, type TipoPlano } from "../_lib/dre";
 import { carregarLinhasDre } from "../_lib/dre-dados";
 

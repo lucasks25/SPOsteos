@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, cx } from "@/components/ui";
 import { ActionButton, Field, Form, TextArea } from "@/components/form";
 import { date, dateTime, num } from "@/lib/format";
-import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import {
   PERFIS_VER_RECOLHIMENTO,
   ROTULO_CLASSE,

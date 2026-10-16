@@ -5,7 +5,7 @@ import { rm } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/lib/db";
 
-import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 
 export const P = "TESTEDB";
 export const num = (v: unknown) => Number(String(v ?? 0));

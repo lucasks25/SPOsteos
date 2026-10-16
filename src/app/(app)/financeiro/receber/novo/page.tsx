@@ -2,7 +2,7 @@ import { Card, PageHeader } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { TIPOS } from "../../_lib/config";
 import { listarParceiros } from "../../_lib/queries";
-import { hojeUTC } from "../../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { opcoesClassificacao } from "../../_lib/plano";
 import { db } from "@/lib/db";
 import { TituloForm } from "../../_lib/titulo-form";

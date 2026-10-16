@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, btn, cx, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { date, diasAte } from "@/lib/format";
-import { PERFIS_QUALIDADE } from "../_lib/datas";
+import { PERFIS_QUALIDADE } from "../_lib/perfis";
 
 type Situacao = "vencido" | "90" | "180" | "ok" | "sem_validade" | "sem_registro";
 

@@ -10,7 +10,7 @@ import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/form
 import { checarCnpj } from "../../cadastros/_lib/documentos";
 import { ErroNegocio } from "@/lib/erros";
 import { listarContas } from "./contas";
-import { addDias, hojeUTC } from "./datas";
+import { addDias, hojeUTC } from "@/lib/datas";
 import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";
 import { estornarTransferencia, transferir } from "./titulos";

@@ -4,8 +4,7 @@ import assert from "node:assert/strict";
 import { after, before, mock, test } from "node:test";
 import { db } from "@/lib/db";
 import { LOCAIS } from "@/lib/estoque";
-import { hojeUTC } from "@/app/(app)/compras/_lib/perfis";
-import { hojeUTC as hojeBrasilia } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { receberItemTx } from "@/app/(app)/compras/_lib/recebimento";
 import { conferirKardex, dia, limparTudo, mkFornecedor, mkProduto, num, saldoDe } from "./_util";
 
@@ -110,14 +109,13 @@ test("dois recebimentos simultâneos não passam do pedido", async () => {
   assert.equal(await db.contaPagar.count({ where: { pedidoId: ped.id } }), 1);
 });
 
-// BUG: compras/_lib/perfis.ts:10 (hojeUTC) usa a data UTC; o resto do sistema usa o dia de Brasília (financeiro/_lib/datas.ts:21).
+// BUG: hojeUTC já foi cópia UTC em compras/_lib/perfis.ts; hoje há uma só implementação (src/lib/datas.ts, dia de Brasília).
 // Recebimento entre 21h e 23h59 (BRT) grava competência do dia seguinte, e no último dia do mês cai no mês errado do DRE
 // (recebimento.ts:96 usa essa data como competência da conta a pagar).
 test("competência da conta a pagar é o dia de Brasília (recebimento às 23h30 do último dia do mês)", () => {
   mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-01T02:30:00Z") }); // 31/10 23h30 em Brasília
   try {
     assert.equal(hojeUTC().toISOString(), "2026-10-31T00:00:00.000Z");
-    assert.equal(hojeUTC().getTime(), hojeBrasilia().getTime());
   } finally {
     mock.timers.reset();
   }

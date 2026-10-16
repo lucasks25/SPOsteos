@@ -16,7 +16,7 @@
 import { ErroNegocio } from "@/lib/erros";
 import { dvBarras, lerBoleto, linhaDigitavel as linhaDigitavelBoleto, mod10 } from "./boleto";
 import { CODIGOS_LIQUIDACAO, ESPECIES, INSTRUCOES_CANCELADAS, MOTIVOS_POR_OCORRENCIA, OCORRENCIAS_RETORNO, UFS } from "./cobranca-tabelas";
-import { diaBrasilia } from "./datas";
+import { diaBrasilia } from "@/lib/datas";
 
 export class CobrancaError extends ErroNegocio {}
 

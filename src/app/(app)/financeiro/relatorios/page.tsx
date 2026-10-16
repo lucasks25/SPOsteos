@@ -6,7 +6,7 @@ import { requireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
 import { FAIXAS_AGING } from "../_lib/aging";
 import { carregarAging } from "../_lib/aging-dados";
-import { hojeUTC } from "../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import type { Tipo } from "../_lib/config";
 
 function Aging({ tipo, titulo, parceiro, dados }: { tipo: Tipo; titulo: string; parceiro: string; dados: Awaited<ReturnType<typeof carregarAging>> }) {

@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { ActionButton } from "@/components/form";
 import { Badge, btn, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, diasAte, num } from "@/lib/format";
-import { hojeUTC, PERFIS_QUALIDADE, somarDias } from "../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
+import { PERFIS_QUALIDADE, somarDias } from "../_lib/perfis";
 import { marcarVencidos } from "./actions";
 import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
 

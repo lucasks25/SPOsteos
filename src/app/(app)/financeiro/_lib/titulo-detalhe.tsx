@@ -7,7 +7,7 @@ import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
 import { cancelarTitulo, estornarBaixaAction, estornarGlosaAction, recursoGlosaAction } from "./actions";
 import { ROTULO_CATEGORIA_GLOSA } from "./glosa-categorias";
-import { hojeUTC } from "./datas";
+import { hojeUTC } from "@/lib/datas";
 import { opcoesContas } from "./contas";
 import { listarParceiros, obterTitulo } from "./queries";
 import { opcoesClassificacao } from "./plano";

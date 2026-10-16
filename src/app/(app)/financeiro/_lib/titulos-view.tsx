@@ -4,7 +4,7 @@ import { Badge, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, T
 import { date, money } from "@/lib/format";
 import { Celula } from "./visual";
 import { TIPOS, type Tipo, type TituloRow } from "./config";
-import { hojeUTC, ymd } from "./datas";
+import { hojeUTC, ymd } from "@/lib/datas";
 import { listarParceiros, listarTitulos, parseFiltros, type Filtros } from "./queries";
 
 type SP = Record<string, string | string[] | undefined>;

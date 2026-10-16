@@ -2,7 +2,7 @@ import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 import { STATUS_TITULO, type StatusTitulo, type Tipo, type TituloRow } from "./config";
-import { addDias, inicioMes, parseDia } from "./datas";
+import { addDias, inicioMes, parseDia } from "@/lib/datas";
 import { saldoTitulo } from "./titulos";
 
 type SP = Record<string, string | string[] | undefined>;

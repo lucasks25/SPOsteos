@@ -6,7 +6,7 @@ import { dateTime, num } from "@/lib/format";
 import type { Prisma, StatusCirurgia } from "@/generated/prisma/client";
 import { Filtros, FiltroInput, FiltroSelect } from "../_components/filtros";
 import { nomeHospital, opcoesHospitais, opcoesMedicos } from "../_lib/opcoes";
-import { periodo } from "../_lib/datas";
+import { periodo } from "@/lib/datas";
 
 const STATUS: StatusCirurgia[] = ["AGENDADA", "CONFIRMADA", "REALIZADA", "FATURADA", "CANCELADA"];
 

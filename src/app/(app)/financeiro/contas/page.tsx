@@ -5,7 +5,7 @@ import { money } from "@/lib/format";
 import { Field, Form, Grid, Select } from "@/components/form";
 import { Celula } from "../_lib/visual";
 import { transferirEntreContas } from "../_lib/contas-actions";
-import { hojeUTC, ymd } from "../_lib/datas";
+import { hojeUTC, ymd } from "@/lib/datas";
 import { listarContas } from "../_lib/contas";
 
 export default async function ContasPage() {

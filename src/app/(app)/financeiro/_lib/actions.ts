@@ -9,7 +9,7 @@ import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import type { FormaPagamento } from "@/generated/prisma/client";
 import { FORMAS, TIPOS, isTipo, type Tipo } from "./config";
-import { addDias, hojeUTC } from "./datas";
+import { addDias, hojeUTC } from "@/lib/datas";
 import { lerBoleto } from "./boleto";
 import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";

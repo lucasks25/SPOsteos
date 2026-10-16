@@ -8,7 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { localDoHospital, movimentar } from "@/lib/estoque";
 import { toNumber } from "@/lib/format";
-import { parseDataHoraSP, hojeUTC } from "../_lib/datas";
+import { parseDataHoraSP, hojeUTC } from "@/lib/datas";
 import { faturarCirurgia } from "../_lib/faturamento";
 import { ErroNegocio } from "@/lib/erros";
 

@@ -6,7 +6,7 @@ import { ActionButton, Field, Form, Select } from "@/components/form";
 import { Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { nomeHospital } from "../../_lib/opcoes";
-import { hojeUTC } from "../../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { cancelarCirurgia, confirmarCirurgia, faturar, registrarConsumo, removerConsumo } from "../actions";
 import { enviarAnexo, excluirAnexo } from "../anexos";
 import { riscoGlosaDaCirurgia } from "../../_lib/autorizacao-servico";

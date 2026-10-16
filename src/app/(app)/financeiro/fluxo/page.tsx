@@ -3,7 +3,7 @@ import { Field, Select } from "@/components/form";
 import { FilterBar, KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money } from "@/lib/format";
-import { addDias, diaMes, hojeUTC, mesAno, parseDia, ymd } from "../_lib/datas";
+import { addDias, diaMes, hojeUTC, mesAno, parseDia, ymd } from "@/lib/datas";
 import { calcularFluxo, type Gran } from "../_lib/fluxo";
 
 type SP = Record<string, string | string[] | undefined>;

@@ -4,7 +4,7 @@ import { Card, KpiGrid, btn, PageHeader, Stat, Table, Td, cx } from "@/component
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
 import { Celula, VerTudo } from "./_lib/visual";
-import { hojeUTC } from "./_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { painelFinanceiro, type Faixas } from "./_lib/painel";
 
 type Tom = "default" | "warn" | "danger";

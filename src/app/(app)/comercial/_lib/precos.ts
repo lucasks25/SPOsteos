@@ -1,5 +1,5 @@
 import "server-only";
-import { diaBrasilia } from "@/app/(app)/financeiro/_lib/datas";
+import { diaBrasilia } from "@/lib/datas";
 import { db, type Tx } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 

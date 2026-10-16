@@ -6,7 +6,8 @@ import { toNumber } from "@/lib/format";
 import { garantirMesAberto } from "@/app/(app)/financeiro/_lib/fechamento";
 import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
 import { calcularCustoImportacao, centavos, integraCustoPadrao, ROTULO_DESPESA, TRIBUTOS_RECUPERAVEIS, type ResultadoCusto } from "./custo-importacao";
-import { documentoPedido, hojeUTC } from "./perfis";
+import { hojeUTC } from "@/lib/datas";
+import { documentoPedido } from "./perfis";
 
 /**
  * Regras de importação que mexem no banco (dados da importação, preços na moeda, despesas, custo nacionalizado).

@@ -3,18 +3,12 @@ import { db } from "@/lib/db";
 import { money } from "@/lib/format";
 import type { Perfil } from "@/generated/prisma/client";
 import type { IconName } from "@/components/icons";
-import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeSP, hojeUTC } from "@/lib/datas";
 import { faixasAbertas } from "@/app/(app)/financeiro/_lib/painel";
 import { contarCirurgiasSemAutorizacao } from "@/app/(app)/comercial/_lib/autorizacao-servico";
 import { contarAlertas } from "@/app/(app)/qualidade/_lib/documentos-servico";
 
 const DIA = 24 * 60 * 60 * 1000;
-
-/** Meia-noite de hoje em Brasília (UTC−3). */
-export function hojeSP() {
-  const agora = new Date(Date.now() - 3 * 60 * 60 * 1000);
-  return new Date(`${agora.toISOString().slice(0, 10)}T00:00:00-03:00`);
-}
 
 const ve = (perfil: Perfil, ...perfis: Perfil[]) => perfil === "ADMIN" || perfis.includes(perfil);
 

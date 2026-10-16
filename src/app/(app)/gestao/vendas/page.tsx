@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { money, num } from "@/lib/format";
 import { Filtros, FiltroSelect } from "../../comercial/_components/filtros";
 import { opcoesHospitais } from "../../comercial/_lib/opcoes";
-import { mesAno } from "../../financeiro/_lib/datas";
+import { mesAno } from "@/lib/datas";
 import { vendasDados, type SP } from "../_lib/consultas";
 import { BotaoCsv, fmtPct, PERFIS_GESTAO } from "../_lib/visual";
 

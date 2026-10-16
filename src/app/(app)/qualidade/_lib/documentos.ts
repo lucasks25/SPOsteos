@@ -1,10 +1,10 @@
 import type { Perfil } from "@/generated/prisma/client";
-import { addDias } from "@/app/(app)/financeiro/_lib/datas";
+import { addDias } from "@/lib/datas";
 
 /**
  * Regras puras de documentos e licenças (sem banco, sem servidor): situação por validade, filtros e rótulos.
  * Datas de validade são gravadas como meia-noite UTC do dia (vindas de <input type="date">); "hoje" vem de
- * hojeUTC() (financeiro/_lib/datas.ts), que é o dia corrente em Brasília no mesmo formato.
+ * hojeUTC() (src/lib/datas.ts), que é o dia corrente em Brasília no mesmo formato.
  */
 
 export const TIPOS = ["AFE", "LICENCA_SANITARIA", "CBPAD", "ALVARA", "CERTIFICADO_BPF", "AUTORIZACAO_COMERCIALIZACAO", "REGISTRO_ANVISA", "IFU", "LAUDO", "CONTRATO", "OUTRO"] as const;

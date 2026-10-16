@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
-import { addDias, inicioMes, inicioSemana } from "./datas";
+import { addDias, inicioMes, inicioSemana } from "@/lib/datas";
 
 export type Gran = "semana" | "mes";
 

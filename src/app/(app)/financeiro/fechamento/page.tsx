@@ -3,7 +3,7 @@ import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dateTime } from "@/lib/format";
-import { addMeses, hojeUTC, inicioMes } from "../_lib/datas";
+import { addMeses, hojeUTC, inicioMes } from "@/lib/datas";
 import { fecharMes, reabrirMes } from "../_lib/fechamento-actions";
 import { rotuloMes } from "../_lib/fechamento";
 

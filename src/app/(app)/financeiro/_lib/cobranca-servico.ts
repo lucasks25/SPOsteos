@@ -4,7 +4,7 @@ import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
 import { gerarRemessaCobranca, type EventoCobranca, type ItemRemessaCobranca, type RetornoCobranca } from "./cobranca";
-import { diaBrasilia } from "./datas";
+import { diaBrasilia } from "@/lib/datas";
 import { contaEDac } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
 

@@ -2,7 +2,7 @@ import "server-only";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
-import { diaBrasilia } from "@/app/(app)/financeiro/_lib/datas";
+import { diaBrasilia } from "@/lib/datas";
 import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
 
 /** Registra a NF (número manual): pedido ABERTO vira FATURADO e nasce a conta a receber (plano RECEITA_VENDA, competência = dia do faturamento em Brasília). */

@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { ymd } from "../../../financeiro/_lib/datas";
+import { ymd } from "@/lib/datas";
 import { vencimentosDados } from "../../_lib/consultas";
 import { respostaCsv } from "../../_lib/csv";
 import { FAIXAS_VENCIMENTO } from "../../_lib/vencimentos";

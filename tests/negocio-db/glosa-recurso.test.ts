@@ -5,7 +5,7 @@ import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
 import { chaveMes, dreDoMes } from "@/app/(app)/financeiro/_lib/dre";
 import { carregarLinhasDre } from "@/app/(app)/financeiro/_lib/dre-dados";
-import { addMeses, hojeUTC, inicioMes, ymd } from "@/app/(app)/financeiro/_lib/datas";
+import { addMeses, hojeUTC, inicioMes, ymd } from "@/lib/datas";
 import { estornarGlosa, registrarBaixa, registrarGlosa, registrarRecurso } from "@/app/(app)/financeiro/_lib/titulos";
 import { glosasDados } from "@/app/(app)/gestao/_lib/consultas";
 import { dia, limparTudo, mkHospital, mkProduto, num, P, uid } from "./_util";

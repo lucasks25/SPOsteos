@@ -5,7 +5,8 @@ import { LOCAIS } from "@/lib/estoque";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { Badge, Card, Dl, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, num } from "@/lib/format";
-import { hojeUTC, PERFIS_QUALIDADE } from "../../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
+import { PERFIS_QUALIDADE } from "../../_lib/perfis";
 import { inspecionarLote } from "../actions";
 
 export default async function InspecaoPage({ params }: { params: Promise<{ id: string }> }) {

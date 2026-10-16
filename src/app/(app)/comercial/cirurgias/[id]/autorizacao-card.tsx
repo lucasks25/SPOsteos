@@ -2,7 +2,7 @@ import { ActionButton } from "@/components/form";
 import { Badge, Card, StatusBadge } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
-import { hojeUTC } from "../../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { statusEfetivo, type ResultadoRisco } from "../../_lib/autorizacao";
 import { PainelAchados } from "../../_lib/autorizacao-view";
 import { sugerirItensGuia } from "../../_lib/autorizacao-servico";

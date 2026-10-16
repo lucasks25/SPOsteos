@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { FAIXAS_AGING, csv } from "../../_lib/aging";
 import { carregarAging } from "../../_lib/aging-dados";
-import { hojeUTC, ymd } from "../../_lib/datas";
+import { hojeUTC, ymd } from "@/lib/datas";
 
 /** CSV do aging por hospital (tipo=receber) ou fornecedor (tipo=pagar). */
 export async function GET(req: Request) {

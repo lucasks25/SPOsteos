@@ -3,7 +3,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
-import { addMeses, hojeUTC, inicioMes } from "@/app/(app)/financeiro/_lib/datas";
+import { addMeses, hojeUTC, inicioMes } from "@/lib/datas";
 import { chaveMes, dreDoMes } from "@/app/(app)/financeiro/_lib/dre";
 import { carregarLinhasDre } from "@/app/(app)/financeiro/_lib/dre-dados";
 import { estornarGlosa, registrarBaixa, registrarGlosa } from "@/app/(app)/financeiro/_lib/titulos";

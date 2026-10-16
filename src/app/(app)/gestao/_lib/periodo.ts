@@ -1,5 +1,5 @@
 /** Período dos relatórios de gestão: dias de Brasília, fim exclusivo (como no resto do sistema). Puro, testado em tests/gestao. */
-import { addDias, inicioDiaBrasilia, parseDia, ymd } from "../../financeiro/_lib/datas";
+import { addDias, inicioDiaBrasilia, parseDia, ymd } from "@/lib/datas";
 
 export type Periodo = { de: string; ate: string; gte: Date; lt: Date };
 

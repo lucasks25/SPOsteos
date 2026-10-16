@@ -4,7 +4,8 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
-import { hojeUTC, PERFIS_QUALIDADE } from "../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
+import { PERFIS_QUALIDADE } from "../_lib/perfis";
 
 /** Marca como VENCIDO todos os lotes liberados com validade anterior a hoje. */
 export async function marcarVencidos(_: ActionState): Promise<ActionState> {

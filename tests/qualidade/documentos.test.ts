@@ -1,7 +1,7 @@
 /** Documentos e licenças: situação por validade (dia de Brasília), filtros equivalentes, alvo/escopo e renovação. Funções puras. */
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { diaBrasilia } from "@/app/(app)/financeiro/_lib/datas";
+import { diaBrasilia } from "@/lib/datas";
 import {
   COR_SITUACAO, diasParaVencer, erroDoAlvo, filtroValidade, FILTRO_ATENCAO, mesmoAlvo, piorSituacao, podeEditarDocumentos, podeVerDocumentos,
   SITUACOES, situacaoDocumento, textoSituacao,

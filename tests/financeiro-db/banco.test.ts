@@ -7,7 +7,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
-import { addDias, hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { addDias, hojeUTC } from "@/lib/datas";
 import { painelFinanceiro } from "@/app/(app)/financeiro/_lib/painel";
 import { calcularFluxo } from "@/app/(app)/financeiro/_lib/fluxo";
 import { estornarBaixa, estornarTransferencia, registrarBaixa, transferir } from "@/app/(app)/financeiro/_lib/titulos";

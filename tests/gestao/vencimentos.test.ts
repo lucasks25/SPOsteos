@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { addDias } from "../../src/app/(app)/financeiro/_lib/datas";
+import { addDias } from "@/lib/datas";
 import { faixaVencimento, lotesEmRisco, riscoPorHospital, totaisPorFaixa, type SaldoLote } from "../../src/app/(app)/gestao/_lib/vencimentos";
 
 const hoje = new Date("2026-10-15T00:00:00Z");

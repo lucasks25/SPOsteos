@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { Perfil } from "@/generated/prisma/client";
 import { date } from "@/lib/format";
-import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { Badge, btn, Card, LinkButton } from "@/components/ui";
 import { COR_SITUACAO, CAMPO_FK, piorSituacao, podeEditarDocumentos, podeVerDocumentos, ROTULO_TIPO, type EscopoDoc } from "../_lib/documentos";
 import { documentosDoCadastro } from "../_lib/documentos-servico";

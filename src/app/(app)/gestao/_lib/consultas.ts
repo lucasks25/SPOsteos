@@ -1,5 +1,4 @@
 import "server-only";
-import { hojeUTC } from "../../financeiro/_lib/datas";
 import { curvaAbc } from "./abc";
 import { carregarGlosasRelatorio, carregarEntradasGiro, carregarPedidosFaturados, carregarSaldosLote, carregarVendasMeses } from "./dados";
 import { calcularGiro, PRAZO_REPOSICAO_PADRAO, type SituacaoGiro } from "./giro";
@@ -7,7 +6,7 @@ import { margens } from "./margens";
 import { periodoDe } from "./periodo";
 import { lotesEmRisco, riscoPorHospital, totaisPorFaixa } from "./vencimentos";
 import { mesBrasilia, vendasPorMes } from "./vendas-mes";
-import { addDias, parseDia } from "../../financeiro/_lib/datas";
+import { addDias, hojeUTC, parseDia } from "@/lib/datas";
 import { CATEGORIAS_GLOSA } from "../../financeiro/_lib/glosa-categorias";
 import { resumirGlosas } from "./glosas";
 

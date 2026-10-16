@@ -1,7 +1,8 @@
 import "server-only";
 import type { Tx } from "@/lib/db";
 import { LOCAIS, movimentar } from "@/lib/estoque";
-import { documentoPedido, hojeUTC } from "./perfis";
+import { hojeUTC } from "@/lib/datas";
+import { documentoPedido } from "./perfis";
 import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
 import { ErroNegocio } from "@/lib/erros";
 import { reais, valorRecebimentoCent } from "./custo-importacao";

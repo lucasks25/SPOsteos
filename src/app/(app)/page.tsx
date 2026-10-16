@@ -5,7 +5,8 @@ import { requireUser } from "@/lib/auth";
 import { Card, EmptyState, KpiGrid, LinkButton, PageHeader, StatusBadge, Table, Td, btn, cx } from "@/components/ui";
 import { Icon, type IconName } from "@/components/icons";
 import { dateTime, diasAtras, money, num, toNumber } from "@/lib/format";
-import { areasDoPerfil, carregarPendencias, hojeSP, listarPendencias } from "@/lib/pendencias";
+import { areasDoPerfil, carregarPendencias, listarPendencias } from "@/lib/pendencias";
+import { hojeSP } from "@/lib/datas";
 
 const DIA = 24 * 60 * 60 * 1000;
 

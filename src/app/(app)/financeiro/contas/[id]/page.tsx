@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { alternarAtivoConta, estornarTransferenciaAction, excluirAvulso, lancarAvulso } from "../../_lib/contas-actions";
 import { listarContas } from "../../_lib/contas";
-import { hojeUTC, ymd } from "../../_lib/datas";
+import { hojeUTC, ymd } from "@/lib/datas";
 import { opcoesClassificacao } from "../../_lib/plano";
 import { ContaForm } from "../conta-form";
 

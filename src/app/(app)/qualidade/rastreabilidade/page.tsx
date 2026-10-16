@@ -2,7 +2,7 @@ import Link from "next/link";
 import { requireUser } from "@/lib/auth";
 import { Badge, btn, Card, Dl, EmptyState, PageHeader, SearchBar, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
-import { PERFIS_QUALIDADE } from "../_lib/datas";
+import { PERFIS_QUALIDADE } from "../_lib/perfis";
 import { PrintButton } from "../_lib/print-button";
 import { buscarLotes, type Rastreio } from "../_lib/rastreio";
 

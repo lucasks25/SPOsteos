@@ -4,7 +4,8 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, Card, Dl, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, num } from "@/lib/format";
-import { hojeUTC, PERFIS_QUALIDADE } from "../../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
+import { PERFIS_QUALIDADE } from "../../_lib/perfis";
 
 export default async function LoteDetalhePage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser(PERFIS_QUALIDADE);

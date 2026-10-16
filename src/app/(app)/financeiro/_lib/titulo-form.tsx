@@ -3,7 +3,7 @@ import { inputDate, money } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo, type TituloRow } from "./config";
 import { baixarTitulo, classificarTitulo, glosarTitulo, salvarTitulo } from "./actions";
 import { linhaDigitavel } from "./boleto";
-import { ymd } from "./datas";
+import { ymd } from "@/lib/datas";
 import { CATEGORIAS_GLOSA, ROTULO_CATEGORIA_GLOSA } from "./glosa-categorias";
 
 /** Formulário de criação/edição manual de título (somente em aberto). */

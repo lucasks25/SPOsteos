@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { date, dateTime } from "@/lib/format";
-import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { ActionButton, Field, Form } from "@/components/form";
 import { Badge, Card, Dl, LinkButton, PageHeader, StatusBadge } from "@/components/ui";
 import { MAX_BYTES } from "@/lib/upload-seguro";

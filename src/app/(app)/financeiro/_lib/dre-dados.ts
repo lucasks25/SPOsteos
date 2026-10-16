@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
-import { diaBrasilia, inicioDiaBrasilia } from "./datas";
+import { diaBrasilia, inicioDiaBrasilia } from "@/lib/datas";
 import { chaveMes, efeitosDaBaixa, type LinhaDre, type TipoPlano } from "./dre";
 import type { ChaveSistema } from "./plano";
 

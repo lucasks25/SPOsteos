@@ -3,7 +3,8 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { btn, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { diasAtras, money, num, toNumber } from "@/lib/format";
-import { hojeUTC, PERFIS_COMPRAS } from "../_lib/perfis";
+import { hojeUTC } from "@/lib/datas";
+import { PERFIS_COMPRAS } from "../_lib/perfis";
 
 const DIAS_CONSUMO = 90;
 

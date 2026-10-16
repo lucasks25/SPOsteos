@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { date } from "@/lib/format";
-import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { Badge, btn, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
 import {
   ESCOPOS, FILTRO_ATENCAO, PERFIS_VER_DOCUMENTOS, podeEditarDocumentos, ROTULO_ESCOPO, ROTULO_SITUACAO, ROTULO_TIPO, SITUACOES, TIPOS,

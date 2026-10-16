@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { Celula } from "../_lib/visual";
-import { hojeUTC, ymd } from "../_lib/datas";
+import { hojeUTC, ymd } from "@/lib/datas";
 import { FORMAS_SISPAG } from "../_lib/sispag";
 import { gerarRemessaPagamentos, processarRetornoSispag } from "../_lib/sispag-actions";
 import { formaPrevista, type ModoRemessa } from "../_lib/sispag-regras";

@@ -6,7 +6,7 @@ import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { gerarCobranca, processarRetornoCobranca } from "../_lib/cobranca-actions";
 import { faltaNoPagador } from "../_lib/cobranca-servico";
-import { hojeUTC } from "../_lib/datas";
+import { hojeUTC } from "@/lib/datas";
 
 export default async function CobrancaPage() {
   await requireUser(["FINANCEIRO"]);

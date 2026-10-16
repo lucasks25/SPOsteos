@@ -4,7 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { Icon } from "@/components/icons";
 import { KpiGrid, LinkButton, PageHeader, Stat, btn, cx } from "@/components/ui";
 import { Filtros, FiltroSelect } from "../_components/filtros";
-import { diaSP, inicioDiaSP, segundaDaSemana, somaDias } from "../_lib/datas";
+import { diaSP, inicioDiaSP, segundaDaSemana, somaDias } from "@/lib/datas";
 import { nomeHospital, opcoesHospitais, opcoesRepresentantes } from "../_lib/opcoes";
 
 const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];

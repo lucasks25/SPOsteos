@@ -1,5 +1,5 @@
 import { requireUser } from "@/lib/auth";
-import { ymd, hojeUTC } from "../../../financeiro/_lib/datas";
+import { ymd, hojeUTC } from "@/lib/datas";
 import { giroDados } from "../../_lib/consultas";
 import { respostaCsv } from "../../_lib/csv";
 import { ROTULO_SITUACAO } from "../../_lib/giro";
