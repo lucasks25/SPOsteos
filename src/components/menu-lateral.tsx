@@ -70,6 +70,7 @@ function ItensDoModulo({ m, ativoHref, aoNavegar, flutuante }: { m: Modulo; ativ
 export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: Modulo[]; ativo: { href: string; modulo: string } | null; recolhida: boolean; aoNavegar: () => void }) {
   const [abertos, setAbertos] = useState<Record<string, boolean>>({});
   const [flutuante, setFlutuante] = useState<string | null>(null);
+  const [posFlutuante, setPosFlutuante] = useState({ top: 0, maxHeight: 400 });
   const raiz = useRef<HTMLElement>(null);
   useFecharFora(flutuante !== null, () => setFlutuante(null), raiz);
 
@@ -102,7 +103,14 @@ export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: 
                 type="button"
                 title={recolhida ? m.nome : undefined}
                 aria-expanded={recolhida ? flutuante === m.nome : aberto}
-                onClick={() => (recolhida ? setFlutuante((f) => (f === m.nome ? null : m.nome)) : setAbertos((a) => ({ ...a, [m.nome]: !aberto })))}
+                onClick={(e) => {
+                  if (!recolhida) return setAbertos((a) => ({ ...a, [m.nome]: !aberto }));
+                  // painel ao lado do trilho: fixo na janela, alinhado ao botão e limitado à altura visível
+                  const r = e.currentTarget.getBoundingClientRect();
+                  const top = Math.max(8, Math.min(r.top, window.innerHeight - 320));
+                  setPosFlutuante({ top, maxHeight: window.innerHeight - top - 8 });
+                  setFlutuante((f) => (f === m.nome ? null : m.nome));
+                }}
                 className={`${itemBase} h-10 w-full gap-3 px-3 font-medium ${doModulo ? "text-sidebar-fg-ativo" : itemOff} ${doModulo && recolhida ? itemOn : ""}`}
               >
                 {ico}
@@ -115,7 +123,7 @@ export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: 
                 </div>
               )}
               {recolhida && flutuante === m.nome && (
-                <div className="absolute left-full top-0 z-50 ml-3 hidden max-h-[80vh] w-64 overflow-y-auto rounded-xl border border-[rgb(255_255_255/0.1)] bg-sidebar p-2 shadow-xl lg:block">
+                <div style={posFlutuante} className="fixed left-[5.25rem] z-50 hidden w-64 overflow-y-auto rounded-xl border border-[rgb(255_255_255/0.1)] bg-sidebar p-2 shadow-xl lg:block">
                   <div className="px-3 pb-1 pt-1.5 font-display text-sm font-bold text-sidebar-fg-ativo">{m.nome}</div>
                   <ItensDoModulo
                     m={m}
