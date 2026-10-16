@@ -121,7 +121,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
         </Table>
 
         <Card title="Importar retorno do Itaú" icon="baixar">
-          <Form action={processarRetornoSispag} submitLabel="Processar retorno" resetOnSuccess>
+          <Form action={processarRetornoSispag} submitLabel="Processar retorno" submitVariant="secondary" resetOnSuccess>
             <Field label="Arquivo de retorno SISPAG" name="arquivo" type="file" accept=".ret,.RET,.txt,.TXT" required hint="Pagamentos com ocorrência 00 são baixados automaticamente na conta da remessa. Reprocessar o mesmo arquivo não duplica baixas." />
           </Form>
         </Card>

@@ -77,7 +77,7 @@ export default async function PlanoContasPage() {
         </Table>
         <Card title="Novo centro de custo" icon="mais">
           <div>
-            <Form action={criarCentroCusto} submitLabel="Criar centro de custo" resetOnSuccess>
+            <Form action={criarCentroCusto} submitLabel="Criar centro de custo" submitVariant="secondary" resetOnSuccess>
               <Grid cols={3}>
                 <Field label="Código *" name="codigo" required hint="Ex.: COL (coluna), TRA (trauma)" />
                 <Field label="Nome *" name="nome" required maxLength={80} className="sm:col-span-2" />

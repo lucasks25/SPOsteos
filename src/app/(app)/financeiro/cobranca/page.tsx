@@ -83,7 +83,7 @@ export default async function CobrancaPage() {
         )}
 
         <Card title="Importar retorno de cobrança do Itaú">
-          <Form action={processarRetornoCobranca} submitLabel="Processar retorno" resetOnSuccess>
+          <Form action={processarRetornoCobranca} submitLabel="Processar retorno" submitVariant="secondary" resetOnSuccess>
             <Field label="Arquivo de retorno (CNAB 400)" name="arquivo" type="file" accept=".ret,.RET,.txt,.TXT" required hint="Confirmações de registro, liquidações (baixa automática do recebimento), rejeições e baixas. Reprocessar o mesmo arquivo não duplica nada." />
           </Form>
         </Card>

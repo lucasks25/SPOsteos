@@ -28,12 +28,12 @@ export default async function FechamentoPage() {
                 <Td>{f ? <Badge color="gray">Fechado em {dateTime(f.fechadoEm)}</Badge> : <Badge color="green">Aberto</Badge>}</Td>
                 <Td className="whitespace-normal">
                   {f ? (
-                    <Form action={reabrirMes} submitLabel="Reabrir" resetOnSuccess confirm={`Reabrir o mês ${rotuloMes(m)}? Baixas, glosas e lançamentos com data nele voltam a poder ser criados e estornados, e o DRE do mês pode mudar.`}>
+                    <Form action={reabrirMes} submitLabel="Reabrir" submitVariant="small" resetOnSuccess compacto confirm={`Reabrir o mês ${rotuloMes(m)}? Baixas, glosas e lançamentos com data nele voltam a poder ser criados e estornados, e o DRE do mês pode mudar.`}>
                       <input type="hidden" name="mes" value={m} />
                       <Field label="Motivo da reabertura *" name="motivo" required minLength={5} maxLength={200} />
                     </Form>
                   ) : (
-                    <Form action={fecharMes} submitLabel="Fechar mês" confirm={`Fechar o mês ${rotuloMes(m)}? Depois disso nenhuma baixa, glosa ou lançamento com data nesse mês poderá ser criado ou estornado.`}>
+                    <Form action={fecharMes} submitLabel="Fechar mês" submitVariant="small" compacto confirm={`Fechar o mês ${rotuloMes(m)}? Depois disso nenhuma baixa, glosa ou lançamento com data nesse mês poderá ser criado ou estornado.`}>
                       <input type="hidden" name="mes" value={m} />
                     </Form>
                   )}

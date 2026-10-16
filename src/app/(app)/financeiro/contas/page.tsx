@@ -44,7 +44,7 @@ export default async function ContasPage() {
         <div className="mt-4">
           <Card title="Transferência entre contas" icon="conciliar">
             <p className="mb-3 text-sm text-slate-600">Move dinheiro entre contas suas. Muda o saldo de cada conta, mas não conta como receita nem despesa no painel e no fluxo de caixa.</p>
-            <Form action={transferirEntreContas} submitLabel="Transferir" resetOnSuccess>
+            <Form action={transferirEntreContas} submitLabel="Transferir" submitVariant="secondary" resetOnSuccess>
               <Grid cols={4}>
                 <Select label="De *" name="origemId" options={contas.filter((c) => c.ativo).map((c) => ({ value: c.id, label: `${c.nome} (${money(c.saldo)})` }))} required />
                 <Select label="Para *" name="destinoId" options={contas.filter((c) => c.ativo).map((c) => ({ value: c.id, label: c.nome }))} required />
