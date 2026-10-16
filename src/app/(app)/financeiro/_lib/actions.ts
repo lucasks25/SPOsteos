@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import type { FormaPagamento } from "@/generated/prisma/client";
@@ -13,7 +14,7 @@ import { addDias, hojeUTC } from "@/lib/datas";
 import { lerBoleto } from "./boleto";
 import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa, registrarRecurso } from "./titulos";
 import { CATEGORIAS_GLOSA } from "./glosa-categorias";
-import { cancelarTituloTx, classificarTituloTx, salvarContaPagarTx, salvarContaReceberTx } from "./titulos-servico";
+import { cancelarTituloTx, classificarTituloTx, diferencasTitulo, salvarContaPagarTx, salvarContaReceberTx } from "./titulos-servico";
 import { ErroNegocio } from "@/lib/erros";
 
 const positivo = () => zf.money().refine((v) => v > 0, "Informe um valor maior que zero");
@@ -84,6 +85,7 @@ function revalidar(tipo: Tipo, id?: string) {
 /** Cria (id = null) ou edita um título em aberto e sem baixas. */
 export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  id = argIdOuNulo(id);
   const tipo = checkTipo(tipoArg);
   let savedId: string;
   try {
@@ -91,14 +93,22 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const parsed = parseForm(schemaReceber, fd);
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
-      savedId = await db.$transaction((tx) => salvarContaReceberTx(tx, id, data));
-      await audit(user.id, id ? "editar" : "criar", "ContaReceber", savedId, `${data.descricao} — ${money(data.valor)}`);
+      let mud = "";
+      savedId = await db.$transaction(async (tx) => {
+        if (id) mud = await diferencasTitulo(tx, "receber", id, data);
+        return salvarContaReceberTx(tx, id, data);
+      });
+      await audit(user.id, id ? "editar" : "criar", "ContaReceber", savedId, `${data.descricao} — ${money(data.valor)}${mud ? ` — ${mud}` : ""}`);
     } else {
       const parsed = parseForm(schemaPagar, fd);
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
-      savedId = await db.$transaction((tx) => salvarContaPagarTx(tx, id, data, user.id));
-      await audit(user.id, id ? "editar" : "criar", "ContaPagar", savedId, `${data.descricao} — ${money(data.valor)}`);
+      let mud = "";
+      savedId = await db.$transaction(async (tx) => {
+        if (id) mud = await diferencasTitulo(tx, "pagar", id, data);
+        return salvarContaPagarTx(tx, id, data, user.id);
+      });
+      await audit(user.id, id ? "editar" : "criar", "ContaPagar", savedId, `${data.descricao} — ${money(data.valor)}${mud ? ` — ${mud}` : ""}`);
     }
   } catch (e) {
     return { error: errorMessage(e) };
@@ -111,6 +121,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
 /** Baixa (recebimento/pagamento), total ou parcial, numa conta bancária ou caixa. */
 export async function baixarTitulo(tipoArg: Tipo, id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  id = argId(id);
   const tipo = checkTipo(tipoArg);
   const parsed = parseForm(schemaBaixa, fd);
   if (!parsed.success) return parsed.state;
@@ -164,6 +175,7 @@ const schemaClassificar = z.object({ planoContaId: zf.text("Escolha a conta do p
 /** Classifica (ou reclassifica) um título em qualquer situação: não mexe em valor nem em baixas. */
 export async function classificarTitulo(tipoArg: Tipo, id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  id = argId(id);
   const tipo = checkTipo(tipoArg);
   const parsed = parseForm(schemaClassificar, fd);
   if (!parsed.success) return parsed.state;
@@ -189,6 +201,7 @@ const schemaGlosa = z.object({
 /** Registra glosa (o hospital não reconhece parte da cobrança): abate o título sem dinheiro e vai para Deduções no DRE. */
 export async function glosarTitulo(id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  id = argId(id);
   const parsed = parseForm(schemaGlosa, fd);
   if (!parsed.success) return parsed.state;
   const { valor, data, motivo, categoria } = parsed.data;

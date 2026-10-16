@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argInt } from "@/lib/auth-args";
 import { money, toNumber } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { registrarNfTx } from "../_lib/nf";
@@ -23,6 +24,7 @@ const schemaNf = z.object({
 /** Registra a NF (número manual), marca o pedido como FATURADO e gera a conta a receber. */
 export async function registrarNf(pedidoId: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  pedidoId = argInt(pedidoId);
   const parsed = parseForm(schemaNf, fd);
   if (!parsed.success) return parsed.state;
   const { numeroNf, vencimento } = parsed.data;
@@ -39,6 +41,7 @@ export async function registrarNf(pedidoId: number, _: ActionState, fd: FormData
 /** Cancela um pedido ABERTO; a cirurgia volta a REALIZADA e pode ser faturada de novo. */
 export async function cancelarPedidoVenda(pedidoId: number): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  pedidoId = argInt(pedidoId);
   try {
     const p = await db.$transaction((tx) => cancelarPedidoVendaTx(tx, pedidoId));
     await audit(user.id, "cancelar", "PedidoVenda", pedidoId, money(toNumber(p.total)));

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { excluirAutorizacaoTx, salvarAutorizacaoTx } from "../_lib/autorizacao-servico";
 
@@ -50,6 +51,8 @@ function revalidar(cirurgiaId: string) {
 /** Cria (id nulo) ou substitui uma guia de autorização do convênio, com os itens solicitados/autorizados. */
 export async function salvarAutorizacao(cirurgiaId: string, id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  cirurgiaId = argId(cirurgiaId);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -64,6 +67,7 @@ export async function salvarAutorizacao(cirurgiaId: string, id: string | null, _
 
 export async function excluirAutorizacao(id: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  id = argId(id);
   try {
     const cirurgiaId = await db.$transaction((tx) => excluirAutorizacaoTx(tx, id));
     await audit(user.id, "excluir", "AutorizacaoConvenio", id, `cirurgia ${cirurgiaId}`);

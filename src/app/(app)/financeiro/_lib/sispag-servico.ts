@@ -7,6 +7,7 @@ import { divergenciaBoleto } from "./boleto";
 import { gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPagamento } from "./sispag";
 import { contaEDac, formaPrevista, type ModoRemessa } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
+import { situacaoAprovacao, travarFornecedores } from "./favorecidos-aprovacao";
 
 /** Regras de remessa e retorno do SISPAG que mexem no banco. Ficam fora de "use server" para serem testadas sem login. */
 const ATIVOS = ["ENVIADO", "AGENDADO"] as const;
@@ -28,6 +29,9 @@ export async function gerarRemessaTx(
   // Trava os títulos até o fim da transação e só então confere: dois cliques ou dois usuários ao mesmo tempo
   // não geram dois arquivos com o mesmo título (o segundo espera e encontra o pagamento já ativo).
   await tx.$queryRaw`SELECT id FROM "ContaPagar" WHERE id IN (${Prisma.join(ids)}) ORDER BY id FOR UPDATE`;
+  // trava (compartilhada) os favorecidos: alteração de dados bancários em paralelo espera esta remessa terminar
+  const favs = await tx.contaPagar.findMany({ where: { id: { in: ids }, fornecedorId: { not: null } }, select: { fornecedorId: true } });
+  await travarFornecedores(tx, favs.map((x) => x.fornecedorId!), "SHARE");
   const titulos = await tx.contaPagar.findMany({
     where: { id: { in: ids } },
     include: { fornecedor: true, pagamentos: { where: { status: { in: [...ATIVOS] } }, select: { id: true } } },
@@ -43,6 +47,9 @@ export async function gerarRemessaTx(
     else if (t.pagamentos.length) erros.push(`${t.descricao}: já está em outra remessa`);
     else if (saldo <= 0) erros.push(`${t.descricao}: sem saldo a pagar`);
     else if ("erro" in f) erros.push(`${t.descricao}: ${f.erro}`);
+    else if (t.fornecedor && situacaoAprovacao(t.fornecedor) !== "APROVADO") {
+      erros.push(`${t.descricao}: dados de pagamento de ${t.fornecedor.razaoSocial} alterados e aguardando aprovação (Financeiro > Favorecidos, por outra pessoa)`);
+    }
     else if (t.codigoBarras) {
       // boleto com valor/vencimento diferentes do título (cadastrado antes da conferência): o banco pagaria outro valor
       const div = divergenciaBoleto(t.codigoBarras, { valor: toNumber(t.valor), vencimento: t.vencimento });

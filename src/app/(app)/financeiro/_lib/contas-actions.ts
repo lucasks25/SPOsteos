@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
@@ -28,6 +29,7 @@ const schemaConta = z.object({
 
 export async function salvarConta(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schemaConta, fd);
   if (!parsed.success) return parsed.state;
   if (parsed.data.titularCnpj) {
@@ -53,6 +55,7 @@ export async function salvarConta(id: string | null, _: ActionState, fd: FormDat
 
 export async function alternarAtivoConta(id: string): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  id = argId(id);
   try {
     const c = await alternarAtivoContaTx(db, id);
     await audit(user.id, c.eraAtiva ? "inativar" : "ativar", "ContaBancaria", id, c.nome);
@@ -76,6 +79,7 @@ const schemaAvulso = z.object({
 /** Lançamento sem título (tarifa, rendimento, transferência entre contas...). */
 export async function lancarAvulso(contaId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  contaId = argId(contaId);
   const parsed = parseForm(schemaAvulso, fd);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;

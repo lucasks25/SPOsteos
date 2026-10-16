@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { ymd, hojeUTC } from "@/lib/datas";
 import { giroDados } from "../../_lib/consultas";
 import { respostaCsv } from "@/lib/csv";
@@ -8,7 +8,8 @@ import { PERFIS_GESTAO } from "../../_lib/visual";
 const dec = (v: number | null): string | number => (v === null ? "" : v);
 
 export async function GET(req: Request) {
-  await requireUser([...PERFIS_GESTAO]);
+  const sessao = await exigirUsuarioRota([...PERFIS_GESTAO]);
+  if (sessao instanceof Response) return sessao;
   const d = await giroDados(Object.fromEntries(new URL(req.url).searchParams));
   return respostaCsv(`giro_cobertura_${ymd(hojeUTC())}.csv`, [
     ["Código", "Produto", "Depósito", "Consignado", "Quarentena", "Não conforme", "Mínimo", "Consumo 90 dias", "Consumo por dia", "Cobertura (dias)", "Giro anual", "Dias sem consumo", "Valor em estoque", "Situação"],

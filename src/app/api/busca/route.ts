@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NAV } from "@/components/nav";
 import { criarLimitador, numeroDoDocumento, validarConsulta } from "@/lib/busca-util";
@@ -24,7 +24,8 @@ const ci = (q: string) => ({ contains: q, mode: "insensitive" as const });
 const nome = (h: { razaoSocial: string; nomeFantasia: string | null }) => h.nomeFantasia || h.razaoSocial;
 
 export async function GET(req: Request) {
-  const user = await requireUser();
+  const user = await exigirUsuarioRota();
+  if (user instanceof Response) return user;
   if (!permitir(user.id)) return NextResponse.json({ erro: "Muitas buscas seguidas. Aguarde alguns segundos." }, { status: 429 });
   const q = validarConsulta(new URL(req.url).searchParams.get("q"));
   if (!q) return NextResponse.json({ resultados: [] });

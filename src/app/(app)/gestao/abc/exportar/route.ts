@@ -1,10 +1,11 @@
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { abcDados } from "../../_lib/consultas";
 import { respostaCsv } from "@/lib/csv";
 import { PERFIS_GESTAO } from "../../_lib/visual";
 
 export async function GET(req: Request) {
-  await requireUser([...PERFIS_GESTAO]);
+  const sessao = await exigirUsuarioRota([...PERFIS_GESTAO]);
+  if (sessao instanceof Response) return sessao;
   const d = await abcDados(Object.fromEntries(new URL(req.url).searchParams));
   const n = (v: number) => String(v);
   return respostaCsv(`curva_abc_${d.periodo.de}_${d.periodo.ate}.csv`, [

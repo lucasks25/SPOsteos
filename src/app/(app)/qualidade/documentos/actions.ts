@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { requireUser } from "@/lib/auth";
+import { argBool, argEnum, argId } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { lerArquivoDoForm } from "@/lib/upload-seguro";
 import { ESCOPOS, PERFIS_EDITAR_DOCUMENTOS, TIPOS } from "../_lib/documentos";
@@ -57,6 +58,8 @@ export async function criarDocumentoAction(_: ActionState, fd: FormData): Promis
 
 export async function editarDocumentoAction(id: string, tipo: (typeof TIPOS)[number], _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR_DOCUMENTOS);
+  id = argId(id);
+  tipo = argEnum(tipo, TIPOS);
   const parsed = parseForm(z.object(dados), fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -72,6 +75,7 @@ export async function editarDocumentoAction(id: string, tipo: (typeof TIPOS)[num
 /** Nova versão do arquivo (a mais recente é a vigente). */
 export async function enviarArquivoDocumentoAction(id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR_DOCUMENTOS);
+  id = argId(id);
   try {
     const arquivo = await lerArquivoDoForm(fd);
     const a = await anexarArquivo(id, arquivo, user.id);
@@ -86,6 +90,8 @@ export async function enviarArquivoDocumentoAction(id: string, _: ActionState, f
 /** Documento não é apagado (histórico regulatório): só inativa ou reativa. */
 export async function alternarAtivoDocumentoAction(id: string, ativar: boolean): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR_DOCUMENTOS);
+  id = argId(id);
+  ativar = argBool(ativar);
   try {
     await definirAtivo(id, ativar);
     await audit(user.id, ativar ? "reativar" : "inativar", "Documento", id);

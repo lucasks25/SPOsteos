@@ -21,7 +21,7 @@ import { calcularFluxo } from "@/app/(app)/financeiro/_lib/fluxo";
 import { carregarLinhasDre } from "@/app/(app)/financeiro/_lib/dre-dados";
 import { registrarConsumoDiretoTx, removerConsumoTx } from "@/app/(app)/comercial/_lib/consumo-servico";
 import { concluirContagem, criarInventario, fecharInventario, salvarContagem } from "@/app/(app)/estoque/_lib/inventario-servico";
-import { dia, limparTudo, mkFornecedor, mkHospital, mkLote, mkProduto, num, P, uid } from "./_util";
+import { aprovarFavorecidosTeste, dia, limparTudo, mkFornecedor, mkHospital, mkLote, mkProduto, num, P, uid } from "./_util";
 import { conferirInvariantesFinanceiras } from "./_invariantes";
 
 type T = Parameters<Parameters<typeof db.$transaction>[0]>[0];
@@ -57,6 +57,7 @@ before(async () => {
   hospitalId = (await mkHospital()).id;
   fornecedorId = (await mkFornecedor()).id;
   await db.fornecedor.update({ where: { id: fornecedorId }, data: { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" } });
+  await aprovarFavorecidosTeste();
   planoDespesa = (await db.planoConta.findUniqueOrThrow({ where: { codigo: "4.02" } })).id;
 });
 after(async () => {

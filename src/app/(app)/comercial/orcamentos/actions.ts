@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argEnum, argId, argInt, argIntOuNulo } from "@/lib/auth-args";
 import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { mudarStatusOrcamentoTx, type StatusOrcamento } from "../_lib/orcamento-servico";
@@ -28,6 +29,7 @@ async function editavel(id: number) {
 
 export async function salvarOrcamento(id: number | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  id = argIntOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   let novoId: number | null = null;
@@ -53,6 +55,7 @@ const itemSchema = z.object({ produtoId: zf.text("Selecione o produto"), quantid
 
 export async function adicionarItemOrcamento(orcamentoId: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  orcamentoId = argInt(orcamentoId);
   const parsed = parseForm(itemSchema, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -70,6 +73,7 @@ export async function adicionarItemOrcamento(orcamentoId: number, _: ActionState
 
 export async function removerItemOrcamento(itemId: string): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  itemId = argId(itemId);
   try {
     const it = await db.orcamentoItem.findUniqueOrThrow({ where: { id: itemId } });
     await editavel(it.orcamentoId);
@@ -84,6 +88,8 @@ export async function removerItemOrcamento(itemId: string): Promise<ActionState>
 
 export async function mudarStatusOrcamento(id: number, status: StatusOrcamento): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  id = argInt(id);
+  status = argEnum(status, ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO"] as const);
   try {
     await db.$transaction((tx) => mudarStatusOrcamentoTx(tx, id, status));
     await audit(user.id, `status ${status}`, "Orcamento", id);

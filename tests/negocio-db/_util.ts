@@ -4,6 +4,7 @@ import assert from "node:assert/strict";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { db } from "@/lib/db";
+import { hashDadosPagamento } from "@/app/(app)/financeiro/_lib/favorecidos-aprovacao";
 
 import { hojeUTC } from "@/lib/datas";
 
@@ -107,4 +108,13 @@ export async function limparDocumentos() {
   await db.documentoArquivo.deleteMany({ where: { documentoId: { in: ids } } });
   await db.documento.deleteMany({ where: { id: { in: ids } } });
   for (const id of ids) await rm(path.join(process.cwd(), "storage", "uploads", "documentos", id), { recursive: true, force: true });
+}
+
+/**
+ * Marca como aprovados os dados de pagamento dos fornecedores de teste (prefixo TESTEDB). Fixtures gravam banco/Pix
+ * direto no banco; sem isto o SISPAG recusa o favorecido. A aprovação de verdade é testada em favorecidos-aprovacao.test.ts.
+ */
+export async function aprovarFavorecidosTeste() {
+  const fs = await db.fornecedor.findMany({ where: { razaoSocial: { startsWith: P } } });
+  for (const f of fs) await db.fornecedor.update({ where: { id: f.id }, data: { pagamentoAprovadoHash: hashDadosPagamento(f) } });
 }

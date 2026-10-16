@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argInt } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { itensJson } from "../_lib/itens";
 import { INCOTERMS, MOEDAS } from "../_lib/custo-importacao";
@@ -66,6 +67,8 @@ const schemaRecebimento = z.object({
 /** Recebe uma quantidade de um item: lote em quarentena, entrada no kardex, custo médio e conta a pagar. */
 export async function receberItem(pedidoId: number, itemId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
+  pedidoId = argInt(pedidoId);
+  itemId = argId(itemId);
   const parsed = parseForm(schemaRecebimento, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -85,6 +88,7 @@ export async function receberItem(pedidoId: number, itemId: string, _: ActionSta
 /** Cancela um pedido ABERTO (sem nenhum recebimento). */
 export async function cancelarPedidoCompra(pedidoId: number): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
+  pedidoId = argInt(pedidoId);
   try {
     const r = await db.pedidoCompra.updateMany({ where: { id: pedidoId, status: "ABERTO" }, data: { status: "CANCELADO" } });
     if (r.count === 0) return { error: "Só é possível cancelar pedidos em aberto, sem recebimentos." };

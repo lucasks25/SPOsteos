@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { idInt } from "@/lib/ids";
+import { argInt } from "@/lib/auth-args";
 import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { PERFIS_EDITAR } from "../_lib/perfis";
@@ -47,6 +49,7 @@ export async function criarInventarioAction(_: ActionState, fd: FormData): Promi
 /** Campos `c_<itemId>`: vazio apaga a contagem. */
 export async function salvarContagemAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  id = argInt(id);
   try {
     const contagens: { itemId: string; contado: number | null }[] = [];
     for (const [k, v] of fd.entries()) {
@@ -66,6 +69,7 @@ export async function salvarContagemAction(id: number, _: ActionState, fd: FormD
 
 export async function incluirLoteAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  id = argInt(id);
   const parsed = parseForm(z.object({ loteId: zf.text("Selecione o lote"), contado: zf.int(0) }), fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -80,7 +84,7 @@ export async function incluirLoteAction(id: number, _: ActionState, fd: FormData
 
 export async function concluirContagemAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
-  const id = Number(fd.get("id"));
+  const id = idInt(fd.get("id")) ?? 0; // inválido → 0 → "não encontrado" (antes: NaN ia ao banco = Erro inesperado)
   try {
     await db.$transaction((tx) => concluirContagem(tx, id), TX_OPTS);
     await audit(user.id, "concluir-contagem", "InventarioConsignacao", id, docInventario(id));
@@ -93,7 +97,7 @@ export async function concluirContagemAction(_: ActionState, fd: FormData): Prom
 
 export async function cancelarInventarioAction(_: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
-  const id = Number(fd.get("id"));
+  const id = idInt(fd.get("id")) ?? 0; // inválido → 0 → "não encontrado" (antes: NaN ia ao banco = Erro inesperado)
   try {
     await db.$transaction((tx) => cancelarInventario(tx, id), TX_OPTS);
     await audit(user.id, "cancelar", "InventarioConsignacao", id, docInventario(id));
@@ -109,6 +113,7 @@ const RESOLUCOES = ["AJUSTE", "COBRAR_HOSPITAL", "JUSTIFICADA"];
 /** Campos `res_<itemId>` e `just_<itemId>`. */
 export async function fecharInventarioAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  id = argInt(id);
   try {
     const porItem = new Map<string, ResolucaoInput>();
     for (const [k, v] of fd.entries()) {

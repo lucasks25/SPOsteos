@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { margemDados } from "../../_lib/consultas";
 import { respostaCsv, pct } from "@/lib/csv";
 import { PERFIS_GESTAO } from "../../_lib/visual";
@@ -6,7 +6,8 @@ import { PERFIS_GESTAO } from "../../_lib/visual";
 const CAB = ["Receita", "Custo", "Margem", "Margem %", "Comissão"];
 
 export async function GET(req: Request) {
-  await requireUser([...PERFIS_GESTAO]);
+  const sessao = await exigirUsuarioRota([...PERFIS_GESTAO]);
+  if (sessao instanceof Response) return sessao;
   const sp = Object.fromEntries(new URL(req.url).searchParams);
   const d = await margemDados(sp);
   const quem = sp.por === "hospital" ? "hospital" : sp.por === "representante" ? "representante" : "produto";

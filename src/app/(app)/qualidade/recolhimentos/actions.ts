@@ -5,6 +5,8 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { idInt } from "@/lib/ids";
+import { argId, argInt } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { CLASSES, ORIGENS, PERFIS_OPERAR_RECOLHIMENTO, PERFIS_RECOLHER, docRecolhimento } from "../_lib/recolhimento";
 import {
@@ -56,7 +58,7 @@ export async function abrirRecolhimentoAction(_: ActionState, fd: FormData): Pro
   redirect(`/qualidade/recolhimentos/${id}`);
 }
 
-const idDe = (fd: FormData) => Number(fd.get("id"));
+const idDe = (fd: FormData) => idInt(fd.get("id")) ?? 0; // inválido → 0 → "não encontrado" (antes: NaN ia ao banco)
 const txt = (fd: FormData, k: string) => (typeof fd.get(k) === "string" ? String(fd.get(k)).trim() : "");
 
 export async function atualizarFotoAction(_: ActionState, fd: FormData): Promise<ActionState> {
@@ -89,6 +91,7 @@ export async function comunicarHospitalAction(_: ActionState, fd: FormData): Pro
 /** Campos `p_<id>` marcados e `observacao`. */
 export async function comunicarPacientesAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
+  id = argInt(id);
   const ids = [...fd.keys()].filter((k) => k.startsWith("p_")).map((k) => k.slice(2));
   try {
     const n = await db.$transaction((tx) => comunicarPacientes(tx, id, ids, user.nome, txt(fd, "observacao")), TX_OPTS);
@@ -102,6 +105,8 @@ export async function comunicarPacientesAction(id: number, _: ActionState, fd: F
 
 export async function recolherAction(id: number, alvoId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_RECOLHER);
+  id = argInt(id);
+  alvoId = argId(alvoId);
   const parsed = parseForm(z.object({ quantidade: zf.int(1) }), fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -116,6 +121,8 @@ export async function recolherAction(id: number, alvoId: string, _: ActionState,
 
 export async function justificarAction(id: number, alvoId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
+  id = argInt(id);
+  alvoId = argId(alvoId);
   const texto = txt(fd, "justificativa") || null;
   try {
     await db.$transaction((tx) => justificarAlvo(tx, id, alvoId, texto, user.nome), TX_OPTS);
@@ -129,6 +136,7 @@ export async function justificarAction(id: number, alvoId: string, _: ActionStat
 
 export async function notaAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
+  id = argInt(id);
   const texto = txt(fd, "texto");
   try {
     await db.$transaction((tx) => registrarNota(tx, id, texto, user.nome), TX_OPTS);
@@ -142,6 +150,7 @@ export async function notaAction(id: number, _: ActionState, fd: FormData): Prom
 
 export async function concluirAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
+  id = argInt(id);
   try {
     await db.$transaction((tx) => concluirRecolhimento(tx, id, txt(fd, "conclusao"), user.nome), TX_OPTS);
     await audit(user.id, "concluir", ENT, id, docRecolhimento(id));
@@ -154,6 +163,7 @@ export async function concluirAction(id: number, _: ActionState, fd: FormData): 
 
 export async function cancelarAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
+  id = argInt(id);
   try {
     const des = await db.$transaction((tx) => cancelarRecolhimento(tx, id, txt(fd, "motivo"), user.nome), TX_OPTS);
     await audit(user.id, "cancelar", ENT, id, `${docRecolhimento(id)}: desbloqueados ${des.join(", ") || "nenhum"}`);

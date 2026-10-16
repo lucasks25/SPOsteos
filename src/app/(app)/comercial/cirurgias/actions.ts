@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { parseDataHoraSP } from "@/lib/datas";
 import { faturarCirurgia } from "../_lib/faturamento";
@@ -43,6 +44,7 @@ function revalidar(id?: string) {
 
 export async function salvarCirurgia(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...EDITAM]);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   let savedId: string;
@@ -60,6 +62,7 @@ export async function salvarCirurgia(id: string | null, _: ActionState, fd: Form
 
 export async function confirmarCirurgia(id: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser([...EDITAM]);
+  id = argId(id);
   try {
     const c = await db.$transaction((tx) => confirmarCirurgiaTx(tx, id));
     await audit(user.id, "confirmar", "Cirurgia", id, `CIR-${c.numero}`);
@@ -72,6 +75,7 @@ export async function confirmarCirurgia(id: string, _: ActionState): Promise<Act
 
 export async function cancelarCirurgia(id: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser([...EDITAM]);
+  id = argId(id);
   try {
     const c = await db.$transaction((tx) => cancelarCirurgiaTx(tx, id));
     await audit(user.id, "cancelar", "Cirurgia", id, `CIR-${c.numero}`);
@@ -90,6 +94,7 @@ const consumoSchema = z.object({
 /** Consumo direto a partir do estoque consignado já existente no hospital. */
 export async function registrarConsumo(cirurgiaId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["COMERCIAL", "ESTOQUE"]);
+  cirurgiaId = argId(cirurgiaId);
   const parsed = parseForm(consumoSchema, fd);
   if (!parsed.success) return parsed.state;
   const { loteId, quantidade } = parsed.data;
@@ -106,6 +111,7 @@ export async function registrarConsumo(cirurgiaId: string, _: ActionState, fd: F
 /** Remove uma linha de consumo, devolvendo a quantidade ao estoque consignado do hospital (estorno). */
 export async function removerConsumo(consumoId: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser(["COMERCIAL", "ESTOQUE"]);
+  consumoId = argId(consumoId);
   let cirurgiaId = "";
   try {
     cirurgiaId = await db.$transaction((tx) => removerConsumoTx(tx, consumoId, user.nome));
@@ -119,6 +125,7 @@ export async function removerConsumo(consumoId: string, _: ActionState): Promise
 
 export async function faturar(cirurgiaId: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser(["COMERCIAL", "FINANCEIRO"]);
+  cirurgiaId = argId(cirurgiaId);
   let pedidoId: number;
   try {
     const pedido = await db.$transaction((tx) => faturarCirurgia(tx, cirurgiaId));

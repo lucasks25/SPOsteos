@@ -1,11 +1,12 @@
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { glosasDados } from "../../_lib/consultas";
 import { respostaCsv, pct } from "@/lib/csv";
 import { PERFIS_GLOSAS } from "../../_lib/visual";
 import { ROTULO_CATEGORIA_GLOSA } from "../../../financeiro/_lib/publico";
 
 export async function GET(req: Request) {
-  await requireUser([...PERFIS_GLOSAS]);
+  const sessao = await exigirUsuarioRota([...PERFIS_GLOSAS]);
+  if (sessao instanceof Response) return sessao;
   const sp = Object.fromEntries(new URL(req.url).searchParams);
   const d = await glosasDados(sp);
   const por = sp.por === "convenio" ? "convenio" : sp.por === "hospital" ? "hospital" : "categoria";

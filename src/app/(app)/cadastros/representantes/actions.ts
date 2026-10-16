@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { isCnpj, isCpf, onlyDigits } from "@/lib/documentos-br";
 import { PERFIS_COMERCIAL } from "../_lib/acoes";
@@ -19,6 +20,7 @@ const schema = z.object({
 
 export async function salvarRepresentante(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   try {

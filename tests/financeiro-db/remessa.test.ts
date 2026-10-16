@@ -9,6 +9,7 @@ import { db } from "@/lib/db";
 import { hojeUTC } from "@/lib/datas";
 import { aplicarRetornoTx, cancelarRemessaTx, contagemVazia, gerarRemessaTx } from "@/app/(app)/financeiro/_lib/sispag-servico";
 import { registrarBaixa } from "@/app/(app)/financeiro/_lib/titulos";
+import { aprovarFavorecidosTeste } from "../negocio-db/_util";
 
 const hoje = hojeUTC();
 let conta: { id: string; titularCnpj: string; titularNome: string; agencia: string };
@@ -31,6 +32,7 @@ before(async () => {
   const c = await db.contaBancaria.create({ data: { nome: "TESTEDB banco", tipo: "BANCO", banco: "341", agencia: "1234", numero: "123456", titularCnpj: "12345678000195", titularNome: "EMPRESA TESTE", saldoInicial: 100000 } });
   conta = { id: c.id, titularCnpj: c.titularCnpj!, titularNome: c.titularNome!, agencia: c.agencia! };
   fornecedorId = (await db.fornecedor.create({ data: { razaoSocial: "TESTEDB Fornecedor", cnpj: CNPJ, bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" } })).id;
+  await aprovarFavorecidosTeste();
 });
 after(async () => {
   await limpar();

@@ -77,7 +77,14 @@ export async function salvarContaPagarTx(tx: Tx, id: string | null, data: DadosP
   }
   await garantirMesAberto(tx, [data.competencia, id ? await competenciaDo(tx, "pagar", id) : null], "criar ou alterar título nessa competência");
   if (!id) return (await tx.contaPagar.create({ data: { ...data, aprovadoEm: new Date(), aprovadoPor: usuarioId } })).id;
-  const r = await tx.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
+  // mudou o que decide quanto/para quem/quando se paga: a aprovação passa a ser de quem editou (rastro de responsabilidade);
+  // conta ainda não aprovada (gerada por compras) continua esperando a aprovação em /financeiro/aprovacoes
+  const atual = await tx.contaPagar.findUnique({ where: { id }, select: { valor: true, vencimento: true, fornecedorId: true, codigoBarras: true, aprovadoEm: true } });
+  const mudouPagamento =
+    !!atual &&
+    (cent(toNumber(atual.valor)) !== cent(data.valor) || atual.vencimento.getTime() !== data.vencimento.getTime() || atual.fornecedorId !== data.fornecedorId || atual.codigoBarras !== data.codigoBarras);
+  const aprovacao = mudouPagamento && atual?.aprovadoEm ? { aprovadoEm: new Date(), aprovadoPor: usuarioId } : {};
+  const r = await tx.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data: { ...data, ...aprovacao } });
   if (r.count === 0) throw new ErroNegocio("Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes.");
   return id;
 }
@@ -117,4 +124,20 @@ export async function classificarTituloTx(tx: Tx, tipo: Tipo, id: string, data: 
   }
   const r = tipo === "receber" ? await tx.contaReceber.updateMany({ where: { id }, data }) : await tx.contaPagar.updateMany({ where: { id }, data });
   if (r.count === 0) throw new ErroNegocio("Título não encontrado.");
+}
+
+const CAMPOS_TITULO = ["descricao", "valor", "vencimento", "competencia", "hospitalId", "fornecedorId", "codigoBarras", "planoContaId", "centroCustoId"] as const;
+const fmtCampo = (v: unknown) => (v === null || v === undefined ? "vazio" : v instanceof Date ? v.toISOString().slice(0, 10) : typeof v === "object" ? String(toNumber(v as never)) : String(v));
+
+/**
+ * Texto "campo: antes → depois" da edição de um título, para a auditoria (governança: quem mudou valor, vencimento,
+ * favorecido ou boleto). Chame dentro da mesma transação, antes de salvar; trava a linha como o salvar.
+ */
+export async function diferencasTitulo(tx: Tx, tipo: Tipo, id: string, novo: Partial<Record<(typeof CAMPOS_TITULO)[number], unknown>>): Promise<string> {
+  await travar(tx, tipo, id);
+  const atual = (tipo === "receber" ? await tx.contaReceber.findUnique({ where: { id } }) : await tx.contaPagar.findUnique({ where: { id } })) as Record<string, unknown> | null;
+  if (!atual) return "";
+  return CAMPOS_TITULO.filter((k) => k in novo && fmtCampo(atual[k]) !== fmtCampo(novo[k]))
+    .map((k) => `${k}: ${fmtCampo(atual[k])} → ${fmtCampo(novo[k])}`)
+    .join("; ");
 }

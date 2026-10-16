@@ -10,6 +10,7 @@ import { db } from "@/lib/db";
 import { hojeUTC } from "@/lib/datas";
 import { contaDoRetorno, lerRetornoSispag } from "@/app/(app)/financeiro/_lib/sispag";
 import { aplicarRetornoTx, contagemVazia, gerarRemessaTx } from "@/app/(app)/financeiro/_lib/sispag-servico";
+import { aprovarFavorecidosTeste } from "../negocio-db/_util";
 
 const hoje = hojeUTC();
 const cd = { conta: "12345", dac: "6" };
@@ -32,6 +33,7 @@ before(async () => {
   fItau = await f("Itau", "11222333000181", { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" });
   fOutro = await f("Outro banco", "22333444000172", { bancoCodigo: "237", agencia: "1111", conta: "22222", contaDigito: "3" });
   fPix = await f("Pix", "33444555000163", { chavePix: "pix@forn.com.br" });
+  await aprovarFavorecidosTeste();
 });
 after(async () => {
   await limpar();

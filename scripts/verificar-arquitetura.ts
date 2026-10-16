@@ -34,7 +34,7 @@ const PUBLICO = "_lib/publico.ts";
 
 /** Dono de cada modelo Prisma (quem pode escrever). Modelo ausente daqui = sem checagem. */
 const DONO: Record<string, string[]> = {
-  usuario: ["admin", "shell"], tentativaLogin: ["shell"], logAuditoria: ["lib"],
+  usuario: ["admin", "shell", "lib"], tentativaLogin: ["shell", "lib"], logAuditoria: ["lib"], // lib: src/lib/auth-login.ts (login, limite de tentativas e troca da própria senha)
   fabricante: ["cadastros"], fornecedor: ["cadastros", "financeiro"], // financeiro: só as colunas bancárias (ADR-5, UI-05) hospital: ["cadastros"], medico: ["cadastros"],
   convenio: ["cadastros"], procedimento: ["cadastros"], procedimentoItem: ["cadastros"],
   representante: ["cadastros"], produto: ["cadastros", "lib"], // lib: só custoMedio (atualizarCustoMedio, ARQ-09)

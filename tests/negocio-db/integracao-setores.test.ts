@@ -27,7 +27,7 @@ import { aplicarRetornoTx, contagemVazia, gerarRemessaDaContaTx } from "@/app/(a
 import { estornarTransferencia, registrarBaixa, registrarGlosa, registrarRecurso, transferir } from "@/app/(app)/financeiro/_lib/titulos";
 import { gerarContaReceberTx } from "@/app/(app)/financeiro/_lib/publico";
 import { carregarPendencias, listarPendencias } from "@/app/(app)/_painel/pendencias";
-import { dia, mkFornecedor, mkHospital, mkProduto, num, P, saldoDe, uid } from "./_util";
+import { aprovarFavorecidosTeste, dia, mkFornecedor, mkHospital, mkProduto, num, P, saldoDe, uid } from "./_util";
 import { deltaDre, fotoDre, limparIntegracao, mkConta, painelMes, r2, realizadoHoje, recusa, saldoConta, tx } from "./_integracao";
 import { conferirTudo } from "./_invariantes";
 
@@ -39,6 +39,7 @@ before(async () => {
   caixaId = (await mkConta({ tipo: "CAIXA" })).id;
   fornecedorId = (await mkFornecedor()).id;
   await db.fornecedor.update({ where: { id: fornecedorId }, data: { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" } });
+  await aprovarFavorecidosTeste();
   hospitalId = (await mkHospital()).id;
   medicoId = (await db.medico.create({ data: { nome: `${P} medico`, crm: uid(), ufCrm: "SP" } })).id;
   representanteId = (await db.representante.create({ data: { nome: `${P} representante`, comissaoPercent: 5 } })).id;

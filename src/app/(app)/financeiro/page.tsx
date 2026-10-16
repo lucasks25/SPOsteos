@@ -1,6 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Card, KpiGrid, btn, PageHeader, Stat, Table, Td, cx } from "@/components/ui";
+import type { IconName } from "@/components/icons";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
 import { Celula, VerTudo } from "@/components/lista";
@@ -10,10 +11,10 @@ import { inventariosACobrar } from "./_lib/leitura-painel";
 
 type Tom = "default" | "warn" | "danger";
 
-function Tile({ href, label, value, hint, tone = "default" }: { href: string; label: string; value: ReactNode; hint?: ReactNode; tone?: Tom }) {
+function Tile({ href, label, value, hint, tone = "default", icon }: { href: string; label: string; value: ReactNode; hint?: ReactNode; tone?: Tom; icon?: IconName }) {
   return (
-    <Link href={href} className="block rounded outline-offset-2 transition-colors duration-150 hover:[&>div]:border-teal-600">
-      <Stat label={label} value={value} hint={hint} tone={tone} />
+    <Link href={href} className="block">
+      <Stat label={label} value={value} hint={hint} tone={tone} icon={icon} />
     </Link>
   );
 }
@@ -57,16 +58,17 @@ export default async function PainelFinanceiroPage() {
       <PageHeader title="Visão geral" subtitle={`Resumo do caixa, dos títulos e das pendências do Financeiro em ${date(hoje)}; os valores em aberto já descontam baixas parciais.`} />
 
       <KpiGrid>
-        <Tile href="/financeiro/contas" label="Saldo nas contas" value={money(p.saldoTotal)} tone={p.saldoTotal < 0 ? "danger" : "default"} hint={`${p.contas.length} conta(s) ativa(s)`} />
+        <Tile icon="banco" href="/financeiro/contas" label="Saldo nas contas" value={money(p.saldoTotal)} tone={p.saldoTotal < 0 ? "danger" : "default"} hint={`${p.contas.length} conta(s) ativa(s)`} />
         <Tile
+          icon="tendencia"
           href="/financeiro/fluxo"
           label="Projeção em 30 dias"
           value={money(p.projecao30)}
           tone={p.projecao30 < 0 ? "danger" : "default"}
           hint="saldo + a receber − a pagar (inclui atrasados)"
         />
-        <Tile href="/financeiro/contas" label="Entradas no mês" value={money(p.mes.entradas)} hint="dinheiro que entrou nas contas" />
-        <Tile href="/financeiro/contas" label="Saídas no mês" value={money(p.mes.saidas)} hint={`resultado de caixa ${money(p.mes.resultado)}`} tone={p.mes.resultado < 0 ? "warn" : "default"} />
+        <Tile icon="receber" href="/financeiro/contas" label="Entradas no mês" value={money(p.mes.entradas)} hint="dinheiro que entrou nas contas" />
+        <Tile icon="pagar" href="/financeiro/contas" label="Saídas no mês" value={money(p.mes.saidas)} hint={`resultado de caixa ${money(p.mes.resultado)}`} tone={p.mes.resultado < 0 ? "warn" : "default"} />
       </KpiGrid>
 
       <div className="mb-4 grid gap-4 lg:grid-cols-2">
@@ -75,10 +77,10 @@ export default async function PainelFinanceiroPage() {
       </div>
 
       <KpiGrid>
-        <Tile href="/financeiro/conciliacao" label="Extrato a conciliar" value={num(pend.extrato)} tone={pend.extrato ? "warn" : "default"} hint="linhas importadas sem vínculo" />
-        <Tile href="/financeiro/conciliacao" label="Baixas sem extrato" value={num(pend.semExtrato)} hint="ainda não vistas no banco (contas bancárias)" />
-        <Tile href="/financeiro/remessas" label="Pagamentos em remessa sem retorno" value={num(pend.remessaAguardando)} tone={pend.remessaAguardando ? "warn" : "default"} hint="itens de remessas SISPAG enviados ou agendados, sem confirmação do banco" />
-        <Tile href="/financeiro/remessas" label="Pagamentos rejeitados em remessa" value={num(pend.remessaRejeitada)} tone={pend.remessaRejeitada ? "danger" : "default"} hint="o banco recusou; corrigir e reenviar" />
+        <Tile icon="conciliar" href="/financeiro/conciliacao" label="Extrato a conciliar" value={num(pend.extrato)} tone={pend.extrato ? "warn" : "default"} hint="linhas importadas sem vínculo" />
+        <Tile icon="lista" href="/financeiro/conciliacao" label="Baixas sem extrato" value={num(pend.semExtrato)} hint="ainda não vistas no banco (contas bancárias)" />
+        <Tile icon="caminhao" href="/financeiro/remessas" label="Pagamentos em remessa sem retorno" value={num(pend.remessaAguardando)} tone={pend.remessaAguardando ? "warn" : "default"} hint="itens de remessas SISPAG enviados ou agendados, sem confirmação do banco" />
+        <Tile icon="alerta" href="/financeiro/remessas" label="Pagamentos rejeitados em remessa" value={num(pend.remessaRejeitada)} tone={pend.remessaRejeitada ? "danger" : "default"} hint="o banco recusou; corrigir e reenviar" />
       </KpiGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">

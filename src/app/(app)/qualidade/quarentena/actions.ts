@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { PERFIS_QUALIDADE } from "../_lib/perfis";
 import { inspecionarLoteServico } from "../_lib/inspecao-servico";
@@ -19,6 +20,7 @@ const schema = z.object({
 
 export async function inspecionarLote(loteId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_QUALIDADE);
+  loteId = argId(loteId);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   const data = parsed.data;

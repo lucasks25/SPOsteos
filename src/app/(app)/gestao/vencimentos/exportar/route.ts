@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { ymd } from "@/lib/datas";
 import { vencimentosDados } from "../../_lib/consultas";
 import { respostaCsv } from "@/lib/csv";
@@ -6,7 +6,8 @@ import { FAIXAS_VENCIMENTO } from "../../_lib/vencimentos";
 import { PERFIS_GESTAO } from "../../_lib/visual";
 
 export async function GET() {
-  await requireUser([...PERFIS_GESTAO]);
+  const sessao = await exigirUsuarioRota([...PERFIS_GESTAO]);
+  if (sessao instanceof Response) return sessao;
   const d = await vencimentosDados();
   return respostaCsv(`vencimentos_${ymd(d.hoje)}.csv`, [
     ["Faixa", "Validade", "Dias", "Código", "Produto", "Lote", "Local", "Hospital", "Quantidade", "Valor em risco"],

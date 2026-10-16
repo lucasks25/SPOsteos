@@ -6,6 +6,8 @@ import { z } from "zod";
 import { Perfil } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId } from "@/lib/auth-args";
+import { editarUsuarioTx } from "../_lib/usuarios-servico";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 
 const senha = z.string({ error: "Senha obrigatória" }).min(10, "Mínimo de 10 caracteres").max(72, "Máximo de 72 caracteres");
@@ -43,14 +45,13 @@ export async function criarUsuario(_: ActionState, fd: FormData): Promise<Action
 
 export async function editarUsuario(id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireUser([]);
+  id = argId(id);
   const parsed = parseForm(editarSchema, fd);
   if (!parsed.success) return parsed.state;
-  if (id === admin.id && (!parsed.data.ativo || parsed.data.perfil !== "ADMIN")) {
-    return { error: "Você não pode desativar nem tirar o perfil de administrador da sua própria conta." };
-  }
   try {
-    const u = await db.usuario.update({ where: { id }, data: parsed.data });
-    await audit(admin.id, "editar", "Usuario", id, `${u.email} perfil=${u.perfil} ativo=${u.ativo}`);
+    const r = await db.$transaction((tx) => editarUsuarioTx(tx, admin.id, id, parsed.data));
+    // governança: mudança de perfil/ativação com antes → depois (quem ganhou acesso a quê)
+    await audit(admin.id, "editar", "Usuario", id, `${r.email} — ${r.mudou || "sem alteração"}`);
   } catch (e) {
     return { error: errorMessage(e) };
   }
@@ -60,6 +61,7 @@ export async function editarUsuario(id: string, _: ActionState, fd: FormData): P
 
 export async function redefinirSenha(id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const admin = await requireUser([]);
+  id = argId(id);
   const parsed = parseForm(z.object({ senha }), fd);
   if (!parsed.success) return parsed.state;
   try {

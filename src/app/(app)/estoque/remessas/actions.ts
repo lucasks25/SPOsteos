@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argInt } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { PERFIS_EDITAR } from "../_lib/perfis";
 import { cancelarRemessa, conferirRemessa, criarRemessa, docRemessa, enviarRemessa } from "../_lib/remessas";
@@ -99,6 +100,7 @@ const qtd = z.coerce.number({ error: "Número inválido" }).int("Deve ser inteir
 
 export async function conferirRemessaAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  id = argInt(id);
   const itens = await db.remessaItem.findMany({ where: { remessaId: id }, select: { id: true, quantidade: true } });
   const fieldErrors: Record<string, string> = {};
   const retornos = itens.map((it) => {

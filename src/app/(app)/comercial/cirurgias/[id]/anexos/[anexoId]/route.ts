@@ -1,11 +1,12 @@
 import { readFile } from "node:fs/promises";
 import { db } from "@/lib/db";
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { caminhoAnexo, MIME_POR_EXT } from "../../../../_lib/anexos";
 
 /** Download autenticado de anexo da cirurgia (não depende de /public ser servido em produção). */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string; anexoId: string }> }) {
-  await requireUser(["COMERCIAL", "FINANCEIRO", "ESTOQUE"]);
+  const sessao = await exigirUsuarioRota(["COMERCIAL", "FINANCEIRO", "ESTOQUE"]);
+  if (sessao instanceof Response) return sessao;
   const { id, anexoId } = await ctx.params;
   const anexo = await db.anexo.findUnique({ where: { id: anexoId } });
   if (!anexo || anexo.cirurgiaId !== id) return new Response("Anexo não encontrado", { status: 404 });

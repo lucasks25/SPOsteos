@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 
 const PERFIS = ["COMERCIAL"] as const;
@@ -15,6 +16,7 @@ const schema = z
 
 export async function salvarTabela(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   let novoId: string | null = null;
@@ -34,6 +36,7 @@ const itemSchema = z.object({ produtoId: zf.text("Selecione o produto"), preco: 
 
 export async function salvarPreco(tabelaId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  tabelaId = argId(tabelaId);
   const parsed = parseForm(itemSchema, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -54,6 +57,7 @@ export async function salvarPreco(tabelaId: string, _: ActionState, fd: FormData
 
 export async function removerPreco(itemId: string): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  itemId = argId(itemId);
   try {
     const it = await db.tabelaPrecoItem.delete({ where: { id: itemId } });
     await audit(user.id, "remover preço", "TabelaPreco", it.tabelaId, it.produtoId);
@@ -67,6 +71,7 @@ export async function removerPreco(itemId: string): Promise<ActionState> {
 /** Inclui na tabela todos os produtos ativos que ainda não estão nela, pelo preço base. */
 export async function incluirTodos(tabelaId: string): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  tabelaId = argId(tabelaId);
   try {
     const produtos = await db.produto.findMany({ where: { ativo: true, precos: { none: { tabelaId } } }, select: { id: true, precoBase: true } });
     await db.tabelaPrecoItem.createMany({ data: produtos.map((p) => ({ tabelaId, produtoId: p.id, preco: p.precoBase })) });
@@ -80,6 +85,7 @@ export async function incluirTodos(tabelaId: string): Promise<ActionState> {
 
 export async function excluirTabela(id: string): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
+  id = argId(id);
   try {
     const n = await db.hospital.count({ where: { tabelaPrecoId: id } });
     if (n > 0) return { error: `Tabela usada por ${n} hospital(is). Troque a tabela deles antes.` };

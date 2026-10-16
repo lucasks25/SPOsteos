@@ -6,6 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { localDoHospital, removerLocalDoHospital } from "@/lib/estoque";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj, UFS } from "@/lib/documentos-br";
@@ -34,6 +35,7 @@ const schema = z.object({
 
 export async function salvarHospital(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_HOSPITAL);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   const data = parsed.data;
@@ -61,6 +63,7 @@ export async function salvarHospital(id: string | null, _: ActionState, fd: Form
 
 export async function alternarAtivoHospital(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_HOSPITAL);
+  id = argId(id);
   try {
     const h = await db.hospital.findUniqueOrThrow({ where: { id } });
     await db.hospital.update({ where: { id }, data: { ativo: !h.ativo } });
@@ -76,6 +79,7 @@ export async function alternarAtivoHospital(id: string): Promise<ActionState> {
 /** Exclusão física só quando não há nenhum movimento/documento vinculado. */
 export async function excluirHospital(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_HOSPITAL);
+  id = argId(id);
   try {
     const h = await db.hospital.findUniqueOrThrow({
       where: { id },

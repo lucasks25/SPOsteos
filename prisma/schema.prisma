@@ -84,6 +84,13 @@ model Fornecedor {
   conta        String?
   contaDigito  String?
   chavePix     String?
+  // aprovação dos dados de pagamento (dupla checagem): o SISPAG só paga se o hash de (cnpj + banco/agência/conta/dígito + Pix)
+  // for igual ao aprovado. Quem alterou não aprova (financeiro/_lib/favorecidos-aprovacao.ts, docs/REVISAO.md §19).
+  pagamentoAlteradoEm   DateTime?
+  pagamentoAlteradoPor  String?
+  pagamentoAprovadoHash String?
+  pagamentoAprovadoEm   DateTime?
+  pagamentoAprovadoPor  String?
   ativo        Boolean        @default(true)
   criadoEm     DateTime       @default(now())
   pedidos      PedidoCompra[]

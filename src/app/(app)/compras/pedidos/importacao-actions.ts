@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo, argInt } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { ErroNegocio } from "@/lib/erros";
 import { CRITERIOS_RATEIO, INCOTERMS, MOEDAS, ROTULO_DESPESA, TIPOS_DESPESA } from "../_lib/custo-importacao";
@@ -29,6 +30,7 @@ const schemaDados = z.object({
 /** Dados da importação: moeda, câmbio, incoterm, invoice, DI e datas. */
 export async function salvarImportacao(pedidoId: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
+  pedidoId = argInt(pedidoId);
   const parsed = parseForm(schemaDados, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -45,6 +47,7 @@ export async function salvarImportacao(pedidoId: number, _: ActionState, fd: For
 /** Preço na moeda e peso de cada item (campos pm_<itemId> e kg_<itemId>; "preco*" ganharia máscara de R$). */
 export async function salvarItensImportacao(pedidoId: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
+  pedidoId = argInt(pedidoId);
   const itens: { itemId: string; precoMoeda: number; pesoKg: number | null }[] = [];
   const fieldErrors: Record<string, string> = {};
   for (const [k, v] of fd.entries()) {
@@ -83,6 +86,8 @@ const schemaDespesa = z.object({
 /** Inclui (despesaId nulo) ou altera uma despesa de importação. */
 export async function salvarDespesa(pedidoId: number, despesaId: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
+  pedidoId = argInt(pedidoId);
+  despesaId = argIdOuNulo(despesaId);
   const parsed = parseForm(schemaDespesa, fd);
   if (!parsed.success) return parsed.state;
   const { integra, ...d } = parsed.data;
@@ -108,6 +113,8 @@ export async function salvarDespesa(pedidoId: number, despesaId: string | null, 
 /** Remove a despesa; a conta a pagar própria, se houver, é cancelada. */
 export async function removerDespesa(pedidoId: number, despesaId: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMPRAS);
+  pedidoId = argInt(pedidoId);
+  despesaId = argId(despesaId);
   try {
     if (!despesaId) throw new ErroNegocio("Despesa inválida.");
     const r = await db.$transaction((tx) => removerDespesaTx(tx, pedidoId, despesaId));

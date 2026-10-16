@@ -15,7 +15,7 @@ import { classificarTituloTx, salvarContaPagarTx } from "@/app/(app)/financeiro/
 import { registrarBaixa } from "@/app/(app)/financeiro/_lib/titulos";
 import { aprovarContasPagarTx } from "@/app/(app)/financeiro/_lib/aprovacao-servico";
 import { alterarContaPagarGeradaTx, gerarContaPagarTx } from "@/app/(app)/financeiro/_lib/publico";
-import { dia, limparTudo, mkFornecedor, num, P } from "./_util";
+import { aprovarFavorecidosTeste, dia, limparTudo, mkFornecedor, num, P } from "./_util";
 
 type T = Parameters<Parameters<typeof db.$transaction>[0]>[0];
 const tx = <R>(f: (t: T) => Promise<R>) => db.$transaction(f, { timeout: 20_000, maxWait: 10_000 });
@@ -43,6 +43,7 @@ before(async () => {
   mesJaFechado = !!(await db.fechamentoMes.findUnique({ where: { mes: MES_FECHADO } }));
   fornecedorId = (await mkFornecedor()).id;
   await db.fornecedor.update({ where: { id: fornecedorId }, data: { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" } });
+  await aprovarFavorecidosTeste();
   planoDespesa = (await db.planoConta.findUniqueOrThrow({ where: { codigo: "4.02" } })).id;
   centroA = (await db.centroCusto.create({ data: { codigo: `T${Date.now() % 100000}A`, nome: `${P} centro A` } })).id;
   centroB = (await db.centroCusto.create({ data: { codigo: `T${Date.now() % 100000}B`, nome: `${P} centro B` } })).id;

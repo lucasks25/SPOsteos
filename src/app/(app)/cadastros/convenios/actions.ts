@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_COMERCIAL } from "../_lib/acoes";
@@ -23,6 +24,7 @@ const schema = z.object({
 
 export async function salvarConvenio(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   const data = parsed.data;
@@ -45,6 +47,7 @@ export async function salvarConvenio(id: string | null, _: ActionState, fd: Form
 
 export async function alternarAtivoConvenio(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  id = argId(id);
   try {
     const c = await db.convenio.findUniqueOrThrow({ where: { id } });
     await db.convenio.update({ where: { id }, data: { ativo: !c.ativo } });
@@ -59,6 +62,7 @@ export async function alternarAtivoConvenio(id: string): Promise<ActionState> {
 
 export async function excluirConvenio(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  id = argId(id);
   try {
     const [cir, orc] = await Promise.all([
       db.cirurgia.count({ where: { convenioId: id } }),

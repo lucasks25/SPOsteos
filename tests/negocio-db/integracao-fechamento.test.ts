@@ -20,7 +20,7 @@ import { alterarContaPagarGeradaTx, cancelarContaPagarGeradaTx, gerarContaPagarT
 import { aprovarContasPagarTx } from "@/app/(app)/financeiro/_lib/aprovacao-servico";
 import { fecharMesTx, reabrirMesTx } from "@/app/(app)/financeiro/_lib/fechamento-servico";
 import { registrarNfTx } from "@/app/(app)/comercial/_lib/nf";
-import { mkFornecedor, mkHospital, num, P, uid } from "./_util";
+import { aprovarFavorecidosTeste, mkFornecedor, mkHospital, num, P, uid } from "./_util";
 import { fotoDre, limparIntegracao, mkConta, recusa, tx } from "./_integracao";
 import { conferirTudo } from "./_invariantes";
 
@@ -44,6 +44,7 @@ test("(viii) mês fechado recusa toda mutação financeira com data no mês (var
   const caixa = await mkConta({ tipo: "CAIXA", numero: "fech" });
   const fornecedorId = (await mkFornecedor()).id;
   await db.fornecedor.update({ where: { id: fornecedorId }, data: { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" } });
+  await aprovarFavorecidosTeste();
   const hospitalId = (await mkHospital()).id;
   const pRec = (await db.planoConta.findUniqueOrThrow({ where: { chaveSistema: "RECEITA_VENDA" } })).id;
   const pDesp = (await db.planoConta.findUniqueOrThrow({ where: { codigo: "4.02" } })).id;

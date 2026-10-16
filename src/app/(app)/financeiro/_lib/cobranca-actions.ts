@@ -1,9 +1,11 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argInt } from "@/lib/auth-args";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { decodificarOfx, OFX_MAX_BYTES } from "./ofx";
 import { lerRetornoCobranca } from "./cobranca";
@@ -46,14 +48,16 @@ export async function processarRetornoCobranca(_: ActionState, fd: FormData): Pr
   const cont = contagemCobrancaVazia();
   let remessas = new Set<number>();
   try {
-    const ret = lerRetornoCobranca(decodificarOfx(new Uint8Array(await file.arrayBuffer())));
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const sha = createHash("sha256").update(bytes).digest("hex"); // rastro do arquivo importado na auditoria
+    const ret = lerRetornoCobranca(decodificarOfx(bytes));
     remessas = await db.$transaction((tx) => aplicarRetornoCobrancaTx(tx, ret, cont));
     await audit(
       user.id,
       "processar retorno de cobrança",
       "RemessaCobranca",
       [...remessas].join(","),
-      `registrados ${cont.registrados}, rejeitados ${cont.rejeitados}, liquidados ${cont.liquidados}, baixados ${cont.baixados}, PAGAMENTO EM DUPLICIDADE ${cont.duplicados}, valor divergente ${cont.divergentes}, não reconhecidos ${cont.ignorados}, já processados ${cont.jaProcessados}`,
+      `registrados ${cont.registrados}, rejeitados ${cont.rejeitados}, liquidados ${cont.liquidados}, baixados ${cont.baixados}, PAGAMENTO EM DUPLICIDADE ${cont.duplicados}, valor divergente ${cont.divergentes}, não reconhecidos ${cont.ignorados}, já processados ${cont.jaProcessados}; arquivo sha256 ${sha}`,
     );
   } catch (e) {
     return { error: errorMessage(e) };
@@ -73,6 +77,7 @@ export async function processarRetornoCobranca(_: ActionState, fd: FormData): Pr
 
 export async function cancelarRemessaCobranca(remessaId: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  remessaId = argInt(remessaId);
   const motivo = String(fd.get("motivo") ?? "").trim();
   if (motivo.length < 5) return { fieldErrors: { motivo: "Explique o motivo (mínimo 5 letras)" }, error: "Verifique os campos destacados." };
   try {

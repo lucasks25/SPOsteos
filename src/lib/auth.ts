@@ -6,14 +6,15 @@ import { SignJWT, jwtVerify } from "jose";
 import type { Perfil } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
+import { DICA_AUTH_SECRET, problemaAuthSecret } from "@/lib/auth-config";
 
 export const SESSION_COOKIE = "opme_session";
 const SESSION_DAYS = 1;
 
 function secretKey() {
   const secret = process.env.AUTH_SECRET;
-  // o valor do .env.example é público: nunca pode valer. Gere um com `openssl rand -hex 32`.
-  if (!secret || secret.length < 32 || /troque/i.test(secret)) throw new Error("AUTH_SECRET ausente, curto (mínimo 32 caracteres) ou de exemplo. Gere um com: openssl rand -hex 32");
+  const problema = problemaAuthSecret(secret); // também conferido na subida do servidor (src/instrumentation.ts)
+  if (problema) throw new Error(`${problema} ${DICA_AUTH_SECRET}`);
   return new TextEncoder().encode(secret);
 }
 
@@ -73,6 +74,21 @@ export async function requireUser(perfis?: Perfil[]): Promise<SessionUser> {
   if (!user) redirect("/login");
   if (perfis && user.perfil !== "ADMIN" && !perfis.includes(user.perfil)) {
     throw new ErroNegocio("Acesso negado para o seu perfil.");
+  }
+  return user;
+}
+
+/**
+ * Versão para route handlers (download, CSV, API): em vez de lançar (o Next transforma em 500), devolve a resposta
+ * 401 (sem sessão) ou 403 (perfil sem acesso). Uso:
+ *   const r = await exigirUsuarioRota(["FINANCEIRO"]);
+ *   if (r instanceof Response) return r;
+ */
+export async function exigirUsuarioRota(perfis?: Perfil[]): Promise<SessionUser | Response> {
+  const user = await getUser();
+  if (!user) return new Response("Sessão expirada. Entre de novo.", { status: 401, headers: { "Cache-Control": "no-store" } });
+  if (perfis && user.perfil !== "ADMIN" && !perfis.includes(user.perfil)) {
+    return new Response("Acesso negado para o seu perfil.", { status: 403, headers: { "Cache-Control": "no-store" } });
   }
   return user;
 }

@@ -1,12 +1,13 @@
 import { readFile } from "node:fs/promises";
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { MIME_POR_EXT } from "@/lib/upload-seguro";
 import { PERFIS_VER_DOCUMENTOS } from "../../../../_lib/documentos";
 import { arquivoParaDownload } from "../../../../_lib/documentos-servico";
 
 /** Download autenticado de arquivo de documento: só entrega se o arquivo pertencer ao documento da URL. */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string; arquivoId: string }> }) {
-  await requireUser(PERFIS_VER_DOCUMENTOS);
+  const sessao = await exigirUsuarioRota(PERFIS_VER_DOCUMENTOS);
+  if (sessao instanceof Response) return sessao;
   const { id, arquivoId } = await ctx.params;
   const achado = await arquivoParaDownload(id, arquivoId);
   if (!achado) return new Response("Arquivo não encontrado", { status: 404 });

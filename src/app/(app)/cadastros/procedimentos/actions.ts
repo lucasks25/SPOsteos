@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { deleteErrorMessage, PERFIS_COMERCIAL } from "../_lib/acoes";
 
@@ -16,6 +17,7 @@ const schema = z.object({
 
 export async function salvarProcedimento(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   let novoId: string | null = null;
@@ -38,6 +40,7 @@ const itemSchema = z.object({ produtoId: zf.text("Selecione o produto"), quantid
 
 export async function adicionarItem(procedimentoId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  procedimentoId = argId(procedimentoId);
   const parsed = parseForm(itemSchema, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -57,6 +60,7 @@ export async function adicionarItem(procedimentoId: string, _: ActionState, fd: 
 
 export async function removerItem(itemId: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  itemId = argId(itemId);
   try {
     const item = await db.procedimentoItem.delete({ where: { id: itemId } });
     await audit(user.id, "remover item", "Procedimento", item.procedimentoId, item.produtoId);
@@ -69,6 +73,7 @@ export async function removerItem(itemId: string): Promise<ActionState> {
 
 export async function excluirProcedimento(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_COMERCIAL);
+  id = argId(id);
   try {
     const n = await db.cirurgia.count({ where: { procedimentoId: id } });
     if (n > 0) return { error: `Não é possível excluir: ${n} cirurgia(s) vinculada(s).` };

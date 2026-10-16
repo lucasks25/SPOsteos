@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_SUPRIMENTOS } from "../_lib/acoes";
@@ -17,6 +18,7 @@ const schema = z.object({
 
 export async function salvarFabricante(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_SUPRIMENTOS);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   const data = parsed.data;
@@ -40,6 +42,7 @@ export async function salvarFabricante(id: string | null, _: ActionState, fd: Fo
 
 export async function excluirFabricante(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_SUPRIMENTOS);
+  id = argId(id);
   try {
     const n = await db.produto.count({ where: { fabricanteId: id } });
     if (n > 0) return { error: `Não é possível excluir: ${n} produto(s) vinculado(s).` };

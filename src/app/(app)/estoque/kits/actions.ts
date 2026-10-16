@@ -5,6 +5,7 @@ import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { PERFIS_EDITAR } from "../_lib/perfis";
 import * as servico from "../_lib/kits-servico";
@@ -13,6 +14,7 @@ const schema = z.object({ codigo: zf.text(), descricao: zf.text() });
 
 export async function salvarKit(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  id = argIdOuNulo(id);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   let novoId: string | null = null;
@@ -32,6 +34,7 @@ const itemSchema = z.object({ produtoId: zf.text("Selecione o produto"), quantid
 
 export async function adicionarItemKit(kitId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  kitId = argId(kitId);
   const parsed = parseForm(itemSchema, fd);
   if (!parsed.success) return parsed.state;
   try {
@@ -46,6 +49,7 @@ export async function adicionarItemKit(kitId: string, _: ActionState, fd: FormDa
 
 export async function removerItemKit(itemId: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  itemId = argId(itemId);
   try {
     const it = await db.$transaction((tx) => servico.removerItemKit(tx, itemId));
     await audit(user.id, "remover item", "Kit", it.kitId, it.produtoId);
@@ -58,6 +62,7 @@ export async function removerItemKit(itemId: string): Promise<ActionState> {
 
 export async function excluirKit(id: string): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
+  id = argId(id);
   try {
     const k = await db.$transaction((tx) => servico.excluirKit(tx, id));
     await audit(user.id, "excluir", "Kit", id, k.codigo);

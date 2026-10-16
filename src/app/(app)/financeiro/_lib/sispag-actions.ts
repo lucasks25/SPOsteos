@@ -1,9 +1,11 @@
 "use server";
 
+import { createHash } from "node:crypto";
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argInt } from "@/lib/auth-args";
 import { money } from "@/lib/format";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { addDias, hojeUTC, parseDia } from "@/lib/datas";
@@ -52,7 +54,9 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
   const cont = contagemVazia();
   const remessas = new Set<number>();
   try {
-    const texto = decodificarOfx(new Uint8Array(await file.arrayBuffer()));
+    const bytes = new Uint8Array(await file.arrayBuffer());
+    const sha = createHash("sha256").update(bytes).digest("hex"); // rastro do arquivo importado na auditoria
+    const texto = decodificarOfx(bytes);
     const resultados = lerRetornoSispag(texto);
     const cabecalho = contaDoRetorno(texto);
     if (resultados.length === 0) return { error: "O retorno não traz nenhum pagamento." };
@@ -62,7 +66,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
       "processar retorno SISPAG",
       "RemessaPagamento",
       [...remessas].join(","),
-      `pagos ${cont.pagos} (PAGAMENTO EM DUPLICIDADE, título já quitado antes: ${cont.jaBaixados}; remessa cancelada mas paga pelo banco: ${cont.canceladasPagas}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}`,
+      `pagos ${cont.pagos} (PAGAMENTO EM DUPLICIDADE, título já quitado antes: ${cont.jaBaixados}; remessa cancelada mas paga pelo banco: ${cont.canceladasPagas}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}; arquivo sha256 ${sha}`,
     );
   } catch (e) {
     return { error: errorMessage(e) };
@@ -88,6 +92,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
  */
 export async function cancelarRemessa(remessaId: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
+  remessaId = argInt(remessaId);
   const motivo = String(fd.get("motivo") ?? "").trim();
   if (motivo.length < 5) return { fieldErrors: { motivo: "Explique o motivo (mínimo 5 letras)" }, error: "Verifique os campos destacados." };
   try {

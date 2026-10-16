@@ -6,12 +6,14 @@ import path from "node:path";
 import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { argId } from "@/lib/auth-args";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { lerArquivoDoForm } from "@/lib/upload-seguro";
 import { caminhoAnexo, ID_SEGURO, pastaUploads } from "../_lib/anexos";
 
 export async function enviarAnexo(cirurgiaId: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["COMERCIAL", "ESTOQUE"]);
+  cirurgiaId = argId(cirurgiaId);
   if (!ID_SEGURO.test(cirurgiaId)) return { error: "Cirurgia inválida." };
   const cirurgia = await db.cirurgia.findUnique({ where: { id: cirurgiaId }, select: { id: true, numero: true } });
   if (!cirurgia) return { error: "Cirurgia não encontrada." };
@@ -35,6 +37,7 @@ export async function enviarAnexo(cirurgiaId: string, _: ActionState, fd: FormDa
 
 export async function excluirAnexo(anexoId: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser(["COMERCIAL", "ESTOQUE"]);
+  anexoId = argId(anexoId);
   const anexo = await db.anexo.findUnique({ where: { id: anexoId } });
   if (!anexo) return { error: "Anexo não encontrado." };
   try {

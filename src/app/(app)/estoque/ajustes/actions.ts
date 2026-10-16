@@ -31,5 +31,6 @@ export async function registrarAjuste(_: ActionState, fd: FormData): Promise<Act
   }
   revalidatePath("/estoque/ajustes");
   revalidatePath("/estoque/saldos");
+  revalidatePath("/estoque/kardex");
   return { ok: true };
 }

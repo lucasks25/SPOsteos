@@ -11,7 +11,7 @@ import { gerarRemessaDaContaTx } from "@/app/(app)/financeiro/_lib/sispag-servic
 import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx } from "@/app/(app)/financeiro/_lib/contas-servico";
 import { fecharMesTx, reabrirMesTx } from "@/app/(app)/financeiro/_lib/fechamento-servico";
 import { alternarCentroCustoTx, alternarContaPlanoTx, criarCentroCustoTx, criarContaPlanoTx } from "@/app/(app)/financeiro/_lib/plano-servico";
-import { cancelarTituloTx, classificarTituloTx, salvarContaPagarTx, salvarContaReceberTx } from "@/app/(app)/financeiro/_lib/titulos-servico";
+import { cancelarTituloTx, classificarTituloTx, diferencasTitulo, salvarContaPagarTx, salvarContaReceberTx } from "@/app/(app)/financeiro/_lib/titulos-servico";
 import { registrarBaixa } from "@/app/(app)/financeiro/_lib/titulos";
 import { dia, limparTudo, mkFornecedor, mkHospital, num, P } from "./_util";
 
@@ -104,7 +104,7 @@ test("salvar conta a receber: cria, edita em aberto, recusa com baixa, grupo do 
   assert.equal(num((await db.contaReceber.findUniqueOrThrow({ where: { id } })).valor), 250);
 });
 
-test("salvar conta a pagar: criada à mão nasce aprovada por quem criou; editar não mexe na aprovação", async () => {
+test("salvar conta a pagar: criada à mão nasce aprovada por quem criou; editar valor passa a aprovação a quem editou, editar descrição não", async () => {
   const d = { descricao: `${P} pagar manual`, fornecedorId, planoContaId: planoOk, centroCustoId: null, competencia: dia(0), codigoBarras: null, valor: 80, vencimento: dia(5) };
   const id = await tx((x) => salvarContaPagarTx(x, null, d, "usuario-teste"));
   const criada = await db.contaPagar.findUniqueOrThrow({ where: { id } });
@@ -113,7 +113,15 @@ test("salvar conta a pagar: criada à mão nasce aprovada por quem criou; editar
   await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 90 }, "outro"));
   const editada = await db.contaPagar.findUniqueOrThrow({ where: { id } });
   assert.equal(num(editada.valor), 90);
-  assert.equal(editada.aprovadoPor, "usuario-teste");
+  assert.equal(editada.aprovadoPor, "outro", "quem mudou o valor responde pela aprovação (§19 governança)");
+  await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 90, descricao: `${P} pagar manual (renomeada)` }, "terceiro"));
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id } })).aprovadoPor, "outro", "descrição não mexe na aprovação");
+  const pend = await pagarPendente(100); // gerada por compras, sem aprovação: editar não aprova
+  await tx((x) => salvarContaPagarTx(x, pend.id, { ...d, valor: 95 }, "outro"));
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: pend.id } })).aprovadoEm, null);
+  const dif = await tx((x) => diferencasTitulo(x, "pagar", pend.id, { ...d, valor: 70 }));
+  assert.match(dif, /valor: 95 → 70/);
+  assert.doesNotMatch(dif, /descricao/);
 });
 
 test("cancelar título: só em aberto e sem baixas, em mês aberto; classificar reclassifica em qualquer situação", async () => {

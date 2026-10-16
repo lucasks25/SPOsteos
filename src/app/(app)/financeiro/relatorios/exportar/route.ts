@@ -1,4 +1,4 @@
-import { requireUser } from "@/lib/auth";
+import { exigirUsuarioRota } from "@/lib/auth";
 import { FAIXAS_AGING } from "../../_lib/aging";
 import { csv } from "@/lib/csv";
 import { carregarAging } from "../../_lib/aging-dados";
@@ -6,7 +6,8 @@ import { hojeUTC, ymd } from "@/lib/datas";
 
 /** CSV do aging por hospital (tipo=receber) ou fornecedor (tipo=pagar). */
 export async function GET(req: Request) {
-  await requireUser(["FINANCEIRO"]);
+  const sessao = await exigirUsuarioRota(["FINANCEIRO"]);
+  if (sessao instanceof Response) return sessao;
   const tipo = new URL(req.url).searchParams.get("tipo") === "pagar" ? "pagar" : "receber";
   const hoje = hojeUTC();
   const d = await carregarAging(tipo, hoje);

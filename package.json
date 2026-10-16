@@ -12,7 +12,7 @@
     "db:migrate": "prisma migrate dev",
     "typecheck": "tsc --noEmit",
     "postinstall": "prisma generate",
-    "test": "tsx --conditions=react-server --test \"tests/financeiro/*.test.ts\" \"tests/busca/*.test.ts\" \"tests/gestao/*.test.ts\" \"tests/compras/*.test.ts\" \"tests/estoque/*.test.ts\" \"tests/qualidade/*.test.ts\" \"tests/comercial/*.test.ts\" \"tests/arquitetura/*.test.ts\"",
+    "test": "tsx --conditions=react-server --test \"tests/financeiro/*.test.ts\" \"tests/busca/*.test.ts\" \"tests/gestao/*.test.ts\" \"tests/compras/*.test.ts\" \"tests/estoque/*.test.ts\" \"tests/qualidade/*.test.ts\" \"tests/comercial/*.test.ts\" \"tests/arquitetura/*.test.ts\" \"tests/seguranca/*.test.ts\"",
     "arquitetura": "tsx scripts/verificar-arquitetura.ts",
     "test:db": "tsx --conditions=react-server --test --test-concurrency=1 \"tests/financeiro-db/*.test.ts\" \"tests/negocio-db/*.test.ts\"",
     "test:negocio": "tsx --conditions=react-server --test --test-concurrency=1 \"tests/negocio-db/*.test.ts\""
