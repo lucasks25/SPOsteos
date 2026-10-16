@@ -173,6 +173,15 @@ export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[
     include: { cirurgia: true, itens: { include: { produto: true } } },
   });
   const porItem = new Map(retornos.map((r) => [r.itemId, r]));
+  // Vale de cirurgia conferido com tudo zero fecha o vale sem consumo nem devolução e não tem volta (a tela vem com 0
+  // preenchido: um clique em "Concluir" bastava). Sem cirurgia (material que fica consignado no hospital), zero vale.
+  const informado = remessa.itens.reduce((s, it) => s + (porItem.get(it.id)?.devolvido ?? 0) + (porItem.get(it.id)?.consumido ?? 0), 0);
+  if (informado === 0 && remessa.cirurgia && remessa.cirurgia.status !== "CANCELADA") {
+    throw new RemessaError(
+      `Nenhuma quantidade informada para a cirurgia ${docCirurgia(remessa.cirurgia.numero)}. Informe o consumido e o devolvido de cada item; ` +
+        "se o material ainda não voltou do hospital, deixe o vale como enviado e confira quando o retorno chegar.",
+    );
+  }
   const documento = remessa.cirurgia ? docCirurgia(remessa.cirurgia.numero) : docRemessa(id);
   const observacaoConsumo = remessa.cirurgia ? `Remessa ${docRemessa(id)}` : undefined;
 
@@ -230,8 +239,3 @@ export async function cancelarRemessa(tx: Tx, id: number) {
   await trocarStatus(tx, id, "ABERTA", { status: "CANCELADA" });
 }
 
-/** Conferência com TODOS os campos (devolvido/consumido) vazios: clique por engano. "0" digitado não conta como vazio. */
-export function conferenciaEmBranco(campos: [FormDataEntryValue | null, FormDataEntryValue | null][]) {
-  const vazio = (v: FormDataEntryValue | null) => v === null || (typeof v === "string" && v.trim() === "");
-  return campos.length > 0 && campos.every(([d, c]) => vazio(d) && vazio(c));
-}

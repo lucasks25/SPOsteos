@@ -74,10 +74,10 @@ test("regra única: a rota do vale recusa consumo em cirurgia cancelada/faturada
   }
 });
 
-test("rota do vale: conferir sem consumo não altera o status da cirurgia", async () => {
+test("rota do vale: conferir sem consumo (tudo devolvido) não altera o status da cirurgia", async () => {
   const cir = await cirurgia("CONFIRMADA");
   const v = await valeEnviado(cir.id);
-  await conferir(v, 0);
+  await db.$transaction((t) => conferirRemessa(t, v.r.id, [{ itemId: v.item.id, devolvido: 5, consumido: 0 }], "teste"));
   assert.equal(await statusDe(cir.id), "CONFIRMADA");
   assert.equal((await consumosDe(cir.id)).length, 0);
 });
@@ -161,4 +161,23 @@ test("concorrência: faturar × consumo direto em paralelo — o consumo entra n
     assert.equal(await saldoDe(v.l.id, localHosp), 5 - consumido);
     await conferirKardex(v.l.id);
   }
+});
+
+// Varredura funcional (REVISAO §20): a tela vem com 0 preenchido; "Concluir conferência" sem digitar fechava o vale da cirurgia sem volta.
+test("vale de cirurgia conferido com tudo zero é recusado e continua ENVIADA; vale sem cirurgia aceita zero (fica consignado)", async () => {
+  const cir = await cirurgia("CONFIRMADA");
+  const v = await valeEnviado(cir.id);
+  await assert.rejects(conferir(v, 0), /Nenhuma quantidade informada para a cirurgia/);
+  assert.equal((await db.remessa.findUniqueOrThrow({ where: { id: v.r.id } })).status, "ENVIADA");
+  assert.equal(await saldoDe(v.l.id, localHosp), 5);
+
+  const p = await mkProduto({ custoMedio: 10 });
+  const l = await mkLote(p.id);
+  await db.$transaction((t) => movimentar(t, { tipo: "ENTRADA", produtoId: p.id, loteId: l.id, quantidade: 3, destinoId: LOCAIS.DEPOSITO, custoUnit: 10 }));
+  const r = await db.$transaction((t) => criarRemessa(t, { hospitalId, cirurgiaId: null, itens: [{ produtoId: p.id, loteId: l.id, quantidade: 3 }] }));
+  await db.$transaction((t) => enviarRemessa(t, r.id, "teste"));
+  const [item] = await db.remessaItem.findMany({ where: { remessaId: r.id } });
+  await db.$transaction((t) => conferirRemessa(t, r.id, [{ itemId: item.id, devolvido: 0, consumido: 0 }], "teste"));
+  assert.equal((await db.remessa.findUniqueOrThrow({ where: { id: r.id } })).status, "CONFERIDA");
+  assert.equal(await saldoDe(l.id, localHosp), 3);
 });

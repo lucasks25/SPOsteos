@@ -82,11 +82,3 @@ test("zf.text/optText têm teto de tamanho; zf.date/optDate recusam ano absurdo"
   assert.equal(s.safeParse({ ...base, od: "abc" }).success, false);
   assert.equal(s.parse(base).od, null);
 });
-
-test("conferência de vale: tudo em branco é recusado; zeros digitados valem (tudo fica consignado)", async () => {
-  const { conferenciaEmBranco } = await import("@/app/(app)/estoque/_lib/remessas");
-  assert.equal(conferenciaEmBranco([[null, null], ["", " "]]), true);
-  assert.equal(conferenciaEmBranco([["0", "0"], ["", ""]]), false);
-  assert.equal(conferenciaEmBranco([["", "2"]]), false);
-  assert.equal(conferenciaEmBranco([]), false);
-});
