@@ -37,6 +37,11 @@ export function Marca({ variante = "topo", sobreEscuro = false }: { variante?: V
     // imagem clara para fundo claro; a escura para tema escuro ou faixa escura. Sem a escura, repete a clara.
     const imgClaro = claro ?? escuro!;
     const imgEscuro = escuro ?? claro!;
+    // impresso: sempre a logo colorida (papel é branco, mesmo com o tema escuro ativo na tela)
+    if (variante === "impresso") {
+      // eslint-disable-next-line @next/next/no-img-element
+      return <img src={imgClaro} alt={nome} className={`${h} w-auto`} />;
+    }
     if (sobreEscuro) {
       // eslint-disable-next-line @next/next/no-img-element
       return <img src={imgEscuro} alt={nome} className={`${h} w-auto`} />;

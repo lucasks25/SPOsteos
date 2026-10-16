@@ -154,6 +154,9 @@ export function AppShell({ groups, nome, perfil, sair, marca, recolhidaInicial =
             <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded={gaveta} className={`${botaoIcone} -ml-2 lg:hidden`}>
               <Icon name="menu" size={20} />
             </button>
+            {/* abaixo de 1024 px o menu lateral some: o isotipo da marca fica ao lado do botão de menu */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/marca/isotipo.png" alt="SP OSTEOS" className="h-7 w-auto shrink-0 lg:hidden" />
             <div className="flex min-w-0 flex-1">
               <BuscaGlobal groups={groups} />
             </div>

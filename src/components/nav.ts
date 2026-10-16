@@ -26,7 +26,7 @@ export const NAV: NavGroup[] = [
       { href: "/estoque/saldos", label: "Saldos por local", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
       { href: "/estoque/remessas", label: "Remessas / vales", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
       { href: "/estoque/kits", label: "Caixas e kits", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
-      { href: "/estoque/kardex", label: "Kardex (histórico de movimentos)", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
+      { href: "/estoque/kardex", label: "Kardex", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
       { href: "/estoque/ajustes", label: "Ajustes e perdas", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
       { href: "/estoque/inventario", label: "Inventário consignado" },
     ],
