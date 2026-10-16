@@ -14,7 +14,7 @@ export default async function Page() {
   return (
     <>
       <PageHeader voltar={{ href: "/financeiro/receber", label: "Contas a receber" }} title={`Novo título — ${TIPOS.receber.singular.toLowerCase()}`} subtitle="Cadastre um recebimento manual. Pedidos faturados geram a conta a receber sozinhos." />
-      <Card>
+      <Card className="max-w-5xl">
         <TituloForm tipo="receber" parceiros={parceiros} planos={planos} centros={centros} hoje={hojeUTC()} />
       </Card>
     </>

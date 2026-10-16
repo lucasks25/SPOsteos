@@ -25,7 +25,7 @@ export default async function AprovacoesPage() {
         </Table>
       ) : (
         <Form action={aprovarContasPagar} submitLabel="Aprovar selecionadas" resetOnSuccess>
-          <Table head={[<span key="s" className="sr-only">Selecionar</span>, "Vencimento", "Descrição", "Fornecedor", "Valor", "Criada/alterada por"]}>
+          <Table titulo="Aguardando aprovação" contagem={pendentes.length} head={[<span key="s" className="sr-only">Selecionar</span>, "Vencimento", "Descrição", "Fornecedor", "Valor", "Criada/alterada por"]}>
             {pendentes.map((t) => {
               const propria = autoresConta(t).includes(user.id) && !aprovaPropria;
               return (

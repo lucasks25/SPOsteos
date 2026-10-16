@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { Field, Select } from "@/components/form";
-import { Aviso, FilterBar, KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
+import { Aviso, Dica, FilterBar, KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
+import { CabecalhoImpresso } from "@/components/marca";
+import { PrintButton } from "@/components/print-button";
 import { requireUser } from "@/lib/auth";
 import { date, money } from "@/lib/format";
 import { addDias, diaMes, hojeUTC, mesAno, parseDia, ymd } from "@/lib/datas";
@@ -11,8 +13,8 @@ type SP = Record<string, string | string[] | undefined>;
 function Barra({ valor, max, cor }: { valor: number; max: number; cor: string }) {
   const w = max > 0 ? Math.min(100, (Math.abs(valor) / max) * 100) : 0;
   return (
-    <div className="h-2 w-full rounded bg-slate-100" aria-hidden="true">
-      <div className={`h-2 rounded ${cor}`} style={{ width: `${w}%` }} />
+    <div className="h-1.5 w-full rounded-sm bg-slate-100" aria-hidden="true">
+      <div className={`h-1.5 rounded-sm ${cor}`} style={{ width: `${w}%` }} />
     </div>
   );
 }
@@ -34,7 +36,14 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHeader title="Fluxo de caixa" subtitle={`Entradas e saídas do Financeiro de ${date(de)} a ${date(ate)}: previsto (títulos em aberto) mais realizado (baixas e lançamentos).`} />
+      <div className="hidden print:block">
+        <CabecalhoImpresso titulo="Fluxo de caixa">
+          <p className="text-xs text-slate-600">
+            {date(de)} a {date(ate)} · por {g === "semana" ? "semana" : "mês"}
+          </p>
+        </CabecalhoImpresso>
+      </div>
+      <PageHeader title="Fluxo de caixa" subtitle={`Entradas e saídas do Financeiro de ${date(de)} a ${date(ate)}: previsto (títulos em aberto) mais realizado (baixas e lançamentos).`} actions={<PrintButton />} />
       <FilterBar>
         <Field label="De" name="de" type="date" defaultValue={ymd(de)} className="w-40" />
         <Field label="Até" name="ate" type="date" defaultValue={ymd(ate)} className="w-40" />
@@ -46,7 +55,7 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
       </FilterBar>
 
       <KpiGrid>
-        <Stat label="Saldo no início" value={money(fluxo.saldoInicial)} hint="contas ativas" />
+        <Stat label="Saldo no início" value={money(fluxo.saldoInicial)} hint={`contas ativas em ${date(de)}`} />
         <Stat label="Entradas no período" value={money(totRec)} />
         <Stat label="Saídas no período" value={money(totPag)} />
         <Stat label="Saldo final" value={money(fluxo.faixas.at(-1)?.acumulado ?? fluxo.saldoInicial)} tone={(fluxo.faixas.at(-1)?.acumulado ?? 0) < 0 ? "danger" : "default"} />
@@ -64,36 +73,56 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
         </div></Aviso>
       )}
 
-      <Table titulo={g === "semana" ? "Fluxo por semana" : "Fluxo por mês"} contagem={fluxo.faixas.length} acoes={<Link href="/financeiro/contas" className={btn.small}>Contas bancárias</Link>} head={[g === "semana" ? "Semana" : "Mês", "Entradas", "Saídas", "Comparativo", "Saldo do período", "Acumulado"]} empty={fluxo.faixas.length === 0} emptyText="Nenhuma movimentação prevista ou realizada neste período.">
+      <Table
+        titulo={g === "semana" ? "Fluxo por semana" : "Fluxo por mês"}
+        contagem={fluxo.faixas.length}
+        relatorio
+        acoes={
+          <>
+            <span className="hidden items-center gap-3 text-xs text-slate-600 sm:inline-flex">
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-teal-600" aria-hidden="true" />Entradas</span>
+              <span className="inline-flex items-center gap-1"><span className="h-2 w-2 rounded-sm bg-violet-500" aria-hidden="true" />Saídas</span>
+            </span>
+            <Dica alinhar="direita">Previsto = saldo dos títulos em aberto por vencimento. Realizado = baixas e lançamentos já feitos nas contas ativas.</Dica>
+          </>
+        }
+        head={[g === "semana" ? "Semana" : "Mês", "Entradas", "Saídas", { label: "Comparativo", hideOnMobile: true }, "Saldo do período", "Acumulado"]}
+        rodape={
+          <tr>
+            <td className="px-4 py-1 text-slate-900">Total</td>
+            <td className="tnum px-3 py-1 text-right text-slate-900">{money(totRec)}</td>
+            <td className="tnum px-3 py-1 text-right text-slate-900">{money(totPag)}</td>
+            <td />
+            <td className={`tnum px-3 py-1 text-right ${totRec - totPag < 0 ? "text-rose-600" : "text-slate-900"}`}>{money(totRec - totPag)}</td>
+            <td className={`tnum px-3 py-1 pr-4 text-right ${(fluxo.faixas.at(-1)?.acumulado ?? 0) < 0 ? "text-rose-600" : "text-slate-900"}`}>{money(fluxo.faixas.at(-1)?.acumulado ?? fluxo.saldoInicial)}</td>
+          </tr>
+        } empty={fluxo.faixas.length === 0} emptyText="Nenhuma movimentação prevista ou realizada neste período.">
         {fluxo.faixas.map((f) => {
           const ent = f.recPrev + f.recReal;
           const sai = f.pagPrev + f.pagReal;
           return (
             <tr key={f.inicio.getTime()}>
               <Td>{rotulo(f.inicio)}</Td>
-              <Td className="text-right tnum text-emerald-700">
+              <Td className="text-right tnum">
                 {money(ent)}
                 {f.recReal > 0 && <span className="ml-1 text-xs text-slate-500">({money(f.recReal)} realizado)</span>}
               </Td>
-              <Td className="text-right tnum text-rose-700">
+              <Td className="text-right tnum">
                 {money(sai)}
                 {f.pagReal > 0 && <span className="ml-1 text-xs text-slate-500">({money(f.pagReal)} realizado)</span>}
               </Td>
               <Td className="w-48 min-w-40">
                 <div className="space-y-1">
-                  <Barra valor={ent} max={max} cor="bg-emerald-500" />
-                  <Barra valor={sai} max={max} cor="bg-rose-500" />
+                  <Barra valor={ent} max={max} cor="bg-teal-600" />
+                  <Barra valor={sai} max={max} cor="bg-violet-500" />
                 </div>
               </Td>
-              <Td className={`text-right tnum ${f.saldoPeriodo < 0 ? "text-rose-700" : ""}`}>{money(f.saldoPeriodo)}</Td>
-              <Td className={`text-right font-medium tnum ${f.acumulado < 0 ? "text-rose-700" : ""}`}>{money(f.acumulado)}</Td>
+              <Td className={`text-right tnum ${f.saldoPeriodo < 0 ? "text-rose-600" : ""}`}>{money(f.saldoPeriodo)}</Td>
+              <Td className={`text-right font-medium tnum ${f.acumulado < 0 ? "text-rose-600" : ""}`}>{money(f.acumulado)}</Td>
             </tr>
           );
         })}
       </Table>
-      <p className="mt-2 text-xs text-slate-500">
-        Previsto = saldo dos títulos em aberto por vencimento. Realizado = baixas e lançamentos já feitos nas contas ativas.
-      </p>
     </>
   );
 }

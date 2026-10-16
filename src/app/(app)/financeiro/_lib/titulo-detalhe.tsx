@@ -2,14 +2,14 @@ import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/form";
-import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
+import { Badge, Card, Dica, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
 import { linhaDigitavel } from "./boleto";
 import { cancelarTitulo, estornarBaixaAction, estornarGlosaAction, recursoGlosaAction } from "./actions";
 import { ROTULO_CATEGORIA_GLOSA } from "./glosa-categorias";
-import { hojeUTC } from "@/lib/datas";
+import { hojeUTC, mesAno } from "@/lib/datas";
 import { opcoesContas } from "./contas";
 import { listarParceiros, obterTitulo } from "./queries";
 import { opcoesClassificacao } from "./plano";
@@ -40,20 +40,27 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
   const autoria = aprov ? (await rotulosAutoria(db, [aprov])).get(id) : "";
   const semBaixas = baixas.length === 0;
   const editavel = titulo.status === "ABERTO" && semBaixas && glosas.every((g) => g.recurso === "REVERTIDA");
+  const glosasAtivas = glosas.filter((g) => g.recurso !== "REVERTIDA");
+  const totalGlosado = glosasAtivas.reduce((a, g) => a + toNumber(g.valor), 0);
 
   return (
     <>
       <PageHeader
         voltar={{ href: `/financeiro/${tipo}`, label: tipo === "receber" ? "Contas a receber" : "Contas a pagar" }}
         title={titulo.descricao}
-        subtitle={cfg.singular}
+        status={<SituacaoTitulo t={titulo} hoje={hoje} />}
+        meta={[cfg.singular, titulo.parceiroNome, titulo.pedidoId ? cfg.pedidoLabel(titulo.pedidoId) : "lançamento manual", `competência ${mesAno(titulo.competencia)}`]}
         actions={
           <>
-            <SituacaoTitulo t={titulo} hoje={hoje} />
             {editavel && (
               <ActionButton action={cancelarTitulo.bind(null, tipo)} hidden={{ id }} variant="danger" confirm="Cancelar este título?">
                 Cancelar título
               </ActionButton>
+            )}
+            {titulo.status === "ABERTO" && contas.length > 0 && (
+              <a href="#baixa" className={btn.primary}>
+                {cfg.baixaLabel}
+              </a>
             )}
           </>
         }
@@ -65,14 +72,14 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           value={money(titulo.valorPago ?? 0)}
           hint={
             (titulo.valorPago ?? 0) > 0 && titulo.pagoEm
-              ? `dinheiro movimentado; última baixa em ${date(titulo.pagoEm)}`
-              : glosas.some((g) => g.recurso !== "REVERTIDA")
-                ? `nenhum dinheiro ainda; glosa de ${money(glosas.filter((g) => g.recurso !== "REVERTIDA").reduce((a, g) => a + toNumber(g.valor), 0))} em ${date(glosas.filter((g) => g.recurso !== "REVERTIDA").at(-1)!.data)}`
+              ? `última baixa em ${date(titulo.pagoEm)}`
+              : glosasAtivas.length > 0
+                ? `glosa de ${money(totalGlosado)} em ${date(glosasAtivas.at(-1)!.data)}`
                 : undefined
           }
         />
         <Stat label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
-        <Stat label="Vencimento" value={date(titulo.vencimento)} />
+        <Stat label="Vencimento" value={date(titulo.vencimento)} tone={titulo.status === "ABERTO" && titulo.vencimento < hoje ? "danger" : "default"} />
       </KpiGrid>
 
       <div className="space-y-4">
@@ -124,11 +131,11 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           <Card title="Cobrança bancária">
             <Dl
               items={[
-                ["Status", <Badge key="s" color={titulo.cobrancaStatus === "REGISTRADO" ? "green" : "blue"}>{titulo.cobrancaStatus.toLowerCase()}</Badge>],
+                ["Status", <Badge key="s" color={titulo.cobrancaStatus === "REGISTRADO" ? "green" : "blue"}>{titulo.cobrancaStatus.charAt(0) + titulo.cobrancaStatus.slice(1).toLowerCase()}</Badge>],
                 ["Nosso número", titulo.nossoNumero ?? "—"],
               ]}
             />
-            <div className="mt-3 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-3">
               {titulo.cobrancaStatus === "REGISTRADO" && titulo.status === "ABERTO" ? (
                 <Link href={`/financeiro/receber/${titulo.id}/boleto`} className={btn.secondary}>
                   Imprimir boleto
@@ -149,7 +156,23 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           </Card>
         )}
 
-          <Table titulo="Baixas" contagem={baixas.length} head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
+        {titulo.status === "ABERTO" && (
+          <Card id="baixa" title={cfg.baixaLabel} className="scroll-mt-20">
+            {contas.length === 0 ? (
+              <EmptyState text="Nenhuma conta bancária ou caixa cadastrada. Cadastre uma antes de registrar baixas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta</LinkButton>} />
+            ) : (
+              <BaixaForm tipo={tipo} titulo={titulo} hoje={hoje} contas={contas} />
+            )}
+          </Card>
+        )}
+
+        <Table
+          titulo="Baixas"
+          contagem={baixas.length}
+          head={["Data", "Dinheiro", "Principal", { label: "Juros", hideOnMobile: true }, { label: "Multa", hideOnMobile: true }, { label: "Desconto", hideOnMobile: true }, "Conta", { label: "Forma", hideOnMobile: true }, "Conciliação", ""]}
+          empty={semBaixas}
+          emptyText="Nenhuma baixa registrada neste título."
+        >
             {baixas.map((b) => (
               <tr key={b.id}>
                 <Td>{date(b.data)}</Td>
@@ -160,7 +183,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 <Td className="text-right tnum">{toNumber(b.desconto) ? money(toNumber(b.desconto)) : "—"}</Td>
                 <Td>{b.conta.nome}</Td>
                 <Td>{formaLabel(b.forma)}</Td>
-                <Td>{b.extrato ? <Badge color="green">conciliada</Badge> : <Badge>pendente</Badge>}</Td>
+                <Td>{b.extrato ? <Badge color="green">Conciliada</Badge> : <Badge>Pendente</Badge>}</Td>
                 <Td>
                   {!b.extrato && (
                     <ActionButton action={estornarBaixaAction.bind(null, tipo)} hidden={{ id: b.id }} variant="small" confirm={`Estornar a baixa de ${money(toNumber(b.valor))} de ${date(b.data)}?`}>
@@ -170,7 +193,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 </Td>
               </tr>
             ))}
-          </Table>
+        </Table>
 
         {glosas.length > 0 && (
           <Table titulo="Glosas" contagem={glosas.length} head={["Data", "Categoria", "Valor", "Motivo", "Recurso", ""]}>
@@ -214,19 +237,8 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         )}
 
         {tipo === "receber" && titulo.status === "ABERTO" && (
-          <Card title="Registrar glosa">
-            <p className="mb-3 text-sm text-slate-600">Use quando o hospital não reconhece parte da cobrança. Abate o saldo sem movimentar dinheiro e aparece em Deduções no DRE (não é desconto).</p>
+          <Card title="Registrar glosa" actions={<Dica alinhar="direita">Use quando o hospital não reconhece parte da cobrança. Abate o saldo sem movimentar dinheiro e aparece em Deduções no DRE (não é desconto).</Dica>}>
             <GlosaForm titulo={titulo} hoje={hoje} />
-          </Card>
-        )}
-
-        {titulo.status === "ABERTO" && (
-          <Card title={cfg.baixaLabel}>
-            {contas.length === 0 ? (
-              <EmptyState text="Nenhuma conta bancária ou caixa cadastrada. Cadastre uma antes de registrar baixas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta</LinkButton>} />
-            ) : (
-              <BaixaForm tipo={tipo} titulo={titulo} hoje={hoje} contas={contas} />
-            )}
           </Card>
         )}
 

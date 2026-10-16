@@ -22,11 +22,11 @@ export default async function PlanoContasPage() {
     <>
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
       {uso > 0 && <Aviso tom="alerta" className="mb-3">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</Aviso>}
-      <div className="space-y-4">
+      <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <Table titulo="Plano de contas" contagem={ordenadas.length} head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
           {ordenadas.map((c) => (
             <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
-              <Td>{c.codigo}</Td>
+              <Td className="tnum">{c.codigo}</Td>
               <Td className={c.analitica ? "" : "font-semibold"}>
                 <span style={{ paddingLeft: `${nivel(c.codigo) * 1.25}rem` }}>{c.nome}</span>
                 {c.chaveSistema && <span className="ml-2 text-xs text-slate-500">(sistema)</span>}
@@ -45,6 +45,7 @@ export default async function PlanoContasPage() {
           ))}
         </Table>
 
+        <div className="space-y-4">
         <Card title="Nova conta ou grupo">
           <Form action={criarContaPlano} submitLabel="Criar" resetOnSuccess>
             <Grid cols={4}>
@@ -52,7 +53,7 @@ export default async function PlanoContasPage() {
               <Field label="Nome *" name="nome" required maxLength={80} className="sm:col-span-2" />
               <Select label="Dentro do grupo" name="paiId" options={grupos.map((g) => ({ value: g.id, label: `${g.codigo} — ${g.nome}` }))} placeholder="(raiz)" />
               <Select label="Tipo *" name="tipo" options={TIPOS_PLANO} placeholder="Selecione..." required hint="Dentro de um grupo, o mesmo tipo dele" />
-              <label className="flex items-center gap-2 pt-6 text-sm text-slate-700">
+              <label className="flex min-h-8 items-center gap-2 self-end text-sm text-slate-700">
                 <input type="checkbox" name="analitica" defaultChecked className="h-4 w-4" /> Conta analítica (recebe lançamentos)
               </label>
             </Grid>
@@ -76,15 +77,14 @@ export default async function PlanoContasPage() {
             ))}
         </Table>
         <Card title="Novo centro de custo">
-          <div>
-            <Form action={criarCentroCusto} submitLabel="Criar centro de custo" submitVariant="secondary" resetOnSuccess>
-              <Grid cols={3}>
-                <Field label="Código *" name="codigo" required hint="Ex.: COL (coluna), TRA (trauma)" />
-                <Field label="Nome *" name="nome" required maxLength={80} className="sm:col-span-2" />
-              </Grid>
-            </Form>
-          </div>
+          <Form action={criarCentroCusto} submitLabel="Criar centro de custo" submitVariant="secondary" resetOnSuccess>
+            <Grid cols={3}>
+              <Field label="Código *" name="codigo" required hint="Ex.: COL (coluna), TRA (trauma)" />
+              <Field label="Nome *" name="nome" required maxLength={80} className="sm:col-span-2" />
+            </Grid>
+          </Form>
         </Card>
+        </div>
       </div>
     </>
   );

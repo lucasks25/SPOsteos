@@ -7,7 +7,7 @@ export default async function NovaContaPage() {
   return (
     <>
       <PageHeader voltar={{ href: "/financeiro/contas", label: "Contas bancárias" }} title="Nova conta" subtitle="Cadastre um banco ou caixa. Para pagar e cobrar pelo Itaú, preencha agência, conta e titular." />
-      <Card>
+      <Card className="max-w-5xl">
         <ContaForm />
       </Card>
     </>

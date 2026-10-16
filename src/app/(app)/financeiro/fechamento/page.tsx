@@ -1,5 +1,5 @@
 import { Field, Form } from "@/components/form";
-import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
+import { Badge, Dica, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { dateTime } from "@/lib/format";
@@ -18,8 +18,15 @@ export default async function FechamentoPage() {
   return (
     <>
       <PageHeader title="Fechamento de mês" subtitle="Só meses já encerrados aparecem aqui: o mês corrente não pode ser fechado. Mês fechado fica congelado: ninguém cria, altera ou estorna baixa, glosa, transferência, lançamento avulso ou título com data nele." />
-      <div className="space-y-4">
-        <Table titulo="Meses encerrados e em aberto" head={["Mês", "Situação", "Ações"]}>
+      <Table
+        titulo="Últimos 12 meses"
+        head={["Mês", "Situação", "Ações"]}
+        acoes={
+          <Dica alinhar="direita">
+            Assim o DRE do mês não muda depois de conferido. Só fecha mês que já terminou e que não tenha lançamento “Não classificado” no DRE. Com o mês fechado, retorno do banco ou conciliação cujo pagamento caia nele serão recusados até a reabertura. Meses fechados também aparecem marcados no DRE.
+          </Dica>
+        }
+      >
           {meses.map((m) => {
             const f = fechados.get(m);
             return (
@@ -41,13 +48,7 @@ export default async function FechamentoPage() {
               </tr>
             );
           })}
-        </Table>
-        <Card title="Como funciona">
-          <p className="text-xs text-slate-600">
-            Assim o DRE do mês não muda depois de conferido. Só fecha mês que já terminou e que não tenha lançamento “Não classificado” no DRE. Com o mês fechado, retorno do banco ou conciliação cujo pagamento caia nele serão recusados até a reabertura. Meses fechados também aparecem marcados no DRE.
-          </p>
-        </Card>
-      </div>
+      </Table>
     </>
   );
 }

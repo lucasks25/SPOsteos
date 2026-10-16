@@ -1,4 +1,5 @@
 import { Field, Form, Grid, Select } from "@/components/form";
+import { TokenFormulario } from "@/components/token-formulario";
 import { inputDate, money } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo, type TituloRow } from "./config";
 import { baixarTitulo, classificarTitulo, glosarTitulo, salvarTitulo } from "./actions";
@@ -25,7 +26,8 @@ export function TituloForm({
   const cfg = TIPOS[tipo];
   const t = titulo;
   return (
-    <Form action={salvarTitulo.bind(null, tipo, t?.id ?? null)} submitLabel={t ? "Salvar alterações" : "Criar título"} submitVariant={t ? "secondary" : "primary"}>
+    <Form action={salvarTitulo.bind(null, tipo, t?.id ?? null)} submitLabel={t ? "Salvar alterações" : "Criar título"} submitVariant={t ? "secondary" : "primary"} cancelarHref={t ? undefined : cfg.path}>
+      {!t && <TokenFormulario />}
       <Grid cols={3}>
         <Field label="Descrição *" name="descricao" defaultValue={t?.descricao} required maxLength={200} className="sm:col-span-2" />
         <Select
@@ -58,6 +60,7 @@ export function TituloForm({
 export function BaixaForm({ tipo, titulo, hoje, contas }: { tipo: Tipo; titulo: TituloRow; hoje: Date; contas: { value: string; label: string }[] }) {
   return (
     <Form action={baixarTitulo.bind(null, tipo, titulo.id)} submitLabel={TIPOS[tipo].baixaLabel} resetOnSuccess>
+      <TokenFormulario />
       <Grid cols={4}>
         <Field
           label={`Valor ${TIPOS[tipo].pagoLabel.toLowerCase()} (R$) *`}
@@ -66,7 +69,7 @@ export function BaixaForm({ tipo, titulo, hoje, contas }: { tipo: Tipo; titulo: 
           step="0.01"
           min="0.01"
           defaultValue={titulo.saldo.toFixed(2)}
-          hint={`Dinheiro que ${tipo === "receber" ? "entra" : "sai"} na conta. Saldo do título: ${money(titulo.saldo)}. Menor que o saldo = baixa parcial.`}
+          hint={`Saldo do título: ${money(titulo.saldo)}. Menor que o saldo = baixa parcial.`}
           required
         />
         <Field label="Juros (R$)" name="juros" type="number" step="0.01" min="0" hint="Incluído no valor acima" />

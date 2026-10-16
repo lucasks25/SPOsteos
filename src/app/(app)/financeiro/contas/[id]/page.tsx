@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton, Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { TokenFormulario } from "@/components/token-formulario";
+import { Badge, Card, Dica, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -32,10 +33,10 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
       <PageHeader
         voltar={{ href: "/financeiro/contas", label: "Contas bancárias" }}
         title={conta.nome}
-        subtitle={[conta.banco, conta.agencia, conta.numero].filter(Boolean).join(" / ") || undefined}
+        status={conta.ativo ? <Badge color="green">Ativa</Badge> : <Badge>Inativa</Badge>}
+        meta={[conta.tipo === "CAIXA" ? "Caixa" : "Conta bancária", conta.banco, conta.agencia ? `ag. ${conta.agencia}` : null, conta.numero ? `c/c ${conta.numero}` : null, extra.carteiraCobranca ? `cobrança carteira ${extra.carteiraCobranca}` : null]}
         actions={
           <>
-            {!conta.ativo && <Badge>inativa</Badge>}
             <ActionButton action={alternarAtivoConta.bind(null, id)} confirm={conta.ativo ? `Inativar a conta ${conta.nome}? Ela deixa de aparecer para novas baixas, transferências e lançamentos; o histórico é mantido.` : undefined}>{conta.ativo ? "Inativar" : "Ativar"}</ActionButton>
           </>
         }
@@ -48,27 +49,27 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
       </KpiGrid>
 
       <div className="space-y-4">
-        <Table titulo="Movimentos (últimos 100)" contagem={movimentos.length} head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", ""]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
+        <Table titulo="Movimentos (últimos 100)" contagem={movimentos.length} head={["Data", "Descrição", { label: "Origem", hideOnMobile: true }, "Entrada", "Saída", { label: "Conciliação", hideOnMobile: true }, ""]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
             {movimentos.map((m) => {
               const tituloHref = m.contaReceberId ? `/financeiro/receber/${m.contaReceberId}` : m.contaPagarId ? `/financeiro/pagar/${m.contaPagarId}` : null;
               return (
                 <tr key={m.id}>
                   <Td>{date(m.data)}</Td>
-                  <Td className="max-w-xs truncate font-medium">{m.descricao}</Td>
+                  <Td className="max-w-xs truncate" title={m.descricao}>{m.descricao}</Td>
                   <Td>
                     {tituloHref ? (
                       <Link href={tituloHref} className="text-teal-700 hover:underline">
-                        título
+                        Título
                       </Link>
                     ) : m.transferenciaId ? (
-                      "transferência"
+                      "Transferência"
                     ) : (
-                      (m.categoria ?? "avulso")
+                      (m.categoria ?? "Avulso")
                     )}
                   </Td>
                   <Td className="text-right tnum text-emerald-700">{m.sentido === "ENTRADA" ? money(toNumber(m.valor)) : ""}</Td>
                   <Td className="text-right tnum text-rose-600">{m.sentido === "SAIDA" ? money(toNumber(m.valor)) : ""}</Td>
-                  <Td>{m.extrato ? <Badge color="green">conciliado</Badge> : <Badge>pendente</Badge>}</Td>
+                  <Td>{m.extrato ? <Badge color="green">Conciliado</Badge> : <Badge>Pendente</Badge>}</Td>
                   <Td>
                     {m.transferenciaId && (
                       <ActionButton variant="small" action={estornarTransferenciaAction} hidden={{ id: m.transferenciaId }} confirm={`Estornar a transferência de ${money(toNumber(m.valor))} de ${date(m.data)} (${m.descricao})? As duas contas voltam ao saldo anterior.`}>
@@ -87,11 +88,9 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         </Table>
 
         {conta.ativo && (
-          <Card title="Lançamento avulso (tarifa, rendimento, outros)">
-            <p className="mb-3 text-sm text-slate-600">
-              Para mover dinheiro entre contas use <Link href="/financeiro/contas" className="font-semibold text-teal-700 hover:underline">Transferência</Link>.
-            </p>
+          <Card title="Lançamento avulso (tarifa, rendimento, outros)" actions={<Dica alinhar="direita">Para mover dinheiro entre contas suas use a Transferência na lista de contas: lançamento avulso conta como receita ou despesa.</Dica>}>
             <Form action={lancarAvulso.bind(null, id)} submitLabel="Lançar" submitVariant="secondary" resetOnSuccess>
+              <TokenFormulario />
               <Grid cols={4}>
                 <Select
                   label="Tipo *"

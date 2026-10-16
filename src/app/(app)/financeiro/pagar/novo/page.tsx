@@ -14,7 +14,7 @@ export default async function Page() {
   return (
     <>
       <PageHeader voltar={{ href: "/financeiro/pagar", label: "Contas a pagar" }} title={`Novo título — ${TIPOS.pagar.singular.toLowerCase()}`} subtitle="Cadastre uma obrigação manual. Compras recebidas geram a conta a pagar sozinhas." />
-      <Card>
+      <Card className="max-w-5xl">
         <TituloForm tipo="pagar" parceiros={parceiros} planos={planos} centros={centros} hoje={hojeUTC()} />
       </Card>
     </>

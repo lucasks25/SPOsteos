@@ -41,7 +41,8 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
       <PageHeader
         voltar={{ href: "/financeiro/cobranca", label: "Cobrança" }}
         title={`Remessa de cobrança #${r.id}`}
-        subtitle={r.conta.nome}
+        status={r.canceladaEm ? <Badge color="gray">Cancelada</Badge> : r.retornoEm ? <Badge color={alertas.length || r.itens.some((i) => i.status === "REJEITADO") ? "red" : "green"}>Retorno processado</Badge> : <Badge color="yellow">Aguardando retorno</Badge>}
+        meta={[r.conta.nome, "CNAB 400, carteira 109", `gerada em ${dateTime(r.criadaEm)}`]}
         actions={
           r.canceladaEm ? null : (
             <a href={`/financeiro/cobranca/${r.id}/arquivo`} className={btn.primary}>
@@ -53,7 +54,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
       <KpiGrid cols={3}>
         <Stat label="Boletos" value={money(total)} hint={`${r.itens.filter((i) => i.ocorrencia === "01").length} título(s)`} />
         <Stat label="Gerada em" value={dateTime(r.criadaEm)} />
-        <Stat label="Retorno" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
+        <Stat label="Retorno do banco" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "Aguardando"} tone={!r.canceladaEm && !r.retornoEm ? "warn" : "default"} />
       </KpiGrid>
       {r.canceladaEm && <Aviso tom="info" className="mb-4">Remessa cancelada em {dateTime(r.canceladaEm)}: {r.canceladaMotivo}. Não envie este arquivo ao banco.</Aviso>}
       {alertas.length > 0 && (
@@ -69,10 +70,27 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
         </Aviso>
       )}
       <div className="space-y-4">
+        <Table titulo="Boletos da remessa" contagem={r.itens.length} head={["Nosso número", "Operação", "Título", "Valor", "Situação", "Observações"]}>
+          {r.itens.map((i) => (
+            <tr key={i.id}>
+              <Td className="font-mono text-xs">{i.nossoNumero}</Td>
+              <Td>{i.ocorrencia === "01" ? "Registro" : i.ocorrencia === "06" ? `Alterar vencimento para ${i.vencimento ? date(i.vencimento) : "?"}` : "Pedido de baixa"}</Td>
+              <Td className="max-w-xs">
+                <Celula href={`/financeiro/receber/${i.contaReceber.id}`} principal={i.contaReceber.hospital ? i.contaReceber.hospital.nomeFantasia || i.contaReceber.hospital.razaoSocial : "Sem hospital"} sub={`${i.contaReceber.descricao} · vence ${date(i.contaReceber.vencimento)}`} />
+              </Td>
+              <Td className="text-right tnum font-medium">{money(toNumber(i.valor))}</Td>
+              <Td>
+                <Badge color={COR[i.status]}>{i.status.charAt(0) + i.status.slice(1).toLowerCase()}</Badge>
+              </Td>
+              <Td className="max-w-sm whitespace-normal text-xs text-slate-600">{descrever(i.motivos)}</Td>
+            </tr>
+          ))}
+        </Table>
+        <div className="grid items-start gap-4 lg:grid-cols-2">
         {podeCancelar && (
           <Card title="Cancelar remessa">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa.</p>
-            <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa" submitVariant="secondary" confirm={`Cancelar a remessa de cobrança #${r.id}? Os boletos voltam a poder entrar em outra remessa. Não envie este arquivo ao banco.`}>
+            <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa" submitVariant="danger" confirm={`Cancelar a remessa de cobrança #${r.id}? Os boletos voltam a poder entrar em outra remessa. Não envie este arquivo ao banco.`}>
               <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} />
             </Form>
           </Card>
@@ -86,22 +104,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
           </ol>
         </Card>
         )}
-        <Table titulo="Boletos da remessa" contagem={r.itens.length} head={["Nosso número", "Operação", "Título", "Valor", "Situação", "Observações"]}>
-          {r.itens.map((i) => (
-            <tr key={i.id}>
-              <Td className="font-mono text-xs">{i.nossoNumero}</Td>
-              <Td>{i.ocorrencia === "01" ? "Registro" : i.ocorrencia === "06" ? `Alterar vencimento para ${i.vencimento ? date(i.vencimento) : "?"}` : "Pedido de baixa"}</Td>
-              <Td className="max-w-xs">
-                <Celula href={`/financeiro/receber/${i.contaReceber.id}`} principal={i.contaReceber.hospital ? i.contaReceber.hospital.nomeFantasia || i.contaReceber.hospital.razaoSocial : "Sem hospital"} sub={`${i.contaReceber.descricao} · vence ${date(i.contaReceber.vencimento)}`} />
-              </Td>
-              <Td className="text-right tnum font-medium">{money(toNumber(i.valor))}</Td>
-              <Td>
-                <Badge color={COR[i.status]}>{i.status.toLowerCase()}</Badge>
-              </Td>
-              <Td className="max-w-sm whitespace-normal text-xs text-slate-600">{descrever(i.motivos)}</Td>
-            </tr>
-          ))}
-        </Table>
+        </div>
       </div>
     </>
   );
