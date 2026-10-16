@@ -72,10 +72,13 @@ export async function salvarContaReceberTx(tx: Tx, id: string | null, data: Dado
 }
 
 /**
- * Cria (id = null) ou edita uma conta a pagar em aberto e sem baixas. Conta criada à mão nasce aprovada por quem a criou.
+ * Cria (id = null) ou edita uma conta a pagar em aberto e sem baixas.
+ * Segregação de funções (docs/REVISAO.md §21): conta criada à mão nasce NÃO aprovada (como as geradas por compras) e
+ * guarda quem criou; editar valor, vencimento, fornecedor ou boleto registra o editor em `alteradoPor` e, se a conta
+ * estava aprovada, remove a aprovação (`info.aprovacaoRemovida`, para a auditoria). Quem criou/alterou não aprova.
  * Com boleto: o valor e o vencimento do código de barras têm de ser os do título. Conta em remessa SISPAG ativa não muda.
  */
-export async function salvarContaPagarTx(tx: Tx, id: string | null, data: DadosPagar, usuarioId: string): Promise<string> {
+export async function salvarContaPagarTx(tx: Tx, id: string | null, data: DadosPagar, usuarioId: string, info: { aprovacaoRemovida?: boolean } = {}): Promise<string> {
   await validarClassificacao(tx, data.planoContaId, data.centroCustoId);
   if (data.codigoBarras) {
     const erro = divergenciaBoleto(data.codigoBarras, data);
@@ -86,16 +89,17 @@ export async function salvarContaPagarTx(tx: Tx, id: string | null, data: DadosP
     await exigirForaDeRemessa(tx, id, "alterar");
   }
   await garantirMesAberto(tx, [data.competencia, id ? await competenciaDo(tx, "pagar", id) : null], "criar ou alterar título nessa competência");
-  if (!id) return (await tx.contaPagar.create({ data: { ...data, aprovadoEm: new Date(), aprovadoPor: usuarioId } })).id;
-  // mudou o que decide quanto/para quem/quando se paga: a aprovação passa a ser de quem editou (rastro de responsabilidade);
-  // conta ainda não aprovada (gerada por compras) continua esperando a aprovação em /financeiro/aprovacoes
-  const atual = await tx.contaPagar.findUnique({ where: { id }, select: { valor: true, vencimento: true, fornecedorId: true, codigoBarras: true, aprovadoEm: true } });
+  if (!id) return (await tx.contaPagar.create({ data: { ...data, criadoPor: usuarioId } })).id;
+  const atual = await tx.contaPagar.findUnique({ where: { id }, select: { valor: true, vencimento: true, fornecedorId: true, codigoBarras: true, aprovadoEm: true, alteradoPor: true } });
   const mudouPagamento =
     !!atual &&
     (cent(toNumber(atual.valor)) !== cent(data.valor) || atual.vencimento.getTime() !== data.vencimento.getTime() || atual.fornecedorId !== data.fornecedorId || atual.codigoBarras !== data.codigoBarras);
-  const aprovacao = mudouPagamento && atual?.aprovadoEm ? { aprovadoEm: new Date(), aprovadoPor: usuarioId } : {};
-  const r = await tx.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data: { ...data, ...aprovacao } });
+  const segregacao = mudouPagamento && atual
+    ? { alteradoPor: [...new Set([...atual.alteradoPor, usuarioId])], ...(atual.aprovadoEm ? { aprovadoEm: null, aprovadoPor: null } : {}) }
+    : {};
+  const r = await tx.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data: { ...data, ...segregacao } });
   if (r.count === 0) throw new ErroNegocio("Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes.");
+  info.aprovacaoRemovida = mudouPagamento && !!atual?.aprovadoEm;
   return id;
 }
 

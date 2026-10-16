@@ -731,6 +731,10 @@ model ContaPagar {
   // Aprovação do financeiro: conta que nasce de recebimento de compra fica pendente (aprovadoEm nulo) e não entra em remessa SISPAG até ser aprovada.
   aprovadoEm        DateTime?
   aprovadoPor       String?
+  // Segregação de funções (docs/REVISAO.md §21): quem criou à mão (nulo = gerada por outro módulo) e quem alterou valor,
+  // vencimento, fornecedor ou boleto desde a última aprovação não aprovam a conta (financeiro/_lib/aprovacao-servico.ts).
+  criadoPor         String?
+  alteradoPor       String[]               @default([])
   codigoBarras      String? // boleto do fornecedor: 44 dígitos do código de barras
   valor             Decimal                @db.Decimal(14, 2)
   vencimento        DateTime

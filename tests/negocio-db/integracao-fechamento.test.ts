@@ -60,6 +60,7 @@ test("(viii) mês fechado recusa toda mutação financeira com data no mês (var
   const pg = await tx((x) => salvarContaPagarTx(x, null, pag(400), "teste"));
   const pg3 = await tx((x) => salvarContaPagarTx(x, null, pag(200), "teste"));
   const pg2 = await tx((x) => gerarContaPagarTx(x, { descricao: `${P} fech gerada`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 150, vencimento: D(28), competencia: D(10), chavePlano: "CUSTO_IMPORTACAO" }));
+  await tx((x) => aprovarContasPagarTx(x, [pg], "aprovador-teste")); // criada à mão nasce sem aprovação (§21)
   const rem = await tx((x) => gerarRemessaDaContaTx(x, { contaId: conta.id, modo: "TED_BOLETO", dataPagto: D(20), ids: [pg] }));
   const itemSp = await db.remessaPagamentoItem.findFirstOrThrow({ where: { remessaId: rem.remessaId } });
   const tr = await tx((x) => transferir(x, { origemId: conta.id, destinoId: caixa.id, valor: 100, data: D(15), descricao: `${P} fech transf` }));

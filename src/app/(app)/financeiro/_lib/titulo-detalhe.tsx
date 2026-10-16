@@ -15,6 +15,7 @@ import { listarParceiros, obterTitulo } from "./queries";
 import { opcoesClassificacao } from "./plano";
 import { BaixaForm, ClassificarForm, GlosaForm, TituloForm } from "./titulo-form";
 import { SituacaoTitulo } from "./titulos-view";
+import { rotulosAutoria } from "./aprovacao-servico";
 
 const formaLabel = (f: string | null) => FORMAS_PAGAMENTO.find((x) => x.value === f)?.label ?? "—";
 
@@ -35,6 +36,8 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
     opcoesClassificacao(db, [titulo.planoContaId, titulo.centroCustoId]),
     tipo === "receber" ? db.glosa.findMany({ where: { contaReceberId: id }, orderBy: { data: "asc" } }) : Promise.resolve([]),
   ]);
+  const aprov = tipo === "pagar" ? await db.contaPagar.findUnique({ where: { id }, select: { id: true, aprovadoEm: true, aprovadoPor: true, criadoPor: true, alteradoPor: true } }) : null;
+  const autoria = aprov ? (await rotulosAutoria(db, [aprov])).get(id) : "";
   const semBaixas = baixas.length === 0;
   const editavel = titulo.status === "ABERTO" && semBaixas && glosas.every((g) => g.recurso === "REVERTIDA");
 
@@ -91,6 +94,17 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 ),
               ],
               ["Criado em", date(titulo.criadoEm)],
+              ...(aprov
+                ? ([
+                    [
+                      "Aprovação",
+                      <span key="a">
+                        {aprov.aprovadoEm ? `Aprovada em ${date(aprov.aprovadoEm)}` : titulo.status === "ABERTO" ? <Link href="/financeiro/aprovacoes" className="text-teal-700 hover:underline">Aguardando aprovação</Link> : "Não aprovada"}
+                        <span className="block text-xs text-slate-500">{autoria}</span>
+                      </span>,
+                    ],
+                  ] as [string, ReactNode][])
+                : []),
               ...(tipo === "pagar" && titulo.codigoBarras
                 ? ([
                     [

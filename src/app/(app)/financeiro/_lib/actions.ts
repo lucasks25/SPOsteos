@@ -104,11 +104,13 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
       let mud = "";
+      const info: { aprovacaoRemovida?: boolean } = {};
       savedId = await db.$transaction(async (tx) => {
         if (id) mud = await diferencasTitulo(tx, "pagar", id, data);
-        return salvarContaPagarTx(tx, id, data, user.id);
+        return salvarContaPagarTx(tx, id, data, user.id, info);
       });
       await audit(user.id, id ? "editar" : "criar", "ContaPagar", savedId, `${data.descricao} — ${money(data.valor)}${mud ? ` — ${mud}` : ""}`);
+      if (info.aprovacaoRemovida) await audit(user.id, "remover aprovação", "ContaPagar", savedId, `aprovação removida por edição: ${mud}`);
     }
   } catch (e) {
     return { error: errorMessage(e) };

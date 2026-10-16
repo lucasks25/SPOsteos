@@ -14,6 +14,17 @@ const HASH_FALSO = "$2b$10$CwTycUXWue0Thq9StjUM0uJ8.4cF5L8lq7sQ3nZ0f6m9xYk0m2d8e
 export const MSG_INVALIDO = "E-mail ou senha inválidos.";
 export const MSG_BLOQUEADO = "Muitas tentativas. Aguarde 15 minutos e tente de novo.";
 
+const FORMATO_EMAIL = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+/**
+ * Texto do campo e-mail que vai para a auditoria do login falho. Quem digita a senha no campo errado não pode deixá-la
+ * gravada no log (docs/REVISAO.md §19.1): só vai se tiver formato de e-mail, em minúsculas e com no máximo 254 caracteres.
+ */
+export function emailParaAuditoria(texto: string): string {
+  const e = texto.trim().toLowerCase();
+  return e.length <= 254 && FORMATO_EMAIL.test(e) ? e : "(não é um e-mail)";
+}
+
 export type ResultadoLogin = { ok: true; user: { id: string; sessaoVersao: number } } | { ok: false; erro: string };
 
 /** Confere e-mail e senha com limite de tentativas por e-mail (e por IP, quando há um confiável). Sem cookie nem redirect. */
@@ -37,7 +48,7 @@ export async function autenticar(emailBruto: string, senhaBruta: string, ip: str
   const user = await db.usuario.findUnique({ where: { email } });
   const senhaOk = await bcrypt.compare(senha, user?.senhaHash ?? HASH_FALSO);
   if (!user || !user.ativo || !senhaOk) {
-    await audit(null, "login falhou", "Usuario", undefined, email); // a reserva fica como registro da falha
+    await audit(null, "login falhou", "Usuario", undefined, emailParaAuditoria(emailBruto)); // a reserva fica como registro da falha
     return { ok: false, erro: MSG_INVALIDO };
   }
   await db.tentativaLogin.deleteMany({ where: { OR: [{ id: { in: ids } }, { chave: `email:${email}` }] } });

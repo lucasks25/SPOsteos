@@ -104,24 +104,81 @@ test("salvar conta a receber: cria, edita em aberto, recusa com baixa, grupo do 
   assert.equal(num((await db.contaReceber.findUniqueOrThrow({ where: { id } })).valor), 250);
 });
 
-test("salvar conta a pagar: criada à mão nasce aprovada por quem criou; editar valor passa a aprovação a quem editou, editar descrição não", async () => {
-  const d = { descricao: `${P} pagar manual`, fornecedorId, planoContaId: planoOk, centroCustoId: null, competencia: dia(0), codigoBarras: null, valor: 80, vencimento: dia(5) };
-  const id = await tx((x) => salvarContaPagarTx(x, null, d, "usuario-teste"));
-  const criada = await db.contaPagar.findUniqueOrThrow({ where: { id } });
-  assert.ok(criada.aprovadoEm);
-  assert.equal(criada.aprovadoPor, "usuario-teste");
-  await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 90 }, "outro"));
-  const editada = await db.contaPagar.findUniqueOrThrow({ where: { id } });
-  assert.equal(num(editada.valor), 90);
-  assert.equal(editada.aprovadoPor, "outro", "quem mudou o valor responde pela aprovação (§19 governança)");
-  await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 90, descricao: `${P} pagar manual (renomeada)` }, "terceiro"));
-  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id } })).aprovadoPor, "outro", "descrição não mexe na aprovação");
-  const pend = await pagarPendente(100); // gerada por compras, sem aprovação: editar não aprova
-  await tx((x) => salvarContaPagarTx(x, pend.id, { ...d, valor: 95 }, "outro"));
-  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: pend.id } })).aprovadoEm, null);
+// Segregação de funções nas contas a pagar (docs/REVISAO.md §21): quem cria ou altera não aprova.
+const dadosPagar = () => ({ descricao: `${P} pagar manual`, fornecedorId, planoContaId: planoOk, centroCustoId: null, competencia: dia(0), codigoBarras: null, valor: 80, vencimento: dia(5) });
+class Desfazer extends Error {}
+/** Roda numa transação que é sempre desfeita (usuários de teste e mudança de perfil não sobram na base). */
+async function emTxDesfeita(f: (t: Parameters<Parameters<typeof db.$transaction>[0]>[0]) => Promise<void>) {
+  await db.$transaction(async (t) => { await f(t); throw new Desfazer(); }).catch((e) => { if (!(e instanceof Desfazer)) throw e; });
+}
+const mkUsuario = (t: Parameters<Parameters<typeof db.$transaction>[0]>[0], perfil: "ADMIN" | "FINANCEIRO") =>
+  t.usuario.create({ data: { nome: `${P} ${perfil}`, email: `${P.toLowerCase()}-${perfil.toLowerCase()}-${Date.now()}-${Math.random()}@teste.local`, senhaHash: "x", perfil } });
+
+test("segregação (a): conta a pagar criada à mão nasce NÃO aprovada e guarda quem criou", async () => {
+  const id = await tx((x) => salvarContaPagarTx(x, null, dadosPagar(), "usuario-teste"));
+  const c = await db.contaPagar.findUniqueOrThrow({ where: { id } });
+  assert.deepEqual([c.aprovadoEm, c.aprovadoPor, c.criadoPor], [null, null, "usuario-teste"]);
+});
+
+test("segregação (b): editar valor/vencimento/fornecedor/boleto de conta aprovada remove a aprovação; descrição não", async () => {
+  const d = dadosPagar();
+  const id = await tx((x) => salvarContaPagarTx(x, null, d, "criador"));
+  await tx((x) => aprovarContasPagarTx(x, [id], "aprovador"));
+  const info: { aprovacaoRemovida?: boolean } = {};
+  await tx((x) => salvarContaPagarTx(x, id, { ...d, descricao: `${P} pagar manual (renomeada)` }, "editor", info));
+  let c = await db.contaPagar.findUniqueOrThrow({ where: { id } });
+  assert.equal(c.aprovadoPor, "aprovador", "descrição não mexe na aprovação");
+  assert.deepEqual([info.aprovacaoRemovida, c.alteradoPor], [false, []]);
+  const outroFornecedor = (await mkFornecedor()).id;
+  for (const [campo, mud] of [["valor", { valor: 90 }], ["vencimento", { vencimento: dia(6) }], ["fornecedor", { fornecedorId: outroFornecedor }]] as const) {
+    if (!(await db.contaPagar.findUniqueOrThrow({ where: { id } })).aprovadoEm) await tx((x) => aprovarContasPagarTx(x, [id], "aprovador"));
+    await tx((x) => salvarContaPagarTx(x, id, { ...d, descricao: `${P} pagar manual (renomeada)`, ...mud }, "editor", info));
+    c = await db.contaPagar.findUniqueOrThrow({ where: { id } });
+    assert.deepEqual([c.aprovadoEm, c.aprovadoPor, info.aprovacaoRemovida], [null, null, true], `editar ${campo} manteve a aprovação`);
+    assert.deepEqual(c.alteradoPor, ["editor"]);
+    Object.assign(d, mud);
+  }
+  const pend = await pagarPendente(100); // gerada por compras, sem aprovação: editar não aprova, mas registra o editor
+  await tx((x) => salvarContaPagarTx(x, pend.id, { ...d, valor: 95 }, "outro", info));
+  c = await db.contaPagar.findUniqueOrThrow({ where: { id: pend.id } });
+  assert.deepEqual([c.aprovadoEm, c.alteradoPor, info.aprovacaoRemovida], [null, ["outro"], false]);
   const dif = await tx((x) => diferencasTitulo(x, "pagar", pend.id, { ...d, valor: 70 }));
   assert.match(dif, /valor: 95 → 70/);
   assert.doesNotMatch(dif, /descricao/);
+});
+
+test("segregação (c): quem criou ou alterou não aprova; outra pessoa aprova; aprovar zera os editores pendentes", async () => {
+  const d = dadosPagar();
+  const id = await tx((x) => salvarContaPagarTx(x, null, d, "criador"));
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [id], "criador")), /Quem criou ou alterou a conta não pode aprová-la; peça a outra pessoa do financeiro/);
+  await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 81 }, "editor-1"));
+  await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 82 }, "editor-2")); // o segundo editor não "apaga" o primeiro (lição do R1)
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [id], "editor-1")), /não pode aprová-la/);
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [id], "editor-2")), /não pode aprová-la/);
+  const outra = await pagarPendente(10); // lote com conta própria é recusado inteiro, nada aprovado
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [outra.id, id], "editor-1")), /Desmarque-as/);
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: outra.id } })).aprovadoEm, null);
+  assert.equal(await tx((x) => aprovarContasPagarTx(x, [id, outra.id], "terceiro")), 2);
+  const c = await db.contaPagar.findUniqueOrThrow({ where: { id } });
+  assert.deepEqual([c.aprovadoPor, c.alteradoPor], ["terceiro", []]);
+});
+
+test("segregação (c, exceção): ADMIN aprova a própria conta só se não houver outro FINANCEIRO ativo", async () => {
+  const finAtivos = await db.usuario.count({ where: { perfil: "FINANCEIRO", ativo: true } });
+  await emTxDesfeita(async (t) => {
+    const admin = await mkUsuario(t, "ADMIN");
+    const fin = await mkUsuario(t, "FINANCEIRO");
+    const id = await salvarContaPagarTx(t, null, dadosPagar(), admin.id);
+    // erro de negócio não aborta a transação no Postgres (não houve erro de SQL): dá para seguir na mesma tx
+    const r = await aprovarContasPagarTx(t, [id], admin.id).then(() => "aprovou", (e: Error) => e.message);
+    assert.match(r, /não pode aprová-la/, "há FINANCEIRO ativo: o ADMIN não aprova o que criou");
+    // FINANCEIRO sozinho também não aprova a própria (precisa do ADMIN)
+    const idFin = await salvarContaPagarTx(t, null, dadosPagar(), fin.id);
+    await assert.rejects(aprovarContasPagarTx(t, [idFin], fin.id), /não pode aprová-la/);
+    await t.usuario.updateMany({ where: { perfil: "FINANCEIRO", ativo: true }, data: { ativo: false } }); // desfeito no fim
+    assert.equal(await aprovarContasPagarTx(t, [id], admin.id), 1, "empresa sem outra pessoa no financeiro: o ADMIN aprova");
+  });
+  assert.equal(await db.usuario.count({ where: { perfil: "FINANCEIRO", ativo: true } }), finAtivos, "a transação foi desfeita (usuários DEMO intactos)");
 });
 
 test("cancelar título: só em aberto e sem baixas, em mês aberto; classificar reclassifica em qualquer situação", async () => {
