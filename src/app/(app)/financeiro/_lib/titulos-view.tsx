@@ -97,7 +97,7 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
           const atrasado = t.status === "ABERTO" && t.vencimento < hoje;
           return (
             <tr key={t.id}>
-              <Td className="max-w-xs">
+              <Td className="max-w-[13rem] sm:max-w-xs">
                 <Celula href={`${cfg.path}/${t.id}`} principal={t.descricao} sub={t.categoria ?? <span className="text-amber-700">Não classificado</span>} />
               </Td>
               <Td className="max-w-[14rem] truncate" title={t.parceiroNome ?? undefined}>{t.parceiroNome ?? "—"}</Td>

@@ -62,6 +62,12 @@
   .kpi-grade > a > .stat {
     padding: 0;
   }
+  /* número ímpar de células no celular: a última ocupa a linha inteira (sem buraco) */
+  @media (max-width: 1023px) {
+    .kpi-grade > :last-child:nth-child(odd) {
+      grid-column: 1 / -1;
+    }
+  }
   @media (min-width: 1024px) {
     .kpi-grade[data-cols="3"],
     .kpi-grade[data-cols="5"] {
@@ -248,6 +254,15 @@
 .tabela-rolagem[data-relatorio] > table > tbody > tr.linha-forte > :first-child,
 .tabela-rolagem[data-relatorio] > table > tfoot > tr > :first-child {
   background: var(--c-slate-50);
+}
+
+/* no celular a coluna fixa estreita e quebra linha, para sobrar lugar para os números ao lado */
+@media (max-width: 767px) {
+  .tabela-rolagem[data-relatorio] > table > :is(thead, tbody, tfoot) > tr > :first-child {
+    min-width: 8.5rem;
+    max-width: 10.5rem;
+    white-space: normal;
+  }
 }
 
 /* Table head={{ hideOnMobile }}: a coluna inteira (th e td) some abaixo de 768 px */

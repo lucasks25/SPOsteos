@@ -1,22 +1,34 @@
-# Design system: tema "Bling médico"
+# Design system: SP OSTEOS, layout de ERP real
 
-O visual do sistema segue a **linguagem** dos ERPs brasileiros de mercado, com o Bling como referência: menu lateral escuro com ícones e rótulos, conteúdo claro em cartões brancos de raio grande, botões em pílula, abas com sublinhado verde, filtros em cartão com chips e indicadores com ícone em quadradinho verde-claro. A paleta foi levada para a área médica: um **verde-petróleo** sóbrio como cor de marca e um **acento menta** suave (em vez do verde-lima da marca Bling, forte demais num contexto cirúrgico).
+O visual segue os **ERPs de mercado** (ERPNext, Odoo e Bling) e as **cores da marca SP OSTEOS**: azul `#1b7fc4` e roxo `#4b2a85` do logo, menu azul-marinho e neutros frios. A regra é a dos ERPs reais: tela densa e tabular, bordas finas, cinza neutro, cor só para status, valor negativo e ação principal, tipografia uniforme, filtros compactos e as ações sempre no mesmo lugar.
 
-**Limite legal.** Reproduzimos padrões de interface (estrutura, medidas, comportamento), que não são protegidos. **Não** usamos marca, logotipo, ilustrações, fontes proprietárias, textos nem código do Bling. As cores são nossas (derivadas, não copiadas) e as fontes são livres (OFL).
+**Limite legal.** Reproduzimos padrões de interface (estrutura, medidas, comportamento), que não são protegidos. **Não** usamos marca, logotipo, ilustrações, fontes proprietárias, textos nem código de Bling, Odoo ou ERPNext. As cores são as da SP OSTEOS e a fonte é livre (Inter, OFL).
 
-Substitui o tema "Horizonte" (estilo SAP Fiori), que vigorou até 16/10/2026.
+Substitui o tema "Bling médico" (verde-petróleo com acento menta, cartões de raio grande e botões em pílula), que vigorou até 16/10/2026.
 
-## 1. Fontes consultadas
+## 1. Referências reais (o que embasou cada padrão)
 
-| Fonte | Status | O que deu |
+As capturas ficam em `scratchpad/referencias/` (índice em `INDEX.md`, coletado em 16/10/2026). Origens: documentação do Odoo 18 (odoo.com/documentation/18.0), documentação do ERPNext v16 (docs.frappe.io/erpnext) e blog do Bling (atualização das telas de produto). As fotos de marketing do Bling foram descartadas.
+
+| Padrão nosso | ERP e tela de referência | O que copiamos |
 |---|---|---|
-| Capturas da tela de produto do app Bling (cadastro de produto, assistente de 6 passos) | **lidas** (imagens fornecidas pelo dono) | fundo branco, campos grandes arredondados com rótulo pequeno cinza acima, abas com sublinhado verde, botão primário verde preenchido e secundário com contorno verde, ícones de informação azuis |
-| Página "Controle de vendas" do Bling, identidade 2026 (cabeçalho e blocos 2 e 3) | **lidas** | verde muito escuro (~`#0f2b26`) como faixa de marca, verde-lima como destaque, cartões brancos com raio grande e sombra suave, botões pílula, listas de ações com ícone em quadradinho verde-claro |
-| Descrição textual do app Bling atual (menu lateral, painel de filtros com botão "Filtrar" e chips, menu "Ações"/"Mais ações", paginação, cards de painel) | **lida** (texto do briefing) | estrutura da casca, dos filtros e do cabeçalho de página |
-| WCAG 2.2 (1.4.3 contraste de texto 4,5:1; 1.4.11 contraste de componente 3:1; 2.5.8 área de toque) | conhecida; contraste **verificado por script** (seção 3.3) | limites mínimos da paleta |
-| `node_modules/next/dist/docs/01-app/03-api-reference/02-components/font.md` e `.../04-functions/use-search-params.md` (Next 16.4 instalado) | **lidos** | `next/font/google` com `variable` para duas fontes; `useSearchParams` dentro de `<Suspense>` |
+| Cabeçalho de lista (`PageHeader`) | ERPNext, lista "Sales Invoice" | título simples à esquerda, ações à direita na mesma linha, um só botão primário |
+| Cabeçalho de registro (`PageHeader voltar status meta`) | ERPNext, "Item" e "Sales Invoice"; Odoo, recebimento "WH/IN" | trilha "Módulo / Lista", status em etiqueta pastel ao lado do título, ações à direita |
+| Faixa de indicadores (`KpiGrid`/`Stat`) | ERPNext, painel de Manufatura; ERPNext, relatório de Resultado (totais sem caixa) | rótulo cinza pequeno sobre o número, sem ícone, sem fundo colorido, cartões planos e iguais |
+| Filtros em barra (`FilterBar`) | ERPNext, lista "Sales Invoice" (campos em linha + "Filter") | uma linha de campos de 32 px acima da tabela, botão de filtrar, extras recolhidos |
+| Filtros laterais (`FilterBar layout="lateral"`) | Odoo, relatório de estoque (painel de filtros à esquerda); Bling (lista com painel) | coluna de filtros fixa à esquerda da tabela, em telas largas |
+| Tabela (`Table`) | ERPNext, "Sales Invoice"; Odoo, "Moves History" | cabeçalho cinza claro, linhas de 32 px sem zebra, valores à direita, total em negrito no rodapé, contagem no topo |
+| Status (`Badge`/`StatusBadge`) | ERPNext, "Draft/Unpaid/Overdue/Paid" | etiqueta pequena, fundo pastel e texto escuro da mesma cor |
+| Aging (`AgingBarra`) | ERPNext, relatórios "Accounts Receivable/Payable" | barra empilhada por faixa de vencimento, legenda e totais por faixa |
+| Conciliação em duas colunas | Odoo, conciliação bancária | extrato à esquerda (data em negrito, valor à direita, item aberto com fundo azul-claro e barra roxa), ações da linha à direita, uma ação principal |
+| DRE e fluxo (`Table relatorio`) | ERPNext, "Profit and Loss" e "Cash Flow" | filtros em linha, 3 ou 4 totais, tabela com subtotais em negrito e colunas por período |
+| Formulário (`Form`, `Secao`, `Grid`) | ERPNext, "Item" (seções, 2 colunas); Bling, cadastro de produto (Cancelar + Salvar) | rótulo acima (13 px), asterisco vermelho, campo de 32 px, seções com título simples, Cancelar e Salvar juntos |
+| Ajuda em "i" (`Dica`) | Bling, cadastro de produto (ícone "i" de ajuda) | texto de ajuda no "i", não em parágrafo fixo |
+| Abas (`Abas`) | ERPNext e Odoo (abas de texto sublinhadas) | abas de texto, sem ícone, sublinhado na ativa |
 
-**Não verificado:** medidas exatas do app Bling (alturas, raios, hex). Os valores abaixo são nossos, escolhidos para reproduzir a aparência das capturas, não medidos no produto.
+**Removido por não existir em ERP real:** ícone em quadradinho colorido em cartão e indicador, halos e gradientes, botão em pílula em tudo, raios acima de 8 px, sombra em cartão interno, subtítulo explicativo sob o título, nota longa embaixo de cada número, saudação "Olá, fulano", título grande com descrição no login.
+
+**Não verificado:** medidas exatas em pixels dos três produtos. Os valores abaixo são nossos, escolhidos olhando as capturas (2880 px de largura, divididas por 2).
 
 ## 2. Como o tema é aplicado
 
@@ -25,131 +37,127 @@ Os estilos ficam em `src/app/estilos/`, importados por `src/app/globals.css`:
 | Arquivo | Conteúdo |
 |---|---|
 | `tokens.css` | `@theme` do Tailwind (fontes, raios, tamanhos, sombras) e as variáveis `--c-*` dos modos claro e escuro |
-| `base.css` | corpo, títulos em Manrope, foco, seleção, rolagem, seta do select, ícone de data, impressão |
-| `componentes.css` | área de conteúdo, grade de indicadores (`.kpi-strip`), tabela com cabeçalho fixo (`.tabela-rolagem`), menu lateral recolhido, botão de tema |
+| `paleta.mjs` | fonte dos valores de cor e verificação de contraste: `node src/app/estilos/paleta.mjs` (relatório) e `--css` (imprime os blocos para colar em `tokens.css`) |
+| `base.css` | corpo, títulos, foco, seleção, rolagem, seta do select, campo de arquivo, impressão |
+| `componentes.css` | área de conteúdo, faixa de indicadores, tabela (cabeçalho fixo, linha clicável, colunas que somem, relatório), filtros (barra, "Mais filtros", lateral), grade de campos, menu lateral recolhido |
 
-As páginas usam **apenas** as escalas do Tailwind `teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet` e `white`. Cada escala aponta para uma variável `--c-<escala>-<passo>`; trocar o tema é trocar valores, sem tocar nas páginas. Os nomes das escalas foram mantidos do tema anterior de propósito, para nenhuma `page.tsx` precisar mudar.
+As páginas usam **só** as escalas `teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet` e `white`. Os nomes ficaram do tema anterior de propósito: nenhuma página precisou mudar.
 
 | Escala/variável | Papel |
 |---|---|
-| `teal-*` | verde-petróleo da marca; `teal-700` = link e texto de botão secundário |
-| `slate-*` | neutros com leve tom verde: fundo, bordas, rótulos, texto |
-| `emerald` / `rose` / `amber` / `sky` | sucesso / erro / alerta / informação |
-| `violet` | categoria (ex.: cirurgia realizada) |
+| `teal-*` | **azul da marca**. `teal-600` = `#1b7fc4` (logo; barra de gráfico, foco). `teal-700` = `#166aa6`: link e botão principal |
+| `violet-*` | **roxo da marca**. `violet-700` = `#4b2a85` (logo). Série 2 dos gráficos, destaque de marca (barra do item aberto na conciliação), categoria |
+| `slate-*` | neutros frios: fundo, bordas, rótulos, texto |
+| `emerald` / `amber` / `rose` / `sky` | sucesso / alerta / erro / informação |
 | `white` | superfície (cartão, campo); no escuro vira a superfície escura |
 | `bg-primary`, `text-on-primary`, `primary-hover/active` | botão principal |
-| `bg-accent-soft`, `text-on-accent-soft`, `accent` | quadradinho de ícone dos indicadores e cartões; acento menta |
-| `bg-sidebar`, `text-sidebar-fg`, `text-sidebar-fg-ativo`, `bg-sidebar-destaque` | menu lateral (sempre escuro) e faixa do login |
+| `accent`, `accent-soft`, `on-accent-soft` | roxo da marca e seu fundo claro (sobrou do tema anterior; quase sem uso) |
+| `bg-sidebar`, `text-sidebar-fg`, `text-sidebar-fg-ativo`, `bg-sidebar-destaque` | menu lateral (azul-marinho em `tokens.css`; a casca pode sobrescrever estes quatro em `estilos/menu.css`, que é da sessão do menu) |
 | `border-field` | borda dos campos (3:1 sobre a superfície) |
-| `--focus` | anel de foco |
-| `--shadow-card / -raised / -overlay` | `shadow-sm` (cartão), `shadow-lg` (cartão em hover), `shadow-xl` (menus, diálogos, toast) |
+| `--shadow-card` | **vazio**: `shadow-sm`/`shadow` não desenham nada em cartões; `shadow-lg` é sutil; `shadow-xl` fica para menus, diálogos e toast |
 
-**Escuro.** O tema escuro é escolhido pelo usuário (cookie `opme_tema`, atributo `data-theme="dark"`) ou, sem escolha, segue o sistema operacional. Os dois blocos escuros em `tokens.css` são idênticos (o CSS não permite unir o seletor de atributo e a media query); ao mudar uma cor, mude nos dois. Os blocos escuros ficam dentro de `@media screen`, então **a impressão usa sempre o claro**, sem bloco extra.
+**Escuro.** Escolhido pelo usuário (cookie `opme_tema`, `data-theme="dark"`) ou, sem escolha, segue o sistema. Os dois blocos escuros de `tokens.css` são idênticos; ao mudar uma cor, regenere com o script. O escuro só vale na tela (`@media screen`): **a impressão usa sempre o claro**.
 
-**Cuidado com `white` e `black` no escuro.** `text-white` vira a cor da superfície escura. Dentro do menu lateral (sempre escuro) use `text-sidebar-fg-ativo`; para véus claros sobre fundo escuro use valores fixos, como `bg-[rgb(255_255_255/0.08)]`.
+**Cuidado com `white` no escuro.** `text-white` vira a cor da superfície escura. No menu lateral use `text-sidebar-fg-ativo`.
 
 ## 3. Paleta
 
 ### 3.1 Claro
 
-| Passo | teal (marca) | slate (neutros) | emerald | rose | amber | sky | violet |
+| Passo | teal (azul) | violet (roxo) | slate | emerald | amber | rose | sky |
 |---|---|---|---|---|---|---|---|
-| 50 | `#effaf7` | `#f6f8f8` | `#ecfaf1` | `#fef3f2` | `#fffaeb` | `#eff7ff` | `#f5f3ff` |
-| 100 | `#d6f3ec` | `#eef2f1` | `#d3f3df` | `#fee4e2` | `#fef0c7` | `#dbedff` | `#ece8fe` |
-| 200 | `#aee5d8` | `#e2e8e6` | `#a7e6c0` | `#fecdca` | `#fedf89` | `#bcdcfe` | `#dbd4fd` |
-| 300 | `#78cfbd` | `#cdd6d3` | `#6fd29b` | `#fca29b` | `#fec84b` | `#8cc4fc` | `#bfb2fb` |
-| 400 | `#3fb39f` | `#879794` | `#36b574` | `#f2675d` | `#f5a524` | `#56a5f7` | `#9d87f6` |
-| 500 | `#169685` | `#5c6d6a` | `#16975a` | `#e0392d` | `#e08a0b` | `#2f86ee` | `#7c5cee` |
-| 600 | `#0d7d70` | `#4c5c59` | `#0e7d49` | `#c42b1f` | `#b25407` | `#1d6bd6` | `#6740d9` |
-| 700 | `#0f6e63` | `#374644` | `#0b6a3e` | `#a3231a` | `#93400c` | `#1a57b4` | `#5631b8` |
-| 800 | `#115a52` | `#24312f` | `#0b5433` | `#861f18` | `#7a340f` | `#1b4892` | `#472a96` |
-| 900 | `#124a44` | `#13201e` | `#0a442b` | `#6f1e18` | `#652c10` | `#1b3d75` | `#3b2579` |
-| 950 | `#062e2a` | `#0a1312` | `#052a1a` | `#3f0c08` | `#3b1604` | `#12264a` | `#241548` |
+| 50 | `#eef6fc` | `#f5f2fb` | `#f8fafc` | `#effaf3` | `#fffbeb` | `#fef2f2` | `#f0f7ff` |
+| 100 | `#d9eaf8` | `#ebe4f6` | `#f1f4f8` | `#d9f2e2` | `#fef3c7` | `#fde3e3` | `#ddeefe` |
+| 200 | `#b6d6f0` | `#d6c9ed` | `#e3e8ef` | `#b3e4c4` | `#fde68a` | `#fbcaca` | `#bcdcfb` |
+| 300 | `#84bae4` | `#b8a0de` | `#cbd3de` | `#7fcf9c` | `#fbd04f` | `#f6a3a3` | `#89c1f5` |
+| 400 | `#4f9cd6` | `#9474c9` | `#8190a5` | `#3fae68` | `#f5ae24` | `#ec6b6b` | `#4f9ee9` |
+| 500 | `#2b8bcf` | `#7552b0` | `#5d6b80` | `#1a9047` | `#dd8a0a` | `#dc2f2f` | `#2a80d6` |
+| 600 | **`#1b7fc4`** | `#5f3c9c` | `#4a576b` | **`#15803d`** | **`#b45309`** | **`#b91c1c`** | `#1d67b8` |
+| 700 | `#166aa6` | **`#4b2a85`** | `#364256` | `#166534` | `#92400e` | `#991b1b` | `#195495` |
+| 800 | `#125789` | `#3e236e` | `#232d3e` | `#14532d` | `#78350f` | `#7f1d1d` | `#18467a` |
+| 900 | `#0f476f` | `#331d5a` | `#131b2b` | `#11442a` | `#652d10` | `#691a1a` | `#163b64` |
+| 950 | `#0a2d48` | `#20123a` | `#0a101c` | `#062b17` | `#3f1904` | `#430b0b` | `#0e2541` |
 
-Outras variáveis do claro: fundo `--bg #f6f8f8`, superfície `#ffffff`, texto `#13201e`, primário `#0f6e63` (hover `#115a52`, pressionado `#124a44`, texto branco), foco `#0d7d70`, acento `#a6e3a1`, acento suave `#e3f6dc` com ícone `#1d5a2c`, menu lateral `#0d2724` (texto `#c9dcd8`, ativo `#ffffff`, destaque `#9be3a4`), borda de campo `#879794`.
+Outras variáveis do claro: fundo `--bg #f4f6f9`, superfície `#ffffff`, texto `#131b2b`; primário `#166aa6` (hover `#125789`, pressionado `#0f476f`, texto branco); foco `#1b7fc4`; acento `#4b2a85` sobre `#f5f2fb`; menu lateral `#0f1f3d` (texto `#c7d2e6`, ativo `#ffffff`, destaque lilás `#a78fe0`); borda de campo `#8190a5`.
 
-Os passos 600 de `amber` e `rose` foram escurecidos em relação a uma escala linear porque as páginas usam esses passos em **texto** (`text-amber-600`, `text-rose-600`); assim passam de 4,5:1 sobre branco.
+**Por que o botão não usa o azul do logo.** Branco sobre `#1b7fc4` dá **4,30:1**, abaixo dos 4,5:1 que o texto de 14 px exige (WCAG 1.4.3). O botão e o link usam o passo 700 (`#166aa6`, 5,76:1); o `#1b7fc4` fica para o que não é texto (barra de gráfico, anel de foco, ícone).
 
 ### 3.2 Escuro (dessaturado, sem inverter)
 
-O escuro não é o claro invertido: os fundos são verde-petróleo muito escuros e pouco saturados, e os passos de texto (600 e 700) ficam claros e suaves. Os fundos de status (passo 50) são tons escuros da própria cor.
-
-| Passo | teal | slate | emerald | rose | amber | sky | violet |
+| Passo | teal | violet | slate | emerald | amber | rose | sky |
 |---|---|---|---|---|---|---|---|
-| 50 | `#10302b` | `#1a2423` | `#0f2e20` | `#3a1513` | `#33240c` | `#132a42` | `#251d44` |
-| 100 | `#143a34` | `#1f2b29` | `#133a28` | `#491a17` | `#3f2c0e` | `#173350` | `#2d2353` |
-| 200 | `#1b4d45` | `#2a3735` | `#1a5038` | `#64231f` | `#5a3e12` | `#1e4469` | `#3b2f6d` |
-| 300 | `#22675c` | `#3a4846` | `#23704d` | `#88302a` | `#7d5616` | `#28598a` | `#4f3f93` |
-| 400 | `#2f8a7b` | `#6b7d7a` | `#2f9464` | `#c4483f` | `#b07a1e` | `#3b7cc0` | `#7360c4` |
-| 500 | `#47a897` | `#91a19e` | `#4cb57f` | `#e8695f` | `#d89a35` | `#5c9ce0` | `#9583e0` |
-| 600 | `#6cc3b2` | `#a9b7b4` | `#6dcc98` | `#f08a81` | `#ebb75e` | `#80b5ec` | `#ad9fea` |
-| 700 | `#7fd0bf` | `#c4cfcd` | `#86d8a9` | `#f4a39c` | `#f1c97f` | `#9cc6f1` | `#c0b5f0` |
-| 800 | `#a9e3d6` | `#dde5e3` | `#ace6c4` | `#f8c4bf` | `#f6dcab` | `#c0dbf6` | `#d7cff6` |
-| 900 | `#cfefe7` | `#eef3f2` | `#d0f2de` | `#fbdedb` | `#faecd0` | `#dcebfa` | `#e9e5fa` |
-| 950 | `#e9f8f4` | `#ffffff` | `#ebfaf1` | `#fdf0ee` | `#fdf6e8` | `#eef5fd` | `#f5f3fd` |
+| 50 | `#10243a` | `#221a3a` | `#182134` | `#0e2a1c` | `#2f230e` | `#361518` | `#11253d` |
+| 200 | `#183a5e` | `#382b61` | `#26314a` | `#194a33` | `#563e14` | `#5f2328` | `#1b3d63` |
+| 400 | `#2c6ea8` | `#6c5ab3` | `#68758d` | `#2f8f61` | `#ac7b22` | `#bf4a50` | `#3572b5` |
+| 500 | `#3f8dcc` | `#8d7bd2` | `#8c98ad` | `#45ae7b` | `#d49b38` | `#e2676c` | `#5390d6` |
+| 600 | `#62a6de` | `#a99be2` | `#a8b2c4` | `#68c695` | `#e8b860` | `#ee8a8e` | `#78ace6` |
+| 700 | `#7db7e6` | `#bcb1ea` | `#c3cbd8` | `#84d3a9` | `#efca80` | `#f3a4a7` | `#94bfee` |
+| 900 | `#cfe3f6` | `#e9e5f9` | `#edf1f6` | `#d0f0de` | `#faedd1` | `#fbdfe0` | `#dbeaf9` |
 
-Outras variáveis do escuro: fundo `#0e1615`, superfície `#152120`, texto `#eef3f2`, primário **menta** `#5fbcaa` com texto escuro `#0b201d` (hover `#74c9b8`, pressionado `#4fae9c`), foco `#7fd0bf`, acento suave `#1c3a2a` com ícone `#a9e6b4`, menu lateral `#0a1312`, borda de campo `#647673`.
+(escala completa em `paleta.mjs`.) Fundo `#0d1422`, superfície `#141c2d`, texto `#edf1f6`; primário `#5aa3dc` com texto escuro `#08182b`; menu `#0a1426` (texto `#b4c0d6`); borda de campo `#68758d`.
 
 ### 3.3 Contraste (WCAG AA), verificado por script
 
-Texto pede 4,5:1; borda de campo, ícone e indicador do menu pedem 3:1. Todos os pares passam nos dois modos.
+`node src/app/estilos/paleta.mjs` confere 43 pares por modo; **0 falhas**. Texto pede 4,5:1; borda de campo, ícone, foco, barra de gráfico e destaque do menu pedem 3:1.
 
 | Par | Claro | Escuro |
 |---|---|---|
-| texto `slate-900` / superfície | 16,8 | 14,8 |
-| texto apagado `slate-500` / fundo | 5,12 | 6,81 |
-| rótulo `slate-600` / superfície | 7,04 | 7,97 |
-| link `teal-700` / superfície | 6,12 | 9,19 |
-| botão principal (texto / fundo) | 6,12 | 7,48 |
-| badge `emerald-700` / `emerald-50` | 6,20 | 8,67 |
-| badge `amber-700` / `amber-50` | 6,76 | 9,58 |
-| badge `rose-700` / `rose-50` | 6,87 | 8,15 |
-| badge `sky-700` / `sky-50` | 6,33 | 8,18 |
-| texto `amber-600` / superfície | 5,04 | 9,03 |
-| texto `rose-600` / superfície | 5,66 | 6,82 |
-| ícone do indicador / acento suave | 7,24 | 8,69 |
-| texto do menu lateral / fundo do menu | 11,04 | 9,48 |
-| borda de campo / superfície (3:1) | 3,05 | 3,45 |
-| ícone `slate-400` / superfície (3:1) | 3,05 | 3,81 |
+| texto `slate-900` / superfície | 17,22 | 15,01 |
+| texto apagado `slate-500` / fundo | 5,00 | 6,32 |
+| rótulo `slate-600` / superfície | 7,33 | 7,97 |
+| link `teal-700` / superfície | 5,76 | 7,93 |
+| botão principal (texto / fundo) | 5,76 | 6,55 |
+| status `emerald-700` / `emerald-50` | 6,67 | 8,69 |
+| status `amber-700` / `amber-50` | 6,84 | 9,82 |
+| status `rose-700` / `rose-50` | 7,60 | 8,36 |
+| status `sky-700` / `sky-50` | 7,09 | 8,07 |
+| status `violet-700` / `violet-50` | 9,64 | 8,31 |
+| texto `amber-600` / superfície | 5,02 | 9,29 |
+| texto `rose-600` / superfície | 6,47 | 7,02 |
+| texto do menu / fundo do menu | 10,74 | 10,04 |
+| destaque do menu / fundo do menu (3:1) | 5,96 | 7,43 |
+| borda de campo / superfície (3:1) | 3,25 | 3,66 |
+| barra `teal-600` / superfície (3:1) | 4,30 | 6,51 |
+| barra `violet-500` / superfície (3:1) | 5,85 | 4,78 |
+
+**Gráficos CSS** (aging da visão geral, comparativo do fluxo) usam só tokens: série 1 `bg-teal-600` (azul), série 2 `bg-violet-500` (roxo); no aging, vencido `bg-rose-500`, vence hoje `bg-amber-400`, 7 dias `bg-teal-600`, 30 dias `bg-teal-300`, depois `bg-slate-300`. O valor sempre aparece também em texto ao lado.
 
 ## 4. Tipografia
 
+Uma fonte só: **Inter** (`--font-display` aponta para ela; a Manrope saiu). O `src/app/layout.tsx` ainda carrega a Manrope; pode ser removida de lá (arquivo de outra sessão).
+
 | Uso | Valor |
 |---|---|
-| Corpo, células, campos, botões | **Inter**, 0.875rem (14 px), linha 1.5 |
-| Títulos (`h1`, `h2`, `.font-display`) e números de indicador | **Manrope** (extrabold/bold), espaçamento −0.01em |
-| Título de página (`PageHeader`) | 1.5rem no celular, 1.75rem a partir de 768 px, extrabold |
-| Título de cartão e de tabela | 1rem bold |
-| Migalha acima do título | 0.75rem semibold, caixa alta, `teal-700` |
-| Rótulo de campo | 0.8125rem medium `slate-700`, acima do campo |
-| Cabeçalho de tabela | 0.75rem semibold, caixa alta, espaçamento 0.04em, `slate-500`, fundo `slate-50` |
-| Valor de indicador | 1.5rem Manrope extrabold |
-| Pequeno (dica, nota, badge) | 0.75rem |
-
-As duas fontes são OFL e servidas pelo `next/font/google` (`src/app/layout.tsx`, variáveis `--font-inter` e `--font-manrope`). Sem rede no build, cai na fonte do sistema. O ajuste de compatibilidade continua: `text-[13px]` vira 14 px e `text-[11px]` vira 12 px. Código novo usa `text-sm`/`text-xs`.
+| Corpo, células, campos, botões | 0.875rem (14 px), linha 1.5 |
+| Título de página | 1.25rem (20 px) semibold; registro (com `voltar`): 1.375rem |
+| Trilha acima do título | 0.75rem, `slate-500`; o link da lista em `teal-700` |
+| Título de cartão e de tabela | 0.9375rem (15 px) semibold |
+| Rótulo de campo | 0.8125rem medium `slate-700`; nos filtros 0.75rem `slate-600` |
+| Cabeçalho de tabela | 0.75rem semibold `slate-600`, caixa normal, fundo `slate-50` |
+| Rótulo / valor de indicador | 0.75rem medium `slate-600` / 1.25rem semibold (1.125rem no celular) |
+| Pequeno (nota, status, dica) | 0.75rem |
 
 ## 5. Espaçamento, raios e sombras
 
-**Conteúdo** (`.conteudo`): recuo lateral de 1rem no celular, 1.75rem a partir de 768 px e 2.25rem a partir de 1440 px; largura máxima de 1680 px, centralizada.
+**Conteúdo** (`.conteudo`): recuo de 1rem no celular, 1.5rem a partir de 768 px e 2rem a partir de 1440 px; largura máxima de 1680 px. Topo de 1rem (1.25rem a partir de 768 px).
 
-**Grade:** múltiplos de 0.25rem. 0.5rem entre controles, 0.75rem entre indicadores, 1.25rem entre blocos.
+**Ritmo:** 1rem (16 px) entre blocos; cabeçalho de cartão 44 px; corpo do cartão 16 px; 8 px entre controles.
 
-**Alturas:** campo e botão 2.5rem (40 px); os botões têm área de toque de 44 px (pseudo-elemento que estende 2 px acima e abaixo). Botão `small` 2rem, para dentro de tabelas. Linha de tabela 2.5rem. Barra superior 4rem.
+**Alturas:** campo e botão **32 px** (área de toque estendida a 44 px por pseudo-elemento); botão `small` 28 px; linha de tabela 32 px; cabeçalho de tabela 32 px.
 
 | Raio | Valor | Uso |
 |---|---|---|
-| `rounded-sm` | 6 px | chip pequeno, `kbd` |
-| `rounded` / `rounded-md` | 8 px | padrão |
-| `rounded-lg` | **10 px** | campo, item de menu, quadradinho de ícone |
-| `rounded-xl` | **14 px** | cartão, tabela, indicador, menus suspensos |
-| `rounded-2xl` | **20 px** | diálogo, cartão do login |
-| `rounded-full` | pílula | botões, badges, chips, busca global |
+| `rounded-sm` | 4 px | status, chip, kbd |
+| `rounded` / `rounded-md` / `rounded-lg` | 6 px | campo, botão, item de menu, aviso |
+| `rounded-xl` | 8 px | cartão, tabela, faixa de indicadores, menus suspensos |
+| `rounded-2xl` | 10 px | diálogo |
+| `rounded-full` | pílula | só avatar, busca global e ponto de status |
 
-**Sombras (duas elevações + sobreposição):** `shadow-sm` = cartão em repouso (quase imperceptível, a borda faz o contorno); `shadow-lg` = cartão em hover/elevado; `shadow-xl` = menus suspensos, diálogos e toast.
+**Sombras:** nenhuma em cartão, tabela ou indicador (a borda de 1 px `slate-200` faz o contorno). `shadow-xl` só em menu suspenso, diálogo, dica e toast.
 
 ## 6. Casca (menu lateral e barra superior)
 
-- **Menu lateral** (`src/components/menu-lateral.tsx`), 16rem, fundo `--sidebar`: marca SP OSTEOS no topo (`<Marca sobreEscuro />`), módulos (setores) em sanfona com ícone e rótulo, o módulo da tela atual aberto, subgrupos com rótulo em caixa alta (Financeiro: Receber, Pagar, Banco, Resultado). Item ativo: véu claro e **barra menta de 3 px** à esquerda. Usuário no rodapé (avatar, nome, perfil) com aparência (Claro, Escuro, Sistema) e Sair.
+- **Menu lateral** (`src/components/menu-lateral.tsx`), 16rem, fundo `--sidebar` (azul-marinho): marca SP OSTEOS no topo (`<Marca sobreEscuro />`), módulos (setores) em sanfona com ícone e rótulo, o módulo da tela atual aberto, subgrupos com rótulo em caixa alta (Financeiro: Receber, Pagar, Banco, Resultado). Item ativo: véu claro e **barra lilás de 3 px** (`--sidebar-destaque`) à esquerda. Usuário no rodapé (avatar, nome, perfil) com aparência (Claro, Escuro, Sistema) e Sair.
 - **Recolher** (só no desktop): botão redondo na borda do menu; vira trilho de ícones de 4.5rem e os itens do módulo abrem num painel ao lado. A preferência fica no cookie `opme_menu` e o layout lê no servidor, para não piscar ao carregar.
 - **Celular** (< 1024 px): o menu vira gaveta com fundo escurecido, aberta pelo botão de menu da barra superior; fecha com Esc, clique fora ou ao navegar.
 - **Barra superior** (`src/components/app-shell.tsx`), 4rem, branca translúcida e fixa: busca global em pílula (Ctrl K), tema (lua/sol), ajuda e atalhos, sino de pendências.
@@ -172,90 +180,112 @@ Preferência de cada usuário, em **menu do usuário → Aparência → Posiçã
 
 ## 7. Padrões de tela
 
-### Lista (ex.: `/financeiro/receber`, `/cadastros/produtos`)
-1. `PageHeader`: migalha (módulo), título, subtítulo; ação principal à direita.
-2. `KpiGrid` com `Stat`: cartões brancos lado a lado.
-3. `FilterBar`/`Filtros`: cartão recolhível com os campos lado a lado e o botão "Filtrar"; embaixo, **chips dos filtros ativos**, cada um com "×", e "Limpar tudo".
-4. `Table`: cartão com título e contagem em pílula, ações à direita; cabeçalho fixo ao rolar (no desktop a tabela rola por dentro, até a altura da tela), zebra sutil, hover verde-claro.
-5. `EmptyState` quando vazia: ícone em círculo verde-claro, por que está vazia e a ação que resolve.
+### Lista (ex.: `/financeiro/receber`) — ERPNext "Sales Invoice"
+1. `PageHeader`: trilha (módulo), título, "i" com a explicação, **uma** ação principal à direita.
+2. `KpiGrid` com 3 ou 4 `Stat` curtos (rótulo + número + nota de uma linha), clicáveis quando levam a um filtro.
+3. `Filtros`/`FilterBar`: barra de uma linha; até 4 campos à vista, o resto em "Mais filtros"; chips dos filtros ativos embaixo. Em listas com muitos filtros, `layout="lateral"` dentro de `ListaComFiltros` (painel à esquerda a partir de 1536 px).
+4. `Table` com título e contagem; **primeira coluna** com o nome do registro em link (`Celula href`), que deixa a **linha inteira clicável**; números à direita; status em `Badge`; total no `rodape`; colunas secundárias com `hideOnMobile`; sem botão "Abrir/Editar" por linha (a linha abre; a ação principal fica no registro).
+5. `EmptyState` quando vazia: ícone cinza, por que está vazia e a ação que resolve.
 
-### Detalhe (ex.: `/financeiro/receber/[id]`, `/comercial/cirurgias/[id]`)
-- `PageHeader` com `voltar`, status em `StatusBadge` e ações; com mais de duas ações, a principal e uma secundária ficam à vista e o resto vai para `maisAcoes` (menu "Mais ações").
-- Um `Card` por seção (ícone opcional em quadradinho verde-claro), `Dl` para pares rótulo-valor, `Table` para itens.
+### Registro / detalhe (ex.: `/financeiro/receber/[id]`, `/financeiro/remessas/[id]`) — ERPNext "Item", Odoo "WH/IN"
+1. `PageHeader` com `voltar` (vira a trilha "Financeiro / Contas a receber"), `status` ao lado do título e `meta` em linha (parceiro · origem · competência); ações à direita, a principal por último (ex.: "Registrar recebimento", âncora para o formulário); com mais de duas, use `maisAcoes`.
+2. Faixa de **fatos-chave**: `KpiGrid` com 3 ou 4 `Stat` (valor, pago, saldo, vencimento), uma moldura só com fios entre as células.
+3. Seções em `Card` compactos (dados em `Dl`, rótulo à esquerda como no Odoo), itens em `Table`; ações de apoio em cartões no fim, botão secundário. Com mais de 3 seções longas, prefira `Abas`.
 
-### Painel (`/`)
-- Indicadores em cartões com ícone, gráfico de vendas e próximas cirurgias à esquerda, pendências à direita.
+### Formulário (ex.: `/financeiro/contas/nova`, `/financeiro/receber/novo`) — ERPNext "Item", Bling produto
+- `Form` dentro de um `Card` de até `max-w-5xl`; campos em `Secao` (título pequeno + descrição) com `Grid cols={2|3}`; as colunas seguem a largura do formulário.
+- Rótulo acima, asterisco vermelho no obrigatório (`label="Nome *"`), dica curta abaixo, erro abaixo do campo com ícone (substitui a dica).
+- Rodapé com **Cancelar** (`cancelarHref`) e **Salvar** à direita; em formulário longo de página inteira, `rodapeFixo`.
+
+### Conciliação (`/financeiro/conciliacao`) — Odoo
+Extrato pendente à esquerda (22rem, rola por dentro), painel da linha aberta à direita: sugestões com a ação principal, baixar título, lançamento avulso; "Excluir linha" no rodapé do painel. A linha aberta vai na URL (`?linha=`), sem estado no navegador.
+
+### Relatório (DRE, fluxo, aging) — ERPNext "Profit and Loss" / "Cash Flow"
+Filtros em linha; faixa de 4 totais; `Table relatorio` (sem rolagem interna, 1ª coluna fixa ao rolar na horizontal, estreita no celular); subtotais em negrito (`linha-forte`); total no rodapé; no DRE os valores vão sem "R$" (o título diz a moeda) para caber a coluna Total. Botão "Imprimir"; na impressão entra o `CabecalhoImpresso` com a logo colorida.
+
+### Painel (`/`) — recomendação para a sessão dona de `_painel`
+Sem saudação "Olá, fulano" nem frase de abertura. Números em `KpiGrid`/`Stat` (faixa única, cor só quando há o que tratar); aging em barra como o da visão geral do Financeiro (`financeiro/_lib/aging-barra.tsx`); pendências como lista de linhas com a quantidade à esquerda, sem ícone.
 
 ### Login
-- Faixa escura da marca à esquerda (cor do menu lateral) com os três pilares do sistema; cartão branco de login à direita.
+Fundo neutro com o isotipo em marca d'água (sem halos nem gradientes); cartão com borda de 1 px, logo, "Entrar no sistema" e o formulário. Sem frase de efeito.
 
-### Impressos (vale, boleto, orçamento, recolhimento, inventário)
-- Sempre claros e sóbrios: a impressão usa o bloco claro, esconde menu e barra superior (`print:hidden`) e tira sombras. Os impressos mantêm as próprias classes `print:` em preto e branco.
+### Impressos (vale, boleto, orçamento, recolhimento, inventário, DRE, fluxo, aging)
+Sempre claros: a impressão usa o bloco claro, esconde menu, barra e botões (`print:hidden`) e mostra o `CabecalhoImpresso` (logo colorida, mesmo com o tema escuro ativo na tela).
 
-## 8. Componentes (`src/components/ui.tsx`, `form.tsx`)
+## 8. Componentes (`src/components/ui/*.tsx`, reexportados por `ui.tsx`; `form.tsx`)
 
 | Componente | Regra |
 |---|---|
-| `btn.primary` | pílula verde preenchida; **uma** ação principal por tela |
-| `btn.secondary` | pílula branca com contorno e texto verdes |
-| `btn.ghost` | só texto verde, fundo verde-claro no hover (Cancelar, Limpar) |
-| `btn.danger` | pílula branca com contorno e texto vermelhos (excluir, estornar, cancelar) |
-| `btn.small` | pílula de 32 px dentro de tabelas |
-| `campo` (Field, Select, TextArea, filtros) | 40 px, raio 10 px, `border-field`, foco com borda verde e anel suave de 4 px; inválido com borda e fundo vermelhos |
-| Rótulo / dica / erro | rótulo acima (0.8125rem medium); dica `slate-500` abaixo; erro `rose-600` abaixo (substitui a dica) |
-| `Badge` / `StatusBadge` | pílula de 24 px, fundo claro da cor semântica, texto escuro da mesma cor e ponto à esquerda |
-| `Stat` | cartão com rótulo, quadradinho de ícone (`icon`, opcional; tons de alerta/erro mostram "alerta" por padrão), número grande e nota |
-| `KpiGrid` | grade de cartões: 2 colunas no celular; `cols` 3/4 a partir de 1024 px; 5 vira 3 colunas até 1535 px |
-| `Abas` | links com sublinhado verde de 2 px na ativa e contagem opcional em pílula |
-| `Aviso` | faixa de mensagem (`info`, `alerta`, `erro`, `ok`) com ícone, no lugar de divs coloridas soltas |
-| `MaisAcoes` | botão "Mais ações" com menu suspenso; os botões de dentro viram itens de lista; Esc, setas e clique fora |
-| `FilterBar` / `Filtros` | ver seção 7; os chips leem os rótulos do próprio formulário |
-| `EmptyState` | ícone em círculo verde-claro, `titulo` opcional, texto e ação |
-| `toast()` | canto inferior direito (centralizado no celular), cartão branco com ícone em círculo; só sucesso curto. Erro vai em faixa ou no campo |
-| `confirmar()` | diálogo nativo de raio 20 px com ícone; destrutivo em vermelho |
+| `btn.primary` | retângulo azul de 32 px, raio 6 px; **uma** ação principal por tela |
+| `btn.secondary` | contorno cinza, texto escuro (todas as ações de apoio) |
+| `btn.ghost` | só texto cinza (Cancelar, Limpar) |
+| `btn.danger` | contorno cinza, texto vermelho (excluir, estornar, cancelar) |
+| `btn.small` | 28 px, contorno cinza, para dentro de tabelas |
+| `AcaoIcone` | ação de linha só com ícone (`olho`, `lapis`, `baixar`), com dica e rótulo para leitor de tela |
+| `campo` (Field, Select, TextArea, filtros) | 32 px, raio 6 px, `border-field`, foco com borda azul e anel suave; inválido com borda vermelha |
+| `PageHeader` | `title`, `subtitle` (vai para o "i"), `actions`, `maisAcoes`, `voltar`, **`status`**, **`meta`** |
+| `Card` | borda 1 px, raio 8 px, sem sombra; cabeçalho 44 px; `title`, `actions`, **`semRecuo`**, **`rodape`**, **`id`**; `icon` ignorado |
+| `Table` | ver padrão de lista; `head` aceita texto ou `{ label, className, hideOnMobile }`; **`rodape`**, **`paginacao`**, **`relatorio`**; `icone` ignorado |
+| `Td` | célula; **`title`** e **`colSpan`** |
+| `Paginacao` | "1–50 de 312" e setas, no `paginacao` da tabela |
+| `Stat` / `KpiGrid` | célula de faixa; `tone` default, **ok**, **info**, warn, danger; **`delta`** {valor, direcao, bom}; **`href`**; `icon` ignorado. `KpiGrid` 2 colunas no celular (célula ímpar ocupa a linha), `cols` 3/4/5 |
+| `Badge` / `StatusBadge` | etiqueta de 20 px, raio 4 px, fundo pastel e texto escuro; **`title`**; texto com a primeira letra maiúscula |
+| `Aviso` | borda esquerda de 3 px na cor do tom e ícone, fundo branco (`info`, `alerta`, `erro`, `ok`) |
+| `Dl` | rótulo à esquerda (9 rem) e valor, linhas com fio; **`cols`** 1/2/3 (padrão 2) |
+| `Abas` | abas de texto, sublinhado azul de 2 px na ativa, contagem discreta |
+| `FilterBar` / `Filtros` | **`layout`** "barra" ou "lateral"; `ListaComFiltros` para o lateral |
+| `Dica` | "i" com o texto no hover e no foco; **`alinhar`** "esquerda" ou "direita" |
+| `Form` | **`cancelarHref`**, **`rodapeFixo`**, `submitVariant`, `compacto`; botão à direita |
+| `Secao` | seção de formulário com título e descrição |
+| `Grid` | colunas pela largura do formulário (container query) |
+| `MaisAcoes` | botão neutro "Mais ações" com menu |
+| `EmptyState` | ícone cinza, `titulo` opcional, texto e ação |
+| `toast()` | cartão com borda esquerda verde (ou vermelha); só sucesso curto |
+| `confirmar()` | diálogo nativo de raio 10 px; destrutivo em vermelho |
 
-Semântica dos status: `green` = concluído, pago, liberado; `yellow` = pendente, aberto, quarentena; `red` = vencido, recusado, não conforme; `blue` = enviado, em andamento; `gray` = cancelado, rascunho; `teal` e `purple` = categorias.
+Semântica dos status: `green` = concluído, pago, liberado; `yellow` = pendente, aberto, aguardando; `red` = vencido, recusado, rejeitado; `blue` = enviado, em andamento, parcial; `gray` = cancelado, rascunho; `teal` e `purple` = categorias.
 
-## 9. Acessibilidade
+## 9. Mudanças de API (16/10/2026)
 
-- Foco visível em todo elemento interativo (`outline` de 2 px na cor `--focus`, afastado 2 px).
-- Contraste AA em todos os pares de texto e 3:1 em bordas de campo e ícones (seção 3.3).
-- Área de toque de 44 px nos botões principais; itens do menu lateral com 36 a 40 px.
-- Link "Pular para o conteúdo" no topo; menu lateral com `aria-current="page"` no item ativo e `aria-expanded` nos módulos.
+Nenhuma prop foi removida; o que muda é o desenho:
+
+1. **`PageHeader.subtitle`** não aparece mais como parágrafo sob o título: vai para um "i" ao lado do título. Texto que precisa estar sempre visível vai em `Aviso` ou em `meta`.
+2. **`Card.icon`**, **`Stat.icon`** e **`Table.icone`** continuam aceitos e não são mais desenhados.
+3. **`Grid`** passou a contar colunas pela largura do formulário, não da tela (2 colunas a partir de 512 px de formulário; 3 a partir de 672 px; 4 a partir de 768 px). `sm:col-span-N` num campo ocupa a linha inteira enquanto o formulário não tem todas as colunas. Fora de `Form`/`Card` o `Grid` fica com 1 coluna (todas as telas atuais estão dentro de um dos dois).
+4. **`Dl`** passou de 3 para 2 colunas em telas largas (rótulo à esquerda); use `cols={3}` para o desenho antigo.
+5. **`StatusBadge`** escreve "Em andamento" (antes "em andamento").
+6. **`Form`**: o botão de envio fica à direita (exceto com `compacto`).
+7. Botões e campos com **32 px** (antes 40 px); `secondary`, `small` e "Mais ações" são cinza (antes contorno verde).
+8. **`KpiGrid`** virou uma faixa única com fios; filhos que não são `Stat` (o `Indicador` do Painel, links) viram células sem cartão próprio.
+9. Novos: `AcaoIcone`, `Dica`, `Paginacao`, `ListaComFiltros`, `Secao` e as props marcadas em negrito na seção 8.
+
+## 10. Acessibilidade
+
+- Foco visível em todo elemento interativo (contorno de 2 px em `--focus`, afastado 2 px); a `Dica` abre também no foco do teclado.
+- Contraste AA em todos os pares de texto e 3:1 em bordas de campo, ícones e barras (seção 3.3).
+- Botões de 32 px com área de toque de 44 px; linhas clicáveis com um link real na primeira coluna (o resto da linha é extensão dele).
+- Coluna que some no celular (`hideOnMobile`) só para dado secundário; o principal fica sempre.
+- Link "Pular para o conteúdo"; `aria-current` no item ativo do menu e no item aberto da conciliação.
 - `prefers-reduced-motion` desliga transições.
 
-## 10. Regras de uso
+## 11. Regras de uso
 
-1. Páginas usam só as escalas nomeadas (`teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet`, `white`) e os tokens (`bg-primary`, `bg-accent-soft`, `border-field`). Nunca hex solto.
-2. Uma ação principal por tela; com mais de duas ações no cabeçalho, use `maisAcoes`.
-3. Número em célula vai com `text-right` (o cabeçalho da coluna se alinha sozinho).
-4. Status sempre por `StatusBadge`/`Badge`; mensagens por `Aviso`.
-5. Sucesso em `toast`; erro e aviso em faixa ou no campo.
-6. Para mudar o tema, altere os valores em `src/app/estilos/tokens.css` (bloco claro e os dois escuros), rode a verificação de contraste e atualize a seção 3.
+1. Páginas usam só as escalas nomeadas e os tokens. Nunca hex solto.
+2. **Uma** ação principal por tela, no cabeçalho ou no fim do formulário principal; as demais em `secondary`.
+3. Número em célula com `text-right` (o cabeçalho acompanha sozinho).
+4. Status sempre por `StatusBadge`/`Badge`; mensagem por `Aviso`; explicação longa por `Dica`.
+5. Sem ícone decorativo em cartão, indicador ou título; ícone só quando é a ação (lupa, imprimir, olho, lápis).
+6. Sucesso em `toast`; erro e aviso em faixa ou no campo.
+7. Para mudar uma cor: altere `src/app/estilos/paleta.mjs`, rode o script (0 falhas), cole a saída de `--css` em `tokens.css` e atualize a seção 3.
 
-## 11. Não confirmado (valor assumido)
+## 12. Revisão visual (16/10/2026)
 
-- Medidas e cores exatas do app Bling: não medidas; os valores são nossos.
-- Comportamento real do Bling ao recolher o menu e no celular: assumido (trilho de ícones e gaveta), padrão comum de ERP web.
-- Cabeçalho fixo da tabela: no desktop a tabela rola por dentro (altura da tela menos 10rem), porque o cabeçalho fixo não funciona dentro de um contêiner com rolagem horizontal; no celular a tabela rola só na horizontal e o cabeçalho não fica fixo.
+Percorridas no Chrome sem interface, a 1440 px nos temas claro e escuro e a 390 px, todas as telas do Financeiro (visão geral, receber, pagar, aprovações, cobrança e remessa de cobrança, remessas SISPAG e detalhe, favorecidos e detalhe, contas, detalhe e nova, conciliação, classificar, fluxo, DRE, plano de contas, relatórios, fechamento, título a receber e a pagar, novo título), a troca de senha e o login. Nenhuma tem rolagem horizontal da página. Capturas em `scratchpad/design2/` (`v3/` claro 1440, `escuro/`, `m390/`).
 
-## 12. Revisão de QA visual (16/10/2026)
+**Corrigido nesta passada:** DRE com rolagem interna que escondia o "Resultado líquido" e coluna Total sumindo no celular (agora `Table relatorio`); cartões da visão geral com alturas diferentes (agora faixa única e textos curtos); impresso com a logo branca quando o tema escuro estava ativo; "Classificar pendentes" mostrava "Lançamento avulso" em todos os itens (o tipo vinha como "A receber"/"A pagar" e era comparado com "receber"/"pagar").
 
-Percorridas no navegador (Chrome sem interface, 1280 px claro, 390 px claro e 1280 px escuro) as 77 rotas de lista e formulário e 28 de detalhe, com verificação automática de rolagem horizontal, tabela fora do padrão, número alinhado à esquerda, cabeçalho desalinhado da coluna, mais de um botão principal e texto cortado. Nenhuma tela tem rolagem horizontal a 390 px.
+## 13. Não confirmado (valor assumido)
 
-**Ajustado**
-- `Stat` e indicador do painel: rótulo com a largura toda e ícone de 32 px na linha do número, para o rótulo não quebrar espremido. No celular o número cai para 1.25rem e o ícone some, para valores como "R$ 51.305,00" caberem em duas colunas.
-- Painel: 7 indicadores em linhas de 4 (antes eram 3 colunas, e o sétimo ficava sozinho na linha); pendências com título inteiro, nota com reticências e uma seta no lugar do botão "Abrir".
-- `Table`: o cabeçalho de uma coluna cujas células têm `text-right` se alinha à direita sozinho (regra em `componentes.css`); o estado vazio fica fora da tabela, com a largura do cartão (no celular o texto saía cortado).
-- Uma ação principal por tela: "Filtrar" virou secundário (`Filtros` e documentos); "Processar retorno" (SISPAG e cobrança), "Transferir", "Criar centro de custo" e "Enviar anexo" viraram secundários; "Fechar mês" e "Reabrir" são botões compactos na tabela; a ação do estado vazio nas listas é secundária. Para isso o `Form` ganhou `submitVariant` e `compacto` (sem a linha acima do botão).
-- Tabelas da guia de autorização (cartão e formulário da cirurgia) e itens da nova remessa no padrão de `Table`/`Td`, sem mudar campos nem handlers.
-- Campo de arquivo: botão "Escolher arquivo" em pílula de contorno verde.
-- Rótulos dos filtros soltos (documentos, recolhimento, compras, auditoria, formulários de guia, remessa e pedido de compra) no tamanho dos campos (0.8125rem, medium).
-- Filtros no celular: os campos crescem para preencher a linha, dois por linha.
-- Pedidos de compra: razão social do fornecedor com reticências em vez de corte seco.
-
-**Ficou (fora do escopo desta revisão ou sem tempo)**
-- Telas cujo JSX está em `financeiro/_lib` (detalhe de título a pagar/receber, lista de títulos): glosa, recebimento e classificação continuam com três botões principais na mesma tela; o certo é "Registrar recebimento" principal e os outros secundários. Não mexido porque `_lib` é do agente funcional.
-- Detalhes com dois ou três formulários (orçamento, tabela de preço, kit, procedimento, conta bancária, usuário, remessa de cobrança) ainda mostram mais de um botão principal; pedem a mesma troca para `submitVariant="secondary"` nas ações de apoio.
-- Tabela de itens do pedido de compra (tem rodapé de total, que o `Table` não suporta) e tabela de comunicação do recolhimento: já no visual do padrão, mas escritas à mão.
-- Impressos (vale, boleto, orçamento, recolhimento, inventário) e 768 px: não revisados nesta passada.
+- Medidas e cores exatas de ERPNext, Odoo e Bling: não medidas; os valores são nossos, a partir das capturas.
+- Painel lateral de filtros só a partir de 1536 px: escolha nossa para a tabela não ficar espremida ao lado do menu lateral.
+- Cabeçalho fixo da tabela: no desktop a tabela de lista rola por dentro (altura da tela menos 9rem); a tabela de relatório não rola por dentro e o cabeçalho não fica fixo.
