@@ -1,7 +1,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
-import { btn, cx } from "@/components/ui";
+import { cx } from "@/components/ui";
 import type { Pendencia } from "./pendencias";
 
 type Tom = "default" | "warn" | "danger" | "ok";
@@ -13,15 +13,16 @@ const corIcone = { default: "bg-accent-soft text-on-accent-soft", warn: "bg-ambe
 export function Indicador({ href, label, value, nota, tom = "default", notaTom, icone }: { href: string; label: string; value: ReactNode; nota?: ReactNode; tom?: Tom; notaTom?: Tom; icone?: IconName }) {
   return (
     <Link href={href} className="group block">
-      <div className="flex items-start justify-between gap-3">
-        <div className="pt-0.5 text-[0.8125rem] font-medium text-slate-600">{label}</div>
+      {/* rótulo com a largura toda; o ícone fica na linha do número, para o rótulo não quebrar espremido */}
+      <div className="text-[0.8125rem] font-medium leading-snug text-slate-600">{label}</div>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <div className={cx("tnum min-w-0 font-display text-2xl font-extrabold leading-tight", corTom[tom])}>{value}</div>
         {icone && (
-          <span className={cx("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg", corIcone[tom])} aria-hidden="true">
-            <Icon name={icone} size={18} />
+          <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", corIcone[tom])} aria-hidden="true">
+            <Icon name={icone} size={16} />
           </span>
         )}
       </div>
-      <div className={cx("tnum mt-1.5 font-display text-2xl font-extrabold leading-tight", corTom[tom])}>{value}</div>
       {nota && <div className={cx("mt-1 text-xs", notaTom ? corTom[notaTom] : "text-slate-600")}>{nota}</div>}
     </Link>
   );
@@ -35,10 +36,12 @@ export function ItemPendencia({ p }: { p: Pendencia }) {
         <Icon name={p.icon} size={17} />
       </span>
       <div className="min-w-0 flex-1">
-        <Link href={p.href} className="block truncate text-sm font-semibold text-slate-900 hover:text-teal-700 hover:underline">{p.titulo}</Link>
-        <div className="truncate text-xs text-slate-600">{p.nota}</div>
+        <Link href={p.href} className="block text-sm font-semibold leading-snug text-slate-900 hover:text-teal-700 hover:underline">{p.titulo}</Link>
+        <div className="mt-0.5 truncate text-xs text-slate-600" title={p.nota}>{p.nota}</div>
       </div>
-      <Link href={p.href} className={btn.small}>Abrir</Link>
+      <Link href={p.href} aria-label={`Abrir: ${p.titulo}`} className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-slate-500 hover:bg-teal-50 hover:text-teal-700">
+        <Icon name="direita" size={16} />
+      </Link>
     </li>
   );
 }

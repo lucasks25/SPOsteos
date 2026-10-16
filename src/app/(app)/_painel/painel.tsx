@@ -40,7 +40,8 @@ export async function ConteudoPainel({ nome, perfil }: { nome: string; perfil: P
     indicadores.push(<Indicador key="q" href="/qualidade/quarentena" icone="frasco" label="Lotes em quarentena" value={num(quarentena)} tom={quarentena ? "warn" : "default"} nota="aguardando inspeção" />);
     indicadores.push(<Indicador key="l" href="/qualidade/lotes" icone="alerta" label="Vencidos ou vencendo" value={num(lotesVencendo)} tom={lotesVencendo ? "danger" : "default"} nota="validade em até 30 dias" notaTom={lotesVencendo ? "danger" : undefined} />);
   }
-  const cols = indicadores.length >= 5 ? 5 : indicadores.length === 4 ? 4 : 3;
+  // 7 ou 8 indicadores: 4 por linha (5 colunas deixaria um cartão órfão em 3 colunas)
+  const cols = indicadores.length >= 7 || indicadores.length === 4 ? 4 : indicadores.length >= 5 ? 5 : 3;
   while (indicadores.length % cols !== 0) indicadores.push(<div key={`pad${indicadores.length}`} />);
 
   const pendencias = listarPendencias(pend).map((x) => <ItemPendencia key={x.key} p={x} />);

@@ -227,15 +227,16 @@ export function Stat({ label, value, hint, tone = "default", icon }: { label: st
   const ic = icon ?? (tone === "default" ? undefined : "alerta");
   return (
     <div className="stat h-full rounded-xl border border-slate-200 bg-white px-4 py-3.5 shadow-sm transition-[border-color,box-shadow] print:shadow-none">
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0 pt-0.5 text-[0.8125rem] font-medium text-slate-600">{label}</div>
+      {/* rótulo com a largura toda; o ícone fica na linha do número, para o rótulo não quebrar espremido */}
+      <div className="text-[0.8125rem] font-medium leading-snug text-slate-600">{label}</div>
+      <div className="mt-1.5 flex items-center justify-between gap-2">
+        <div className={cx("tnum min-w-0 font-display text-2xl font-extrabold leading-tight", t.valor)}>{value}</div>
         {ic && (
-          <span className={cx("flex h-9 w-9 shrink-0 items-center justify-center rounded-lg print:hidden", t.icone)} aria-hidden="true">
-            <Icon name={ic} size={18} />
+          <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg print:hidden", t.icone)} aria-hidden="true">
+            <Icon name={ic} size={16} />
           </span>
         )}
       </div>
-      <div className={cx("tnum mt-1.5 font-display text-2xl font-extrabold leading-tight", t.valor)}>{value}</div>
       {hint && <div className="mt-1 text-xs text-slate-600">{hint}</div>}
     </div>
   );

@@ -9,7 +9,7 @@ export function Filtros({ children, limparHref }: { children: ReactNode; limparH
   return (
     <FilterBar className="print:hidden">
       {children}
-      <button className={btn.primary}>Filtrar</button>
+      <button className={btn.secondary}>Filtrar</button>
       {limparHref && (
         <Link href={limparHref} className={btn.ghost}>
           Limpar
@@ -34,7 +34,7 @@ export function FiltroSelect({
 }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm text-slate-600">{label}</span>
+      <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">{label}</span>
       <select name={name} defaultValue={defaultValue ?? ""} className={cx(cls, "min-w-36 max-w-56")}>
         <option value="">{todos}</option>
         {options.map((o) => (
@@ -50,7 +50,7 @@ export function FiltroSelect({
 export function FiltroInput({ label, name, defaultValue, type = "text", placeholder, className }: { label: string; name: string; defaultValue?: string; type?: string; placeholder?: string; className?: string }) {
   return (
     <label className="block">
-      <span className="mb-1 block text-sm text-slate-600">{label}</span>
+      <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">{label}</span>
       <input name={name} type={type} defaultValue={defaultValue} placeholder={placeholder} className={cx(cls, className)} />
     </label>
   );

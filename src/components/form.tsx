@@ -42,6 +42,8 @@ export function Form({
   className,
   resetOnSuccess,
   confirm,
+  submitVariant = "primary",
+  compacto,
 }: {
   action: Action;
   children: ReactNode;
@@ -51,6 +53,10 @@ export function Form({
   resetOnSuccess?: boolean;
   /** pede confirmação (diálogo) antes de enviar; use para avisos que o usuário decide */
   confirm?: string;
+  /** estilo do botão de envio: secondary quando a tela já tem outra ação principal; small dentro de tabela */
+  submitVariant?: keyof typeof btn;
+  /** sem a linha divisória acima do botão (formulário de uma ação só, dentro de célula ou cartão pequeno) */
+  compacto?: boolean;
 }) {
   const [state, formAction] = useActionState(comToast(action, redirectTo), undefined);
   const [pending, startTransition] = useTransition();
@@ -107,8 +113,8 @@ export function Form({
           )}
           {children}
           {submitLabel !== null && (
-            <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
-              <SubmitButton confirm={confirm}>{submitLabel}</SubmitButton>
+            <div className={cx("flex flex-wrap items-center gap-2", !compacto && "border-t border-slate-200 pt-4")}>
+              <SubmitButton confirm={confirm} variant={submitVariant}>{submitLabel}</SubmitButton>
             </div>
           )}
         </form>

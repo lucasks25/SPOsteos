@@ -93,6 +93,25 @@
   }
 }
 
+/*
+ * Cabeçalho acompanha a coluna: célula com text-right (número, valor) alinha o th da mesma coluna à direita,
+ * sem cada página repetir a classe no cabeçalho. Fora da @layer para vencer o text-left utilitário do th.
+ */
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(1).text-right) > thead th:nth-child(1),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(2).text-right) > thead th:nth-child(2),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(3).text-right) > thead th:nth-child(3),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(4).text-right) > thead th:nth-child(4),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(5).text-right) > thead th:nth-child(5),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(6).text-right) > thead th:nth-child(6),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(7).text-right) > thead th:nth-child(7),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(8).text-right) > thead th:nth-child(8),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(9).text-right) > thead th:nth-child(9),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(10).text-right) > thead th:nth-child(10),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(11).text-right) > thead th:nth-child(11),
+.tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(12).text-right) > thead th:nth-child(12) {
+  text-align: right;
+}
+
 /* Barra lateral: 16rem; recolhida (só no desktop) vira trilho de ícones de 4.5rem, sem rótulos */
 .barra-lateral {
   width: 16rem;
