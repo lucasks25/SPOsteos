@@ -7,7 +7,7 @@ import { periodoDe } from "./periodo";
 import { lotesEmRisco, riscoPorHospital, totaisPorFaixa } from "./vencimentos";
 import { mesBrasilia, vendasPorMes } from "./vendas-mes";
 import { addDias, hojeUTC, parseDia } from "@/lib/datas";
-import { CATEGORIAS_GLOSA } from "../../financeiro/_lib/glosa-categorias";
+import { CATEGORIAS_GLOSA } from "../../financeiro/_lib/publico";
 import { resumirGlosas } from "./glosas";
 
 /** searchParams da página ou da rota de exportação. */

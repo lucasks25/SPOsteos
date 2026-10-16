@@ -109,6 +109,20 @@ test("dois recebimentos simultâneos não passam do pedido", async () => {
   assert.equal(await db.contaPagar.count({ where: { pedidoId: ped.id } }), 1);
 });
 
+// BUG (D4): o custo médio era lido e gravado sem trava; recebimentos simultâneos do mesmo produto em pedidos DIFERENTES
+// (travarPedido só trava o pedido) perdiam atualizações. Com a trava FOR UPDATE do produto o resultado é o da fila.
+test("recebimentos simultâneos do mesmo produto em pedidos diferentes não perdem atualização do custo médio", async () => {
+  const prod = await mkProduto({ custoMedio: 0 });
+  const custos = [10, 12, 14, 16, 18, 20, 22, 24];
+  const pedidos = await Promise.all(custos.map((c) => pedido(prod.id, 10, c)));
+  const r = await Promise.allSettled(pedidos.map((p, i) => receber(p.itemId, 10, `LK${i}`)));
+  assert.deepEqual(r.filter((x) => x.status === "rejected"), [], "nenhum recebimento pode falhar (nem por deadlock)");
+  const esperado = Math.round((custos.reduce((a, c) => a + c * 10, 0) / (custos.length * 10)) * 100) / 100; // 17
+  assert.equal(num((await db.produto.findUniqueOrThrow({ where: { id: prod.id } })).custoMedio), esperado);
+  const agg = await db.saldo.aggregate({ where: { produtoId: prod.id }, _sum: { quantidade: true } });
+  assert.equal(agg._sum.quantidade, 80);
+});
+
 // BUG: hojeUTC já foi cópia UTC em compras/_lib/perfis.ts; hoje há uma só implementação (src/lib/datas.ts, dia de Brasília).
 // Recebimento entre 21h e 23h59 (BRT) grava competência do dia seguinte, e no último dia do mês cai no mês errado do DRE
 // (recebimento.ts:96 usa essa data como competência da conta a pagar).

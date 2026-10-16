@@ -79,3 +79,25 @@ export async function localDoHospital(tx: Tx, hospitalId: string) {
   });
   return criado.id;
 }
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Custo médio ponderado do produto após uma entrada (chamar ANTES de `movimentar` a entrada: usa o saldo anterior,
+ * somado em todos os locais). Trava a linha do produto até o fim da transação, senão duas entradas simultâneas do
+ * mesmo produto (em pedidos diferentes) leem o mesmo custo e uma atualização se perde. Usa FOR NO KEY UPDATE (e não
+ * FOR UPDATE): conflita com outra atualização do custo, mas não com o FOR KEY SHARE que a chave estrangeira de Lote/Saldo
+ * já tomou nesta transação; com FOR UPDATE dois recebimentos entravam em deadlock.
+ * Ordem de travas: quem também trava o pedido de compra trava o PEDIDO antes do produto (evita deadlock).
+ * `valorEntrada` é o valor exato da entrega em reais. Devolve o novo custo médio.
+ */
+export async function atualizarCustoMedio(tx: Tx, produtoId: string, quantidadeEntrada: number, valorEntrada: number) {
+  if (!Number.isInteger(quantidadeEntrada) || quantidadeEntrada <= 0) throw new EstoqueError("Quantidade deve ser um inteiro positivo.");
+  await tx.$queryRaw`SELECT id FROM "Produto" WHERE id = ${produtoId} FOR NO KEY UPDATE`;
+  const produto = await tx.produto.findUniqueOrThrow({ where: { id: produtoId }, select: { custoMedio: true } });
+  const agg = await tx.saldo.aggregate({ where: { produtoId }, _sum: { quantidade: true } });
+  const saldoAtual = Math.max(0, agg._sum.quantidade ?? 0);
+  const novoCusto = round2((saldoAtual * Number(produto.custoMedio.toString()) + valorEntrada) / (saldoAtual + quantidadeEntrada));
+  await tx.produto.update({ where: { id: produtoId }, data: { custoMedio: novoCusto } });
+  return novoCusto;
+}

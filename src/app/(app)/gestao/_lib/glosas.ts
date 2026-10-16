@@ -5,7 +5,7 @@
  * - Faturado = pedidos de venda FATURADOS no período (data da NF), glosado = glosas com data no período. Os dois recortes
  *   são independentes (a glosa costuma chegar semanas depois da NF), então o % de um período curto é uma aproximação.
  */
-import { CATEGORIAS_GLOSA, type CategoriaGlosaKey, type RecursoGlosaKey } from "../../financeiro/_lib/glosa-categorias";
+import { CATEGORIAS_GLOSA, type CategoriaGlosaKey, type RecursoGlosaKey } from "../../financeiro/_lib/publico";
 
 export type PedidoFaturadoGlosa = { convenioId: string | null; convenio: string; hospitalId: string; hospital: string; total: number };
 export type GlosaLinha = { valor: number; categoria: CategoriaGlosaKey; recurso: RecursoGlosaKey; convenioId: string | null; convenio: string; hospitalId: string | null; hospital: string };

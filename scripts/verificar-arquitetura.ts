@@ -37,7 +37,7 @@ const DONO: Record<string, string[]> = {
   usuario: ["admin", "shell"], tentativaLogin: ["shell"], logAuditoria: ["lib"],
   fabricante: ["cadastros"], fornecedor: ["cadastros"], hospital: ["cadastros"], medico: ["cadastros"],
   convenio: ["cadastros"], procedimento: ["cadastros"], procedimentoItem: ["cadastros"],
-  representante: ["cadastros"], produto: ["cadastros"],
+  representante: ["cadastros"], produto: ["cadastros", "lib"], // lib: só custoMedio (atualizarCustoMedio, ARQ-09)
   lote: ["qualidade"], inspecao: ["qualidade"], documento: ["qualidade"], documentoArquivo: ["qualidade"],
   recolhimento: ["qualidade"], recolhimentoLote: ["qualidade"], recolhimentoAlvo: ["qualidade"],
   recolhimentoPaciente: ["qualidade"], recolhimentoAcao: ["qualidade"],

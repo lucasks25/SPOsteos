@@ -3,8 +3,7 @@ import type { CriterioRateio, TipoCambio, TipoDespesaImportacao } from "@/genera
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
-import { garantirMesAberto } from "@/app/(app)/financeiro/_lib/fechamento";
-import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
+import { alterarContaPagarGeradaTx, cancelarContaPagarGeradaTx, gerarContaPagarTx, type ChaveSistema } from "@/app/(app)/financeiro/_lib/publico";
 import { calcularCustoImportacao, centavos, integraCustoPadrao, ROTULO_DESPESA, TRIBUTOS_RECUPERAVEIS, type ResultadoCusto } from "./custo-importacao";
 import { hojeUTC } from "@/lib/datas";
 import { documentoPedido } from "./perfis";
@@ -115,14 +114,14 @@ export type DespesaInput = {
 };
 
 /**
- * Conta do plano da despesa (efeito no DRE):
+ * Conta do plano da despesa (efeito no DRE), pela chave do sistema:
  * - integra o custo → ESTOQUE (fora do resultado): o valor entra no custo médio e vai ao resultado só pelo CMV, na venda;
  * - tributo recuperável que não integra → TRIBUTOS_RECUPERAR (ativo, fora do resultado);
  * - outra despesa que não integra → CUSTO_IMPORTACAO (3.03, custo do mês).
  */
-export async function planoDaDespesa(tx: Tx, tipo: TipoDespesaImportacao, integraCusto: boolean) {
-  if (integraCusto) return planoPorChave(tx, "ESTOQUE");
-  return planoPorChave(tx, TRIBUTOS_RECUPERAVEIS.includes(tipo) ? "TRIBUTOS_RECUPERAR" : "CUSTO_IMPORTACAO");
+export function planoDaDespesa(tipo: TipoDespesaImportacao, integraCusto: boolean): ChaveSistema {
+  if (integraCusto) return "ESTOQUE";
+  return TRIBUTOS_RECUPERAVEIS.includes(tipo) ? "TRIBUTOS_RECUPERAR" : "CUSTO_IMPORTACAO";
 }
 
 async function validarDespesa(tx: Tx, p: PedidoTravado, d: DespesaInput) {
@@ -145,34 +144,18 @@ async function validarDespesa(tx: Tx, p: PedidoTravado, d: DespesaInput) {
 const descricaoConta = (pedidoId: number, d: { tipo: TipoDespesaImportacao; descricao: string | null }) =>
   `${documentoPedido(pedidoId)} — ${ROTULO_DESPESA[d.tipo]}${d.descricao ? ` (${d.descricao})` : ""}`;
 
-/** Conta só pode mudar/cancelar se estiver em aberto, sem baixa, fora de remessa SISPAG ativa e em mês aberto. */
-async function exigirContaAlteravel(tx: Tx, contaId: string) {
-  await tx.$queryRaw`SELECT id FROM "ContaPagar" WHERE id = ${contaId} FOR UPDATE`;
-  const c = await tx.contaPagar.findUniqueOrThrow({ where: { id: contaId }, select: { status: true, valorBaixado: true, competencia: true, _count: { select: { pagamentos: { where: { status: { in: ["ENVIADO", "AGENDADO"] } } } } } } });
-  if (c.status === "CANCELADO") return c;
-  if (c.status !== "ABERTO" || c.valorBaixado !== null) throw new ErroNegocio("A conta a pagar desta despesa já tem baixa. Estorne a baixa no financeiro antes de alterar.");
-  if (c._count.pagamentos > 0) throw new ErroNegocio("A conta a pagar desta despesa está numa remessa SISPAG ativa.");
-  await garantirMesAberto(tx, [c.competencia], "alterar a conta a pagar da despesa");
-  return c;
-}
-
 async function criarConta(tx: Tx, pedidoId: number, d: DespesaInput, integra: boolean) {
-  const hoje = hojeUTC();
-  await garantirMesAberto(tx, [hoje], "gerar a conta a pagar da despesa");
-  const conta = await tx.contaPagar.create({
-    data: {
-      descricao: descricaoConta(pedidoId, d),
-      fornecedorId: d.fornecedorId,
-      pedidoId,
-      categoria: "Custos de importação",
-      valor: d.valor,
-      competencia: hoje,
-      vencimento: d.vencimento!,
-      planoContaId: await planoDaDespesa(tx, d.tipo, integra),
-      // aprovadoEm nulo: como a conta do recebimento, aguarda aprovação do financeiro antes do SISPAG
-    },
+  return gerarContaPagarTx(tx, {
+    descricao: descricaoConta(pedidoId, d),
+    fornecedorId: d.fornecedorId,
+    pedidoId,
+    categoria: "Custos de importação",
+    valor: d.valor,
+    competencia: hojeUTC(),
+    vencimento: d.vencimento!,
+    chavePlano: planoDaDespesa(d.tipo, integra),
+    // aprovadoEm nulo (regra do financeiro): como a conta do recebimento, aguarda aprovação antes do SISPAG
   });
-  return conta.id;
 }
 
 /** Inclui (despesaId nulo) ou altera uma despesa. Só antes do primeiro recebimento. */
@@ -193,15 +176,13 @@ export async function salvarDespesaTx(tx: Tx, pedidoId: number, despesaId: strin
   if (!atual) throw new ErroNegocio("Despesa não encontrada neste pedido.");
   let contaPagarId = atual.contaPagarId;
   if (contaPagarId) {
-    const c = await exigirContaAlteravel(tx, contaPagarId);
-    if (c.status === "CANCELADO") contaPagarId = null; // cancelada no financeiro: desvincula
-    else if (d.gerarConta) {
-      await tx.contaPagar.update({
-        where: { id: contaPagarId },
-        data: { descricao: descricaoConta(pedidoId, d), valor: d.valor, vencimento: d.vencimento!, fornecedorId: d.fornecedorId, planoContaId: await planoDaDespesa(tx, d.tipo, integra) },
+    if (d.gerarConta) {
+      const alterada = await alterarContaPagarGeradaTx(tx, contaPagarId, {
+        descricao: descricaoConta(pedidoId, d), valor: d.valor, vencimento: d.vencimento!, fornecedorId: d.fornecedorId, chavePlano: planoDaDespesa(d.tipo, integra),
       });
+      if (!alterada) contaPagarId = null; // cancelada no financeiro: desvincula
     } else {
-      await tx.contaPagar.update({ where: { id: contaPagarId }, data: { status: "CANCELADO" } });
+      await cancelarContaPagarGeradaTx(tx, contaPagarId);
       contaPagarId = null;
     }
   }
@@ -217,8 +198,7 @@ export async function removerDespesaTx(tx: Tx, pedidoId: number, despesaId: stri
   const atual = p.despesas.find((x) => x.id === despesaId);
   if (!atual) throw new ErroNegocio("Despesa não encontrada neste pedido.");
   if (atual.contaPagarId) {
-    const c = await exigirContaAlteravel(tx, atual.contaPagarId);
-    if (c.status !== "CANCELADO") await tx.contaPagar.update({ where: { id: atual.contaPagarId }, data: { status: "CANCELADO" } });
+    await cancelarContaPagarGeradaTx(tx, atual.contaPagarId);
   }
   await tx.pedidoCompraDespesa.delete({ where: { id: despesaId } });
   return { tipo: atual.tipo, valor: toNumber(atual.valor), contaCancelada: !!atual.contaPagarId };

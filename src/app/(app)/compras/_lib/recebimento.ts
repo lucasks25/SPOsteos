@@ -1,9 +1,10 @@
 import "server-only";
 import type { Tx } from "@/lib/db";
-import { LOCAIS, movimentar } from "@/lib/estoque";
+import { LOCAIS, atualizarCustoMedio, movimentar } from "@/lib/estoque";
 import { hojeUTC } from "@/lib/datas";
 import { documentoPedido } from "./perfis";
-import { planoPorChave } from "@/app/(app)/financeiro/_lib/plano";
+import { gerarContaPagarTx } from "@/app/(app)/financeiro/_lib/publico";
+import { registrarLoteRecebidoTx } from "@/app/(app)/qualidade/_lib/publico";
 import { ErroNegocio } from "@/lib/erros";
 import { reais, valorRecebimentoCent } from "./custo-importacao";
 import { custoDoPedido, travarPedido } from "./importacao-servico";
@@ -54,31 +55,8 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
   if (r.validade < hojeUTC()) throw new ErroNegocio("Validade informada já está vencida.");
   if (r.fabricacao && r.fabricacao > r.validade) throw new ErroNegocio("Data de fabricação posterior à validade.");
 
-  // Lote (produtoId + numero)
-  const existente = await tx.lote.findUnique({ where: { produtoId_numero: { produtoId: item.produtoId, numero: r.lote } } });
-  let loteId: string;
-  if (existente) {
-    if (existente.validade.getTime() !== r.validade.getTime()) {
-      throw new ErroNegocio(`O lote ${r.lote} já existe com validade diferente. Verifique os dados.`);
-    }
-    loteId = existente.id;
-    const extra: { serie?: string; fabricacao?: Date } = {};
-    if (r.serie && !existente.serie) extra.serie = r.serie;
-    if (r.fabricacao && !existente.fabricacao) extra.fabricacao = r.fabricacao;
-    if (Object.keys(extra).length) await tx.lote.update({ where: { id: loteId }, data: extra });
-  } else {
-    const novo = await tx.lote.create({
-      data: {
-        produtoId: item.produtoId,
-        numero: r.lote,
-        serie: r.serie,
-        fabricacao: r.fabricacao,
-        validade: r.validade,
-        status: "QUARENTENA",
-      },
-    });
-    loteId = novo.id;
-  }
+  // Lote (produtoId + numero): novo entra em QUARENTENA (regra da qualidade)
+  const loteId = await registrarLoteRecebidoTx(tx, { produtoId: item.produtoId, numero: r.lote, validade: r.validade, fabricacao: r.fabricacao, serie: r.serie });
 
   // Valores em reais desta entrega: estoque (custo) e fornecedor (conta a pagar)
   let valorEstoque: number;
@@ -92,12 +70,8 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
   }
   const custo = round2(valorEstoque / r.quantidade); // custo unitário do kardex (2 casas)
 
-  // Custo médio ponderado (calculado com o saldo ANTES da entrada), pelo valor exato da entrega
-  const agg = await tx.saldo.aggregate({ where: { produtoId: item.produtoId }, _sum: { quantidade: true } });
-  const saldoAtual = Math.max(0, agg._sum.quantidade ?? 0);
-  const custoAtual = Number(item.produto.custoMedio.toString());
-  const novoCusto = round2((saldoAtual * custoAtual + valorEstoque) / (saldoAtual + r.quantidade));
-  await tx.produto.update({ where: { id: item.produtoId }, data: { custoMedio: novoCusto } });
+  // Custo médio ponderado (saldo ANTES da entrada), com o produto travado: o pedido já está travado, então a ordem é pedido → produto
+  await atualizarCustoMedio(tx, item.produtoId, r.quantidade, valorEstoque);
 
   const documento = documentoPedido(pedido.id);
   await movimentar(tx, {
@@ -122,17 +96,15 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
 
   const valor = valorFornecedor;
   if (valor > 0) {
-    await tx.contaPagar.create({
-      data: {
-        descricao: `${documento} — ${pedido.fornecedor.nomeFantasia ?? pedido.fornecedor.razaoSocial}`,
-        fornecedorId: pedido.fornecedorId,
-        pedidoId: pedido.id,
-        categoria: "Compra de mercadoria",
-        valor,
-        competencia: hojeUTC(),
-        planoContaId: await planoPorChave(tx, "ESTOQUE"),
-        vencimento: new Date(hojeUTC().getTime() + 30 * 24 * 60 * 60 * 1000),
-      },
+    await gerarContaPagarTx(tx, {
+      descricao: `${documento} — ${pedido.fornecedor.nomeFantasia ?? pedido.fornecedor.razaoSocial}`,
+      fornecedorId: pedido.fornecedorId,
+      pedidoId: pedido.id,
+      categoria: "Compra de mercadoria",
+      valor,
+      competencia: hojeUTC(),
+      vencimento: new Date(hojeUTC().getTime() + 30 * 24 * 60 * 60 * 1000),
+      chavePlano: "ESTOQUE",
     });
   }
 

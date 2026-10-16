@@ -6,7 +6,7 @@ import { DIAS_CONSUMO, type EntradaGiro } from "./giro";
 import type { PedidoMargem } from "./margens";
 import type { SaldoLote } from "./vencimentos";
 import { janelaVendas, type VendaPedido } from "./vendas-mes";
-import type { CategoriaGlosaKey } from "../../financeiro/_lib/glosa-categorias";
+import type { CategoriaGlosaKey } from "../../financeiro/_lib/publico";
 import type { GlosaLinha, PedidoFaturadoGlosa } from "./glosas";
 
 /** Pedidos de venda FATURADOS com faturadoEm em [gte, lt), com itens (preço e custo congelados). Uma consulta só. */
