@@ -46,10 +46,10 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
       </FilterBar>
 
       <KpiGrid>
-        <Stat icon="banco" label="Saldo no início" value={money(fluxo.saldoInicial)} hint="contas ativas" />
-        <Stat icon="receber" label="Entradas no período" value={money(totRec)} />
-        <Stat icon="pagar" label="Saídas no período" value={money(totPag)} />
-        <Stat icon="banco" label="Saldo final" value={money(fluxo.faixas.at(-1)?.acumulado ?? fluxo.saldoInicial)} tone={(fluxo.faixas.at(-1)?.acumulado ?? 0) < 0 ? "danger" : "default"} />
+        <Stat label="Saldo no início" value={money(fluxo.saldoInicial)} hint="contas ativas" />
+        <Stat label="Entradas no período" value={money(totRec)} />
+        <Stat label="Saídas no período" value={money(totPag)} />
+        <Stat label="Saldo final" value={money(fluxo.faixas.at(-1)?.acumulado ?? fluxo.saldoInicial)} tone={(fluxo.faixas.at(-1)?.acumulado ?? 0) < 0 ? "danger" : "default"} />
       </KpiGrid>
 
       {de <= hoje && (fluxo.atrasadosReceber > 0 || fluxo.atrasadosPagar > 0) && (
@@ -64,7 +64,7 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
         </div></Aviso>
       )}
 
-      <Table titulo={g === "semana" ? "Fluxo por semana" : "Fluxo por mês"} icone="tendencia" contagem={fluxo.faixas.length} acoes={<Link href="/financeiro/contas" className={btn.small}>Contas bancárias</Link>} head={[g === "semana" ? "Semana" : "Mês", "Entradas", "Saídas", "Comparativo", "Saldo do período", "Acumulado"]} empty={fluxo.faixas.length === 0} emptyText="Nenhuma movimentação prevista ou realizada neste período.">
+      <Table titulo={g === "semana" ? "Fluxo por semana" : "Fluxo por mês"} contagem={fluxo.faixas.length} acoes={<Link href="/financeiro/contas" className={btn.small}>Contas bancárias</Link>} head={[g === "semana" ? "Semana" : "Mês", "Entradas", "Saídas", "Comparativo", "Saldo do período", "Acumulado"]} empty={fluxo.faixas.length === 0} emptyText="Nenhuma movimentação prevista ou realizada neste período.">
         {fluxo.faixas.map((f) => {
           const ent = f.recPrev + f.recReal;
           const sai = f.pagPrev + f.pagReal;

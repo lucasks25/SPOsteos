@@ -9,7 +9,7 @@ export default async function TrocarSenhaPage() {
   return (
     <>
       <PageHeader title="Trocar minha senha" subtitle={`Conta ${user.email}. Ao trocar, as outras sessões abertas (outros aparelhos) são encerradas.`} />
-      <Card title="Nova senha" icon="cadeado" className="max-w-xl">
+      <Card title="Nova senha" className="max-w-xl">
         <Form action={trocarMinhaSenha} submitLabel="Trocar senha" resetOnSuccess>
           <div className="space-y-4">
             <Field label="Senha atual" name="atual" type="password" autoComplete="current-password" required />

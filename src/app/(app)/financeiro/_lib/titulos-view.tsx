@@ -73,9 +73,9 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
         actions={<LinkButton href={`${cfg.path}/novo`} icon="mais">Novo título</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat icon="documento" label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
+        <Stat label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
         <Link href={`${cfg.path}?vencidos=1`} className="block">
-          <Stat icon="calendario" label="Vencido" value={money(totais.vencido.valor)} hint={<span className={totais.vencido.qtd ? "text-rose-600" : undefined}>{totais.vencido.qtd} título(s) — ver vencidos</span>} tone={totais.vencido.qtd ? "danger" : "default"} />
+          <Stat label="Vencido" value={money(totais.vencido.valor)} hint={<span className={totais.vencido.qtd ? "text-rose-600" : undefined}>{totais.vencido.qtd} título(s) — ver vencidos</span>} tone={totais.vencido.qtd ? "danger" : "default"} />
         </Link>
         <Stat label={`${cfg.pagoLabel} no período`} value={money(totais.pago.valor)} hint={<span className="text-emerald-700">{totais.pago.qtd} baixa(s) — {pagoPeriodo}</span>} />
       </KpiGrid>

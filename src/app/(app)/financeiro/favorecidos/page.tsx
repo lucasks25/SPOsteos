@@ -32,9 +32,9 @@ export default async function FavorecidosPage({ searchParams }: { searchParams: 
     <>
       <PageHeader title="Favorecidos" subtitle="Dados de pagamento dos fornecedores (banco, conta e chave Pix). Decidem para onde o SISPAG paga: toda alteração é auditada. Os dados cadastrais ficam em Cadastros." />
       <KpiGrid cols={3}>
-        <Stat icon="caminhao" label="Fornecedores ativos" value={linhas.length} />
-        <Stat icon="alerta" label="Sem dados de pagamento" value={semDados} tone={semDados ? "warn" : "default"} hint="bloqueiam o SISPAG" />
-        <Stat icon="escudo" label="Aguardando aprovação" value={pendentes} tone={pendentes ? "warn" : "default"} hint="dados alterados: outra pessoa aprova" />
+        <Stat label="Fornecedores ativos" value={linhas.length} />
+        <Stat label="Sem dados de pagamento" value={semDados} tone={semDados ? "warn" : "default"} hint="bloqueiam o SISPAG" />
+        <Stat label="Aguardando aprovação" value={pendentes} tone={pendentes ? "warn" : "default"} hint="dados alterados: outra pessoa aprova" />
       </KpiGrid>
       <SearchBar placeholder="Razão social, fantasia ou CNPJ" defaultValue={q}>
         <select name="situacao" defaultValue={situacao ?? ""} className={`${campo} w-auto min-w-60`} aria-label="Situação">
@@ -43,7 +43,7 @@ export default async function FavorecidosPage({ searchParams }: { searchParams: 
           <option value="aprovar">Aguardando aprovação</option>
         </select>
       </SearchBar>
-      <Table titulo="Favorecidos" icone="caminhao" contagem={lista.length} head={["Fornecedor", "CNPJ", "Conta", "Chave Pix", "Situação", ""]} empty={lista.length === 0} emptyText="Nenhum fornecedor encontrado." emptyAction={<LinkButton href="/financeiro/favorecidos" variant="secondary">Limpar filtros</LinkButton>}>
+      <Table titulo="Favorecidos" contagem={lista.length} head={["Fornecedor", "CNPJ", "Conta", "Chave Pix", "Situação", ""]} empty={lista.length === 0} emptyText="Nenhum fornecedor encontrado." emptyAction={<LinkButton href="/financeiro/favorecidos" variant="secondary">Limpar filtros</LinkButton>}>
         {lista.map((f) => (
           <tr key={f.id}>
             <Td>

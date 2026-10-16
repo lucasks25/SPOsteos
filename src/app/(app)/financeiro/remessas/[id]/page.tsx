@@ -42,10 +42,10 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
         }
       />
       <KpiGrid>
-        <Stat icon="pagar" label="Total" value={money(total)} hint={`${r.itens.length} pagamento(s)`} />
-        <Stat icon="ok" label="Pago" value={money(pagos.reduce((s, i) => s + toNumber(i.valor), 0))} hint={`${pagos.length} confirmado(s)`} />
-        <Stat icon="calendario" label="Data do pagamento" value={date(r.dataPagto)} />
-        <Stat icon="documento" label="Retorno" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
+        <Stat label="Total" value={money(total)} hint={`${r.itens.length} pagamento(s)`} />
+        <Stat label="Pago" value={money(pagos.reduce((s, i) => s + toNumber(i.valor), 0))} hint={`${pagos.length} confirmado(s)`} />
+        <Stat label="Data do pagamento" value={date(r.dataPagto)} />
+        <Stat label="Retorno" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
       </KpiGrid>
       {r.canceladaEm && (
         <Aviso tom="info" className="mb-4">
@@ -66,7 +66,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
       )}
       <div className="space-y-4">
         {podeCancelar && (
-          <Card title="Cancelar remessa" icon="alerta">
+          <Card title="Cancelar remessa">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa. Se o arquivo já foi enviado e autorizado no banco, cancele o pagamento lá primeiro.</p>
             <Form action={cancelarRemessa.bind(null, r.id)} submitLabel="Cancelar remessa" confirm={`Cancelar a remessa SISPAG #${r.id}? Os ${r.itens.length} pagamento(s) voltam a poder entrar em outra remessa. Se o arquivo já foi autorizado no banco, cancele o pagamento lá primeiro.`}>
               <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} />
@@ -74,7 +74,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           </Card>
         )}
         {!r.canceladaEm && (
-          <Card title="Como enviar" icon="info">
+          <Card title="Como enviar">
           <Dl
             items={[
               ["1. Validar", "Itaú Empresas > Transmissão de arquivos > Validação (recomendado pelo manual antes do primeiro envio)"],
@@ -84,7 +84,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           />
         </Card>
         )}
-        <Table titulo="Pagamentos da remessa" icone="pagar" contagem={r.itens.length} head={["Seu número", "Conta a pagar", "Forma", "Valor", "Situação no banco", "Ocorrências", "Título"]}>
+        <Table titulo="Pagamentos da remessa" contagem={r.itens.length} head={["Seu número", "Conta a pagar", "Forma", "Valor", "Situação no banco", "Ocorrências", "Título"]}>
           {r.itens.map((i) => (
             <tr key={i.id}>
               <Td className="font-mono text-xs">SP{i.id}</Td>

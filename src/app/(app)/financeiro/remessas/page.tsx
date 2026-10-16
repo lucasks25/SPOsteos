@@ -38,13 +38,13 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
 
       <div className="space-y-3">
         {contas.length === 0 ? (
-          <Card title="Nova remessa" icon="pagar">
+          <Card title="Nova remessa">
             <EmptyState text="Nenhuma conta bancária cadastrada. Cadastre a conta do Itaú para gerar remessas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta bancária</LinkButton>} />
           </Card>
         ) : (
           <Form action={gerarRemessaPagamentos} submitLabel="Gerar arquivo de remessa" className="space-y-3">
             <input type="hidden" name="modo" value={modo} />
-            <Card title="Nova remessa" icon="pagar">
+            <Card title="Nova remessa">
               <Abas
                 itens={[
                   { href: "/financeiro/remessas", label: "TED, crédito em conta e boletos", ativo: modo === "TED_BOLETO" },
@@ -58,7 +58,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
             </Card>
             <Table
               titulo="Contas a pagar disponíveis para a remessa"
-              icone="lista"
+
               contagem={titulos.length}
               head={[<span key="s" className="sr-only">Selecionar</span>, "Vencimento", "Descrição", "A pagar", "Forma"]}
               empty={titulos.length === 0}
@@ -91,7 +91,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
 
         <Table
           titulo="Remessas geradas"
-          icone="documento"
+
           contagem={remessas.length}
           head={["Remessa", "Pagamento", "Itens", "Total", "Situação"]}
           empty={remessas.length === 0}
@@ -120,7 +120,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
           })}
         </Table>
 
-        <Card title="Importar retorno do Itaú" icon="baixar">
+        <Card title="Importar retorno do Itaú">
           <Form action={processarRetornoSispag} submitLabel="Processar retorno" submitVariant="secondary" resetOnSuccess>
             <Field label="Arquivo de retorno SISPAG" name="arquivo" type="file" accept=".ret,.RET,.txt,.TXT" required hint="Pagamentos com ocorrência 00 são baixados automaticamente na conta da remessa. Reprocessar o mesmo arquivo não duplica baixas." />
           </Form>

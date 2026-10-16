@@ -41,14 +41,14 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         }
       />
       <KpiGrid>
-        <Stat icon="banco" label="Saldo" value={money(conta.saldo)} tone={conta.saldo < 0 ? "danger" : "default"} />
-        <Stat icon="banco" label="Saldo inicial" value={money(conta.saldoInicial)} />
-        <Stat icon="receber" label="Entradas" value={money(conta.entradas)} />
-        <Stat icon="pagar" label="Saídas" value={money(conta.saidas)} />
+        <Stat label="Saldo" value={money(conta.saldo)} tone={conta.saldo < 0 ? "danger" : "default"} />
+        <Stat label="Saldo inicial" value={money(conta.saldoInicial)} />
+        <Stat label="Entradas" value={money(conta.entradas)} />
+        <Stat label="Saídas" value={money(conta.saidas)} />
       </KpiGrid>
 
       <div className="space-y-4">
-        <Table titulo="Movimentos (últimos 100)" icone="lista" contagem={movimentos.length} head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", ""]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
+        <Table titulo="Movimentos (últimos 100)" contagem={movimentos.length} head={["Data", "Descrição", "Origem", "Entrada", "Saída", "Conciliação", ""]} empty={movimentos.length === 0} emptyText="Nenhum movimento nesta conta. Baixe um título ou faça um lançamento avulso abaixo.">
             {movimentos.map((m) => {
               const tituloHref = m.contaReceberId ? `/financeiro/receber/${m.contaReceberId}` : m.contaPagarId ? `/financeiro/pagar/${m.contaPagarId}` : null;
               return (
@@ -87,7 +87,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         </Table>
 
         {conta.ativo && (
-          <Card title="Lançamento avulso (tarifa, rendimento, outros)" icon="mais">
+          <Card title="Lançamento avulso (tarifa, rendimento, outros)">
             <p className="mb-3 text-sm text-slate-600">
               Para mover dinheiro entre contas use <Link href="/financeiro/contas" className="font-semibold text-teal-700 hover:underline">Transferência</Link>.
             </p>
@@ -113,7 +113,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
           </Card>
         )}
 
-        <Card title="Dados da conta" icon="engrenagem">
+        <Card title="Dados da conta">
           <ContaForm conta={{ ...conta, ...extra }} />
         </Card>
       </div>

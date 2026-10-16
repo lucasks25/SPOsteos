@@ -61,15 +61,15 @@ export default async function RelatoriosPage() {
     <>
       <PageHeader title="Relatórios" subtitle="Saldo em aberto por faixa de atraso, contado a partir do vencimento. Ordenado pelo maior valor vencido." />
       <KpiGrid cols={4}>
-        <Stat icon="receber" label="A receber em aberto" value={money(receber.total)} hint={`${receber.linhas.length} hospital(is)`} />
-        <Stat icon="calendario" label="Vencido a receber" value={money(receber.totais.slice(1).reduce((s, v) => s + v, 0))} tone="danger" hint="faixas após o vencimento" />
-        <Stat icon="pagar" label="A pagar em aberto" value={money(pagar.total)} hint={`${pagar.linhas.length} fornecedor(es)`} />
-        <Stat icon="calendario" label="Vencido a pagar" value={money(pagar.totais.slice(1).reduce((s, v) => s + v, 0))} tone="warn" hint="faixas após o vencimento" />
+        <Stat label="A receber em aberto" value={money(receber.total)} hint={`${receber.linhas.length} hospital(is)`} />
+        <Stat label="Vencido a receber" value={money(receber.totais.slice(1).reduce((s, v) => s + v, 0))} tone="danger" hint="faixas após o vencimento" />
+        <Stat label="A pagar em aberto" value={money(pagar.total)} hint={`${pagar.linhas.length} fornecedor(es)`} />
+        <Stat label="Vencido a pagar" value={money(pagar.totais.slice(1).reduce((s, v) => s + v, 0))} tone="warn" hint="faixas após o vencimento" />
       </KpiGrid>
       <div className="space-y-3">
         <Aging tipo="receber" titulo="Inadimplência por hospital (contas a receber)" parceiro="Hospital" dados={receber} />
         <Aging tipo="pagar" titulo="Contas a pagar por fornecedor" parceiro="Fornecedor" dados={pagar} />
-        <Card title="Outros relatórios" icon="grafico">
+        <Card title="Outros relatórios">
           <SemRecuo><ul className="divide-y divide-slate-200">
             {[
               ["/financeiro/dre", "DRE gerencial", "resultado por competência, mês a mês"],

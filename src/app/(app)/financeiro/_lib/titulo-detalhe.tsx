@@ -59,7 +59,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         }
       />
       <KpiGrid>
-        <Stat icon="banco" label="Valor" value={money(titulo.valor)} />
+        <Stat label="Valor" value={money(titulo.valor)} />
         <Stat
           label={cfg.pagoLabel}
           value={money(titulo.valorPago ?? 0)}
@@ -71,12 +71,12 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 : undefined
           }
         />
-        <Stat icon="banco" label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
-        <Stat icon="calendario" label="Vencimento" value={date(titulo.vencimento)} />
+        <Stat label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
+        <Stat label="Vencimento" value={date(titulo.vencimento)} />
       </KpiGrid>
 
       <div className="space-y-4">
-        <Card title="Dados do título" icon="documento">
+        <Card title="Dados do título">
           <Dl
             items={[
               [cfg.parceiro, titulo.parceiroNome],
@@ -121,7 +121,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         </Card>
 
         {tipo === "receber" && titulo.cobrancaStatus && (
-          <Card title="Cobrança bancária" icon="documento">
+          <Card title="Cobrança bancária">
             <Dl
               items={[
                 ["Status", <Badge key="s" color={titulo.cobrancaStatus === "REGISTRADO" ? "green" : "blue"}>{titulo.cobrancaStatus.toLowerCase()}</Badge>],
@@ -149,7 +149,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           </Card>
         )}
 
-          <Table titulo="Baixas" icone="ok" contagem={baixas.length} head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
+          <Table titulo="Baixas" contagem={baixas.length} head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
             {baixas.map((b) => (
               <tr key={b.id}>
                 <Td>{date(b.data)}</Td>
@@ -173,7 +173,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           </Table>
 
         {glosas.length > 0 && (
-          <Table titulo="Glosas" icone="alerta" contagem={glosas.length} head={["Data", "Categoria", "Valor", "Motivo", "Recurso", ""]}>
+          <Table titulo="Glosas" contagem={glosas.length} head={["Data", "Categoria", "Valor", "Motivo", "Recurso", ""]}>
             {glosas.map((g) => (
               <tr key={g.id}>
                 <Td>{date(g.data)}</Td>
@@ -214,14 +214,14 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         )}
 
         {tipo === "receber" && titulo.status === "ABERTO" && (
-          <Card title="Registrar glosa" icon="alerta">
+          <Card title="Registrar glosa">
             <p className="mb-3 text-sm text-slate-600">Use quando o hospital não reconhece parte da cobrança. Abate o saldo sem movimentar dinheiro e aparece em Deduções no DRE (não é desconto).</p>
             <GlosaForm titulo={titulo} hoje={hoje} />
           </Card>
         )}
 
         {titulo.status === "ABERTO" && (
-          <Card title={cfg.baixaLabel} icon="ok">
+          <Card title={cfg.baixaLabel}>
             {contas.length === 0 ? (
               <EmptyState text="Nenhuma conta bancária ou caixa cadastrada. Cadastre uma antes de registrar baixas." action={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar conta</LinkButton>} />
             ) : (
@@ -231,13 +231,13 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         )}
 
         {titulo.status !== "CANCELADO" && !editavel && (
-          <Card title="Classificação (DRE)" icon="etiqueta">
+          <Card title="Classificação (DRE)">
             <ClassificarForm tipo={tipo} titulo={titulo} planos={planos} centros={centros} />
           </Card>
         )}
 
         {editavel && (
-          <Card title="Editar título" icon="ajustes">
+          <Card title="Editar título">
             <TituloForm tipo={tipo} titulo={titulo} parceiros={parceiros} planos={planos} centros={centros} hoje={hoje} />
           </Card>
         )}

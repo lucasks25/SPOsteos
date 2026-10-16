@@ -23,7 +23,7 @@ export default async function FavorecidoPage({ params }: { params: Promise<{ id:
     <>
       <PageHeader voltar={{ href: "/financeiro/favorecidos", label: "Favorecidos" }} title={f.nomeFantasia ?? f.razaoSocial} subtitle={`CNPJ ${f.cnpj} · dados de pagamento`} actions={!f.ativo ? <Badge>inativo</Badge> : undefined} />
       <div className="grid items-start gap-4 xl:grid-cols-3">
-      <Card title="Dados para pagamento (SISPAG)" icon="banco" className="xl:col-span-2">
+      <Card title="Dados para pagamento (SISPAG)" className="xl:col-span-2">
         <Form action={salvarDadosPagamento.bind(null, id)} redirectTo="/financeiro/favorecidos">
           <Grid cols={2}>
             <Field label="Banco (código)" name="bancoCodigo" defaultValue={f.bancoCodigo ?? ""} maxLength={3} placeholder="341" />
@@ -35,7 +35,7 @@ export default async function FavorecidoPage({ params }: { params: Promise<{ id:
           <p className="text-xs text-slate-500">Confira com o fornecedor antes de alterar: trocar a conta muda para onde o dinheiro vai. A alteração fica na auditoria (valores mascarados). A razão social, o CNPJ e o contato se editam em Cadastros.</p>
         </Form>
       </Card>
-      <Card title="Aprovação dos dados de pagamento" icon="escudo">
+      <Card title="Aprovação dos dados de pagamento">
         {situacao === "APROVADO" ? (
           <Aviso tom="ok">
             <Badge color="green">aprovado</Badge> {f.pagamentoAprovadoEm ? `em ${dateTime(f.pagamentoAprovadoEm)} por ${nome(f.pagamentoAprovadoPor)}` : ""}

@@ -41,13 +41,13 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
       </FilterBar>
 
       <KpiGrid cols={3}>
-        <Stat icon="conciliar" label="Para conciliar" value={num(d.pendTotal)} tone={d.pendTotal > 0 ? "warn" : "default"} hint="linhas do extrato sem vínculo" />
-        <Stat icon="ok" label="Conciliadas" value={num(d.concTotal)} />
-        <Stat icon="banco" label="Lançamentos sem extrato" value={num(d.semExtrato)} hint="baixas ainda não vistas no banco" />
+        <Stat label="Para conciliar" value={num(d.pendTotal)} tone={d.pendTotal > 0 ? "warn" : "default"} hint="linhas do extrato sem vínculo" />
+        <Stat label="Conciliadas" value={num(d.concTotal)} />
+        <Stat label="Lançamentos sem extrato" value={num(d.semExtrato)} hint="baixas ainda não vistas no banco" />
       </KpiGrid>
 
       <div className="space-y-3">
-        <Card title="Pendentes de conciliação" icon="conciliar" actions={<span className="tnum text-xs text-slate-600">{d.pendTotal} {d.pendTotal === 1 ? "item" : "itens"}{d.pendTotal > 100 && " (100 mais antigas)"}</span>}>
+        <Card title="Pendentes de conciliação" actions={<span className="tnum text-xs text-slate-600">{d.pendTotal} {d.pendTotal === 1 ? "item" : "itens"}{d.pendTotal > 100 && " (100 mais antigas)"}</span>}>
           <SemRecuo>
           {d.pendentes.length === 0 ? (
             <div className="px-4 py-10">
@@ -65,7 +65,7 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
 
         <Table
           titulo="Últimas conciliadas"
-          icone="ok"
+
           contagem={d.conciliadas.length}
           head={["Data", "Extrato", "Valor", "Lançamento vinculado", ""]}
           empty={d.conciliadas.length === 0}
@@ -88,7 +88,7 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
           ))}
         </Table>
 
-        <Card title="Importar extrato (OFX ou CNAB 240 Itaú)" icon="baixar">
+        <Card title="Importar extrato (OFX ou CNAB 240 Itaú)">
           <Form action={importarExtrato} submitLabel="Importar" resetOnSuccess>
             <input type="hidden" name="contaId" value={escolhida.id} />
             <Field label="Arquivo do extrato" name="arquivo" type="file" accept=".ofx,.OFX,.ret,.RET,.txt,.TXT,.cnab,.CNAB" required hint="OFX do internet banking ou arquivo de retorno CNAB 240 de extrato do Itaú. Lançamentos já importados são ignorados." />

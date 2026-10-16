@@ -23,7 +23,7 @@ export default async function PlanoContasPage() {
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
       {uso > 0 && <Aviso tom="alerta" className="mb-3">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</Aviso>}
       <div className="space-y-4">
-        <Table titulo="Plano de contas" icone="livro" contagem={ordenadas.length} head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
+        <Table titulo="Plano de contas" contagem={ordenadas.length} head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
           {ordenadas.map((c) => (
             <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
               <Td>{c.codigo}</Td>
@@ -45,7 +45,7 @@ export default async function PlanoContasPage() {
           ))}
         </Table>
 
-        <Card title="Nova conta ou grupo" icon="mais">
+        <Card title="Nova conta ou grupo">
           <Form action={criarContaPlano} submitLabel="Criar" resetOnSuccess>
             <Grid cols={4}>
               <Field label="Código *" name="codigo" required hint="Ex.: 4.08 dentro do grupo 4" />
@@ -59,7 +59,7 @@ export default async function PlanoContasPage() {
           </Form>
         </Card>
 
-        <Table titulo="Centros de custo" icone="camadas" contagem={centros.length} head={["Código", "Nome", "Situação", ""]} empty={centros.length === 0} emptyText="Nenhum centro de custo cadastrado. Crie o primeiro abaixo.">
+        <Table titulo="Centros de custo" contagem={centros.length} head={["Código", "Nome", "Situação", ""]} empty={centros.length === 0} emptyText="Nenhum centro de custo cadastrado. Crie o primeiro abaixo.">
             {centros.map((c) => (
               <tr key={c.id} className={c.ativo ? "" : "opacity-50"}>
                 <Td>{c.codigo}</Td>
@@ -75,7 +75,7 @@ export default async function PlanoContasPage() {
               </tr>
             ))}
         </Table>
-        <Card title="Novo centro de custo" icon="mais">
+        <Card title="Novo centro de custo">
           <div>
             <Form action={criarCentroCusto} submitLabel="Criar centro de custo" submitVariant="secondary" resetOnSuccess>
               <Grid cols={3}>

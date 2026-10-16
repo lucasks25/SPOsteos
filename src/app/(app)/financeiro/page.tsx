@@ -86,7 +86,7 @@ export default async function PainelFinanceiroPage() {
       <div className="grid gap-4 lg:grid-cols-2">
         <Table
           titulo="Maiores valores vencidos a receber"
-          icone="alerta"
+
           contagem={p.inadimplentes.length}
           head={["Hospital", "Vencido", "Atraso máx."]}
           empty={p.inadimplentes.length === 0}
@@ -105,7 +105,7 @@ export default async function PainelFinanceiroPage() {
         </Table>
         <Table
           titulo="A pagar: atrasados e próximos 15 dias"
-          icone="pagar"
+
           contagem={p.proximosPagar.length}
           head={["Vencimento", "Descrição", "A pagar"]}
           empty={p.proximosPagar.length === 0}
@@ -128,7 +128,7 @@ export default async function PainelFinanceiroPage() {
         <div className="mt-4">
           <Table
             titulo={`Inventários com valor a cobrar (${money(inv.total)})`}
-            icone="alerta"
+
             contagem={inv.qtd}
             head={["Inventário", "Hospital", "Fechado em", "A cobrar"]}
             acoes={<Link href="/estoque/inventario?cobrar=1" className={btn.small}>Ver todos</Link>}

@@ -20,9 +20,9 @@ export default async function ContasPage() {
         actions={<LinkButton href="/financeiro/contas/nova">Nova conta</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat icon="banco" label="Disponibilidade total" value={money(total)} hint={`${contas.filter((c) => c.ativo).length} conta(s) ativa(s)`} tone={total < 0 ? "danger" : "default"} />
+        <Stat label="Disponibilidade total" value={money(total)} hint={`${contas.filter((c) => c.ativo).length} conta(s) ativa(s)`} tone={total < 0 ? "danger" : "default"} />
       </KpiGrid>
-      <Table titulo="Contas" icone="banco" contagem={contas.length} head={["Conta", "Tipo", "Saldo", "Situação", ""]} empty={contas.length === 0} emptyText="Nenhuma conta cadastrada ainda." emptyAction={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar a primeira conta</LinkButton>}>
+      <Table titulo="Contas" contagem={contas.length} head={["Conta", "Tipo", "Saldo", "Situação", ""]} empty={contas.length === 0} emptyText="Nenhuma conta cadastrada ainda." emptyAction={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar a primeira conta</LinkButton>}>
         {contas.map((c) => (
           <tr key={c.id}>
             <Td>
@@ -42,7 +42,7 @@ export default async function ContasPage() {
 
       {contas.filter((c) => c.ativo).length >= 2 && (
         <div className="mt-4">
-          <Card title="Transferência entre contas" icon="conciliar">
+          <Card title="Transferência entre contas">
             <p className="mb-3 text-sm text-slate-600">Move dinheiro entre contas suas. Muda o saldo de cada conta, mas não conta como receita nem despesa no painel e no fluxo de caixa.</p>
             <Form action={transferirEntreContas} submitLabel="Transferir" submitVariant="secondary" resetOnSuccess>
               <Grid cols={4}>
