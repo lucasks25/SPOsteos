@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Form, Grid, Select, TextArea } from "@/components/form";
-import { btn } from "@/components/ui";
+import { Table, Td, btn } from "@/components/ui";
 import { date } from "@/lib/format";
 import { ordenarFefo, sugerirFefo, type LoteDisp } from "../../_lib/fefo";
 import { criarRemessaAction } from "../actions";
@@ -129,7 +129,7 @@ export function RemessaForm({
       <div>
         <div className="mb-2 flex flex-wrap items-end gap-2">
           <label className="block min-w-64 flex-1">
-            <span className="mb-1 block text-xs text-slate-700">Adicionar produto</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Adicionar produto</span>
             <select aria-label="Produto a adicionar" value={addProduto} onChange={(e) => setAddProduto(e.target.value)} className={inputCls}>
               <option value="">Selecione...</option>
               {produtos.map((p) => (
@@ -140,28 +140,19 @@ export function RemessaForm({
             </select>
           </label>
           <label className="block w-24">
-            <span className="mb-1 block text-xs text-slate-700">Qtd.</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Qtd.</span>
             <input aria-label="Quantidade a adicionar" type="number" min={1} value={addQtd} onChange={(e) => setAddQtd(Number(e.target.value))} className={inputCls} />
           </label>
           <button type="button" onClick={adicionar} className={btn.secondary}>Adicionar produto (lote que vence primeiro)</button>
         </div>
 
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50">
-              <tr>
-                <th scope="col" className="px-3 py-2 text-left text-xs font-bold uppercase tracking-[.04em] text-slate-600">Produto</th>
-                <th scope="col" className="px-3 py-2 text-left text-xs font-bold uppercase tracking-[.04em] text-slate-600">Lote (validade — disponível)</th>
-                <th scope="col" className="w-28 px-3 py-2 text-left text-xs font-bold uppercase tracking-[.04em] text-slate-600">Qtd.</th>
-                <th scope="col" className="px-3 py-2 text-left text-xs font-bold uppercase tracking-[.04em] text-slate-600">Ações</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200">
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={4} className="px-3 py-8 text-center text-sm text-slate-600">Nenhum item. Escolha uma cirurgia, um kit ou adicione produtos.</td>
-                </tr>
-              )}
+        <Table
+          titulo="Itens da remessa"
+          contagem={rows.length}
+          head={["Produto", "Lote (validade — disponível)", "Qtd.", <span key="a" className="sr-only">Ações</span>]}
+          empty={rows.length === 0}
+          emptyText="Nenhum item. Escolha uma cirurgia, um kit ou adicione produtos."
+        >
               {rows.map((r) => {
                 const p = produtoMap.get(r.produtoId);
                 const opcoes = lotesPorProduto.get(r.produtoId) ?? [];
@@ -169,10 +160,10 @@ export function RemessaForm({
                 const excede = lote ? (usadoPorLote.get(lote.loteId) ?? 0) > lote.disponivel : false;
                 return (
                   <tr key={r.key}>
-                    <td className="px-3 py-1.5 align-middle">
+                    <Td className="whitespace-normal">
                       <span className="font-mono text-xs text-slate-600">{p?.codigo}</span> {p?.descricao ?? r.produtoId}
-                    </td>
-                    <td className="px-3 py-1.5 align-middle">
+                    </Td>
+                    <Td className="min-w-72 whitespace-normal">
                       <select aria-label={`Lote de ${p?.descricao ?? "produto"}`} value={r.loteId} onChange={(e) => atualizar(r.key, { loteId: e.target.value })} className={inputCls}>
                         <option value="">{opcoes.length === 0 ? "Sem lote disponível" : "Selecione o lote..."}</option>
                         {opcoes.map((l) => (
@@ -183,8 +174,8 @@ export function RemessaForm({
                       </select>
                       {!r.loteId && <span className="mt-1 block text-xs text-rose-600">Sem saldo liberado suficiente — escolha um lote ou remova.</span>}
                       {excede && <span className="mt-1 block text-xs text-rose-600">Quantidade total do lote excede o disponível.</span>}
-                    </td>
-                    <td className="px-3 py-1.5 align-middle">
+                    </Td>
+                    <Td className="w-28 text-right">
                       <input
                         aria-label={`Quantidade de ${p?.descricao ?? "produto"}`}
                         type="number"
@@ -193,18 +184,16 @@ export function RemessaForm({
                         onChange={(e) => atualizar(r.key, { quantidade: Number(e.target.value) })}
                         className={`${inputCls} text-right`}
                       />
-                    </td>
-                    <td className="px-3 py-1.5 align-middle">
+                    </Td>
+                    <Td className="text-right">
                       <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className={btn.small}>
                         Remover
                       </button>
-                    </td>
+                    </Td>
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+        </Table>
         {(pendentes > 0 || excedidos > 0) && (
           <p role="status" className="mt-2 text-xs text-amber-700">
             {pendentes > 0 && `${pendentes} item(ns) sem lote/quantidade. `}

@@ -67,7 +67,7 @@ export default async function InventariosPage({ searchParams }: { searchParams: 
         head={["Nº", "Hospital", "Situação", "Criado", "Itens", "Contados", "Divergências", "Faltas (R$)", "A cobrar (R$)"]}
         empty={lista.length === 0}
         emptyText="Nenhum inventário encontrado."
-        emptyAction={podeEditar(user.perfil) ? <LinkButton href="/estoque/inventario/novo" icon="mais">Novo inventário</LinkButton> : undefined}
+        emptyAction={podeEditar(user.perfil) ? <LinkButton href="/estoque/inventario/novo" icon="mais" variant="secondary">Novo inventário</LinkButton> : undefined}
       >
         {lista.map((inv) => {
           const fechado = inv.status === "FECHADO";
