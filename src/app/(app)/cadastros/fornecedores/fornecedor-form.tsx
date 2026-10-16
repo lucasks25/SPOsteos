@@ -1,6 +1,6 @@
 import { Field, Form, Grid, Select } from "@/components/form";
 import type { Fornecedor } from "@/generated/prisma/client";
-import { UF_OPTIONS } from "../_lib/documentos";
+import { UF_OPTIONS } from "@/lib/documentos-br";
 import { salvarFornecedor } from "./actions";
 
 export function FornecedorForm({ fornecedor, podeBanco = false }: { fornecedor?: Fornecedor; podeBanco?: boolean }) {

@@ -6,7 +6,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { UFS } from "../_lib/documentos";
+import { UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_COMERCIAL } from "../_lib/acoes";
 
 const schema = z.object({

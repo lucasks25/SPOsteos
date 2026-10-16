@@ -1,4 +1,6 @@
-/** Validação e formatação de documentos brasileiros (CNPJ / CPF). Sem dependências de servidor. */
+/** Validação e formatação de documentos brasileiros (CNPJ / CPF) e chave Pix. Sem dependências de servidor. */
+
+import { ErroNegocio } from "@/lib/erros";
 
 export const onlyDigits = (v: string) => v.replace(/\D/g, "");
 
@@ -80,3 +82,16 @@ export const UFS = [
 ] as const;
 
 export const UF_OPTIONS = UFS.map((u) => ({ value: u, label: u }));
+
+/** Tipo da chave Pix (nota 37): 01 telefone, 02 e-mail, 03 CPF/CNPJ, 04 aleatória. */
+export function tipoChavePix(chave: string): "01" | "02" | "03" | "04" {
+  const c = chave.trim();
+  if (c.includes("@")) {
+    if (c.length > 77) throw new ErroNegocio("E-mail da chave Pix passa de 77 caracteres (limite do manual).");
+    return "02";
+  }
+  if (/^\+\d{13}$/.test(c)) return "01"; // nota 40: +55 + DDD + celular de 9 dígitos
+  if (/^\d{11}$|^\d{14}$/.test(c)) return "03";
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(c)) return "04";
+  throw new ErroNegocio(`Chave Pix em formato inválido: "${c}". Use +55DDDNUMERO, e-mail, CPF/CNPJ só números ou chave aleatória com traços.`);
+}

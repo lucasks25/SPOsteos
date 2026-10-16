@@ -6,10 +6,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { checarCnpj, UFS } from "../_lib/documentos";
+import { checarCnpj, tipoChavePix, UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_SUPRIMENTOS } from "../_lib/acoes";
 import { mascarar, podeDadosBancarios } from "../_lib/permissoes";
-import { tipoChavePix } from "../../financeiro/_lib/sispag";
 
 const schema = z.object({
   razaoSocial: zf.text(),

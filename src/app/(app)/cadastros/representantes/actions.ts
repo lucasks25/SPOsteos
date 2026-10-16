@@ -5,7 +5,7 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { isCnpj, isCpf, onlyDigits } from "../_lib/documentos";
+import { isCnpj, isCpf, onlyDigits } from "@/lib/documentos-br";
 import { PERFIS_COMERCIAL } from "../_lib/acoes";
 
 const schema = z.object({

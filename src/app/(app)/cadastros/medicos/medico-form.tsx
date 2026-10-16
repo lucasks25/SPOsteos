@@ -1,6 +1,6 @@
 import { Field, Form, Grid, Select } from "@/components/form";
 import type { Medico } from "@/generated/prisma/client";
-import { UF_OPTIONS } from "../_lib/documentos";
+import { UF_OPTIONS } from "@/lib/documentos-br";
 import { salvarMedico } from "./actions";
 
 export function MedicoForm({ medico }: { medico?: Medico }) {

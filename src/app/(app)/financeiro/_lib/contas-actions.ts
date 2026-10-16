@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { checarCnpj } from "../../cadastros/_lib/documentos";
+import { checarCnpj } from "@/lib/documentos-br";
 import { ErroNegocio } from "@/lib/erros";
 import { listarContas } from "./contas";
 import { addDias, hojeUTC } from "@/lib/datas";

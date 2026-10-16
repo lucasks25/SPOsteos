@@ -1,7 +1,9 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
 import { BoletoError, lerBoleto, linhaDigitavel, mod10 } from "@/app/(app)/financeiro/_lib/boleto";
-import { gerarRemessaSispag, lerRetornoSispag, situacaoRetorno, SispagError, tipoChavePix, type Empresa } from "@/app/(app)/financeiro/_lib/sispag";
+import { gerarRemessaSispag, lerRetornoSispag, situacaoRetorno, type Empresa } from "@/app/(app)/financeiro/_lib/sispag";
+import { tipoChavePix } from "@/lib/documentos-br";
+import { ErroNegocio } from "@/lib/erros";
 import { contaEDac, formaPrevista } from "@/app/(app)/financeiro/_lib/sispag-regras";
 
 // Exemplo oficial do Anexo A do manual SISPAG Itaú v085
@@ -31,7 +33,7 @@ test("chave Pix: tipo pela nota 37", () => {
   assert.equal(tipoChavePix("+5511987654321"), "01");
   assert.equal(tipoChavePix("12345678000199"), "03");
   assert.equal(tipoChavePix("123e4567-e89b-12d3-a456-426614174000"), "04");
-  assert.throws(() => tipoChavePix("11 98765-4321"), SispagError);
+  assert.throws(() => tipoChavePix("11 98765-4321"), ErroNegocio);
 });
 
 const emp: Empresa = { cnpj: "12345678000199", nome: "Distribuidora OPME Ltda", agencia: "0123", conta: "12345", dac: "6" };

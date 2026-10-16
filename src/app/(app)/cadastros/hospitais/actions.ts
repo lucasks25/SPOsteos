@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { localDoHospital } from "@/lib/estoque";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { checarCnpj, UFS } from "../_lib/documentos";
+import { checarCnpj, UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_HOSPITAL } from "../_lib/acoes";
 
 const schema = z.object({

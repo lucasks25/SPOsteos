@@ -1,6 +1,6 @@
 import { Field, Form, Grid, Select } from "@/components/form";
 import type { Hospital } from "@/generated/prisma/client";
-import { UF_OPTIONS } from "../_lib/documentos";
+import { UF_OPTIONS } from "@/lib/documentos-br";
 import { salvarHospital } from "./actions";
 
 export function HospitalForm({ hospital, tabelas }: { hospital?: Hospital; tabelas: { id: string; nome: string }[] }) {
