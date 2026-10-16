@@ -62,15 +62,23 @@ export async function importarExtratoTexto(contaId: string, texto: string) {
 
 type Linha = { id: string; contaId: string; data: Date; valor: number; descricao: string };
 
+/**
+ * Trava a linha do extrato (FOR UPDATE) e confere que ainda está pendente. A trava vem ANTES de qualquer outra
+ * (linha, depois título): duas conciliações da mesma linha esperam uma pela outra e a segunda já a encontra conciliada.
+ */
 async function linhaPendente(tx: Tx, id: string): Promise<Linha> {
+  await tx.$queryRaw`SELECT id FROM "ExtratoLinha" WHERE id = ${id} FOR UPDATE`;
   const l = await tx.extratoLinha.findUnique({ where: { id } });
   if (!l) throw new FinanceiroError("Linha do extrato não encontrada.");
   if (l.lancamentoId) throw new FinanceiroError("Esta linha já está conciliada.");
   return { id: l.id, contaId: l.contaId, data: l.data, valor: toNumber(l.valor), descricao: l.descricao };
 }
 
-const ligar = (tx: Tx, linhaId: string, lancamentoId: string) =>
-  tx.extratoLinha.update({ where: { id: linhaId }, data: { lancamentoId, conciliadoEm: new Date() } });
+/** Liga a linha ao lançamento só se ela continuar pendente (defesa extra além da trava). */
+async function ligar(tx: Tx, linhaId: string, lancamentoId: string) {
+  const r = await tx.extratoLinha.updateMany({ where: { id: linhaId, lancamentoId: null }, data: { lancamentoId, conciliadoEm: new Date() } });
+  if (r.count === 0) throw new FinanceiroError("A linha já foi conciliada.");
+}
 
 /** Concilia a linha com um lançamento já existente (mesma conta, sentido e valor). */
 export async function conciliarComLancamentoTx(tx: Tx, linhaId: string, lancamentoId: string) {

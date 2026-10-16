@@ -1,6 +1,7 @@
 import "server-only";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
+import { toNumber } from "@/lib/format";
 import { garantirMesAberto } from "./fechamento";
 import { planoPorChave, validarClassificacao, type ChaveSistema } from "./plano";
 
@@ -51,7 +52,7 @@ export async function gerarContaPagarTx(tx: Tx, d: NovaContaPagar): Promise<stri
  */
 async function exigirContaAlteravel(tx: Tx, contaId: string) {
   await tx.$queryRaw`SELECT id FROM "ContaPagar" WHERE id = ${contaId} FOR UPDATE`;
-  const c = await tx.contaPagar.findUniqueOrThrow({ where: { id: contaId }, select: { status: true, valorBaixado: true, competencia: true, _count: { select: { pagamentos: { where: { status: { in: ["ENVIADO", "AGENDADO"] } } } } } } });
+  const c = await tx.contaPagar.findUniqueOrThrow({ where: { id: contaId }, select: { status: true, valorBaixado: true, competencia: true, valor: true, vencimento: true, fornecedorId: true, aprovadoEm: true, _count: { select: { pagamentos: { where: { status: { in: ["ENVIADO", "AGENDADO"] } } } } } } });
   if (c.status === "CANCELADO") return c;
   if (c.status !== "ABERTO" || c.valorBaixado !== null) throw new ErroNegocio("A conta a pagar desta despesa já tem baixa. Estorne a baixa no financeiro antes de alterar.");
   if (c._count.pagamentos > 0) throw new ErroNegocio("A conta a pagar desta despesa está numa remessa SISPAG ativa.");
@@ -67,15 +68,28 @@ export type DadosContaPagarGerada = {
   chavePlano: ChaveSistema;
 };
 
-/** Altera a conta gerada por outro módulo. Devolve false (sem alterar) se ela já foi cancelada no financeiro. */
+/**
+ * Altera a conta gerada por outro módulo. Devolve false (sem alterar) se ela já foi cancelada no financeiro.
+ * Separação de funções: se mudar o que foi aprovado (valor, fornecedor ou vencimento), a aprovação cai e a conta volta
+ * para /financeiro/aprovacoes (a remessa SISPAG recusa conta sem aprovação). Descrição e conta do plano não derrubam.
+ */
 export async function alterarContaPagarGeradaTx(tx: Tx, contaId: string, d: DadosContaPagarGerada): Promise<boolean> {
   const c = await exigirContaAlteravel(tx, contaId);
   if (c.status === "CANCELADO") return false;
   const planoContaId = await planoPorChave(tx, d.chavePlano);
   await validarClassificacao(tx, planoContaId, null);
+  const mudouAprovado =
+    Math.round(toNumber(c.valor) * 100) !== Math.round(d.valor * 100) || c.fornecedorId !== d.fornecedorId || c.vencimento.getTime() !== d.vencimento.getTime();
   await tx.contaPagar.update({
     where: { id: contaId },
-    data: { descricao: d.descricao, valor: d.valor, vencimento: d.vencimento, fornecedorId: d.fornecedorId, planoContaId },
+    data: {
+      descricao: d.descricao,
+      valor: d.valor,
+      vencimento: d.vencimento,
+      fornecedorId: d.fornecedorId,
+      planoContaId,
+      ...(mudouAprovado && c.aprovadoEm ? { aprovadoEm: null, aprovadoPor: null } : {}),
+    },
   });
   return true;
 }

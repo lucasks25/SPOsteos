@@ -1,6 +1,6 @@
 /**
  * Revisão de consistência financeira (16/10/2026): invariantes globais (auditoria de dados) e um teste por suspeita.
- * Teste que FALHA prova um defeito (o nome começa com "BUG"); teste que passa prova que a regra está certa.
+ * Cada defeito achado nesta revisão virou um teste de regra (corrigidos em 16/10/2026, docs/REVISAO.md seção 18).
  * Dados com prefixo TESTEDB; tudo que é criado é apagado no fim. Rode com `npm run test:db` (sob o lock do banco de teste).
  */
 import "dotenv/config";
@@ -51,7 +51,7 @@ async function limpar() {
 before(async () => {
   await limpar();
   mesJaFechado = !!(await db.fechamentoMes.findUnique({ where: { mes: MES_FECHADO } }));
-  const c = await db.contaBancaria.create({ data: { nome: `${P} inv A`, tipo: "BANCO", banco: "341", agencia: "1234", numero: "123456", titularCnpj: "12345678000195", titularNome: "EMPRESA TESTE", saldoInicial: 0 } });
+  const c = await db.contaBancaria.create({ data: { nome: `${P} inv A`, tipo: "BANCO", banco: "341", agencia: "1234", numero: "765432", titularCnpj: "12345678000195", titularNome: "EMPRESA TESTE", saldoInicial: 0 } });
   conta = { id: c.id, titularCnpj: c.titularCnpj!, titularNome: c.titularNome!, agencia: c.agencia! };
   contaB = (await db.contaBancaria.create({ data: { nome: `${P} inv B`, tipo: "CAIXA", saldoInicial: 0 } })).id;
   hospitalId = (await mkHospital()).id;
@@ -178,9 +178,9 @@ test("invariantes globais: todo título fecha com seus lançamentos e glosas; to
   assert.deepEqual(inativasComSaldo, [], "conta inativa com saldo: painel e fluxo deixam de fechar");
 });
 
-// ─────────────────────────────────────────── defeitos (estes testes falham hoje) ───────────────────────────────────────────
+// ─────────────────────────── defeitos corrigidos (revisão 16/10/2026, docs/REVISAO.md seção 18) ───────────────────────────
 
-test("BUG conciliação: duas baixas simultâneas na MESMA linha do extrato (títulos diferentes) geram dois lançamentos para um só crédito", async () => {
+test("conciliação: duas baixas simultâneas na MESMA linha do extrato (títulos diferentes) — só uma passa (trava da linha)", async () => {
   const [t1, t2] = [await receber(100), await receber(100)];
   const linha = await linhaExtrato(100);
   const r = await corrida(
@@ -191,7 +191,7 @@ test("BUG conciliação: duas baixas simultâneas na MESMA linha do extrato (tí
   assert.equal(r.filter((x) => x.status === "fulfilled").length, 1, `as duas passaram: o banco creditou 100 e o sistema registrou ${caixa} de recebimento`);
 });
 
-test("BUG SISPAG: o mesmo retorno (pagamento parcial) processado duas vezes ao mesmo tempo baixa o título duas vezes", async () => {
+test("SISPAG: o mesmo retorno (pagamento parcial) processado duas vezes ao mesmo tempo baixa o título uma vez só", async () => {
   const t = await pagar(1000);
   await gerar([t.id]);
   const item = await db.remessaPagamentoItem.findFirstOrThrow({ where: { contaPagarId: t.id } });
@@ -200,7 +200,7 @@ test("BUG SISPAG: o mesmo retorno (pagamento parcial) processado duas vezes ao m
   assert.equal(await somaLanc({ contaPagarId: t.id }), 400, "o banco pagou 400 uma vez; o sistema registrou duas saídas de 400");
 });
 
-test("BUG glosa: REVERTER e MANTER ao mesmo tempo deixam a glosa MANTIDA abatendo o título sem estar em valorBaixado", async () => {
+test("glosa: REVERTER e MANTER ao mesmo tempo — só uma decisão vale e valorBaixado fecha com o recurso final", async () => {
   const t = await receber(1000);
   const g = await tx((x) => registrarGlosa(x, { tituloId: t.id, valor: 200, data: dia(0), motivo: `${P} motivo` }));
   await tx((x) => registrarRecurso(x, g.id, "RECORRER", dia(0)));
@@ -211,7 +211,7 @@ test("BUG glosa: REVERTER e MANTER ao mesmo tempo deixam a glosa MANTIDA abatend
   assert.equal(num(titulo.valorBaixado), esperado, `recurso final ${glosa.recurso}, valorBaixado ${titulo.valorBaixado}; ${r.filter((x) => x.status === "fulfilled").length} transação(ões) passaram`);
 });
 
-test("BUG DRE: remover um consumo de cirurgia lança GANHO de estoque no DRE (o consumo nunca entrou como perda)", async () => {
+test("DRE: consumir e remover o consumo de cirurgia é neutro em Perdas e ajustes de estoque (estorno é RETORNO)", async () => {
   const hosp = await mkHospital();
   const local = await tx((t) => localDoHospital(t, hosp.id));
   const p = await mkProduto({ custoMedio: 1234.57 });
@@ -227,7 +227,7 @@ test("BUG DRE: remover um consumo de cirurgia lança GANHO de estoque no DRE (o 
   assert.equal(r2(depois - antes), 0, `o estorno do consumo mudou "Perdas e ajustes de estoque" em ${r2(depois - antes)} (consumir + estornar deveria ser neutro)`);
 });
 
-test("BUG inventário: falta 'cobrar do hospital' sai do estoque e não gera conta a receber (o valor a cobrar não chega ao financeiro)", async () => {
+test("inventário (decisão M6): falta 'cobrar do hospital' sai do estoque sem virar perda no DRE e sem gerar conta a receber automática", async () => {
   const hosp = await mkHospital();
   const local = await tx((t) => localDoHospital(t, hosp.id));
   const p = await mkProduto({ custoMedio: 777.77 });
@@ -241,10 +241,14 @@ test("BUG inventário: falta 'cobrar do hospital' sai do estoque e não gera con
   await tx((t) => fecharInventario(t, inv.id, [{ itemId: item.id, resolucao: "COBRAR_HOSPITAL" }], "teste"));
   const dre = r2((await linhaDreMes("PERDA_ESTOQUE")) - antes);
   const cobrado = num((await db.contaReceber.aggregate({ where: { hospitalId: hosp.id, status: { not: "CANCELADO" } }, _sum: { valor: true } }))._sum.valor);
-  assert.equal(cobrado, 1555.54, `valorCobrar 1555.54 gravado só no inventário; contas a receber do hospital: ${cobrado}; DRE "Perdas e ajustes": ${dre}`);
+  const fechado = await db.inventarioConsignacaoItem.findUniqueOrThrow({ where: { id: item.id } });
+  assert.equal(dre, 0, `a falta cobrada do hospital entrou em "Perdas e ajustes de estoque" (${dre})`);
+  assert.equal(cobrado, 0, "nenhuma conta a receber é gerada automaticamente (depende de NF/negociação)");
+  assert.equal(num(fechado.valorCobrar), 1555.54, "o valor a cobrar fica gravado no inventário para o financeiro");
+  assert.equal(await db.saldo.findFirstOrThrow({ where: { loteId: l.id, localId: local } }).then((s) => s.quantidade), 3);
 });
 
-test("BUG separação de funções: conta gerada por compras, já aprovada, muda de valor e de fornecedor e continua aprovada", async () => {
+test("separação de funções: conta gerada por compras, já aprovada, que muda de valor/fornecedor volta para aprovação", async () => {
   const outro = (await mkFornecedor()).id;
   const id = await tx((t) => gerarContaPagarTx(t, { descricao: `${P} frete`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 100, vencimento: dia(10), competencia: dia(0), chavePlano: "CUSTO_IMPORTACAO" }));
   await tx((t) => aprovarContasPagarTx(t, [id], "aprovador-teste"));
@@ -253,7 +257,7 @@ test("BUG separação de funções: conta gerada por compras, já aprovada, muda
   assert.equal(c.aprovadoEm, null, `aprovada para 100 ao fornecedor original; agora ${c.valor} a outro fornecedor e aprovadoEm = ${c.aprovadoEm?.toISOString()}`);
 });
 
-test("BUG SISPAG: o financeiro edita o valor ou cancela uma conta que está numa remessa já gerada (arquivo pode estar no banco)", async () => {
+test("SISPAG: conta numa remessa ativa não pode ter o valor editado nem ser cancelada (arquivo pode estar no banco)", async () => {
   const t = await pagar(1000);
   await gerar([t.id]);
   const dados = { descricao: `${P} pagar`, fornecedorId, planoContaId: planoDespesa, centroCustoId: null, competencia: dia(0), codigoBarras: null, valor: 1, vencimento: dia(5) };
@@ -262,7 +266,7 @@ test("BUG SISPAG: o financeiro edita o valor ou cancela uma conta que está numa
   assert.ok(edicao !== "aceita" && cancel !== "aceito", `edição ${edicao}; cancelamento ${cancel}; o item da remessa continua ENVIADO por 1000`);
 });
 
-test("BUG cobrança: o financeiro edita o valor de título com boleto registrado no banco", async () => {
+test("cobrança: título com boleto registrado no banco não tem o valor editado", async () => {
   const t = await receber(1000);
   await db.contaReceber.update({ where: { id: t.id }, data: { cobrancaStatus: "REGISTRADO", nossoNumero: uid().slice(0, 8) } });
   const dados = { descricao: `${P} receber`, hospitalId, planoContaId: (await db.planoConta.findUniqueOrThrow({ where: { codigo: "1.01" } })).id, centroCustoId: null, competencia: dia(0), valor: 1, vencimento: dia(5) };
@@ -270,7 +274,7 @@ test("BUG cobrança: o financeiro edita o valor de título com boleto registrado
   assert.notEqual(r, "aceita", "o boleto registrado continua cobrando 1000 de um título que agora vale 1");
 });
 
-test("BUG fluxo: com 'De' no passado, título atrasado entra como atrasado E como previsto da faixa (conta duas vezes)", async () => {
+test("fluxo: com 'De' no passado, título atrasado entra só como atrasado (não também como previsto da faixa)", async () => {
   const de = dia(-10), ate = dia(10);
   const fim = async () => (await calcularFluxo(de, ate, "mes", hojeUTC())).faixas.at(-1)!.acumulado;
   const antes = await fim();
@@ -279,7 +283,7 @@ test("BUG fluxo: com 'De' no passado, título atrasado entra como atrasado E com
   assert.equal(r2(depois - antes), 1000, `um título de 1000 aumentou o saldo acumulado projetado em ${r2(depois - antes)}`);
 });
 
-test("BUG (decisão) aprovação: conta a pagar de competência em mês fechado não pode ser aprovada, logo não entra no SISPAG", async () => {
+test("aprovação (decisão M7): conta a pagar de competência em mês fechado pode ser aprovada (aprovar não muda DRE nem caixa)", async () => {
   const c = await pagar(100, { aprovado: false, competencia: DIA_FECHADO });
   const r = await comMesFechado(() => tx((t) => aprovarContasPagarTx(t, [c.id], "aprovador-teste"))).then(() => "aprovada", (e: Error) => e.message);
   assert.equal(r, "aprovada", "aprovar não muda DRE nem caixa; a recusa obriga a reabrir o mês só para pagar a conta");

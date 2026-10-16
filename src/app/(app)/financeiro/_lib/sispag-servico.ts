@@ -3,6 +3,7 @@ import { Prisma, type FormaPagamento } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
+import { divergenciaBoleto } from "./boleto";
 import { gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPagamento } from "./sispag";
 import { contaEDac, formaPrevista, type ModoRemessa } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
@@ -42,6 +43,11 @@ export async function gerarRemessaTx(
     else if (t.pagamentos.length) erros.push(`${t.descricao}: já está em outra remessa`);
     else if (saldo <= 0) erros.push(`${t.descricao}: sem saldo a pagar`);
     else if ("erro" in f) erros.push(`${t.descricao}: ${f.erro}`);
+    else if (t.codigoBarras) {
+      // boleto com valor/vencimento diferentes do título (cadastrado antes da conferência): o banco pagaria outro valor
+      const div = divergenciaBoleto(t.codigoBarras, { valor: toNumber(t.valor), vencimento: t.vencimento });
+      if (div) erros.push(`${t.descricao}: ${div}`);
+    }
     return { t, saldo, forma: "forma" in f ? f.forma : null };
   });
   if (erros.length) throw new ErroNegocio(`Corrija antes de gerar: ${erros.slice(0, 5).join("; ")}${erros.length > 5 ? ` (+${erros.length - 5})` : ""}.`);
@@ -54,8 +60,9 @@ export async function gerarRemessaTx(
     const favorecido = { nome: f.razaoSocial, documento: f.cnpj, banco: f.bancoCodigo, agencia: f.agencia, conta: f.conta, digito: f.contaDigito, chavePix: f.chavePix };
     const seuNumero = `SP${item.id}`;
     if (forma === "30" || forma === "31") {
+      // valor nominal do boleto (= valor do título, conferido acima); boleto sem valor impresso: o valor do título
       const valorBarras = Number(t.codigoBarras!.slice(9, 19)) / 100;
-      pagamentos.push({ forma, seuNumero, data: dataPagto, valor: saldo, codigoBarras: t.codigoBarras!, vencimento: t.vencimento, valorTitulo: valorBarras || saldo, favorecido });
+      pagamentos.push({ forma, seuNumero, data: dataPagto, valor: saldo, codigoBarras: t.codigoBarras!, vencimento: t.vencimento, valorTitulo: valorBarras || toNumber(t.valor), favorecido });
     } else {
       pagamentos.push({ forma: forma as "01" | "41" | "45", seuNumero, data: dataPagto, valor: saldo, favorecido });
     }
@@ -81,6 +88,8 @@ export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[],
   const remessas = new Set<number>();
   for (const r of resultados) {
     const m = /^SP(\d+)$/.exec(r.seuNumero);
+    // Trava o item antes de ler: o mesmo retorno processado duas vezes ao mesmo tempo espera aqui e a segunda vez já o vê PAGO.
+    if (m) await tx.$queryRaw`SELECT id FROM "RemessaPagamentoItem" WHERE id = ${Number(m[1])} FOR UPDATE`;
     const item = m ? await tx.remessaPagamentoItem.findUnique({ where: { id: Number(m[1]) }, include: { remessa: { include: { conta: { select: { agencia: true, numero: true, nome: true } } } }, contaPagar: { select: { status: true, valor: true, valorBaixado: true } } } }) : null;
     if (!item) {
       cont.ignorados++;
@@ -103,18 +112,23 @@ export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[],
     // CAN: o banco pagou um item de remessa que foi cancelada aqui (o arquivo chegou a ser enviado): o dinheiro saiu de verdade
     const flags = item.status === "CANCELADO" && status === "PAGO" ? ["CAN"] : [];
     if (flags.length) cont.canceladasPagas++;
-    await tx.remessaPagamentoItem.update({
-      where: { id: item.id },
+    const mudou = await tx.remessaPagamentoItem.updateMany({
+      where: { id: item.id, status: { not: "PAGO" } },
       data: { status, ocorrencias: [...r.ocorrencias, ...flags].join(",") || null, nossoNumero: r.nossoNumero || item.nossoNumero },
     });
+    if (mudou.count === 0) continue; // outro processamento do mesmo retorno já o marcou PAGO
     if (status === "PAGO") {
       cont.pagos++;
       if (item.contaPagar.status === "ABERTO") {
         const saldoAtual = saldoTitulo(toNumber(item.contaPagar.valor), toNumber(item.contaPagar.valorBaixado));
-        const pago = r.valorEfetivo || toNumber(item.valor);
+        const pago = r.valorEfetivo;
         const dif = r2(pago - saldoAtual);
         const intocado = Math.abs(saldoAtual - toNumber(item.valor)) < 0.005; // ninguém mexeu no título desde a remessa
-        if (dif > 0.004 && !intocado) {
+        if (!(pago > 0.004)) {
+          // pago sem valor efetivo no retorno: não assume o valor da remessa (pode ter sido parcial). Fica para a conciliação.
+          await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...r.ocorrencias, "DIV"].join(",") } });
+          cont.divergentes++;
+        } else if (dif > 0.004 && !intocado) {
           // pagou acima do saldo e o título mudou depois da remessa: não dá para saber o que é juros. Fica para a conciliação.
           await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...r.ocorrencias, "DIV"].join(",") } });
           cont.divergentes++;

@@ -66,8 +66,10 @@ export async function removerConsumoTx(tx: Tx, consumoId: string, usuario: strin
   const c = consumo.cirurgia;
   if (c.status === "FATURADA" || c.status === "CANCELADA") throw new ErroNegocio(`Cirurgia ${c.status.toLowerCase()}: consumo não pode ser removido.`);
   const localId = await localDoHospital(tx, c.hospitalId);
+  // RETORNO (não AJUSTE): o material volta ao consignado do hospital. AJUSTE de entrada contaria como ganho de estoque
+  // no DRE ("Perdas e ajustes"), e o consumo nunca entrou lá como perda (vira custo só no faturamento, pelo CMV).
   await movimentar(tx, {
-    tipo: "AJUSTE",
+    tipo: "RETORNO",
     produtoId: consumo.produtoId,
     loteId: consumo.loteId,
     quantidade: consumo.quantidade,

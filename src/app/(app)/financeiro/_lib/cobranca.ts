@@ -14,7 +14,7 @@
  */
 
 import { ErroNegocio } from "@/lib/erros";
-import { dvBarras, lerBoleto, linhaDigitavel as linhaDigitavelBoleto, mod10 } from "./boleto";
+import { dvBarras, fatorDoVencimento, lerBoleto, linhaDigitavel as linhaDigitavelBoleto, mod10 } from "./boleto";
 import { CODIGOS_LIQUIDACAO, ESPECIES, INSTRUCOES_CANCELADAS, MOTIVOS_POR_OCORRENCIA, OCORRENCIAS_RETORNO, UFS } from "./cobranca-tabelas";
 import { diaBrasilia } from "@/lib/datas";
 
@@ -147,9 +147,9 @@ const BASE_FATOR = Date.UTC(1997, 9, 7); // fator 1000 = 03/07/2000 (anexo 6)
  * volta a 1000 (22/02/2025). Ciclo de 9000 dias.
  */
 export function fatorVencimento(vencimento: Date): number {
-  const dias = Math.round((Date.UTC(vencimento.getUTCFullYear(), vencimento.getUTCMonth(), vencimento.getUTCDate()) - BASE_FATOR) / DIA_MS);
-  if (dias < 1000) throw new CobrancaError("Vencimento anterior a 03/07/2000 não tem fator de vencimento.");
-  return ((dias - 1000) % 9000) + 1000;
+  const f = fatorDoVencimento(vencimento);
+  if (f === null) throw new CobrancaError("Vencimento anterior a 03/07/2000 não tem fator de vencimento.");
+  return f;
 }
 
 /**

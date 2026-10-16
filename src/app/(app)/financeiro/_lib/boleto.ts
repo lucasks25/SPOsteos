@@ -5,6 +5,7 @@
  */
 
 import { ErroNegocio } from "@/lib/erros";
+import { money } from "@/lib/format";
 
 export class BoletoError extends ErroNegocio {}
 
@@ -70,6 +71,40 @@ export function lerBoleto(entrada: string): Boleto {
   }
   conferirBarras(barras);
   return { codigoBarras: barras, banco: barras.slice(0, 3), valor: Number(barras.slice(9, 19)) / 100, fator: Number(barras.slice(5, 9)) };
+}
+
+const DIA_MS = 86_400_000;
+const BASE_FATOR = Date.UTC(1997, 9, 7); // fator 1000 = 03/07/2000
+
+/**
+ * Fator de vencimento FEBRABAN: 1000 em 03/07/2000, +1 por dia; depois de 9999 (21/02/2025) volta a 1000 (22/02/2025).
+ * Ciclo de 9000 dias. Devolve null para data anterior a 03/07/2000.
+ */
+export function fatorDoVencimento(vencimento: Date): number | null {
+  const dias = Math.round((Date.UTC(vencimento.getUTCFullYear(), vencimento.getUTCMonth(), vencimento.getUTCDate()) - BASE_FATOR) / DIA_MS);
+  if (dias < 1000) return null;
+  return ((dias - 1000) % 9000) + 1000;
+}
+
+const dataBr = (d: Date) => d.toISOString().slice(0, 10).split("-").reverse().join("/");
+
+/**
+ * Confere o boleto do fornecedor com o título: o valor impresso no código de barras (posições 10-19) tem de ser o valor
+ * do título e o fator (posições 6-9) tem de ser o vencimento. Boleto sem valor (zeros) ou sem fator ("0000") não é
+ * conferido nesse campo. Devolve a mensagem do problema ou null.
+ */
+export function divergenciaBoleto(codigoBarras: string, titulo: { valor: number; vencimento: Date }): string | null {
+  const b = lerBoleto(codigoBarras);
+  if (b.valor > 0 && Math.round(b.valor * 100) !== Math.round(titulo.valor * 100)) {
+    return `O boleto é de ${money(b.valor)}, mas o título está com ${money(titulo.valor)}. Corrija o valor do título (ou o código de barras) para que fiquem iguais.`;
+  }
+  if (b.valor > 0 && b.fator >= 1000 && fatorDoVencimento(titulo.vencimento) !== b.fator) {
+    const venc = new Date(BASE_FATOR + b.fator * DIA_MS);
+    const ciclos = [0, 1, 2].map((c) => new Date(venc.getTime() + c * 9000 * DIA_MS));
+    const provavel = ciclos.reduce((a, c) => (Math.abs(c.getTime() - titulo.vencimento.getTime()) < Math.abs(a.getTime() - titulo.vencimento.getTime()) ? c : a));
+    return `O boleto vence em ${dataBr(provavel)}, mas o título está com vencimento ${dataBr(titulo.vencimento)}. Corrija o vencimento (ou o código de barras) para que fiquem iguais.`;
+  }
+  return null;
 }
 
 /** Código de barras (44) → linha digitável formatada, para exibição. */
