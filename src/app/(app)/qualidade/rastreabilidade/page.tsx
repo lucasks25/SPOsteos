@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { Badge, btn, Card, Dl, EmptyState, PageHeader, SearchBar, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { PERFIS_QUALIDADE } from "../_lib/perfis";
-import { PrintButton } from "../_lib/print-button";
+import { PrintButton } from "@/components/print-button";
 import { buscarLotes, type Rastreio } from "../_lib/rastreio";
 
 const PRINT_CSS = `@media print {
