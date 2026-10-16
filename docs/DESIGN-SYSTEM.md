@@ -223,3 +223,24 @@ Semântica dos status: `green` = concluído, pago, liberado; `yellow` = pendente
 - Medidas e cores exatas do app Bling: não medidas; os valores são nossos.
 - Comportamento real do Bling ao recolher o menu e no celular: assumido (trilho de ícones e gaveta), padrão comum de ERP web.
 - Cabeçalho fixo da tabela: no desktop a tabela rola por dentro (altura da tela menos 10rem), porque o cabeçalho fixo não funciona dentro de um contêiner com rolagem horizontal; no celular a tabela rola só na horizontal e o cabeçalho não fica fixo.
+
+## 12. Revisão de QA visual (16/10/2026)
+
+Percorridas no navegador (Chrome sem interface, 1280 px claro, 390 px claro e 1280 px escuro) as 77 rotas de lista e formulário e 28 de detalhe, com verificação automática de rolagem horizontal, tabela fora do padrão, número alinhado à esquerda, cabeçalho desalinhado da coluna, mais de um botão principal e texto cortado. Nenhuma tela tem rolagem horizontal a 390 px.
+
+**Ajustado**
+- `Stat` e indicador do painel: rótulo com a largura toda e ícone de 32 px na linha do número, para o rótulo não quebrar espremido. No celular o número cai para 1.25rem e o ícone some, para valores como "R$ 51.305,00" caberem em duas colunas.
+- Painel: 7 indicadores em linhas de 4 (antes eram 3 colunas, e o sétimo ficava sozinho na linha); pendências com título inteiro, nota com reticências e uma seta no lugar do botão "Abrir".
+- `Table`: o cabeçalho de uma coluna cujas células têm `text-right` se alinha à direita sozinho (regra em `componentes.css`); o estado vazio fica fora da tabela, com a largura do cartão (no celular o texto saía cortado).
+- Uma ação principal por tela: "Filtrar" virou secundário (`Filtros` e documentos); "Processar retorno" (SISPAG e cobrança), "Transferir", "Criar centro de custo" e "Enviar anexo" viraram secundários; "Fechar mês" e "Reabrir" são botões compactos na tabela; a ação do estado vazio nas listas é secundária. Para isso o `Form` ganhou `submitVariant` e `compacto` (sem a linha acima do botão).
+- Tabelas da guia de autorização (cartão e formulário da cirurgia) e itens da nova remessa no padrão de `Table`/`Td`, sem mudar campos nem handlers.
+- Campo de arquivo: botão "Escolher arquivo" em pílula de contorno verde.
+- Rótulos dos filtros soltos (documentos, recolhimento, compras, auditoria, formulários de guia, remessa e pedido de compra) no tamanho dos campos (0.8125rem, medium).
+- Filtros no celular: os campos crescem para preencher a linha, dois por linha.
+- Pedidos de compra: razão social do fornecedor com reticências em vez de corte seco.
+
+**Ficou (fora do escopo desta revisão ou sem tempo)**
+- Telas cujo JSX está em `financeiro/_lib` (detalhe de título a pagar/receber, lista de títulos): glosa, recebimento e classificação continuam com três botões principais na mesma tela; o certo é "Registrar recebimento" principal e os outros secundários. Não mexido porque `_lib` é do agente funcional.
+- Detalhes com dois ou três formulários (orçamento, tabela de preço, kit, procedimento, conta bancária, usuário, remessa de cobrança) ainda mostram mais de um botão principal; pedem a mesma troca para `submitVariant="secondary"` nas ações de apoio.
+- Tabela de itens do pedido de compra (tem rodapé de total, que o `Table` não suporta) e tabela de comunicação do recolhimento: já no visual do padrão, mas escritas à mão.
+- Impressos (vale, boleto, orçamento, recolhimento, inventário) e 768 px: não revisados nesta passada.

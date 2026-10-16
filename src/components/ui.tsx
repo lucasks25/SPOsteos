@@ -143,17 +143,15 @@ export function Table({
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-100 [&>tr]:h-10 [&>tr]:transition-colors [&>tr:nth-child(even)]:bg-slate-50/50 [&>tr:hover]:bg-teal-50/60">
-            {empty ? (
-              <tr className="hover:bg-transparent">
-                <td colSpan={head.length} className="px-4 py-10">
-                  <EmptyState text={emptyText ?? "Nenhum registro encontrado."} action={emptyAction} />
-                </td>
-              </tr>
-            ) : (
-              children
-            )}
+            {!empty && children}
           </tbody>
         </table>
+        {/* fora da tabela: ocupa a largura do cartão, não a da tabela (no celular a tabela é mais larga que a tela) */}
+        {empty && (
+          <div className="px-4 py-10">
+            <EmptyState text={emptyText ?? "Nenhum registro encontrado."} action={emptyAction} />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -230,9 +228,9 @@ export function Stat({ label, value, hint, tone = "default", icon }: { label: st
       {/* rótulo com a largura toda; o ícone fica na linha do número, para o rótulo não quebrar espremido */}
       <div className="text-[0.8125rem] font-medium leading-snug text-slate-600">{label}</div>
       <div className="mt-1.5 flex items-center justify-between gap-2">
-        <div className={cx("tnum min-w-0 font-display text-2xl font-extrabold leading-tight", t.valor)}>{value}</div>
+        <div className={cx("tnum min-w-0 font-display text-xl font-extrabold leading-tight sm:text-2xl", t.valor)}>{value}</div>
         {ic && (
-          <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg print:hidden", t.icone)} aria-hidden="true">
+          <span className={cx("hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:flex print:hidden", t.icone)} aria-hidden="true">
             <Icon name={ic} size={16} />
           </span>
         )}

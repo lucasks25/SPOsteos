@@ -16,9 +16,9 @@ export function Indicador({ href, label, value, nota, tom = "default", notaTom, 
       {/* rótulo com a largura toda; o ícone fica na linha do número, para o rótulo não quebrar espremido */}
       <div className="text-[0.8125rem] font-medium leading-snug text-slate-600">{label}</div>
       <div className="mt-1.5 flex items-center justify-between gap-2">
-        <div className={cx("tnum min-w-0 font-display text-2xl font-extrabold leading-tight", corTom[tom])}>{value}</div>
+        <div className={cx("tnum min-w-0 font-display text-xl font-extrabold leading-tight sm:text-2xl", corTom[tom])}>{value}</div>
         {icone && (
-          <span className={cx("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", corIcone[tom])} aria-hidden="true">
+          <span className={cx("hidden h-8 w-8 shrink-0 items-center justify-center rounded-lg sm:flex", corIcone[tom])} aria-hidden="true">
             <Icon name={icone} size={16} />
           </span>
         )}
