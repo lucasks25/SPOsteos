@@ -3,7 +3,7 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
-import { carregarPendencias, listarPendencias } from "@/lib/pendencias";
+import { carregarPendencias, listarPendencias } from "@/app/(app)/_painel/pendencias";
 import { contarCirurgiasSemAutorizacao, excluirAutorizacaoTx, riscoGlosaDaCirurgia, salvarAutorizacaoTx, sugerirItensGuia } from "@/app/(app)/comercial/_lib/autorizacao-servico";
 import { dia, limparTudo, mkHospital, mkLote, mkProduto, P, uid } from "./_util";
 

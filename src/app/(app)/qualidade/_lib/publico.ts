@@ -33,3 +33,7 @@ export async function registrarLoteRecebidoTx(tx: Tx, l: LoteRecebido): Promise<
   });
   return novo.id;
 }
+
+// Leituras para o painel e o sino (só leitura, ARQ-05).
+export { contarAlertas as contarAlertasDocumentos } from "./documentos-servico";
+export { contarRecolhimentos, contarLotesQuarentena, contarLotesVencendo, contarRegistrosVencendo } from "./leitura-painel";

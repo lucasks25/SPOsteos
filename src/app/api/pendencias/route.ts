@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireUser } from "@/lib/auth";
-import { carregarPendencias, listarPendencias } from "@/lib/pendencias";
+import { carregarPendencias, listarPendencias } from "@/app/(app)/_painel/pendencias";
 
 export const dynamic = "force-dynamic";
 

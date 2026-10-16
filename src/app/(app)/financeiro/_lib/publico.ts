@@ -115,3 +115,8 @@ export async function gerarContaReceberTx(tx: Tx, d: NovaContaReceber) {
     },
   });
 }
+
+// Leituras para o painel e o sino (só leitura, ARQ-05).
+export { faixasAbertas } from "./painel";
+export type { Faixas } from "./painel";
+export { contarAprovacoesPendentes } from "./leitura-painel";

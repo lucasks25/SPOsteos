@@ -4,7 +4,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
 import { LOCAIS, movimentar } from "@/lib/estoque";
-import { carregarPendencias, listarPendencias } from "@/lib/pendencias";
+import { carregarPendencias, listarPendencias } from "@/app/(app)/_painel/pendencias";
 import { dia, limparTudo, mkLote, mkProduto, mkFornecedor, P } from "./_util";
 
 before(limparTudo);

@@ -6,7 +6,7 @@ import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { validarArquivo, MAX_BYTES } from "@/lib/upload-seguro";
-import { carregarPendencias, listarPendencias } from "@/lib/pendencias";
+import { carregarPendencias, listarPendencias } from "@/app/(app)/_painel/pendencias";
 import { hojeUTC, addDias } from "@/lib/datas";
 import {
   anexarArquivo, arquivoParaDownload, caminhoArquivoDocumento, contarAlertas, contarPorSituacao, criarDocumento, definirAtivo, pastaDocumento, atualizarDocumento,
