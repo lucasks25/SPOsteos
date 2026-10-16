@@ -1,10 +1,14 @@
 import Link from "next/link";
+import { Marca } from "@/components/marca";
 import { Icon } from "@/components/icons";
 
 export default function NotFound() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-slate-50 p-6">
       <div className="w-full max-w-md rounded border border-slate-200 bg-white p-6 text-center shadow-sm">
+        <div className="mb-4 flex justify-center">
+          <Marca variante="topo" />
+        </div>
         <span className="mx-auto flex h-9 w-9 items-center justify-center rounded bg-teal-700 text-white" aria-hidden="true">
           <Icon name="busca" size={18} />
         </span>

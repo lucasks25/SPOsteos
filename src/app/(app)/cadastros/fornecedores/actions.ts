@@ -7,7 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj, UFS } from "@/lib/documentos-br";
-import { deleteErrorMessage, PERFIS_SUPRIMENTOS } from "../_lib/acoes";
+import { deleteErrorMessage, PERFIS_FORNECEDOR } from "../_lib/acoes";
 
 const schema = z.object({
   razaoSocial: zf.text(),
@@ -23,7 +23,7 @@ const schema = z.object({
 });
 
 export async function salvarFornecedor(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
-  const user = await requireUser([...PERFIS_SUPRIMENTOS, "FINANCEIRO"]);
+  const user = await requireUser(PERFIS_FORNECEDOR);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   // dados bancários/Pix não passam por aqui: a escrita nessas colunas é só do financeiro (financeiro/_lib/favorecidos-servico.ts)
@@ -45,7 +45,7 @@ export async function salvarFornecedor(id: string | null, _: ActionState, fd: Fo
 }
 
 export async function alternarAtivoFornecedor(id: string): Promise<ActionState> {
-  const user = await requireUser(PERFIS_SUPRIMENTOS);
+  const user = await requireUser(PERFIS_FORNECEDOR);
   try {
     const f = await db.fornecedor.findUniqueOrThrow({ where: { id } });
     await db.fornecedor.update({ where: { id }, data: { ativo: !f.ativo } });
@@ -59,7 +59,7 @@ export async function alternarAtivoFornecedor(id: string): Promise<ActionState> 
 }
 
 export async function excluirFornecedor(id: string): Promise<ActionState> {
-  const user = await requireUser(PERFIS_SUPRIMENTOS);
+  const user = await requireUser(PERFIS_FORNECEDOR);
   try {
     const [pedidos, contas] = await Promise.all([
       db.pedidoCompra.count({ where: { fornecedorId: id } }),

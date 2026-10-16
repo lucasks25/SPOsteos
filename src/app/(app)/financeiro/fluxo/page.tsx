@@ -34,7 +34,7 @@ export default async function FluxoPage({ searchParams }: { searchParams: Promis
 
   return (
     <>
-      <PageHeader title="Fluxo de caixa" subtitle={`${date(de)} a ${date(ate)} — previsto (títulos em aberto) mais realizado (baixas e lançamentos)`} />
+      <PageHeader title="Fluxo de caixa" subtitle={`Entradas e saídas do Financeiro de ${date(de)} a ${date(ate)}: previsto (títulos em aberto) mais realizado (baixas e lançamentos).`} />
       <FilterBar>
         <Field label="De" name="de" type="date" defaultValue={ymd(de)} className="w-40" />
         <Field label="Até" name="ate" type="date" defaultValue={ymd(ate)} className="w-40" />

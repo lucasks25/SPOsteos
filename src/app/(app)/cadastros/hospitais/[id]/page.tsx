@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_HOSPITAL } from "../../_lib/acoes";
+import { podeEditarCadastro, SomenteLeitura } from "../../_lib/somente-leitura";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "@/components/form";
 import { podeIrParaCirurgias, podeIrParaReceber, podeIrParaSaldos } from "../../_lib/permissoes";
@@ -10,6 +12,7 @@ import { alternarAtivoHospital, excluirHospital } from "../actions";
 
 export default async function HospitalPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
+  const edita = podeEditarCadastro(user.perfil, PERFIS_HOSPITAL);
   const { id } = await params;
   const [hospital, tabelas, saldos] = await Promise.all([
     db.hospital.findUnique({
@@ -37,7 +40,8 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
         title={hospital.nomeFantasia ?? hospital.razaoSocial}
         subtitle={`${hospital.razaoSocial} · CNPJ ${hospital.cnpj}`}
         actions={
-          <>
+          edita ? (
+            <>
             {!hospital.ativo && <Badge>inativo</Badge>}
             <ActionButton action={alternarAtivoHospital.bind(null, id)}>{hospital.ativo ? "Inativar" : "Ativar"}</ActionButton>
             {podeExcluir && (
@@ -46,10 +50,13 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
               </ActionButton>
             )}
           </>
+          ) : undefined
         }
       />
       <Card title="Dados cadastrais">
-        <HospitalForm key={String(hospital.ativo)} hospital={hospital} tabelas={tabelas} />
+        <SomenteLeitura edita={edita} dono="Comercial">
+          <HospitalForm key={String(hospital.ativo)} hospital={hospital} tabelas={tabelas} />
+        </SomenteLeitura>
       </Card>
       {links.length > 0 && (
         <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-600">

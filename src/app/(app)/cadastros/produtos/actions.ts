@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_PRODUTO } from "../_lib/acoes";
 import { podeAlterarPreco } from "../_lib/permissoes";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 
@@ -25,7 +26,7 @@ const schema = z.object({
 });
 
 export async function salvarProduto(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
-  const user = await requireUser(["COMERCIAL", "ESTOQUE", "QUALIDADE", "COMPRAS"]);
+  const user = await requireUser(PERFIS_PRODUTO);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
   const data: Record<string, unknown> & typeof parsed.data = parsed.data;

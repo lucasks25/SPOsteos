@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import { requireUser } from "@/lib/auth";
 import { NAV } from "@/components/nav";
 import { AppShell } from "@/components/app-shell";
+import { Marca } from "@/components/marca";
 import { logout } from "@/app/login/actions";
 
 export default async function AppLayout({ children }: { children: ReactNode }) {
@@ -11,7 +12,7 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     items: g.items.filter((i) => user.perfil === "ADMIN" || !i.perfis || i.perfis.includes(user.perfil)),
   }));
   return (
-    <AppShell groups={groups} nome={user.nome} perfil={user.perfil.toLowerCase()} sair={logout}>
+    <AppShell groups={groups} nome={user.nome} perfil={user.perfil.toLowerCase()} sair={logout} marca={<Marca variante="topo" />}>
       {children}
     </AppShell>
   );

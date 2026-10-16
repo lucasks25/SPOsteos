@@ -1,6 +1,8 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_FORNECEDOR } from "../../_lib/acoes";
+import { podeEditarCadastro, SomenteLeitura } from "../../_lib/somente-leitura";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { VerDocumentos } from "../../_lib/link-documentos";
 import { ActionButton } from "@/components/form";
@@ -11,6 +13,7 @@ import { alternarAtivoFornecedor, excluirFornecedor } from "../actions";
 
 export default async function EditarFornecedorPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser();
+  const edita = podeEditarCadastro(user.perfil, PERFIS_FORNECEDOR);
   const { id } = await params;
   const fornecedor = await db.fornecedor.findUnique({
     where: { id },
@@ -24,7 +27,8 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
         title={fornecedor.nomeFantasia ?? fornecedor.razaoSocial}
         subtitle={`CNPJ ${fornecedor.cnpj} · ${fornecedor._count.pedidos} pedido(s) de compra`}
         actions={
-          <>
+          edita ? (
+            <>
             {!fornecedor.ativo && <Badge>inativo</Badge>}
             <ActionButton action={alternarAtivoFornecedor.bind(null, id)}>{fornecedor.ativo ? "Inativar" : "Ativar"}</ActionButton>
             {vinculos === 0 && (
@@ -33,10 +37,13 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
               </ActionButton>
             )}
           </>
+          ) : undefined
         }
       />
       <Card>
-        <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} />
+        <SomenteLeitura edita={edita} dono="Compras">
+          <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} />
+        </SomenteLeitura>
       </Card>
       {podeIrParaFavorecidos(user.perfil) && (
         <p className="mt-3 text-[13px]">

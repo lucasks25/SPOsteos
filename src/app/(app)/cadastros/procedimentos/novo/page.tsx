@@ -1,9 +1,10 @@
 import { requireUser } from "@/lib/auth";
+import { PERFIS_COMERCIAL } from "../../_lib/acoes";
 import { Card, PageHeader } from "@/components/ui";
 import { ProcedimentoForm } from "../procedimento-form";
 
 export default async function NovoProcedimentoPage() {
-  await requireUser();
+  await requireUser(PERFIS_COMERCIAL);
   return (
     <>
       <PageHeader title="Novo procedimento" subtitle="Descreva o procedimento; depois de criar, inclua os materiais padrão." />

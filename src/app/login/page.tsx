@@ -1,5 +1,6 @@
 import { connection } from "next/server";
 import { Form, Field } from "@/components/form";
+import { Marca } from "@/components/marca";
 import { Icon } from "@/components/icons";
 import { login } from "./actions";
 
@@ -15,10 +16,7 @@ export default async function LoginPage() {
   return (
     <div className="grid min-h-screen lg:grid-cols-[1.05fr_1fr]">
       <aside className="relative hidden flex-col justify-between bg-teal-900 p-12 text-white lg:flex">
-        <div className="flex items-center gap-3">
-          <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/15 text-lg font-bold ring-1 ring-white/20">O</span>
-          <span className="text-lg font-semibold">OPME</span>
-        </div>
+        <Marca variante="login" sobreEscuro />
         <div className="max-w-md">
           <h2 className="text-3xl font-semibold leading-tight tracking-tight">Gestão de órteses, próteses e materiais especiais</h2>
           <p className="mt-3 text-teal-100/80">Da cirurgia ao recebimento, com o controle que a rastreabilidade e o financeiro exigem.</p>
@@ -39,7 +37,7 @@ export default async function LoginPage() {
       <main className="flex items-center justify-center bg-white p-6 sm:p-12">
         <div className="w-full max-w-sm">
           <div className="mb-8 lg:hidden">
-            <span className="flex h-10 w-10 items-center justify-center rounded-lg bg-teal-800 text-lg font-bold text-white">O</span>
+            <Marca variante="login" />
           </div>
           <h1 className="text-2xl font-semibold tracking-tight text-slate-900">Entrar</h1>
           <p className="mb-6 mt-1 text-sm text-slate-500">Use seu e-mail e sua senha de acesso.</p>

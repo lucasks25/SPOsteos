@@ -7,6 +7,7 @@ export default function Error({ error, reset }: { error: Error; reset: () => voi
   const negado = /acesso negado/i.test(error.message);
   return (
     <div className="mx-auto mt-10 max-w-lg rounded-lg border border-slate-200 bg-white p-8 text-center">
+      <p className="mb-4 text-[13px] font-bold text-slate-500">SP OSTEOS</p>
       <span className={`mx-auto flex h-11 w-11 items-center justify-center rounded-full ${negado ? "bg-amber-50 text-amber-600" : "bg-rose-50 text-rose-600"}`}>
         <Icon name={negado ? "cadeado" : "alerta"} size={22} />
       </span>

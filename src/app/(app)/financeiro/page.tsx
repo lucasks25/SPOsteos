@@ -53,7 +53,7 @@ export default async function PainelFinanceiroPage() {
 
   return (
     <>
-      <PageHeader title="Visão geral" subtitle={`Visão geral em ${date(hoje)}. Os valores em aberto já descontam baixas parciais.`} />
+      <PageHeader title="Visão geral" subtitle={`Resumo do caixa, dos títulos e das pendências do Financeiro em ${date(hoje)}; os valores em aberto já descontam baixas parciais.`} />
 
       <KpiGrid>
         <Tile href="/financeiro/contas" label="Saldo nas contas" value={money(p.saldoTotal)} tone={p.saldoTotal < 0 ? "danger" : "default"} hint={`${p.contas.length} conta(s) ativa(s)`} />

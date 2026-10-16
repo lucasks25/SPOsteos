@@ -2,11 +2,14 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { num } from "@/lib/format";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_FORNECEDOR } from "../_lib/acoes";
+import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function FornecedoresPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
-  await requireUser();
+  const user = await requireUser();
+  const edita = podeEditarCadastro(user.perfil, PERFIS_FORNECEDOR);
   const { q, status } = await searchParams;
   const fornecedores = await db.fornecedor.findMany({
     where: {
@@ -27,7 +30,7 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
   });
   return (
     <>
-      <PageHeader title="Fornecedores" subtitle="Fornecedores e importadores de materiais" actions={<LinkButton href="/cadastros/fornecedores/novo">Novo fornecedor</LinkButton>} />
+      <PageHeader title="Fornecedores" subtitle="De quem compramos os materiais; mantido pelo setor de Compras (dados de pagamento ficam no Financeiro)." actions={edita ? <LinkButton href="/cadastros/fornecedores/novo">Novo fornecedor</LinkButton> : undefined} />
       <KpiGrid cols={3}>
         <Stat label="Listados" value={fornecedores.length} />
         <Stat label="Sem AFE" value={fornecedores.filter((f) => !f.afe).length} hint="autorização pendente" />
@@ -36,7 +39,7 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table titulo="Fornecedores" icone="caminhao" contagem={fornecedores.length} head={["Razão social", "CNPJ", "Contato", "Cidade/UF", "AFE", ""]} empty={fornecedores.length === 0} emptyText={q ? "Nenhum fornecedor encontrado para essa busca." : "Nenhum fornecedor encontrado."} emptyAction={<LinkButton href="/cadastros/fornecedores/novo" variant="secondary" icon="mais">Cadastrar fornecedor</LinkButton>}>
+      <Table titulo="Fornecedores" icone="caminhao" contagem={fornecedores.length} head={["Razão social", "CNPJ", "Contato", "Cidade/UF", "AFE", ""]} empty={fornecedores.length === 0} emptyText={q ? "Nenhum fornecedor encontrado para essa busca." : "Nenhum fornecedor encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/fornecedores/novo" variant="secondary" icon="mais">Cadastrar fornecedor</LinkButton> : undefined}>
         {fornecedores.map((f) => (
           <tr key={f.id}>
             <Td>

@@ -1,11 +1,14 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_SUPRIMENTOS } from "../_lib/acoes";
+import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 
 export default async function FabricantesPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
-  await requireUser();
+  const user = await requireUser();
+  const edita = podeEditarCadastro(user.perfil, PERFIS_SUPRIMENTOS);
   const { q } = await searchParams;
   const fabricantes = await db.fabricante.findMany({
     where: q
@@ -17,14 +20,14 @@ export default async function FabricantesPage({ searchParams }: { searchParams: 
   });
   return (
     <>
-      <PageHeader title="Fabricantes" subtitle="Fabricantes dos materiais OPME" actions={<LinkButton href="/cadastros/fabricantes/novo">Novo fabricante</LinkButton>} />
+      <PageHeader title="Fabricantes" subtitle="Quem fabrica os materiais que vendemos; Compras, Estoque e Qualidade mantêm a lista." actions={edita ? <LinkButton href="/cadastros/fabricantes/novo">Novo fabricante</LinkButton> : undefined} />
       <KpiGrid cols={3}>
         <Stat label="Listados" value={fabricantes.length} />
         <Stat label="Produtos" value={num(fabricantes.reduce((s, f) => s + f._count.produtos, 0))} hint="dos fabricantes listados" />
         <Stat label="Sem CNPJ" value={fabricantes.filter((f) => !f.cnpj).length} hint="cadastro incompleto" />
       </KpiGrid>
       <SearchBar placeholder="Nome, CNPJ ou país" defaultValue={q} />
-      <Table titulo="Fabricantes" icone="predio" contagem={fabricantes.length} head={["Nome", "CNPJ", "País", "Produtos", ""]} empty={fabricantes.length === 0} emptyText={q ? "Nenhum fabricante encontrado para essa busca." : "Nenhum fabricante encontrado."} emptyAction={<LinkButton href="/cadastros/fabricantes/novo" variant="secondary" icon="mais">Cadastrar fabricante</LinkButton>}>
+      <Table titulo="Fabricantes" icone="predio" contagem={fabricantes.length} head={["Nome", "CNPJ", "País", "Produtos", ""]} empty={fabricantes.length === 0} emptyText={q ? "Nenhum fabricante encontrado para essa busca." : "Nenhum fabricante encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/fabricantes/novo" variant="secondary" icon="mais">Cadastrar fabricante</LinkButton> : undefined}>
         {fabricantes.map((f) => (
           <tr key={f.id}>
             <Td className="font-medium">{f.nome}</Td>

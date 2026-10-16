@@ -5,7 +5,9 @@ import { errorMessage } from "@/lib/forms";
 /** Perfis que podem alterar cada grupo de cadastros (ADMIN sempre pode). */
 export const PERFIS_SUPRIMENTOS: Perfil[] = ["COMPRAS", "ESTOQUE", "QUALIDADE"];
 export const PERFIS_COMERCIAL: Perfil[] = ["COMERCIAL"];
-export const PERFIS_HOSPITAL: Perfil[] = ["COMERCIAL", "FINANCEIRO"];
+export const PERFIS_HOSPITAL: Perfil[] = ["COMERCIAL"];
+export const PERFIS_FORNECEDOR: Perfil[] = ["COMPRAS"];
+export const PERFIS_PRODUTO: Perfil[] = ["COMERCIAL", "COMPRAS", "QUALIDADE", "ESTOQUE"];
 
 /** Mensagem amigável para falhas de exclusão por registros relacionados (FK). */
 export function deleteErrorMessage(e: unknown) {

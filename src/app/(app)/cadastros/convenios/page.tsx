@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_COMERCIAL } from "../_lib/acoes";
+import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function ConveniosPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
-  await requireUser();
+  const user = await requireUser();
+  const edita = podeEditarCadastro(user.perfil, PERFIS_COMERCIAL);
   const { q, status } = await searchParams;
   const convenios = await db.convenio.findMany({
     where: {
@@ -21,7 +24,7 @@ export default async function ConveniosPage({ searchParams }: { searchParams: Pr
   });
   return (
     <>
-      <PageHeader title="Convênios" subtitle="Operadoras de planos de saúde" actions={<LinkButton href="/cadastros/convenios/novo">Novo convênio</LinkButton>} />
+      <PageHeader title="Convênios" subtitle="Operadoras de planos de saúde usadas em cirurgias e orçamentos; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/convenios/novo">Novo convênio</LinkButton> : undefined} />
       <KpiGrid cols={3}>
         <Stat label="Listados" value={convenios.length} />
         <Stat label="Cirurgias" value={num(convenios.reduce((s, c) => s + c._count.cirurgias, 0))} hint="dos convênios listados" />
@@ -30,7 +33,7 @@ export default async function ConveniosPage({ searchParams }: { searchParams: Pr
       <SearchBar placeholder="Nome, registro ANS ou CNPJ" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table titulo="Convênios" icone="escudo" contagem={convenios.length} head={["Nome", "Registro ANS", "CNPJ", "Cirurgias", ""]} empty={convenios.length === 0} emptyText={q ? "Nenhum convênio encontrado para essa busca." : "Nenhum convênio encontrado."} emptyAction={<LinkButton href="/cadastros/convenios/novo" variant="secondary" icon="mais">Cadastrar convênio</LinkButton>}>
+      <Table titulo="Convênios" icone="escudo" contagem={convenios.length} head={["Nome", "Registro ANS", "CNPJ", "Cirurgias", ""]} empty={convenios.length === 0} emptyText={q ? "Nenhum convênio encontrado para essa busca." : "Nenhum convênio encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/convenios/novo" variant="secondary" icon="mais">Cadastrar convênio</LinkButton> : undefined}>
         {convenios.map((c) => (
           <tr key={c.id}>
             <Td className="font-medium">

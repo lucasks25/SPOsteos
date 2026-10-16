@@ -43,7 +43,7 @@ export default async function ClassificarPage() {
                   <input type="checkbox" name="item" value={l.chave} className="h-4 w-4" aria-label={`Selecionar ${l.descricao}`} />
                 </Td>
                 <Td>{date(l.data)}</Td>
-                <Td>{l.tipo}</Td>
+                <Td>{l.tipo === "receber" ? "A receber" : l.tipo === "pagar" ? "A pagar" : "Lançamento avulso"}</Td>
                 <Td className="max-w-xs truncate">{l.descricao}</Td>
                 <Td className="max-w-[14rem] truncate">{l.parceiro}</Td>
                 <Td className={`text-right tnum ${l.valor < 0 ? "text-rose-700" : ""}`}>{money(l.valor)}</Td>

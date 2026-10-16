@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CabecalhoImpresso } from "@/components/marca";
 import { notFound } from "next/navigation";
 import { PageHeader } from "@/components/ui";
 import { PrintButton } from "@/components/print-button";
@@ -44,6 +45,7 @@ export default async function BoletoPage({ params }: { params: Promise<{ id: str
         {voltar}
       </div>
       <div className="mx-auto mt-4 max-w-3xl border border-slate-400 bg-white p-4 text-sm text-slate-900">
+        <CabecalhoImpresso />
         <div className="flex items-end justify-between border-b border-slate-400 pb-2">
           <div className="text-lg font-bold">Itaú | 341-7</div>
           <div className="font-mono text-sm">{linhaDigitavel(barras)}</div>

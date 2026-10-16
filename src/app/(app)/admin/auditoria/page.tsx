@@ -5,6 +5,8 @@ import { FilterBar, PageHeader, Table, Td, btn } from "@/components/ui";
 import { dateTime } from "@/lib/format";
 
 const POR_PAGINA = 50;
+/** "ContaPagar" -> "Conta Pagar": nome do cadastro legível no filtro e na coluna. */
+const rotuloEntidade = (e: string) => e.replace(/([a-z])([A-Z])/g, "$1 $2");
 
 export default async function AuditoriaPage({
   searchParams,
@@ -35,14 +37,14 @@ export default async function AuditoriaPage({
   const sel = "h-8 rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
   return (
     <>
-      <PageHeader title="Log de auditoria" subtitle={`Histórico das ações feitas no sistema: ${total} registro(s).`} />
+      <PageHeader title="Log de auditoria" subtitle={`Quem fez o quê e quando no sistema, para conferência do administrador: ${total} registro(s).`} />
       <FilterBar>
         <label className="block">
           <span className="mb-1 block text-xs text-slate-700">Entidade</span>
           <select name="entidade" defaultValue={sp.entidade ?? ""} className={sel}>
           <option value="">Todas as entidades</option>
           {entidades.map((e) => (
-            <option key={e.entidade} value={e.entidade}>{e.entidade}</option>
+            <option key={e.entidade} value={e.entidade}>{rotuloEntidade(e.entidade)}</option>
           ))}
         </select>
         </label>
@@ -64,7 +66,7 @@ export default async function AuditoriaPage({
             <Td className="tnum">{dateTime(l.criadoEm)}</Td>
             <Td>{l.usuario?.nome ?? "sistema"}</Td>
             <Td className="font-medium">{l.acao}</Td>
-            <Td>{l.entidade}</Td>
+            <Td>{rotuloEntidade(l.entidade)}</Td>
             <Td className="max-w-40 truncate font-mono text-xs">{l.entidadeId ?? "—"}</Td>
             <Td className="max-w-md truncate whitespace-normal text-xs text-slate-600">{l.detalhes ?? ""}</Td>
           </tr>

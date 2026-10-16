@@ -1,12 +1,15 @@
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { PERFIS_COMERCIAL } from "../_lib/acoes";
+import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
 
 export default async function MedicosPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
-  await requireUser();
+  const user = await requireUser();
+  const edita = podeEditarCadastro(user.perfil, PERFIS_COMERCIAL);
   const { q, status } = await searchParams;
   const medicos = await db.medico.findMany({
     where: {
@@ -27,7 +30,7 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
   });
   return (
     <>
-      <PageHeader title="Médicos" subtitle="Cirurgiões e solicitantes de materiais" actions={<LinkButton href="/cadastros/medicos/novo">Novo médico</LinkButton>} />
+      <PageHeader title="Médicos" subtitle="Cirurgiões e solicitantes que aparecem nas cirurgias; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/medicos/novo">Novo médico</LinkButton> : undefined} />
       <KpiGrid cols={3}>
         <Stat label="Listados" value={medicos.length} />
         <Stat label="Cirurgias" value={num(medicos.reduce((s, m) => s + m._count.cirurgias, 0))} hint="dos médicos listados" />
@@ -36,7 +39,7 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
       <SearchBar placeholder="Nome, CRM ou especialidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table titulo="Médicos" icone="medico" contagem={medicos.length} head={["Médico", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={<LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton>}>
+      <Table titulo="Médicos" icone="medico" contagem={medicos.length} head={["Médico", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton> : undefined}>
         {medicos.map((m) => (
           <tr key={m.id}>
             <Td>
