@@ -1,0 +1,152 @@
+/*
+ * Regras de layout que as classes utilitárias não expressam bem (docs/DESIGN-SYSTEM.md, seções 6 e 7):
+ * área de conteúdo, faixa de indicadores (KpiGrid), tabela com cabeçalho fixo e impressão.
+ */
+
+@layer components {
+  /* Área de conteúdo: recuo responsivo e largura máxima confortável em telas muito largas */
+  .conteudo {
+    --pad-x: 1rem;
+    padding: 1.25rem var(--pad-x) 2.5rem;
+    margin-inline: auto;
+    max-width: 1680px;
+  }
+  @media (min-width: 768px) {
+    .conteudo {
+      --pad-x: 1.75rem;
+      padding-top: 1.5rem;
+    }
+  }
+  @media (min-width: 1440px) {
+    .conteudo {
+      --pad-x: 2.25rem;
+    }
+  }
+
+  /*
+   * Indicadores (KpiGrid): grade de cartões brancos. O Stat traz o próprio cartão; qualquer outro filho
+   * (Indicador do painel, link sem Stat) recebe o mesmo cartão aqui. Células vazias de preenchimento somem.
+   */
+  .kpi-strip {
+    display: grid;
+    gap: 0.75rem;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: 1.25rem;
+  }
+  @media (min-width: 1024px) {
+    .kpi-strip[data-cols="3"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .kpi-strip[data-cols="4"] {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+    .kpi-strip[data-cols="5"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1536px) {
+    .kpi-strip[data-cols="5"] {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
+  }
+  .kpi-strip > :empty {
+    display: none;
+  }
+  .kpi-strip > :not(.stat):not(:empty):not(:has(> .stat)) {
+    border: 1px solid var(--c-slate-200);
+    border-radius: var(--radius-xl);
+    background: var(--surface);
+    box-shadow: var(--shadow-card);
+    padding: 0.875rem 1rem;
+  }
+  .kpi-strip > a {
+    display: block;
+    border-radius: var(--radius-xl);
+    transition:
+      box-shadow 150ms,
+      border-color 150ms,
+      transform 150ms;
+  }
+  .kpi-strip > a:not(:has(> .stat)):hover,
+  .kpi-strip > a:hover > .stat {
+    border-color: var(--c-teal-300);
+    box-shadow: var(--shadow-raised);
+  }
+
+  /* Tabela: no desktop a área rola por dentro para o cabeçalho ficar visível; no celular rola só na horizontal */
+  .tabela-rolagem {
+    overflow: auto;
+  }
+  @media (min-width: 1024px) {
+    .tabela-rolagem {
+      max-height: calc(100dvh - 10rem);
+    }
+  }
+  /* caixas de seleção soltas na barra de filtros alinham com os campos de 40 px */
+  .filter-bar form > label:has(> input[type="checkbox"]) {
+    min-height: 2.5rem;
+  }
+  .tabela-rolagem thead th {
+    position: sticky;
+    top: 0;
+    z-index: 1;
+  }
+}
+
+/* Barra lateral: 16rem; recolhida (só no desktop) vira trilho de ícones de 4.5rem, sem rótulos */
+.barra-lateral {
+  width: 16rem;
+  transition:
+    width 180ms ease,
+    transform 200ms ease;
+}
+@media (min-width: 1024px) {
+  .barra-lateral[data-recolhida="true"] {
+    width: 4.5rem;
+  }
+  .barra-lateral[data-recolhida="true"] :is(.menu-rotulo, .marca-nome) {
+    display: none;
+  }
+  .barra-lateral[data-recolhida="true"] nav > ul > li > :is(a, button) {
+    justify-content: center;
+    padding-inline: 0;
+  }
+}
+
+@media print {
+  .conteudo {
+    max-width: none;
+    padding: 0;
+  }
+  .tabela-rolagem {
+    max-height: none !important;
+    overflow: visible !important;
+  }
+  .tabela-rolagem thead th {
+    position: static;
+  }
+  .kpi-strip > * {
+    box-shadow: none !important;
+  }
+}
+
+/* Botão de tema: lua no claro, sol no escuro */
+.tema-icone-sol {
+  display: none;
+}
+@media screen {
+  :root[data-theme="dark"] .tema-icone-sol {
+    display: block;
+  }
+  :root[data-theme="dark"] .tema-icone-lua {
+    display: none;
+  }
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .tema-icone-sol {
+    display: block;
+  }
+  :root:not([data-theme="light"]) .tema-icone-lua {
+    display: none;
+  }
+}

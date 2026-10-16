@@ -1,10 +1,12 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
+import { Inter, Manrope } from "next/font/google";
 import { cookies } from "next/headers";
 import "./globals.css";
 
-// fonte livre (OFL) auto-hospedada pelo next/font; o globals.css cai na fonte do sistema se ela não carregar
+// fontes livres (OFL) auto-hospedadas pelo next/font: Inter no corpo e nas tabelas, Manrope nos títulos e números de destaque;
+// o CSS cai na fonte do sistema se elas não carregarem
 const inter = Inter({ subsets: ["latin"], variable: "--font-inter", display: "swap" });
+const manrope = Manrope({ subsets: ["latin"], variable: "--font-manrope", display: "swap" });
 
 export const metadata: Metadata = {
   title: "SP OSTEOS · Gestão",
@@ -15,7 +17,7 @@ export default async function RootLayout({ children }: Readonly<{ children: Reac
   // tema escolhido pelo usuário (cookie); sem escolha, segue o sistema operacional pelo CSS
   const tema = (await cookies()).get("opme_tema")?.value;
   return (
-    <html lang="pt-BR" className={inter.variable} data-theme={tema === "escuro" ? "dark" : tema === "claro" ? "light" : undefined}>
+    <html lang="pt-BR" className={`${inter.variable} ${manrope.variable}`} data-theme={tema === "escuro" ? "dark" : tema === "claro" ? "light" : undefined}>
       <body className="antialiased">{children}</body>
     </html>
   );

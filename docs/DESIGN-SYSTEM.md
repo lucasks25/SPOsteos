@@ -1,202 +1,225 @@
-# Design system — tema "Horizonte" (estilo SAP Fiori Horizon)
+# Design system: tema "Bling médico"
 
-O visual do sistema segue o **estilo** do SAP Fiori, tema Horizon: claro ("Morning Horizon") e escuro ("Evening Horizon"). Ele foi escolhido por ser o design system de ERP com mais documentação pública, e porque os floorplans dele (List Report, Object Page, Overview Page) correspondem às nossas telas.
+O visual do sistema segue a **linguagem** dos ERPs brasileiros de mercado, com o Bling como referência: menu lateral escuro com ícones e rótulos, conteúdo claro em cartões brancos de raio grande, botões em pílula, abas com sublinhado verde, filtros em cartão com chips e indicadores com ícone em quadradinho verde-claro. A paleta foi levada para a área médica: um **verde-petróleo** sóbrio como cor de marca e um **acento menta** suave (em vez do verde-lima da marca Bling, forte demais num contexto cirúrgico).
 
-**Limite legal.** Reproduzimos o estilo: cores, tipografia, medidas, raios, sombras, estrutura dos floorplans e padrões de interação. **Não** usamos a marca SAP, logos, a fonte proprietária "72" nem CSS ou código do SAPUI5/UI5 Web Components. A fonte é a **Inter** (licença OFL), servida pelo `next/font`, com a fonte do sistema como reserva. Os valores numéricos vêm dos parâmetros públicos do tema no repositório `SAP/theming-base-content`, que é Apache 2.0. Lemos esses valores e os reescrevemos nos nossos próprios tokens; nenhum arquivo deles foi copiado.
+**Limite legal.** Reproduzimos padrões de interface (estrutura, medidas, comportamento), que não são protegidos. **Não** usamos marca, logotipo, ilustrações, fontes proprietárias, textos nem código do Bling. As cores são nossas (derivadas, não copiadas) e as fontes são livres (OFL).
+
+Substitui o tema "Horizonte" (estilo SAP Fiori), que vigorou até 16/10/2026.
 
 ## 1. Fontes consultadas
 
 | Fonte | Status | O que deu |
 |---|---|---|
-| `github.com/SAP/theming-base-content` → `content/Base/baseLib/sap_horizon/css_variables.css` e `sap_horizon_dark/css_variables.css` (Theming Engine 17.0.47) | **lido** | todos os hex, raios, sombras, alturas, tamanhos de fonte e recuos citados abaixo |
-| experience.sap.com/fiori-design-web (List Report, Object Page, Overview Page, Table Overview, Button, Message Toast, Message Strip, Shell Bar, Dynamic Page, Typography) | **lido via web.archive.org** (o site novo em sap.com/design-system devolve 403 para robôs) | estrutura dos floorplans, regras de botão, toast, faixa de mensagem e shell bar |
-| páginas "colors" e "typography" arquivadas | lidas, mas descrevem Belize/Quartz, não Horizon | só a escala geral de títulos; as cores Horizon vêm dos tokens |
-| "responsive-spacing-system", "object-status", "message-handling" | **não abriram** (404 no arquivo, 403 no site; "object-status" foi descontinuada e redireciona para "Object Display Components") | recuos tirados do token `sapContent_Padding_*`; semântica de status tirada dos tokens `sap*Color`/`sap*Background` |
+| Capturas da tela de produto do app Bling (cadastro de produto, assistente de 6 passos) | **lidas** (imagens fornecidas pelo dono) | fundo branco, campos grandes arredondados com rótulo pequeno cinza acima, abas com sublinhado verde, botão primário verde preenchido e secundário com contorno verde, ícones de informação azuis |
+| Página "Controle de vendas" do Bling, identidade 2026 (cabeçalho e blocos 2 e 3) | **lidas** | verde muito escuro (~`#0f2b26`) como faixa de marca, verde-lima como destaque, cartões brancos com raio grande e sombra suave, botões pílula, listas de ações com ícone em quadradinho verde-claro |
+| Descrição textual do app Bling atual (menu lateral, painel de filtros com botão "Filtrar" e chips, menu "Ações"/"Mais ações", paginação, cards de painel) | **lida** (texto do briefing) | estrutura da casca, dos filtros e do cabeçalho de página |
+| WCAG 2.2 (1.4.3 contraste de texto 4,5:1; 1.4.11 contraste de componente 3:1; 2.5.8 área de toque) | conhecida; contraste **verificado por script** (seção 3.3) | limites mínimos da paleta |
+| `node_modules/next/dist/docs/01-app/03-api-reference/02-components/font.md` e `.../04-functions/use-search-params.md` (Next 16.4 instalado) | **lidos** | `next/font/google` com `variable` para duas fontes; `useSearchParams` dentro de `<Suspense>` |
+
+**Não verificado:** medidas exatas do app Bling (alturas, raios, hex). Os valores abaixo são nossos, escolhidos para reproduzir a aparência das capturas, não medidos no produto.
 
 ## 2. Como o tema é aplicado
 
-As páginas usam **apenas** as escalas do Tailwind `teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet` e `white`. Em `src/app/globals.css` cada escala é remapeada para uma variável `--c-<escala>-<passo>`, e cada modo (claro, escuro, impressão) tem o seu bloco de valores. Para trocar o tema basta trocar os valores. Nenhuma `page.tsx` muda.
+Os estilos ficam em `src/app/estilos/`, importados por `src/app/globals.css`:
 
-| Escala/variável nossa | Papel Fiori |
+| Arquivo | Conteúdo |
 |---|---|
-| `teal-*` | azul de marca, links e texto de botão (`teal-700` = link) |
-| `slate-*` | neutros: fundo, bordas, rótulos, texto |
-| `emerald` / `rose` / `amber` / `sky` | Positive / Negative / Critical / Informative |
-| `violet` | cor de destaque 9 (Accent 9), para categorias |
+| `tokens.css` | `@theme` do Tailwind (fontes, raios, tamanhos, sombras) e as variáveis `--c-*` dos modos claro e escuro |
+| `base.css` | corpo, títulos em Manrope, foco, seleção, rolagem, seta do select, ícone de data, impressão |
+| `componentes.css` | área de conteúdo, grade de indicadores (`.kpi-strip`), tabela com cabeçalho fixo (`.tabela-rolagem`), menu lateral recolhido, botão de tema |
+
+As páginas usam **apenas** as escalas do Tailwind `teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet` e `white`. Cada escala aponta para uma variável `--c-<escala>-<passo>`; trocar o tema é trocar valores, sem tocar nas páginas. Os nomes das escalas foram mantidos do tema anterior de propósito, para nenhuma `page.tsx` precisar mudar.
+
+| Escala/variável | Papel |
+|---|---|
+| `teal-*` | verde-petróleo da marca; `teal-700` = link e texto de botão secundário |
+| `slate-*` | neutros com leve tom verde: fundo, bordas, rótulos, texto |
+| `emerald` / `rose` / `amber` / `sky` | sucesso / erro / alerta / informação |
+| `violet` | categoria (ex.: cirurgia realizada) |
 | `white` | superfície (cartão, campo); no escuro vira a superfície escura |
-| `bg-primary`, `text-on-primary`, `primary-hover/active` | botão Emphasized (só nos componentes) |
-| `border-b-field` | linha inferior do campo (`sapField_BorderColor`) |
-| `--focus` (`outline-focus`, `ring-focus`) | `sapContent_FocusColor` |
-| `bg-shell`, `border-shell-border` | barra superior (`sapShellColor`, `sapShell_BorderColor`) |
-| `--shadow-card / -raised / -overlay / -header` | `sapContent_Shadow0 / 1 / 2` e `sapContent_HeaderShadow` |
+| `bg-primary`, `text-on-primary`, `primary-hover/active` | botão principal |
+| `bg-accent-soft`, `text-on-accent-soft`, `accent` | quadradinho de ícone dos indicadores e cartões; acento menta |
+| `bg-sidebar`, `text-sidebar-fg`, `text-sidebar-fg-ativo`, `bg-sidebar-destaque` | menu lateral (sempre escuro) e faixa do login |
+| `border-field` | borda dos campos (3:1 sobre a superfície) |
+| `--focus` | anel de foco |
+| `--shadow-card / -raised / -overlay` | `shadow-sm` (cartão), `shadow-lg` (cartão em hover), `shadow-xl` (menus, diálogos, toast) |
+
+**Escuro.** O tema escuro é escolhido pelo usuário (cookie `opme_tema`, atributo `data-theme="dark"`) ou, sem escolha, segue o sistema operacional. Os dois blocos escuros em `tokens.css` são idênticos (o CSS não permite unir o seletor de atributo e a media query); ao mudar uma cor, mude nos dois. Os blocos escuros ficam dentro de `@media screen`, então **a impressão usa sempre o claro**, sem bloco extra.
+
+**Cuidado com `white` e `black` no escuro.** `text-white` vira a cor da superfície escura. Dentro do menu lateral (sempre escuro) use `text-sidebar-fg-ativo`; para véus claros sobre fundo escuro use valores fixos, como `bg-[rgb(255_255_255/0.08)]`.
 
 ## 3. Paleta
 
-Legenda: **T** = valor exato de um token Horizon (nome entre parênteses). **D** = passo derivado, interpolado entre dois tokens vizinhos para completar a escala de 11 passos do Tailwind.
+### 3.1 Claro
 
-### 3.1 Claro (Morning Horizon)
+| Passo | teal (marca) | slate (neutros) | emerald | rose | amber | sky | violet |
+|---|---|---|---|---|---|---|---|
+| 50 | `#effaf7` | `#f6f8f8` | `#ecfaf1` | `#fef3f2` | `#fffaeb` | `#eff7ff` | `#f5f3ff` |
+| 100 | `#d6f3ec` | `#eef2f1` | `#d3f3df` | `#fee4e2` | `#fef0c7` | `#dbedff` | `#ece8fe` |
+| 200 | `#aee5d8` | `#e2e8e6` | `#a7e6c0` | `#fecdca` | `#fedf89` | `#bcdcfe` | `#dbd4fd` |
+| 300 | `#78cfbd` | `#cdd6d3` | `#6fd29b` | `#fca29b` | `#fec84b` | `#8cc4fc` | `#bfb2fb` |
+| 400 | `#3fb39f` | `#879794` | `#36b574` | `#f2675d` | `#f5a524` | `#56a5f7` | `#9d87f6` |
+| 500 | `#169685` | `#5c6d6a` | `#16975a` | `#e0392d` | `#e08a0b` | `#2f86ee` | `#7c5cee` |
+| 600 | `#0d7d70` | `#4c5c59` | `#0e7d49` | `#c42b1f` | `#b25407` | `#1d6bd6` | `#6740d9` |
+| 700 | `#0f6e63` | `#374644` | `#0b6a3e` | `#a3231a` | `#93400c` | `#1a57b4` | `#5631b8` |
+| 800 | `#115a52` | `#24312f` | `#0b5433` | `#861f18` | `#7a340f` | `#1b4892` | `#472a96` |
+| 900 | `#124a44` | `#13201e` | `#0a442b` | `#6f1e18` | `#652c10` | `#1b3d75` | `#3b2579` |
+| 950 | `#062e2a` | `#0a1312` | `#052a1a` | `#3f0c08` | `#3b1604` | `#12264a` | `#241548` |
 
-| Passo | teal (marca) | slate (neutros) | emerald | rose | amber | sky |
-|---|---|---|---|---|---|---|
-| 50 | `#ebf8ff` T (List_SelectionBackgroundColor) | `#f5f6f7` T (BackgroundColor) | `#f5fae5` T (SuccessBackground) | `#ffeaf4` T (ErrorBackground) | `#fff8d6` T (WarningBackground) | `#e1f4ff` T (InformationBackground) |
-| 100 | `#d1efff` T (AccentBackgroundColor6) | `#eaecee` T (HoverColor) | `#ebf5cb` T (AccentBackgroundColor8) | `#ffd6e9` T (Button_Reject_Background) | `#fff3b8` T (AccentBackgroundColor1) | `#d1efff` T |
-| 200 | `#a6e0ff` D | `#e5e5e5` T (List_BorderColor) | `#c8e6a0` D | `#ffc2de` T (Button_Reject_BorderColor) | `#ffdf72` D | `#a6e0ff` D |
-| 300 | `#70c4ff` D | `#bcc3ca` T (Button_BorderColor) | `#8fcf6a` D | `#ff8cb2` D | `#f7bf00` D | `#70c4ff` D |
-| 400 | `#4db1ff` D | `#758ca4` T (Content_NonInteractiveIconColor) | `#4fae5e` D | `#f53232` T (NegativeElementColor) | `#dd6100` T (WarningBorderColor) | `#4db1ff` D |
-| 500 | `#1b85f7` D | `#5b728a` D (texto apagado, AA) | `#30914c` T (PositiveElementColor) | `#e90b0b` T (ErrorBorderColor / Field_InvalidColor) | `#e76500` T (CriticalElementColor) | `#0070f2` T (InformativeColor) |
-| 600 | `#0070f2` T (BrandColor) | `#556b82` T (Content_LabelColor) | `#2a7f43` D | `#aa0808` T (NegativeColor / NegativeTextColor) | `#b44f00` T (CriticalTextColor) | `#0064d9` T (InformativeTextColor) |
-| 700 | `#0064d9` T (HighlightColor / LinkColor / Button_TextColor) | `#3f5568` D | `#256f3a` T (PositiveColor) | `#8f0707` D | `#9a4400` D | `#0057d2` T (AccentColor6) |
-| 800 | `#0050b8` D | `#223548` T (Content_ShadowColor) | `#1e5a2f` D | `#6e0505` D | `#7a3600` D | `#0040b0` D |
-| 900 | `#0032a5` T (Content_FocusColor) | `#131e29` T (TextColor) | `#174526` D | `#520404` D | `#5c2900` D | `#0032a5` T |
-| 950 | `#00144a` D | `#0b1219` D | `#11331a` D | `#350000` D | `#382700` D | `#00144a` D |
+Outras variáveis do claro: fundo `--bg #f6f8f8`, superfície `#ffffff`, texto `#13201e`, primário `#0f6e63` (hover `#115a52`, pressionado `#124a44`, texto branco), foco `#0d7d70`, acento `#a6e3a1`, acento suave `#e3f6dc` com ícone `#1d5a2c`, menu lateral `#0d2724` (texto `#c9dcd8`, ativo `#ffffff`, destaque `#9be3a4`), borda de campo `#879794`.
 
-`violet` (claro): 100 `#ddccf0` T (AccentBackgroundColor9), 600 `#6c32a9` T (AccentColor9); os outros passos são D.
+Os passos 600 de `amber` e `rose` foram escurecidos em relação a uma escala linear porque as páginas usam esses passos em **texto** (`text-amber-600`, `text-rose-600`); assim passam de 4,5:1 sobre branco.
 
-Variáveis do claro: `--bg #f5f6f7` (BackgroundColor), `--surface/white #fff` (BaseColor), `--fg #131e29` (TextColor), `--primary #0070f2` (Button_Emphasized_Background), `--primary-hover #0064d9` (Button_Emphasized_Hover_Background), `--focus #0032a5`, `--shell #fff` (ShellColor), `--shell-border #d9d9d9` (Shell_BorderColor), `--field-border #556b81` (Field_BorderColor).
+### 3.2 Escuro (dessaturado, sem inverter)
 
-### 3.2 Escuro (Evening Horizon)
+O escuro não é o claro invertido: os fundos são verde-petróleo muito escuros e pouco saturados, e os passos de texto (600 e 700) ficam claros e suaves. Os fundos de status (passo 50) são tons escuros da própria cor.
 
-| Passo | teal | slate | emerald | rose | amber | sky |
-|---|---|---|---|---|---|---|
-| 50 | `#0f2236` D | `#222b35` T (HoverColor) | `#11331a` T (SuccessBackground) | `#350000` T (ErrorBackground) | `#382700` T (WarningBackground) | `#00144a` T (InformationBackground) |
-| 100 | `#002643` T (Button_Selected_Background) | `#28323d` D | `#17421f` D | `#490000` T (Button_Reject_Background) | `#4a3300` D | `#002643` T |
-| 200 | `#003b6b` D | `#2e3742` T (List_BorderColor) | `#236c39` T (AccentBackgroundColor8) | `#620000` T (Button_Reject_BorderColor) | `#6b4a00` D | `#003b6b` D |
-| 300 | `#0054cc` T (AccentBackgroundColor6) | `#3a4a5a` T (Button_BorderColor) | `#3f7f1f` D | `#890506` T (AccentBackgroundColor2) | `#8f6400` D | `#0054cc` T |
-| 400 | `#0070f2` T (BrandColor) | `#647891` T (ScrollBar_FaceColor) | `#6dad1f` T (PositiveElementColor) | `#e04848` D | `#f7bf00` T (CriticalElementColor) | `#008fff` T (LinkColor) |
-| 500 | `#008fff` T (LinkColor) | `#8396a8` T (Content_LabelColor) | `#97dd40` T (PositiveColor) | `#fa6161` T (NegativeColor) | `#ffdf72` T (CriticalColor) | `#4db1ff` T (InformativeColor) |
-| 600–700 | `#4db1ff` T (HighlightColor / Button_TextColor) | 600 `#a9b4be` T (NeutralColor); 700 `#c5cdd4` D | `#97dd40` T | 600 `#fa6161` T; 700 `#ff8a8a` D | `#ffdf72` T (CriticalTextColor) | `#4db1ff` T |
-| 800 | `#9ad3ff` T (Content_FocusColor) | `#e1e6ea` D | `#bde986` T (AccentColor8) | `#ffb3b3` D | `#ffe9a3` D | `#9ad3ff` T |
-| 900 | `#c3e5ff` D | `#f5f6f7` T (TextColor) | `#d6f2b4` D | `#ffd1d1` D | `#fff2c7` D | `#c3e5ff` D |
-| 950 | `#e1f4ff` D | `#ffffff` | `#ebf9d9` D | `#ffe8e8` D | `#fff8e5` D | `#e1f4ff` D |
+| Passo | teal | slate | emerald | rose | amber | sky | violet |
+|---|---|---|---|---|---|---|---|
+| 50 | `#10302b` | `#1a2423` | `#0f2e20` | `#3a1513` | `#33240c` | `#132a42` | `#251d44` |
+| 100 | `#143a34` | `#1f2b29` | `#133a28` | `#491a17` | `#3f2c0e` | `#173350` | `#2d2353` |
+| 200 | `#1b4d45` | `#2a3735` | `#1a5038` | `#64231f` | `#5a3e12` | `#1e4469` | `#3b2f6d` |
+| 300 | `#22675c` | `#3a4846` | `#23704d` | `#88302a` | `#7d5616` | `#28598a` | `#4f3f93` |
+| 400 | `#2f8a7b` | `#6b7d7a` | `#2f9464` | `#c4483f` | `#b07a1e` | `#3b7cc0` | `#7360c4` |
+| 500 | `#47a897` | `#91a19e` | `#4cb57f` | `#e8695f` | `#d89a35` | `#5c9ce0` | `#9583e0` |
+| 600 | `#6cc3b2` | `#a9b7b4` | `#6dcc98` | `#f08a81` | `#ebb75e` | `#80b5ec` | `#ad9fea` |
+| 700 | `#7fd0bf` | `#c4cfcd` | `#86d8a9` | `#f4a39c` | `#f1c97f` | `#9cc6f1` | `#c0b5f0` |
+| 800 | `#a9e3d6` | `#dde5e3` | `#ace6c4` | `#f8c4bf` | `#f6dcab` | `#c0dbf6` | `#d7cff6` |
+| 900 | `#cfefe7` | `#eef3f2` | `#d0f2de` | `#fbdedb` | `#faecd0` | `#dcebfa` | `#e9e5fa` |
+| 950 | `#e9f8f4` | `#ffffff` | `#ebfaf1` | `#fdf0ee` | `#fdf6e8` | `#eef5fd` | `#f5f3fd` |
 
-`violet` (escuro): 100 `#4e247a` T (AccentBackgroundColor9), 500–600 `#b995e0` T (AccentColor9), 700 `#d3b6ff` T (AccentColor5).
-
-Variáveis do escuro: `--bg #12171c` (BackgroundColor), `--surface/white #1d232a` (BaseColor), `--fg #f5f6f7`, `--primary #0070f2` (o Emphasized continua azul com texto branco, como no Horizon escuro), `--focus #9ad3ff`, `--shell #1d232a`, `--shell-border #2e3742`, `--field-border #a9b4be`.
-
-**Impressão:** `@media print` força o bloco claro, com fundo branco e texto preto. O boleto e o vale continuam usando as próprias classes `print:`.
+Outras variáveis do escuro: fundo `#0e1615`, superfície `#152120`, texto `#eef3f2`, primário **menta** `#5fbcaa` com texto escuro `#0b201d` (hover `#74c9b8`, pressionado `#4fae9c`), foco `#7fd0bf`, acento suave `#1c3a2a` com ícone `#a9e6b4`, menu lateral `#0a1312`, borda de campo `#647673`.
 
 ### 3.3 Contraste (WCAG AA), verificado por script
 
-Texto pede 4,5:1; borda de campo e ícone pedem 3:1. Todos os pares passam nos dois modos. Os valores mais justos estão abaixo.
+Texto pede 4,5:1; borda de campo, ícone e indicador do menu pedem 3:1. Todos os pares passam nos dois modos.
 
 | Par | Claro | Escuro |
 |---|---|---|
-| texto `slate-900` / superfície | 16,9 | 14,6 |
-| texto apagado `slate-500` / superfície | 4,98 | 5,20 |
-| rótulo `slate-600` / superfície | 5,51 | 7,51 |
-| link `teal-700` / superfície | 5,49 | 6,82 |
-| botão Emphasized (branco / `#0070f2`) | **4,57** | 4,57 |
-| badge `amber-700` / `amber-50` | 6,14 | 11,0 |
-| badge `rose-600` / `rose-50` | 6,67 | 6,03 |
-| botão Reject `rose-600` / `rose-100` | 5,84 | 5,41 |
-| borda inferior do campo / superfície (3:1) | 5,52 | 7,51 |
-| ícone não interativo `slate-400` (3:1) | 3,47 | 3,50 |
-
-O passo `slate-500` claro foi escurecido de `#758ca4` (token de ícone, só 3,4:1) para `#5b728a`, porque as páginas usam esse passo em texto pequeno.
+| texto `slate-900` / superfície | 16,8 | 14,8 |
+| texto apagado `slate-500` / fundo | 5,12 | 6,81 |
+| rótulo `slate-600` / superfície | 7,04 | 7,97 |
+| link `teal-700` / superfície | 6,12 | 9,19 |
+| botão principal (texto / fundo) | 6,12 | 7,48 |
+| badge `emerald-700` / `emerald-50` | 6,20 | 8,67 |
+| badge `amber-700` / `amber-50` | 6,76 | 9,58 |
+| badge `rose-700` / `rose-50` | 6,87 | 8,15 |
+| badge `sky-700` / `sky-50` | 6,33 | 8,18 |
+| texto `amber-600` / superfície | 5,04 | 9,03 |
+| texto `rose-600` / superfície | 5,66 | 6,82 |
+| ícone do indicador / acento suave | 7,24 | 8,69 |
+| texto do menu lateral / fundo do menu | 11,04 | 9,48 |
+| borda de campo / superfície (3:1) | 3,05 | 3,45 |
+| ícone `slate-400` / superfície (3:1) | 3,05 | 3,81 |
 
 ## 4. Tipografia
 
-| Uso | Valor | Origem |
+| Uso | Valor |
+|---|---|
+| Corpo, células, campos, botões | **Inter**, 0.875rem (14 px), linha 1.5 |
+| Títulos (`h1`, `h2`, `.font-display`) e números de indicador | **Manrope** (extrabold/bold), espaçamento −0.01em |
+| Título de página (`PageHeader`) | 1.5rem no celular, 1.75rem a partir de 768 px, extrabold |
+| Título de cartão e de tabela | 1rem bold |
+| Migalha acima do título | 0.75rem semibold, caixa alta, `teal-700` |
+| Rótulo de campo | 0.8125rem medium `slate-700`, acima do campo |
+| Cabeçalho de tabela | 0.75rem semibold, caixa alta, espaçamento 0.04em, `slate-500`, fundo `slate-50` |
+| Valor de indicador | 1.5rem Manrope extrabold |
+| Pequeno (dica, nota, badge) | 0.75rem |
+
+As duas fontes são OFL e servidas pelo `next/font/google` (`src/app/layout.tsx`, variáveis `--font-inter` e `--font-manrope`). Sem rede no build, cai na fonte do sistema. O ajuste de compatibilidade continua: `text-[13px]` vira 14 px e `text-[11px]` vira 12 px. Código novo usa `text-sm`/`text-xs`.
+
+## 5. Espaçamento, raios e sombras
+
+**Conteúdo** (`.conteudo`): recuo lateral de 1rem no celular, 1.75rem a partir de 768 px e 2.25rem a partir de 1440 px; largura máxima de 1680 px, centralizada.
+
+**Grade:** múltiplos de 0.25rem. 0.5rem entre controles, 0.75rem entre indicadores, 1.25rem entre blocos.
+
+**Alturas:** campo e botão 2.5rem (40 px); os botões têm área de toque de 44 px (pseudo-elemento que estende 2 px acima e abaixo). Botão `small` 2rem, para dentro de tabelas. Linha de tabela 2.5rem. Barra superior 4rem.
+
+| Raio | Valor | Uso |
 |---|---|---|
-| Corpo, células, campos, botões | 0.875rem (14 px), linha 1.5 | `sapFontSize`, `sapContent_LineHeight` |
-| Pequeno (dica, nota, badge) | 0.75rem | `sapFontSmallSize` |
-| Grande / título de cartão (`text-base`) | 1rem | `sapFontLargeSize`, `sapGroup_Title_FontSize` |
-| Título de página (`PageHeader`, `text-2xl` negrito) | 1.5rem | `sapObjectHeader_Title_FontSize` (o tamanho recolhido seria 1.25rem) |
-| Rótulo de campo / `Dl` | 0.875rem, cor `slate-600` | `sapContent_LabelColor` |
-| Cabeçalho de tabela | 0.875rem semibold, `slate-700`, **sem caixa alta** | Fiori não usa caixa alta; o peso é **assumido** |
-| Valor de KPI | 1.25rem negrito | assumido; o Fiori deixa livre ("custom display sizes") |
+| `rounded-sm` | 6 px | chip pequeno, `kbd` |
+| `rounded` / `rounded-md` | 8 px | padrão |
+| `rounded-lg` | **10 px** | campo, item de menu, quadradinho de ícone |
+| `rounded-xl` | **14 px** | cartão, tabela, indicador, menus suspensos |
+| `rounded-2xl` | **20 px** | diálogo, cartão do login |
+| `rounded-full` | pílula | botões, badges, chips, busca global |
 
-O globals.css tem um ajuste de compatibilidade: as páginas que ainda usam `text-[13px]` passam a 14 px, e as que usam `text-[11px]` passam a 12 px. Código novo deve usar `text-sm` e `text-xs`.
+**Sombras (duas elevações + sobreposição):** `shadow-sm` = cartão em repouso (quase imperceptível, a borda faz o contorno); `shadow-lg` = cartão em hover/elevado; `shadow-xl` = menus suspensos, diálogos e toast.
 
-## 5. Espaçamento, densidade, raios e sombras
+## 6. Casca (menu lateral e barra superior)
 
-**Recuo do conteúdo** (`.conteudo` no globals.css): 1rem abaixo de 600 px, 2rem de 600 a 1439 px e 3rem a partir de 1440 px. Origem: `sapContent_Padding_M/L = 2rem` e `sapContent_Padding_XL = 3rem`. O token S vale 0; usamos 1rem porque nossos componentes não trazem recuo próprio. Não há letterboxing: o conteúdo usa a largura toda, que é o recomendado na página Dynamic Page para apps de negócio.
+- **Menu lateral** (`src/components/menu-lateral.tsx`), 16rem, fundo `--sidebar`: marca SP OSTEOS no topo (`<Marca sobreEscuro />`), módulos (setores) em sanfona com ícone e rótulo, o módulo da tela atual aberto, subgrupos com rótulo em caixa alta (Financeiro: Receber, Pagar, Banco, Resultado). Item ativo: véu claro e **barra menta de 3 px** à esquerda. Usuário no rodapé (avatar, nome, perfil) com aparência (Claro, Escuro, Sistema) e Sair.
+- **Recolher** (só no desktop): botão redondo na borda do menu; vira trilho de ícones de 4.5rem e os itens do módulo abrem num painel ao lado. A preferência fica no cookie `opme_menu` e o layout lê no servidor, para não piscar ao carregar.
+- **Celular** (< 1024 px): o menu vira gaveta com fundo escurecido, aberta pelo botão de menu da barra superior; fecha com Esc, clique fora ou ao navegar.
+- **Barra superior** (`src/components/app-shell.tsx`), 4rem, branca translúcida e fixa: busca global em pílula (Ctrl K), tema (lua/sol), ajuda e atalhos, sino de pendências.
+- Rotas e permissões do menu não mudaram: vêm de `src/components/nav.ts`, filtradas por perfil em `src/app/(app)/layout.tsx`.
 
-**Grade:** múltiplos de 0.25rem. Espaços usuais: 0.5rem entre controles e 1rem entre blocos.
+## 7. Padrões de tela
 
-**Densidade, escolha documentada:**
-- Tabelas em **compact**: linha de 2rem (`sapElement_Compact_LineHeight`). Esse é o padrão de ERP de mesa.
-- Botões e campos em **cozy**: 2.25rem (`sapElement_Height`), porque com fonte de 14 px o controle compacto de 1.625rem fica apertado.
-- Botão `small`, usado dentro das linhas da tabela: 1.625rem (`sapElement_Compact_Height`).
-- O modo cozy da tabela (2.75rem, `sapElement_LineHeight`) não está implementado. Para ligá-lo basta trocar `[&>tr]:h-8` por `h-11` em `Table`.
+### Lista (ex.: `/financeiro/receber`, `/cadastros/produtos`)
+1. `PageHeader`: migalha (módulo), título, subtítulo; ação principal à direita.
+2. `KpiGrid` com `Stat`: cartões brancos lado a lado.
+3. `FilterBar`/`Filtros`: cartão recolhível com os campos lado a lado e o botão "Filtrar"; embaixo, **chips dos filtros ativos**, cada um com "×", e "Limpar tudo".
+4. `Table`: cartão com título e contagem em pílula, ações à direita; cabeçalho fixo ao rolar (no desktop a tabela rola por dentro, até a altura da tela), zebra sutil, hover verde-claro.
+5. `EmptyState` quando vazia: ícone em círculo verde-claro, por que está vazia e a ação que resolve.
 
-**Raios:**
+### Detalhe (ex.: `/financeiro/receber/[id]`, `/comercial/cirurgias/[id]`)
+- `PageHeader` com `voltar`, status em `StatusBadge` e ações; com mais de duas ações, a principal e uma secundária ficam à vista e o resto vai para `maisAcoes` (menu "Mais ações").
+- Um `Card` por seção (ícone opcional em quadradinho verde-claro), `Dl` para pares rótulo-valor, `Table` para itens.
 
-| Elemento | Raio | Origem |
-|---|---|---|
-| Campo (`rounded-sm`) | 0.25rem | `sapField_BorderCornerRadius` |
-| Botão, menu, faixa de mensagem, `rounded` padrão | 0.5rem | `sapButton_BorderCornerRadius`, `sapPopover_BorderCornerRadius` |
-| Cartão, tabela, KPI (`rounded-xl`) | 0.75rem | `sapGroup_BorderCornerRadius`, `sapElement_BorderCornerRadius` |
-| Cartão do painel (`rounded-2xl`, opcional) | 1rem | `sapTile_BorderCornerRadius` |
+### Painel (`/`)
+- Indicadores em cartões com ícone, gráfico de vendas e próximas cirurgias à esquerda, pendências à direita.
 
-**Sombras:**
+### Login
+- Faixa escura da marca à esquerda (cor do menu lateral) com os três pilares do sistema; cartão branco de login à direita.
 
-| Variável | Uso | Origem |
-|---|---|---|
-| `--shadow-card` (`shadow-sm`) | cartões | `sapContent_Shadow0` |
-| `--shadow-raised` (`shadow-lg`) | elementos elevados | `sapContent_Shadow1` |
-| `--shadow-overlay` (`shadow-xl`) | menus, toast, diálogos | `sapContent_Shadow2` |
-| `--shadow-header` | cabeçalho de página e barra superior | `sapContent_HeaderShadow` |
+### Impressos (vale, boleto, orçamento, recolhimento, inventário)
+- Sempre claros e sóbrios: a impressão usa o bloco claro, esconde menu e barra superior (`print:hidden`) e tira sombras. Os impressos mantêm as próprias classes `print:` em preto e branco.
 
-## 6. Barra superior (Shell Bar)
+## 8. Componentes (`src/components/ui.tsx`, `form.tsx`)
 
-- Faixa 1 com 2.75rem de altura, fundo `--shell` (branco no claro) e sombra de cabeçalho. Da esquerda para a direita: **marca** (logo e nome, que o Fiori exige na shell bar), **busca** em formato pílula (Ctrl+K), ajuda, pendências (sino) e **avatar** redondo.
-- Faixa 2: abas dos módulos, só texto. A aba ativa fica em azul `teal-700`, semibold, com sublinhado de 0.1875rem arredondado em cima.
-- Faixa 3: abas das telas do módulo, separadas por grupo, com rótulo do grupo em `text-xs`.
-- A diretriz da Shell Bar lista componentes, mas não informa altura. Adotamos 2.75rem (= `sapElement_LineHeight`), como pedia o briefing. **Não confirmado:** o Horizon real pode usar uma barra mais alta, perto de 3.25rem.
+| Componente | Regra |
+|---|---|
+| `btn.primary` | pílula verde preenchida; **uma** ação principal por tela |
+| `btn.secondary` | pílula branca com contorno e texto verdes |
+| `btn.ghost` | só texto verde, fundo verde-claro no hover (Cancelar, Limpar) |
+| `btn.danger` | pílula branca com contorno e texto vermelhos (excluir, estornar, cancelar) |
+| `btn.small` | pílula de 32 px dentro de tabelas |
+| `campo` (Field, Select, TextArea, filtros) | 40 px, raio 10 px, `border-field`, foco com borda verde e anel suave de 4 px; inválido com borda e fundo vermelhos |
+| Rótulo / dica / erro | rótulo acima (0.8125rem medium); dica `slate-500` abaixo; erro `rose-600` abaixo (substitui a dica) |
+| `Badge` / `StatusBadge` | pílula de 24 px, fundo claro da cor semântica, texto escuro da mesma cor e ponto à esquerda |
+| `Stat` | cartão com rótulo, quadradinho de ícone (`icon`, opcional; tons de alerta/erro mostram "alerta" por padrão), número grande e nota |
+| `KpiGrid` | grade de cartões: 2 colunas no celular; `cols` 3/4 a partir de 1024 px; 5 vira 3 colunas até 1535 px |
+| `Abas` | links com sublinhado verde de 2 px na ativa e contagem opcional em pílula |
+| `Aviso` | faixa de mensagem (`info`, `alerta`, `erro`, `ok`) com ícone, no lugar de divs coloridas soltas |
+| `MaisAcoes` | botão "Mais ações" com menu suspenso; os botões de dentro viram itens de lista; Esc, setas e clique fora |
+| `FilterBar` / `Filtros` | ver seção 7; os chips leem os rótulos do próprio formulário |
+| `EmptyState` | ícone em círculo verde-claro, `titulo` opcional, texto e ação |
+| `toast()` | canto inferior direito (centralizado no celular), cartão branco com ícone em círculo; só sucesso curto. Erro vai em faixa ou no campo |
+| `confirmar()` | diálogo nativo de raio 20 px com ícone; destrutivo em vermelho |
 
-## 7. Floorplans mapeados para as nossas telas
+Semântica dos status: `green` = concluído, pago, liberado; `yellow` = pendente, aberto, quarentena; `red` = vencido, recusado, não conforme; `blue` = enviado, em andamento; `gray` = cancelado, rascunho; `teal` e `purple` = categorias.
 
-### List Report = telas de lista
-Exemplos: `/financeiro/receber`, `/cadastros/produtos`, `/gestao/giro`.
-1. **Cabeçalho (`PageHeader`)**: faixa branca de borda a borda, com migalha (o módulo), título de 1.5rem, subtítulo e ações globais à direita (ex.: "Novo título").
-2. **Indicadores (`KpiGrid`)** e **barra de filtros (`FilterBar`/`Filtros`)**. Se vierem logo abaixo do cabeçalho, entram na mesma faixa. A barra de filtros é **recolhível** ("Mostrar filtros" / "Ocultar filtros"), abre expandida e tem o botão "Filtrar" como Emphasized. O Fiori chama isso de modo de atualização manual, com botão "Go".
-3. **Área de conteúdo (`Table`)**: barra da tabela com o título e a contagem no formato "Títulos (12)" à esquerda e ações à direita. O cabeçalho das colunas é branco, com linha mais forte embaixo e sem caixa alta. As linhas são compactas, com hover cinza.
-4. **Lista vazia (`EmptyState`)**: diz por que está vazia e o que fazer, como pede o "no data" do Fiori.
-- Ainda **não implementado**: o resumo "Filtrado por (n): …" com a barra recolhida, variantes, cabeçalho de coluna fixo (o contêiner tem rolagem horizontal) e o rodapé de ações finais.
+## 9. Acessibilidade
 
-### Object Page = telas de detalhe
-Exemplos: `/financeiro/receber/[id]`, `/comercial/cirurgias/[id]`.
-- **Cabeçalho**: migalha, título (o identificador do objeto), subtítulo, ações globais e status (`StatusBadge`, nas ações à direita). Os indicadores (`KpiGrid`) logo abaixo fazem o papel das facetas de cabeçalho chave-valor.
-- **Seções**: um `Card` por seção, com título de 1rem, `Dl` para pares rótulo-valor (a faceta "form") e `Table` para itens.
-- Ainda **não implementado**: a barra de âncoras/abas fixa entre o cabeçalho e as seções. Ela exige mudar `page.tsx`, o que está fora deste escopo. Quando for feita, deve ser um componente `<Secoes>` com âncoras para os `id` das seções.
+- Foco visível em todo elemento interativo (`outline` de 2 px na cor `--focus`, afastado 2 px).
+- Contraste AA em todos os pares de texto e 3:1 em bordas de campo e ícones (seção 3.3).
+- Área de toque de 44 px nos botões principais; itens do menu lateral com 36 a 40 px.
+- Link "Pular para o conteúdo" no topo; menu lateral com `aria-current="page"` no item ativo e `aria-expanded` nos módulos.
+- `prefers-reduced-motion` desliga transições.
 
-### Overview Page = Painel (`/`)
-- Cabeçalho só com texto (variante 3 do OVP), indicadores na faixa e conteúdo em **cartões** (`Card`) num grid. Cartões com raio de 0.75rem e sombra Shadow0. Só cartões, nunca blocos de atalho ("tiles").
+## 10. Regras de uso
 
-## 8. Componentes
-
-| Fiori | Nosso | Regra |
-|---|---|---|
-| Button **Emphasized** | `btn.primary` (`bg-primary`, texto branco, negrito) | **uma** ação principal por tela |
-| Button **Default** | `btn.secondary` (fundo branco, borda `slate-300`, texto azul) | ações secundárias no cabeçalho e no rodapé |
-| Button **Transparent** | `btn.ghost` (texto azul; fundo `slate-100` no hover) | caminho negativo (Cancelar, Limpar) e ações nas barras de tabela |
-| Button **Reject** | `btn.danger` (fundo `rose-100`, borda `rose-200`, texto `rose-600`) | ações destrutivas (excluir, estornar, cancelar) |
-| Button compacto | `btn.small` (1.625rem) | ação dentro da linha da tabela |
-| Input / Select / TextArea | `campo` em `ui.tsx` (usado por `form.tsx` e `filtros.tsx`) | borda clara com linha inferior `--field-border`, raio 0.25rem, hover azul, foco de 2 px em `--focus`; inválido com borda `rose-500` e fundo `rose-50` |
-| Label | rótulo do `Wrap` / `Dl` | 0.875rem `slate-600`; obrigatório com `*` em `rose-600` |
-| **ObjectStatus** | `Badge` / `StatusBadge` | texto na cor semântica sobre o fundo claro da mesma semântica, contorno interno de 20% (como `sapContent_*_Shadow`), 1.25rem de altura, **sem ponto** |
-| **MessageStrip** | faixas de erro/aviso do `Form` e banners das páginas | fundo `*-50`, borda `*-200`, texto `*-700`/`*-800`, ícone à esquerda e raio 0.5rem; tipos Information, Warning, Error e Success |
-| **MessageToast** | `toast()` | **centralizado no rodapé**; só para sucesso curto e sem "com sucesso" no texto; ≥ 3 s (usamos 4 s). Erro não vai em toast: vai em MessageStrip ou no campo |
-| Dynamic Page Header | `PageHeader` (+ `KpiGrid`, `FilterBar`) | ver seção 7 |
-| Card | `Card` | título de 1rem, ícone opcional sem caixinha colorida |
-
-Semântica de cor dos status (`StatusBadge`): `green` = Positive (concluído, pago, liberado), `yellow` = Critical (pendente, aberto, quarentena), `red` = Negative (vencido, recusado, não conforme), `blue` = Information (enviado, em andamento), `gray` = Neutral (cancelado, rascunho), `teal` e `purple` = categorias (cores de destaque 6 e 9).
-
-## 9. Regras de uso
-
-1. Páginas usam só as escalas nomeadas (`teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet`, `white`). Nunca hex e nunca `text-[13px]`; use `text-sm`/`text-xs`.
-2. Uma ação Emphasized por tela. As demais usam Default ou Transparent.
+1. Páginas usam só as escalas nomeadas (`teal`, `slate`, `emerald`, `rose`, `amber`, `sky`, `violet`, `white`) e os tokens (`bg-primary`, `bg-accent-soft`, `border-field`). Nunca hex solto.
+2. Uma ação principal por tela; com mais de duas ações no cabeçalho, use `maisAcoes`.
 3. Número em célula vai com `text-right` (o cabeçalho da coluna se alinha sozinho).
-4. Status sempre por `StatusBadge`/`Badge`. Não crie bolinhas nem cores soltas.
-5. Sucesso vai em `toast`. Erro e aviso vão em faixa (MessageStrip) ou no campo.
-6. Ao criar componente novo, use os tokens (`bg-primary`, `border-b-field`, `outline-focus`, `--shadow-*`) e confira o contraste nos dois modos.
-7. Para trocar de tema, altere só os blocos `--c-*` do `globals.css` (claro, escuro e impressão) e atualize este documento.
+4. Status sempre por `StatusBadge`/`Badge`; mensagens por `Aviso`.
+5. Sucesso em `toast`; erro e aviso em faixa ou no campo.
+6. Para mudar o tema, altere os valores em `src/app/estilos/tokens.css` (bloco claro e os dois escuros), rode a verificação de contraste e atualize a seção 3.
 
-## 10. Não confirmado nas fontes (valor assumido)
+## 11. Não confirmado (valor assumido)
 
-- **Altura da Shell Bar:** sem token nem medida na diretriz. Assumido 2.75rem.
-- **Peso e cor do cabeçalho de tabela:** os tokens só dão `sapList_HeaderTextColor = #131e29`. Assumido semibold `slate-700`.
-- **Visual do ObjectStatus "inverted" e da MessageToast no Horizon:** as páginas não abriram. Assumidos fundo claro semântico (badge) e cartão branco com Shadow2 (toast).
-- **Recuo no tamanho S:** o token dá 0. Usamos 1rem.
-- **Passos D da paleta:** interpolados por nós, sem token correspondente.
+- Medidas e cores exatas do app Bling: não medidas; os valores são nossos.
+- Comportamento real do Bling ao recolher o menu e no celular: assumido (trilho de ícones e gaveta), padrão comum de ERP web.
+- Cabeçalho fixo da tabela: no desktop a tabela rola por dentro (altura da tela menos 10rem), porque o cabeçalho fixo não funciona dentro de um contêiner com rolagem horizontal; no celular a tabela rola só na horizontal e o cabeçalho não fica fixo.

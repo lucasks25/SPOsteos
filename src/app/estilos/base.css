@@ -1,0 +1,123 @@
+/* Base: corpo, foco, seleção, rolagem e elementos nativos (docs/DESIGN-SYSTEM.md, seções 4 e 9). */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font-sans);
+  font-size: 0.875rem;
+  line-height: 1.5;
+  font-feature-settings: "cv11", "ss01";
+}
+
+/* Títulos de página e de cartão usam a fonte de exibição (Manrope); o corpo segue em Inter */
+h1,
+h2,
+.font-display {
+  font-family: var(--font-display);
+  letter-spacing: -0.01em;
+}
+
+/* Compatibilidade: tamanhos fixos herdados seguem a escala nova (corpo 14 px; rótulos de 11 px viram 12 px) */
+.text-\[13px\] {
+  font-size: var(--text-sm);
+}
+.text-\[11px\] {
+  font-size: var(--text-xs);
+}
+
+/* Números alinhados em colunas (valores, quantidades, datas) */
+table,
+.tnum {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Foco visível e consistente para teclado */
+:where(a, button, summary, [tabindex]):focus-visible {
+  outline: 2px solid var(--focus);
+  outline-offset: 2px;
+  border-radius: 0.375rem;
+}
+
+::selection {
+  background: var(--c-teal-100);
+  color: var(--c-slate-900);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--c-slate-300) transparent;
+}
+
+button,
+[role="button"],
+summary,
+select,
+input[type="checkbox"],
+input[type="radio"],
+input[type="file"] {
+  cursor: pointer;
+}
+button:disabled {
+  cursor: not-allowed;
+}
+
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: var(--primary);
+}
+
+/* Seta própria nos selects (o padrão do navegador some com appearance:none) */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23879794' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.7rem center;
+  padding-right: 2.1rem;
+}
+
+/* Ícone do calendário dos campos de data na cor do tema */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator,
+input[type="month"]::-webkit-calendar-picker-indicator {
+  opacity: 0.6;
+  cursor: pointer;
+}
+@media screen {
+  :root[data-theme="dark"] input::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
+}
+@media screen and (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) input::-webkit-calendar-picker-indicator {
+    filter: invert(0.85);
+  }
+}
+
+/* Barras de rolagem horizontais sem barra visível (abas, trilhas) */
+.abas {
+  scrollbar-width: none;
+}
+.abas::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+@media print {
+  body {
+    background: #fff;
+    color: #000;
+  }
+}
