@@ -8,11 +8,8 @@ import { requireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
-import { ErroNegocio } from "@/lib/erros";
-import { listarContas } from "./contas";
 import { addDias, hojeUTC } from "@/lib/datas";
-import { garantirMesAberto } from "./fechamento";
-import { validarClassificacao } from "./plano";
+import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx } from "./contas-servico";
 import { estornarTransferencia, transferir } from "./titulos";
 
 const schemaConta = z.object({
@@ -59,14 +56,8 @@ export async function salvarConta(id: string | null, _: ActionState, fd: FormDat
 export async function alternarAtivoConta(id: string): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
   try {
-    const c = await db.contaBancaria.findUniqueOrThrow({ where: { id } });
-    if (c.ativo) {
-      // conta inativa sai do saldo, do painel e do fluxo: com saldo diferente de zero, os números deixariam de fechar
-      const conta = (await listarContas()).find((x) => x.id === id);
-      if (conta && Math.abs(conta.saldo) >= 0.005) throw new ErroNegocio(`A conta tem saldo de ${money(conta.saldo)}. Zere o saldo (transferência ou lançamento) antes de inativá-la.`);
-    }
-    await db.contaBancaria.update({ where: { id }, data: { ativo: !c.ativo } });
-    await audit(user.id, c.ativo ? "inativar" : "ativar", "ContaBancaria", id, c.nome);
+    const c = await alternarAtivoContaTx(db, id);
+    await audit(user.id, c.eraAtiva ? "inativar" : "ativar", "ContaBancaria", id, c.nome);
   } catch (e) {
     return { error: errorMessage(e) };
   }
@@ -92,11 +83,7 @@ export async function lancarAvulso(contaId: string, _: ActionState, fd: FormData
   const d = parsed.data;
   if (d.data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
   try {
-    const conta = await db.contaBancaria.findUnique({ where: { id: contaId }, select: { ativo: true } });
-    if (!conta?.ativo) return { error: "Conta inexistente ou inativa." };
-    await validarClassificacao(db, d.planoContaId, d.centroCustoId);
-    await garantirMesAberto(db, [d.data], "lançar nessa data");
-    const l = await db.lancamento.create({ data: { contaId, ...d } });
+    const l = await db.$transaction((tx) => lancarAvulsoTx(tx, contaId, d));
     await audit(user.id, "lançar", "Lancamento", l.id, `${d.sentido} ${money(d.valor)} — ${d.descricao}`);
   } catch (e) {
     return { error: errorMessage(e) };
@@ -112,21 +99,16 @@ export async function excluirAvulso(_: ActionState, fd: FormData): Promise<Actio
   const user = await requireUser(["FINANCEIRO"]);
   const id = fd.get("id");
   if (typeof id !== "string" || !id) return { error: "Lançamento inválido." };
+  let contaId: string;
   try {
-    const l = await db.lancamento.findUnique({ where: { id }, select: { contaId: true, data: true, contaReceberId: true, contaPagarId: true, transferenciaId: true, extrato: { select: { id: true } } } });
-    if (!l) return { error: "Lançamento não encontrado." };
-    if (l.transferenciaId) return { error: "Este lançamento é parte de uma transferência. Estorne a transferência inteira." };
-    if (l.contaReceberId || l.contaPagarId) return { error: "Este lançamento é baixa de título. Estorne pela tela do título." };
-    if (l.extrato) return { error: "Lançamento conciliado com o extrato. Desfaça a conciliação antes." };
-    await garantirMesAberto(db, [l.data], "excluir lançamento dessa data");
-    await db.lancamento.delete({ where: { id } });
+    contaId = await db.$transaction((tx) => excluirLancamentoAvulsoTx(tx, id));
     await audit(user.id, "excluir lançamento", "Lancamento", id);
-    revalidatePath(`/financeiro/contas/${l.contaId}`);
-    revalidatePath("/financeiro/contas");
-    revalidatePath("/financeiro/fluxo");
   } catch (e) {
     return { error: errorMessage(e) };
   }
+  revalidatePath(`/financeiro/contas/${contaId}`);
+  revalidatePath("/financeiro/contas");
+  revalidatePath("/financeiro/fluxo");
   return { ok: true };
 }
 

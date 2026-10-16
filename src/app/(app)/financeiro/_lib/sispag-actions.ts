@@ -9,8 +9,8 @@ import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { addDias, hojeUTC, parseDia } from "@/lib/datas";
 import { decodificarOfx, OFX_MAX_BYTES } from "./ofx";
 import { contaDoRetorno, lerRetornoSispag } from "./sispag";
-import { contaEDac, type ModoRemessa } from "./sispag-regras";
-import { aplicarRetornoTx, cancelarRemessaTx, contagemVazia, gerarRemessaTx } from "./sispag-servico";
+import type { ModoRemessa } from "./sispag-regras";
+import { aplicarRetornoTx, cancelarRemessaTx, contagemVazia, gerarRemessaDaContaTx } from "./sispag-servico";
 
 
 function revalidar(id?: number) {
@@ -32,20 +32,10 @@ export async function gerarRemessaPagamentos(_: ActionState, fd: FormData): Prom
   if (ids.length > 500) return { error: "Máximo de 500 pagamentos por remessa." };
 
   let remessaId: number;
-  let resumo = { qtd: 0, total: 0 };
   try {
-    const conta = await db.contaBancaria.findUnique({ where: { id: contaId } });
-    if (!conta?.ativo || conta.tipo !== "BANCO") return { error: "Conta bancária inexistente ou inativa." };
-    const cd = contaEDac(conta.numero);
-    if (!conta.titularCnpj || !conta.titularNome || !conta.agencia || !cd) {
-      return { error: "Complete a conta bancária (agência, conta com dígito, CNPJ e razão social do titular) antes de gerar a remessa." };
-    }
-    remessaId = await db.$transaction(async (tx) => {
-      const r = await gerarRemessaTx(tx, { conta, cd, modo, dataPagto, ids });
-      resumo = { qtd: r.qtd, total: r.total };
-      return r.remessaId;
-    });
-    await audit(user.id, "gerar remessa SISPAG", "RemessaPagamento", remessaId, `${modo}: ${resumo.qtd} pagamento(s), ${money(resumo.total)}`);
+    const r = await db.$transaction((tx) => gerarRemessaDaContaTx(tx, { contaId, modo, dataPagto, ids }));
+    remessaId = r.remessaId;
+    await audit(user.id, "gerar remessa SISPAG", "RemessaPagamento", remessaId, `${modo}: ${r.qtd} pagamento(s), ${money(r.total)}`);
   } catch (e) {
     return { error: errorMessage(e) };
   }
@@ -66,9 +56,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
     const resultados = lerRetornoSispag(texto);
     const cabecalho = contaDoRetorno(texto);
     if (resultados.length === 0) return { error: "O retorno não traz nenhum pagamento." };
-    await db.$transaction(async (tx) => {
-      for (const id of await aplicarRetornoTx(tx, resultados, cont, cabecalho)) remessas.add(id);
-    });
+    for (const id of await db.$transaction((tx) => aplicarRetornoTx(tx, resultados, cont, cabecalho))) remessas.add(id);
     await audit(
       user.id,
       "processar retorno SISPAG",
@@ -103,9 +91,7 @@ export async function cancelarRemessa(remessaId: number, _: ActionState, fd: For
   const motivo = String(fd.get("motivo") ?? "").trim();
   if (motivo.length < 5) return { fieldErrors: { motivo: "Explique o motivo (mínimo 5 letras)" }, error: "Verifique os campos destacados." };
   try {
-    await db.$transaction(async (tx) => {
-      await cancelarRemessaTx(tx, remessaId, motivo);
-    });
+    await db.$transaction((tx) => cancelarRemessaTx(tx, remessaId, motivo));
     await audit(user.id, "cancelar remessa SISPAG", "RemessaPagamento", remessaId, motivo);
   } catch (e) {
     return { error: errorMessage(e) };

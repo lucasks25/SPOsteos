@@ -11,10 +11,9 @@ import type { FormaPagamento } from "@/generated/prisma/client";
 import { FORMAS, TIPOS, isTipo, type Tipo } from "./config";
 import { addDias, hojeUTC } from "@/lib/datas";
 import { lerBoleto } from "./boleto";
-import { garantirMesAberto } from "./fechamento";
-import { validarClassificacao } from "./plano";
 import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa, registrarRecurso } from "./titulos";
 import { CATEGORIAS_GLOSA } from "./glosa-categorias";
+import { cancelarTituloTx, classificarTituloTx, salvarContaPagarTx, salvarContaReceberTx } from "./titulos-servico";
 import { ErroNegocio } from "@/lib/erros";
 
 const positivo = () => zf.money().refine((v) => v > 0, "Informe um valor maior que zero");
@@ -68,13 +67,6 @@ const schemaBaixa = z.object({
 
 const schemaId = z.object({ id: zf.text() });
 
-/** Competência atual do título (para recusar mudanças em mês fechado). */
-async function competenciaDo(tipo: Tipo, id: string): Promise<Date | null> {
-  const sel = { competencia: true } as const;
-  const t = tipo === "receber" ? await db.contaReceber.findUnique({ where: { id }, select: sel }) : await db.contaPagar.findUnique({ where: { id }, select: sel });
-  return t?.competencia ?? null;
-}
-
 function checkTipo(tipo: unknown): Tipo {
   if (!isTipo(tipo)) throw new ErroNegocio("Tipo de título inválido.");
   return tipo;
@@ -99,29 +91,13 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const parsed = parseForm(schemaReceber, fd);
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
-      await validarClassificacao(db, data.planoContaId, data.centroCustoId);
-      await garantirMesAberto(db, [data.competencia, id ? await competenciaDo(tipo, id) : null], "criar ou alterar título nessa competência");
-      if (id) {
-        const r = await db.contaReceber.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
-        if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
-        savedId = id;
-      } else {
-        savedId = (await db.contaReceber.create({ data })).id;
-      }
+      savedId = await db.$transaction((tx) => salvarContaReceberTx(tx, id, data));
       await audit(user.id, id ? "editar" : "criar", "ContaReceber", savedId, `${data.descricao} — ${money(data.valor)}`);
     } else {
       const parsed = parseForm(schemaPagar, fd);
       if (!parsed.success) return parsed.state;
       const data = parsed.data;
-      await validarClassificacao(db, data.planoContaId, data.centroCustoId);
-      await garantirMesAberto(db, [data.competencia, id ? await competenciaDo(tipo, id) : null], "criar ou alterar título nessa competência");
-      if (id) {
-        const r = await db.contaPagar.updateMany({ where: { id, status: "ABERTO", valorBaixado: null }, data });
-        if (r.count === 0) return { error: "Só é possível editar títulos em aberto e sem baixas. Estorne as baixas antes." };
-        savedId = id;
-      } else {
-        savedId = (await db.contaPagar.create({ data: { ...data, aprovadoEm: new Date(), aprovadoPor: user.id } })).id;
-      }
+      savedId = await db.$transaction((tx) => salvarContaPagarTx(tx, id, data, user.id));
       await audit(user.id, id ? "editar" : "criar", "ContaPagar", savedId, `${data.descricao} — ${money(data.valor)}`);
     }
   } catch (e) {
@@ -173,17 +149,8 @@ export async function cancelarTitulo(tipoArg: Tipo, _: ActionState, fd: FormData
   const parsed = parseForm(schemaId, fd);
   if (!parsed.success) return { error: "Título inválido." };
   const { id } = parsed.data;
-  const data = { status: "CANCELADO" as const };
   try {
-    await garantirMesAberto(db, [await competenciaDo(tipo, id)], "cancelar título dessa competência");
-    if (tipo === "receber") {
-      // Cancelar a receita de uma NF emitida tiraria a venda do DRE e deixaria o custo (CMV): precisa de cancelamento de NF/devolução.
-      const t = await db.contaReceber.findUnique({ where: { id }, select: { pedido: { select: { status: true } } } });
-      if (t?.pedido?.status === "FATURADO") return { error: "Este título vem de uma NF emitida. Para desfazê-lo é preciso cancelar a NF ou registrar uma devolução." };
-    }
-    const where = { id, status: "ABERTO" as const, valorBaixado: null };
-    const r = tipo === "receber" ? await db.contaReceber.updateMany({ where, data }) : await db.contaPagar.updateMany({ where, data });
-    if (r.count === 0) return { error: "Só é possível cancelar títulos em aberto e sem baixas. Estorne as baixas antes." };
+    await db.$transaction((tx) => cancelarTituloTx(tx, tipo, id));
     await audit(user.id, "cancelar", TIPOS[tipo].entidade, id);
   } catch (e) {
     return { error: errorMessage(e) };
@@ -202,10 +169,7 @@ export async function classificarTitulo(tipoArg: Tipo, id: string, _: ActionStat
   if (!parsed.success) return parsed.state;
   const data = parsed.data;
   try {
-    await validarClassificacao(db, data.planoContaId, data.centroCustoId);
-    await garantirMesAberto(db, [data.competencia, await competenciaDo(tipo, id)], "reclassificar título dessa competência");
-    const r = tipo === "receber" ? await db.contaReceber.updateMany({ where: { id }, data }) : await db.contaPagar.updateMany({ where: { id }, data });
-    if (r.count === 0) return { error: "Título não encontrado." };
+    await db.$transaction((tx) => classificarTituloTx(tx, tipo, id, data));
     await audit(user.id, "classificar", TIPOS[tipo].entidade, id);
   } catch (e) {
     return { error: errorMessage(e) };

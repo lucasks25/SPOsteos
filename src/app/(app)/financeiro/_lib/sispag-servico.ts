@@ -4,7 +4,7 @@ import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
 import { gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPagamento } from "./sispag";
-import { formaPrevista, type ModoRemessa } from "./sispag-regras";
+import { contaEDac, formaPrevista, type ModoRemessa } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
 
 /** Regras de remessa e retorno do SISPAG que mexem no banco. Ficam fora de "use server" para serem testadas sem login. */
@@ -63,6 +63,17 @@ export async function gerarRemessaTx(
   const conteudo = gerarRemessaSispag({ cnpj: conta.titularCnpj!, nome: conta.titularNome!, agencia: conta.agencia!, conta: cd.conta, dac: cd.dac }, pagamentos, new Date());
   await tx.remessaPagamento.update({ where: { id: rem.id }, data: { conteudo } });
   return { remessaId: rem.id, qtd: planos.length, total: planos.reduce((x, p) => x + p.saldo, 0) };
+}
+
+/** Gera a remessa a partir do id da conta a debitar: confere que é conta bancária ativa com os dados do titular completos. */
+export async function gerarRemessaDaContaTx(tx: Tx, a: { contaId: string; modo: ModoRemessa; dataPagto: Date; ids: string[] }) {
+  const conta = await tx.contaBancaria.findUnique({ where: { id: a.contaId } });
+  if (!conta?.ativo || conta.tipo !== "BANCO") throw new ErroNegocio("Conta bancária inexistente ou inativa.");
+  const cd = contaEDac(conta.numero);
+  if (!conta.titularCnpj || !conta.titularNome || !conta.agencia || !cd) {
+    throw new ErroNegocio("Complete a conta bancária (agência, conta com dígito, CNPJ e razão social do titular) antes de gerar a remessa.");
+  }
+  return gerarRemessaTx(tx, { conta, cd, modo: a.modo, dataPagto: a.dataPagto, ids: a.ids });
 }
 
 /** Aplica o resultado do retorno: atualiza cada item, baixa os pagos e marca duplicidade (DUP), divergência (DIV) e remessa cancelada paga (CAN). */

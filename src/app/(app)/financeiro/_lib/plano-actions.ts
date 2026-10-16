@@ -4,9 +4,9 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { TIPOS_PLANO, erroNovaConta } from "./plano-regras";
+import { TIPOS_PLANO } from "./plano-regras";
+import { alternarCentroCustoTx, alternarContaPlanoTx, criarCentroCustoTx, criarContaPlanoTx } from "./plano-servico";
 
 const tiposValidos = TIPOS_PLANO.map((t) => t.value) as [string, ...string[]];
 
@@ -30,12 +30,7 @@ export async function criarContaPlano(_: ActionState, fd: FormData): Promise<Act
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
   try {
-    const pai = d.paiId ? await db.planoConta.findUnique({ where: { id: d.paiId }, select: { tipo: true, analitica: true, ativo: true, codigo: true, nome: true } }) : null;
-    if (d.paiId && !pai) throw new ErroNegocio("Grupo não encontrado.");
-    const erro = erroNovaConta({ codigo: d.codigo, tipo: d.tipo as never }, pai);
-    if (erro) throw new ErroNegocio(erro);
-    if (await db.planoConta.findUnique({ where: { codigo: d.codigo }, select: { id: true } })) throw new ErroNegocio(`Já existe uma conta com o código ${d.codigo}.`);
-    const c = await db.planoConta.create({ data: { codigo: d.codigo, nome: d.nome, tipo: d.tipo as never, paiId: d.paiId, analitica: d.analitica } });
+    const c = await db.$transaction((tx) => criarContaPlanoTx(tx, d));
     await audit(user.id, "criar", "PlanoConta", c.id, `${c.codigo} ${c.nome}`);
   } catch (e) {
     return { error: errorMessage(e) };
@@ -50,16 +45,8 @@ export async function alternarContaPlano(_: ActionState, fd: FormData): Promise<
   const id = fd.get("id");
   if (typeof id !== "string" || !id) return { error: "Conta inválida." };
   try {
-    const c = await db.planoConta.findUnique({ where: { id }, select: { ativo: true, chaveSistema: true, nome: true, pai: { select: { ativo: true } }, _count: { select: { filhos: { where: { ativo: true } } } } } });
-    if (!c) throw new ErroNegocio("Conta não encontrada.");
-    if (c.ativo) {
-      if (c.chaveSistema) throw new ErroNegocio(`"${c.nome}" é usada pelo sistema e não pode ser inativada.`);
-      if (c._count.filhos > 0) throw new ErroNegocio("Inative primeiro as contas dentro deste grupo.");
-    } else if (c.pai && !c.pai.ativo) {
-      throw new ErroNegocio("Reative primeiro o grupo desta conta.");
-    }
-    await db.planoConta.update({ where: { id }, data: { ativo: !c.ativo } });
-    await audit(user.id, c.ativo ? "inativar" : "reativar", "PlanoConta", id, c.nome);
+    const c = await db.$transaction((tx) => alternarContaPlanoTx(tx, id));
+    await audit(user.id, c.eraAtiva ? "inativar" : "reativar", "PlanoConta", id, c.nome);
   } catch (e) {
     return { error: errorMessage(e) };
   }
@@ -74,8 +61,7 @@ export async function criarCentroCusto(_: ActionState, fd: FormData): Promise<Ac
   const parsed = parseForm(schemaCentro, fd);
   if (!parsed.success) return parsed.state;
   try {
-    if (await db.centroCusto.findUnique({ where: { codigo: parsed.data.codigo }, select: { id: true } })) throw new ErroNegocio(`Já existe um centro de custo com o código ${parsed.data.codigo}.`);
-    const c = await db.centroCusto.create({ data: parsed.data });
+    const c = await db.$transaction((tx) => criarCentroCustoTx(tx, parsed.data));
     await audit(user.id, "criar", "CentroCusto", c.id, `${c.codigo} ${c.nome}`);
   } catch (e) {
     return { error: errorMessage(e) };
@@ -89,10 +75,8 @@ export async function alternarCentroCusto(_: ActionState, fd: FormData): Promise
   const id = fd.get("id");
   if (typeof id !== "string" || !id) return { error: "Centro de custo inválido." };
   try {
-    const c = await db.centroCusto.findUnique({ where: { id }, select: { ativo: true, nome: true } });
-    if (!c) throw new ErroNegocio("Centro de custo não encontrado.");
-    await db.centroCusto.update({ where: { id }, data: { ativo: !c.ativo } });
-    await audit(user.id, c.ativo ? "inativar" : "reativar", "CentroCusto", id, c.nome);
+    const c = await db.$transaction((tx) => alternarCentroCustoTx(tx, id));
+    await audit(user.id, c.eraAtivo ? "inativar" : "reativar", "CentroCusto", id, c.nome);
   } catch (e) {
     return { error: errorMessage(e) };
   }
