@@ -135,9 +135,13 @@ export async function enviarRemessa(tx: Tx, id: number, usuario: string) {
   await trocarStatus(tx, id, "ABERTA", { status: "ENVIADA", enviadaEm: new Date() });
   const remessa = await tx.remessa.findUniqueOrThrow({
     where: { id },
-    include: { itens: { include: { lote: { include: { produto: true } } } } },
+    include: { cirurgia: { select: { numero: true, status: true } }, itens: { include: { lote: { include: { produto: true } } } } },
   });
   if (remessa.itens.length === 0) throw new RemessaError("Remessa sem itens.");
+  // mesma regra da criação: material não sai para cirurgia cancelada (não vai acontecer) nem faturada (consumo já fechado)
+  if (remessa.cirurgia && (remessa.cirurgia.status === "CANCELADA" || remessa.cirurgia.status === "FATURADA")) {
+    throw new RemessaError(`Cirurgia nº ${remessa.cirurgia.numero} está ${remessa.cirurgia.status.toLowerCase()}: cancele este vale em vez de enviá-lo.`);
+  }
   for (const item of remessa.itens) {
     validarLoteParaEnvio(item.lote);
     await movimentar(tx, {

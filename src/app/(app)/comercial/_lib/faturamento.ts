@@ -21,11 +21,21 @@ export async function faturarCirurgia(tx: Tx, cirurgiaId: string) {
       consumos: { include: { lote: { select: { numero: true } } } },
       pedido: true,
       representante: true,
+      remessas: { where: { status: { in: ["ABERTA", "ENVIADA"] } }, select: { id: true, status: true }, orderBy: { id: "asc" } },
     },
   });
   if (!cirurgia) throw new FaturamentoError("Cirurgia não encontrada.");
   if (cirurgia.status !== "REALIZADA") throw new FaturamentoError("Só é possível faturar cirurgias com status REALIZADA.");
   if (cirurgia.consumos.length === 0) throw new FaturamentoError("A cirurgia não possui consumo registrado.");
+  // Vale ainda não conferido: o consumo dele ficaria fora do pedido, e a conferência depois seria recusada (cirurgia FATURADA
+  // não aceita consumo). O estoque confere (ou cancela, se ABERTA) antes de faturar. Leitura de Remessa (permitida, ADR-2).
+  const pendente = cirurgia.remessas[0];
+  if (pendente) {
+    throw new FaturamentoError(
+      `O vale REM-${pendente.id} desta cirurgia está ${pendente.status === "ABERTA" ? "aberto (não enviado)" : "enviado e ainda não conferido"}. ` +
+        "O estoque precisa conferir (ou cancelar) o vale antes do faturamento, senão o consumo dele fica fora do pedido.",
+    );
+  }
   if (cirurgia.pedido) {
     if (cirurgia.pedido.status !== "CANCELADO") {
       throw new FaturamentoError(`A cirurgia já possui o pedido de venda PV-${cirurgia.pedido.id}.`);

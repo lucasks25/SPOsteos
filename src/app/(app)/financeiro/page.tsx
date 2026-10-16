@@ -6,6 +6,7 @@ import { date, money, num } from "@/lib/format";
 import { Celula, VerTudo } from "@/components/lista";
 import { hojeUTC } from "@/lib/datas";
 import { painelFinanceiro, type Faixas } from "./_lib/painel";
+import { inventariosACobrar } from "./_lib/leitura-painel";
 
 type Tom = "default" | "warn" | "danger";
 
@@ -48,7 +49,7 @@ function Faixas({ titulo, href, f, cor }: { titulo: string; href: string; f: Fai
 export default async function PainelFinanceiroPage() {
   await requireUser(["FINANCEIRO"]);
   const hoje = hojeUTC();
-  const p = await painelFinanceiro(hoje);
+  const [p, inv] = await Promise.all([painelFinanceiro(hoje), inventariosACobrar()]);
   const pend = p.pendencias;
 
   return (
@@ -120,6 +121,28 @@ export default async function PainelFinanceiroPage() {
           ))}
         </Table>
       </div>
+
+      {inv.qtd > 0 && (
+        <div className="mt-4">
+          <Table
+            titulo={`Inventários com valor a cobrar (${money(inv.total)})`}
+            icone="alerta"
+            contagem={inv.qtd}
+            head={["Inventário", "Hospital", "Fechado em", "A cobrar"]}
+            acoes={<Link href="/estoque/inventario?cobrar=1" className={btn.small}>Ver todos</Link>}
+          >
+            {inv.itens.map((i) => (
+              <tr key={i.id}>
+                <Td><Celula href={`/estoque/inventario/${i.id}`} principal={`INV-${i.id}`} sub="falta cobrada do hospital" /></Td>
+                <Td className="max-w-[16rem]">{i.hospital}</Td>
+                <Td>{i.fechadoEm ? date(i.fechadoEm) : "—"}</Td>
+                <Td className="text-right tnum font-medium">{money(i.valor)}</Td>
+              </tr>
+            ))}
+          </Table>
+          <p className="mt-1 text-xs text-slate-500">Faltas do inventário de consignado que o estoque marcou para cobrar do hospital. O título não é gerado sozinho: confira e lance a conta a receber com a NF.</p>
+        </div>
+      )}
     </>
   );
 }

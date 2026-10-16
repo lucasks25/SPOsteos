@@ -1,5 +1,6 @@
 import "server-only";
 import { db } from "@/lib/db";
+import { addDias } from "@/lib/datas";
 
 /** Leituras do estoque para o painel e o sino (só leitura; ARQ-05). */
 
@@ -16,4 +17,14 @@ export async function contarAbaixoDoMinimo(hoje: Date): Promise<number> {
   ]);
   const mapa = new Map(saldos.map((s) => [s.produtoId, s._sum.quantidade ?? 0]));
   return produtos.filter((x) => (mapa.get(x.id) ?? 0) < x.estoqueMinimo).length;
+}
+
+/**
+ * Fila do estoque para o painel/sino: cirurgias AGENDADA/CONFIRMADA sem vale ativo (remessa não cancelada) até `dias`
+ * à frente de `hoje` (meia-noite de Brasília), incluindo as atrasadas. Mesma regra de `cirurgiasAguardandoVale`.
+ */
+export async function contarCirurgiasAguardandoVale(hoje: Date, dias = 7): Promise<number> {
+  return db.cirurgia.count({
+    where: { status: { in: ["AGENDADA", "CONFIRMADA"] }, remessas: { none: { status: { not: "CANCELADA" } } }, dataHora: { lt: addDias(hoje, dias + 1) } },
+  });
 }

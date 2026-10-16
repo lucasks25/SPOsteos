@@ -12,6 +12,14 @@ export async function contarAFaturar(): Promise<number> {
   return db.cirurgia.count({ where: { status: "REALIZADA" } });
 }
 
+/**
+ * Faturamento pendente: pedidos de venda gerados (ABERTO) sem NF registrada. A cirurgia já está FATURADA (saiu de
+ * "a faturar"), mas ainda não há conta a receber nem receita/CMV no DRE: só nascem ao registrar a NF.
+ */
+export async function contarPedidosSemNf(): Promise<number> {
+  return db.pedidoVenda.count({ where: { status: "ABERTO" } });
+}
+
 export type IndicadoresComerciais = {
   cirurgiasHoje: number;
   cirurgias7dias: number;
@@ -58,7 +66,8 @@ export async function indicadoresComerciais(hoje: Date): Promise<IndicadoresCome
 export async function proximasCirurgias(hoje: Date, limite = 10) {
   const lista = await db.cirurgia.findMany({
     where: { dataHora: { gte: hoje }, status: { in: ["AGENDADA", "CONFIRMADA"] } },
-    include: { hospital: true, medico: true, procedimento: true, _count: { select: { remessas: true } } },
+    // vale = remessa não cancelada (mesma regra da fila "cirurgias aguardando vale" do estoque)
+    include: { hospital: true, medico: true, procedimento: true, _count: { select: { remessas: { where: { status: { not: "CANCELADA" } } } } } },
     orderBy: { dataHora: "asc" },
     take: limite,
   });

@@ -5,4 +5,4 @@ export { registrarConsumoCirurgiaTx, type ItemConsumo } from "./consumo-servico"
 
 // Leituras para o painel e o sino (só leitura, ARQ-05).
 export { contarCirurgiasSemAutorizacao } from "./autorizacao-servico";
-export { contarAFaturar, indicadoresComerciais, proximasCirurgias, type IndicadoresComerciais } from "./leitura-painel";
+export { contarAFaturar, contarPedidosSemNf, indicadoresComerciais, proximasCirurgias, type IndicadoresComerciais } from "./leitura-painel";
