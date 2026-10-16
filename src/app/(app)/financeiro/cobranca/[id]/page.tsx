@@ -5,7 +5,7 @@ import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td, btn, type BadgeColor
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
-import { Celula } from "../../_lib/visual";
+import { Celula } from "@/components/lista";
 import { cancelarRemessaCobranca } from "../../_lib/cobranca-actions";
 import { MOTIVOS_POR_OCORRENCIA } from "../../_lib/cobranca-tabelas";
 

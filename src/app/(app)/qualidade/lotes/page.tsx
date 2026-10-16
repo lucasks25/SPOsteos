@@ -8,7 +8,7 @@ import { date, diasAte, num } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
 import { PERFIS_QUALIDADE, somarDias } from "../_lib/perfis";
 import { marcarVencidos } from "./actions";
-import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
+import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 
 const STATUS: StatusLote[] = ["QUARENTENA", "LIBERADO", "NAO_CONFORME", "BLOQUEADO", "VENCIDO"];
 

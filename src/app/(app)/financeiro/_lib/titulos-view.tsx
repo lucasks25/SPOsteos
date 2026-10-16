@@ -2,7 +2,7 @@ import Link from "next/link";
 import { Field, Select } from "@/components/form";
 import { Badge, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { date, money } from "@/lib/format";
-import { Celula } from "./visual";
+import { Celula } from "@/components/lista";
 import { TIPOS, type Tipo, type TituloRow } from "./config";
 import { hojeUTC, ymd } from "@/lib/datas";
 import { listarParceiros, listarTitulos, parseFiltros, type Filtros } from "./queries";

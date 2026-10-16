@@ -1,8 +1,8 @@
-import { Celula } from "../../financeiro/_lib/visual";
+import { Celula } from "@/components/lista";
 import { KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { money, num } from "@/lib/format";
-import { Filtros, FiltroInput, FiltroSelect } from "../../comercial/_components/filtros";
+import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
 import { opcoesHospitais, opcoesRepresentantes } from "../../comercial/_lib/opcoes";
 import { margemDados, type SP } from "../_lib/consultas";
 import type { LinhaMargem } from "../_lib/margens";

@@ -1,8 +1,8 @@
-import { Celula } from "../../financeiro/_lib/visual";
+import { Celula } from "@/components/lista";
 import { KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
-import { Filtros, FiltroInput, FiltroSelect } from "../../comercial/_components/filtros";
+import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
 import { giroDados, type SP } from "../_lib/consultas";
 import { DIAS_CONSUMO, DIAS_EXCESSO, DIAS_SEM_MOVIMENTO, ROTULO_SITUACAO, type SituacaoGiro } from "../_lib/giro";
 import { ThOrdenavel, ordenar, parseOrdem } from "../_lib/ordenar";

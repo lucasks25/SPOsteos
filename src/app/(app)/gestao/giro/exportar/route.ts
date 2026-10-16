@@ -1,7 +1,7 @@
 import { requireUser } from "@/lib/auth";
 import { ymd, hojeUTC } from "@/lib/datas";
 import { giroDados } from "../../_lib/consultas";
-import { respostaCsv } from "../../_lib/csv";
+import { respostaCsv } from "@/lib/csv";
 import { ROTULO_SITUACAO } from "../../_lib/giro";
 import { PERFIS_GESTAO } from "../../_lib/visual";
 

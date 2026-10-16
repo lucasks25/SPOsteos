@@ -3,7 +3,7 @@ import { requireUser } from "@/lib/auth";
 import { Badge, Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { date, num } from "@/lib/format";
-import { Filtros } from "../../../comercial/_components/filtros";
+import { Filtros } from "@/components/filtros";
 import { CLASSES, ORIGENS, PERFIS_OPERAR_RECOLHIMENTO, ROTULO_CLASSE, ROTULO_ORIGEM } from "../../_lib/recolhimento";
 import { abrirRecolhimentoAction } from "../actions";
 

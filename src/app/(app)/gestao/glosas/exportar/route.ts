@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { glosasDados } from "../../_lib/consultas";
-import { respostaCsv, pct } from "../../_lib/csv";
+import { respostaCsv, pct } from "@/lib/csv";
 import { PERFIS_GLOSAS } from "../../_lib/visual";
 import { ROTULO_CATEGORIA_GLOSA } from "../../../financeiro/_lib/glosa-categorias";
 

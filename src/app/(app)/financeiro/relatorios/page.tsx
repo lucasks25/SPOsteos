@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { Celula, SemRecuo } from "../_lib/visual";
+import { Celula, SemRecuo } from "@/components/lista";
 import { Icon } from "@/components/icons";
 import { Card, KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { requireUser } from "@/lib/auth";

@@ -3,7 +3,7 @@ import type { ReactNode } from "react";
 import { Card, KpiGrid, btn, PageHeader, Stat, Table, Td, cx } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
-import { Celula, VerTudo } from "./_lib/visual";
+import { Celula, VerTudo } from "@/components/lista";
 import { hojeUTC } from "@/lib/datas";
 import { painelFinanceiro, type Faixas } from "./_lib/painel";
 

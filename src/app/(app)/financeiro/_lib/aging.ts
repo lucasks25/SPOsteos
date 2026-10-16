@@ -36,13 +36,3 @@ export function agingPorParceiro(titulos: TituloAberto[], hoje: Date): { linhas:
   const totais = [0, 1, 2, 3, 4].map((i) => linhas.reduce((s, l) => s + cent(l.faixas[i]), 0) / 100);
   return { linhas, totais, total: totais.reduce((s, v) => s + cent(v), 0) / 100 };
 }
-
-/** CSV para Excel brasileiro: separador ";", decimal com vírgula, BOM UTF-8, e neutraliza fórmulas (=, +, -, @). */
-export function csv(linhas: (string | number)[][]): string {
-  const cel = (v: string | number) => {
-    if (typeof v === "number") return v.toFixed(2).replace(".", ",");
-    const t = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
-    return /[";\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
-  };
-  return `﻿${linhas.map((l) => l.map(cel).join(";")).join("\r\n")}\r\n`;
-}

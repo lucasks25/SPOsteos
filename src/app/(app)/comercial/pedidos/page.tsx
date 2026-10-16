@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
-import { FiltroInput, FiltroSelect, Filtros } from "../_components/filtros";
+import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";

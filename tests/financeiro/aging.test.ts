@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import { describe, it } from "node:test";
-import { agingPorParceiro, csv, faixaAtraso } from "../../src/app/(app)/financeiro/_lib/aging";
+import { agingPorParceiro, faixaAtraso } from "../../src/app/(app)/financeiro/_lib/aging";
+import { csv } from "../../src/lib/csv";
 
 const d = (s: string) => new Date(`${s}T00:00:00Z`);
 const hoje = d("2026-10-15");

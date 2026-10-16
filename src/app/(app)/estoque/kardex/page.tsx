@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, KpiGrid, PageHeader, Stat, Table, Td, btn, type BadgeColor } from "@/components/ui";
-import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
+import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { dateTime, money, num } from "@/lib/format";
 import { PERFIS_VER } from "../_lib/perfis";
 

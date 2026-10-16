@@ -6,7 +6,7 @@ import { date, money, num } from "@/lib/format";
 import { carregarConciliacao } from "../_lib/conciliacao";
 import { opcoesClassificacao } from "../_lib/plano";
 import { desfazerConciliacao, importarExtrato } from "../_lib/conciliacao-actions";
-import { SemRecuo } from "../_lib/visual";
+import { SemRecuo } from "@/components/lista";
 import { LinhaPendente } from "./linha";
 
 export default async function ConciliacaoPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {

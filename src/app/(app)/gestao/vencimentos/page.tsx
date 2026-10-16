@@ -1,9 +1,9 @@
 import Link from "next/link";
-import { Celula } from "../../financeiro/_lib/visual";
+import { Celula } from "@/components/lista";
 import { Badge, KpiGrid, PageHeader, Stat, Table, Td, type BadgeColor } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
-import { Filtros, FiltroSelect } from "../../comercial/_components/filtros";
+import { Filtros, FiltroSelect } from "@/components/filtros";
 import { vencimentosDados, type SP } from "../_lib/consultas";
 import { FAIXAS_VENCIMENTO } from "../_lib/vencimentos";
 import { BotaoCsv, PERFIS_GESTAO } from "../_lib/visual";

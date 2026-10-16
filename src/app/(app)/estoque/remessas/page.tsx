@@ -3,7 +3,7 @@ import type { Prisma, StatusRemessa } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
-import { FiltroInput, FiltroSelect, Filtros } from "../../comercial/_components/filtros";
+import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
 

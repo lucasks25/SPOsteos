@@ -5,7 +5,7 @@ import { Badge, Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td, btn
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
-import { Celula } from "../../_lib/visual";
+import { Celula } from "@/components/lista";
 import { cancelarRemessa } from "../../_lib/sispag-actions";
 import { descreverOcorrencias, FORMAS_SISPAG, type FormaSispag } from "../../_lib/sispag";
 

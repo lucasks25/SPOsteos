@@ -3,7 +3,7 @@ import type { Prisma, StatusInventario } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
-import { FiltroSelect, Filtros } from "../../comercial/_components/filtros";
+import { FiltroSelect, Filtros } from "@/components/filtros";
 import { dateTime, money, num, toNumber } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
 import { docInventario, revisarInventario } from "../_lib/inventario-servico";

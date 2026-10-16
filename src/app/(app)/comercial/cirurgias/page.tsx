@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { dateTime, num } from "@/lib/format";
 import type { Prisma, StatusCirurgia } from "@/generated/prisma/client";
-import { Filtros, FiltroInput, FiltroSelect } from "../_components/filtros";
+import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
 import { nomeHospital, opcoesHospitais, opcoesMedicos } from "../_lib/opcoes";
 import { periodo } from "@/lib/datas";
 

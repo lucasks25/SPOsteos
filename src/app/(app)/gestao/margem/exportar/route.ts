@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { margemDados } from "../../_lib/consultas";
-import { respostaCsv, pct } from "../../_lib/csv";
+import { respostaCsv, pct } from "@/lib/csv";
 import { PERFIS_GESTAO } from "../../_lib/visual";
 
 const CAB = ["Receita", "Custo", "Margem", "Margem %", "Comissão"];

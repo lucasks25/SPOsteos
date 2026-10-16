@@ -3,7 +3,7 @@ import { Badge, Card, KpiGrid, LinkButton, PageHeader, Stat, Table, Td, btn } fr
 import { requireUser } from "@/lib/auth";
 import { money } from "@/lib/format";
 import { Field, Form, Grid, Select } from "@/components/form";
-import { Celula } from "../_lib/visual";
+import { Celula } from "@/components/lista";
 import { transferirEntreContas } from "../_lib/contas-actions";
 import { hojeUTC, ymd } from "@/lib/datas";
 import { listarContas } from "../_lib/contas";

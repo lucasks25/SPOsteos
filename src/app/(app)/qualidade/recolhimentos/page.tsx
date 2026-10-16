@@ -2,7 +2,7 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Badge, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
-import { Filtros, FiltroSelect } from "../../comercial/_components/filtros";
+import { Filtros, FiltroSelect } from "@/components/filtros";
 import { date, num } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
 import { PERFIS_VER_RECOLHIMENTO, ROTULO_ORIGEM, docRecolhimento, encerrado, podeOperarRecolhimento, podeVerPacientes, prazoVencido, resumirRecolhimento, type StatusRecolhimento } from "../_lib/recolhimento";

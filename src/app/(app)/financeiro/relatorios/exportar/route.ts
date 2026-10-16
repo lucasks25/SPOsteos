@@ -1,5 +1,6 @@
 import { requireUser } from "@/lib/auth";
-import { FAIXAS_AGING, csv } from "../../_lib/aging";
+import { FAIXAS_AGING } from "../../_lib/aging";
+import { csv } from "@/lib/csv";
 import { carregarAging } from "../../_lib/aging-dados";
 import { hojeUTC, ymd } from "@/lib/datas";
 

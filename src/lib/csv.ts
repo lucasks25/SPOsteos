@@ -1,6 +1,12 @@
-import { csv } from "../../financeiro/_lib/aging";
-
-export { csv };
+/** CSV para Excel brasileiro: separador ";", decimal com vírgula, BOM UTF-8, e neutraliza fórmulas (=, +, -, @). */
+export function csv(linhas: (string | number)[][]): string {
+  const cel = (v: string | number) => {
+    if (typeof v === "number") return v.toFixed(2).replace(".", ",");
+    const t = /^[=+\-@\t\r]/.test(v) ? `'${v}` : v;
+    return /[";\n\r]/.test(t) ? `"${t.replace(/"/g, '""')}"` : t;
+  };
+  return `\ufeff${linhas.map((l) => l.map(cel).join(";")).join("\r\n")}\r\n`;
+}
 
 /** Resposta de download CSV (mesmos cabeçalhos do aging). */
 export function respostaCsv(nome: string, linhas: (string | number)[][]): Response {

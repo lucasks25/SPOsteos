@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { abcDados } from "../../_lib/consultas";
-import { respostaCsv } from "../../_lib/csv";
+import { respostaCsv } from "@/lib/csv";
 import { PERFIS_GESTAO } from "../../_lib/visual";
 
 export async function GET(req: Request) {
