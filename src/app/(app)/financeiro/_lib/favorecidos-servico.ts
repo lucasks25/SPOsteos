@@ -18,6 +18,14 @@ export async function gravarDadosPagamento(user: { id: string; perfil: Perfil },
     if (!atual) throw new ErroNegocio("Fornecedor não encontrado.");
     const data = Object.fromEntries(CAMPOS_PAGAMENTO.map((k) => [k, dados[k] ?? null])) as DadosPagamento;
     const mudancas = descreverMudancas(atual, data);
+    // alteração de outra pessoa ainda não aprovada: alterar por cima trocaria quem "alterou" e o autor da primeira troca
+    // passaria a poder aprová-la (revisão independente, docs/REVISAO.md §19). O próprio autor pode corrigir ou desfazer.
+    const pendenteDeOutro =
+      situacaoAprovacao(atual) === "PENDENTE" && !!atual.pagamentoAlteradoPor && atual.pagamentoAlteradoPor !== user.id &&
+      !!atual.pagamentoAlteradoEm && (!atual.pagamentoAprovadoEm || atual.pagamentoAlteradoEm > atual.pagamentoAprovadoEm);
+    if (mudancas && pendenteDeOutro) {
+      throw new ErroNegocio("Há uma alteração de outra pessoa aguardando aprovação. Aprove-a (ou peça a quem alterou para desfazer) antes de alterar de novo.");
+    }
     const salvo = await tx.fornecedor.update({
       where: { id: fornecedorId },
       data: { ...data, ...(mudancas ? { pagamentoAlteradoEm: new Date(), pagamentoAlteradoPor: user.id } : {}) },

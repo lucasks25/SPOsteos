@@ -7,7 +7,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
-import { autenticar, MAX_FALHAS, MSG_BLOQUEADO, MSG_INVALIDO, trocarSenha } from "@/lib/auth-login";
+import { autenticar, MAX_FALHAS, MAX_FALHAS_IP, MSG_BLOQUEADO, MSG_INVALIDO, trocarSenha } from "@/lib/auth-login";
 
 const SENHA = "senha-correta-123";
 const email = (n: string) => `testedb-login-${n}@opme.local`;
@@ -47,9 +47,15 @@ test("rajada de 20 tentativas simultâneas: no máximo 5 chegam a conferir a sen
 
 test("limite por IP também segura senha espalhada por vários e-mails", async () => {
   const r = [];
-  for (let i = 0; i < 8; i++) r.push(await autenticar(email(`spray${i}`), "x", "198.51.100.7"));
-  assert.equal(r.filter((x) => !x.ok && x.erro === MSG_INVALIDO).length, MAX_FALHAS);
-  assert.ok(r.slice(MAX_FALHAS).every((x) => !x.ok && x.erro === MSG_BLOQUEADO));
+  for (let i = 0; i < MAX_FALHAS_IP + 3; i++) r.push(await autenticar(email(`spray${i}`), "x", "198.51.100.7"));
+  assert.equal(r.filter((x) => !x.ok && x.erro === MSG_INVALIDO).length, MAX_FALHAS_IP);
+  assert.ok(r.slice(MAX_FALHAS_IP).every((x) => !x.ok && x.erro === MSG_BLOQUEADO));
+});
+
+test("revisão independente: IP compartilhado (escritório atrás de NAT) — erros de outros não bloqueiam quem acerta a senha", async () => {
+  await mkUsuario("nat");
+  for (let i = 0; i < MAX_FALHAS + 1; i++) await autenticar(email(`colega${i}`), "errada", "198.51.100.9");
+  assert.equal((await autenticar(email("nat"), SENHA, "198.51.100.9")).ok, true);
 });
 
 test("mesma mensagem para e-mail inexistente, senha errada e usuário inativo; sucesso limpa as falhas", async () => {

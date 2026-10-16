@@ -4,6 +4,9 @@ import { db } from "@/lib/db";
 import { audit } from "@/lib/forms";
 
 export const MAX_FALHAS = 5;
+// por IP o limite é maior: o escritório inteiro sai pelo mesmo IP (NAT), e 5 erros de colegas bloqueavam todo mundo,
+// inclusive quem acertava a senha (revisão independente, docs/REVISAO.md §19). Ainda contém senha espalhada por e-mails.
+export const MAX_FALHAS_IP = 30;
 export const JANELA_MS = 15 * 60 * 1000;
 // hash de uma senha qualquer: quando o e-mail não existe, comparamos contra ele para o tempo de resposta não revelar isso
 const HASH_FALSO = "$2b$10$CwTycUXWue0Thq9StjUM0uJ8.4cF5L8lq7sQ3nZ0f6m9xYk0m2d8e";
@@ -26,7 +29,7 @@ export async function autenticar(emailBruto: string, senhaBruta: string, ip: str
   const reservas = await db.tentativaLogin.createManyAndReturn({ data: chaves.map((chave) => ({ chave })), select: { id: true } });
   const ids = reservas.map((r) => r.id);
   const porChave = await db.tentativaLogin.groupBy({ by: ["chave"], where: { chave: { in: chaves }, criadaEm: { gte: desde } }, _count: true });
-  if (porChave.some((c) => c._count > MAX_FALHAS)) {
+  if (porChave.some((c) => c._count > (c.chave.startsWith("ip:") ? MAX_FALHAS_IP : MAX_FALHAS))) {
     await db.tentativaLogin.deleteMany({ where: { id: { in: ids } } }); // bloqueada não conta: não prolonga o bloqueio
     return { ok: false, erro: MSG_BLOQUEADO };
   }

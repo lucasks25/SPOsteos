@@ -8,7 +8,8 @@
  */
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { readFileSync, readdirSync, statSync } from "node:fs";
+import { mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import path from "node:path";
 import ts from "typescript";
 
@@ -40,13 +41,14 @@ const EXIGE = /\b(requireUser|requirePerfil)\(/;
 
 type Funcao = { arquivo: string; nome: string; no: ts.FunctionDeclaration; sf: ts.SourceFile };
 
-function funcoesExportadas(): Funcao[] {
+function funcoesExportadas(lista = useServer): Funcao[] {
   const out: Funcao[] = [];
-  for (const f of useServer) {
+  for (const f of lista) {
     const sf = ts.createSourceFile(f, readFileSync(f, "utf8"), ts.ScriptTarget.Latest, true);
     for (const n of sf.statements) {
-      if (ts.isFunctionDeclaration(n) && n.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword) && n.name) {
-        out.push({ arquivo: rel(f), nome: n.name.text, no: n, sf });
+      // `export default async function (id) {}` (sem nome) também vira action: antes escapava das checagens
+      if (ts.isFunctionDeclaration(n) && n.modifiers?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword)) {
+        out.push({ arquivo: rel(f), nome: n.name?.text ?? "default", no: n, sf });
       }
     }
   }
@@ -96,29 +98,68 @@ test("toda Server Action exige usuário no primeiro comando", () => {
   assert.deepEqual(falhas, [], `actions sem requireUser no primeiro comando:\n${falhas.join("\n")}`);
 });
 
-test("todo argumento solto de Server Action é validado antes do primeiro uso", () => {
+function falhasArgumentos(funcs: Funcao[]): string[] {
   const falhas: string[] = [];
-  for (const { arquivo, nome, no, sf } of funcoesExportadas()) {
+  for (const { arquivo, nome, no, sf } of funcs) {
     for (const p of no.parameters) {
-      if (padrao(p, sf) || !ts.isIdentifier(p.name) || !no.body) continue;
-      if (!primeiroUsoValidado(no.body, p.name.text)) falhas.push(`${arquivo}#${nome}(${p.name.text}: ${p.type?.getText(sf) ?? "?"})`);
+      if (!no.body) continue;
+      const desc = `${arquivo}#${nome}(${p.name.getText(sf)}: ${p.type?.getText(sf) ?? "?"})`;
+      // parâmetro desestruturado ({ id }) não tem como passar por argId antes do uso: antes era pulado em silêncio
+      if (!ts.isIdentifier(p.name)) falhas.push(desc);
+      // o "estado anterior" também vem do cliente sem validação: só pode existir se não for usado
+      else if (p.type?.getText(sf) === "ActionState") {
+        if (!primeiroUsoValidado(no.body, p.name.text)) falhas.push(desc);
+      } else if (!padrao(p, sf) && !primeiroUsoValidado(no.body, p.name.text)) falhas.push(desc);
     }
   }
-  assert.deepEqual(falhas, [], `argumentos sem argId/argInt/... antes do uso:\n${falhas.join("\n")}`);
-});
+  return falhas;
+}
 
-test("arquivos 'use server' só exportam funções async (nada de constante ou objeto exposto)", () => {
+function falhasExports(lista = useServer): string[] {
   const falhas: string[] = [];
-  for (const f of useServer) {
+  for (const f of lista) {
     const sf = ts.createSourceFile(f, readFileSync(f, "utf8"), ts.ScriptTarget.Latest, true);
     for (const n of sf.statements) {
+      // `export { x }`, `export { x } from "./y"`, `export *` e `export default x` publicam actions que as checagens acima não veem
+      if ((ts.isExportDeclaration(n) && !n.isTypeOnly) || ts.isExportAssignment(n)) {
+        falhas.push(`${rel(f)}: ${n.getText(sf).slice(0, 60)}`);
+        continue;
+      }
       const exportado = ts.canHaveModifiers(n) && ts.getModifiers(n)?.some((m) => m.kind === ts.SyntaxKind.ExportKeyword);
       if (!exportado || ts.isTypeAliasDeclaration(n) || ts.isInterfaceDeclaration(n)) continue;
       const asyncFn = ts.isFunctionDeclaration(n) && n.modifiers?.some((m) => m.kind === ts.SyntaxKind.AsyncKeyword);
       if (!asyncFn) falhas.push(`${rel(f)}: ${n.getText(sf).slice(0, 60)}`);
     }
   }
-  assert.deepEqual(falhas, []);
+  return falhas;
+}
+
+test("todo argumento solto de Server Action é validado antes do primeiro uso", () => {
+  const falhas = falhasArgumentos(funcoesExportadas());
+  assert.deepEqual(falhas, [], `argumentos sem argId/argInt/... antes do uso:\n${falhas.join("\n")}`);
+});
+
+test("arquivos 'use server' só exportam funções async (nada de constante ou objeto exposto)", () => {
+  assert.deepEqual(falhasExports(), []);
+});
+
+test("revisão independente: o guarda pega re-export, parâmetro desestruturado, estado anterior usado e default sem nome", () => {
+  const dir = mkdtempSync(path.join(tmpdir(), "guarda-"));
+  try {
+    const cab = `"use server";\nimport { requireUser } from "@/lib/auth";\nimport { db } from "@/lib/db";\n`;
+    const reexp = path.join(dir, "reexport.ts");
+    writeFileSync(reexp, `${cab}async function apagar(id: string) {\n  await requireUser();\n  await db.x.deleteMany({ where: { id } });\n}\nexport { apagar };\nexport { outra } from "./outra";\n`);
+    const params = path.join(dir, "params.ts");
+    writeFileSync(params, `${cab}export async function a({ id }: { id: string }) {\n  await requireUser();\n  await db.x.deleteMany({ where: { id } });\n}\nexport async function b(estado: ActionState, fd: FormData) {\n  await requireUser();\n  await db.x.deleteMany({ where: { id: estado.id } });\n}\nexport default async function (id: string) {\n  await db.x.deleteMany({ where: { id } });\n}\n`);
+    assert.equal(falhasExports([reexp]).length, 2, "re-export não detectado");
+    const funcs = funcoesExportadas([params]);
+    assert.deepEqual(funcs.map((f) => f.nome), ["a", "b", "default"]);
+    assert.equal(falhasArgumentos(funcs).length, 3, "argumento sem validação não detectado");
+    const semLogin = funcs.filter(({ no, sf }) => !EXIGE.test(no.body?.statements[0]?.getText(sf) ?? "")).map((f) => f.nome);
+    assert.deepEqual(semLogin, ["default"]);
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
 });
 
 test("toda page.tsx autenticada e todo route.ts exige usuário", () => {

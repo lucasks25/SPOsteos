@@ -92,6 +92,20 @@ test("CNPJ trocado em Cadastros também exige aprovação (vai no arquivo como d
   await assert.rejects(gerar([t.id]), /aguardando aprovação/);
 });
 
+test("revisão independente: segunda pessoa não altera por cima de alteração pendente de outra (senão o autor aprovaria a própria troca)", async () => {
+  const f = await mkFornecedor();
+  await gravarDadosPagamento(A, f.id, dados);
+  await aprovarDadosPagamento(B, f.id, hashDadosPagamento(await ler(f.id)));
+  await gravarDadosPagamento(A, f.id, { ...dados, conta: "33333" }); // golpe de A
+  // B, sem perceber a conta trocada, acrescenta a chave Pix que o fornecedor pediu: antes passava e A virava aprovador
+  await assert.rejects(gravarDadosPagamento(B, f.id, { ...dados, conta: "33333", chavePix: "fornecedor@exemplo.com.br" }), /aguardando aprovação/);
+  await assert.rejects(aprovarDadosPagamento(A, f.id, hashDadosPagamento(await ler(f.id))), /Quem alterou/);
+  await gravarDadosPagamento(A, f.id, { ...dados, conta: "44444" }); // o próprio autor pode corrigir a alteração pendente
+  await gravarDadosPagamento(A, f.id, dados); // e desfazer
+  await gravarDadosPagamento(B, f.id, { ...dados, chavePix: "fornecedor@exemplo.com.br" }); // aprovado de novo: B altera
+  assert.equal((await ler(f.id)).pagamentoAlteradoPor, B.id);
+});
+
 test("alteração dos dados espera a geração de remessa em andamento (trava de linha)", async () => {
   const f = await mkFornecedor();
   await gravarDadosPagamento(A, f.id, dados);
