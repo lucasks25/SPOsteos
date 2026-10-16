@@ -18,8 +18,8 @@ export function cx(...c: (string | false | null | undefined)[]) {
  */
 export function PageHeader({ title, subtitle, actions, maisAcoes, voltar }: { title: string; subtitle?: string; actions?: ReactNode; maisAcoes?: ReactNode; voltar?: { href: string; label?: string } }) {
   return (
-    <div className="page-head mb-5 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 print:mb-3">
-      <div className="min-w-0">
+    <div className="page-head mb-5 flex flex-col gap-3 md:flex-row md:items-end md:justify-between md:gap-6 print:mb-3">
+      <div className="min-w-0 flex-1">
         {voltar ? (
           <Link href={voltar.href} className="mb-1 inline-flex items-center gap-1 text-xs font-semibold text-teal-700 hover:underline print:hidden">
             <Icon name="direita" size={14} className="rotate-180" />
@@ -32,7 +32,7 @@ export function PageHeader({ title, subtitle, actions, maisAcoes, voltar }: { ti
         {subtitle && <p className="mt-1 max-w-3xl text-sm text-slate-600">{subtitle}</p>}
       </div>
       {(actions || maisAcoes) && (
-        <div className="flex flex-wrap items-center gap-2 print:hidden">
+        <div className="flex shrink-0 flex-wrap items-center gap-2 md:max-w-[55%] md:justify-end print:hidden">
           {maisAcoes && <MaisAcoes>{maisAcoes}</MaisAcoes>}
           {actions}
         </div>
@@ -52,7 +52,7 @@ export function Card({ title, icon, actions, children, className }: { title?: st
                 <Icon name={icon} size={16} />
               </span>
             )}
-            {title && <h2 className="truncate text-base font-bold text-slate-900">{title}</h2>}
+            {title && <h2 className="min-w-0 text-base font-bold leading-snug text-slate-900">{title}</h2>}
           </div>
           {actions}
         </div>
@@ -136,7 +136,7 @@ export function Table({
           <thead>
             <tr>
               {head.map((h, i) => (
-                <th key={i} scope="col" className="h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-4 text-left text-xs font-semibold uppercase tracking-[0.04em] text-slate-500">
+                <th key={i} scope="col" className="h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 text-left first:pl-4 last:pr-4 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500">
                   {h}
                 </th>
               ))}
@@ -160,7 +160,7 @@ export function Table({
 }
 
 export function Td({ children, className }: { children?: ReactNode; className?: string }) {
-  return <td className={cx("whitespace-nowrap px-4 py-1.5 align-middle text-slate-900", className)}>{children}</td>;
+  return <td className={cx("whitespace-nowrap px-3 py-1.5 align-middle text-slate-900 first:pl-4 last:pr-4", className)}>{children}</td>;
 }
 
 /** Estado vazio: ícone em círculo verde-claro, por que está vazio e, se houver, a ação que resolve. */

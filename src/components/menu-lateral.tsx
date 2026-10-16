@@ -184,6 +184,10 @@ export function UsuarioLateral({ nome, perfil, sair, recolhida }: { nome: string
               ))}
             </div>
           </form>
+          <Link href="/conta/senha" onClick={() => setAberto(false)} className="flex w-full items-center gap-2.5 border-b border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700">
+            <Icon name="cadeado" size={16} />
+            Trocar minha senha
+          </Link>
           <form action={sair}>
             <button className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-rose-600">
               <Icon name="sair" size={16} />
