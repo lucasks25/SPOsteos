@@ -2,6 +2,9 @@
 
 html {
   -webkit-text-size-adjust: 100%;
+  /* mesmo fundo do body: o "elástico" do Mac/iOS ao passar do topo ou do fim não mostra faixa branca */
+  background: var(--bg);
+  overscroll-behavior-y: none;
 }
 
 body {
@@ -138,6 +141,7 @@ input[type="month"]::-webkit-calendar-picker-indicator {
 }
 
 @media print {
+  html,
   body {
     background: #fff;
     color: #000;
