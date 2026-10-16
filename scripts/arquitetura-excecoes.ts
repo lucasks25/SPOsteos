@@ -28,7 +28,6 @@ export const EXCECOES: readonly Excecao[] = [
   { regra: "modulo-cruzado", de: "src/app/(app)/gestao/glosas/page.tsx", para: "src/app/(app)/financeiro/_lib/glosa-categorias.ts", item: "ARQ-06" },
   { regra: "modulo-cruzado", de: "src/app/(app)/gestao/margem/page.tsx", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
   { regra: "modulo-cruzado", de: "src/app/(app)/gestao/vendas/page.tsx", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
-  { regra: "kernel-importa-app", de: "src/components/app-shell.tsx", para: "src/app/tema-actions.ts", item: "ARQ-04" },
   { regra: "lib-importa-ui", de: "src/lib/pendencias.ts", para: "src/components/icons.tsx", item: "ARQ-05" },
   { regra: "kernel-importa-app", de: "src/lib/pendencias.ts", para: "src/app/(app)/financeiro/_lib/painel.ts", item: "ARQ-05" },
   { regra: "kernel-importa-app", de: "src/lib/pendencias.ts", para: "src/app/(app)/comercial/_lib/autorizacao-servico.ts", item: "ARQ-05" },
