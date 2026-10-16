@@ -53,7 +53,7 @@ function ItensDoModulo({ m, ativoHref, aoNavegar, flutuante }: { m: Modulo; ativ
               const on = ativoHref === i.href;
               return (
                 <li key={i.href}>
-                  <Link href={i.href} onClick={aoNavegar} aria-current={on ? "page" : undefined} className={`${itemBase} h-9 ${flutuante ? "px-3" : "pl-11 pr-3"} ${on ? itemOn : itemOff} ${flutuante ? "before:hidden" : ""}`}>
+                  <Link href={i.href} onClick={aoNavegar} title={i.label.length > 26 ? i.label : undefined} aria-current={on ? "page" : undefined} className={`${itemBase} h-9 ${flutuante ? "px-3" : "pl-11 pr-3"} ${on ? itemOn : itemOff} ${flutuante ? "before:hidden" : ""}`}>
                     <span className="truncate">{i.label}</span>
                   </Link>
                 </li>
