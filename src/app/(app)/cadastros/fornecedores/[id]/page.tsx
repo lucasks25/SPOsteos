@@ -4,7 +4,8 @@ import { requireUser } from "@/lib/auth";
 import { Badge, Card, PageHeader } from "@/components/ui";
 import { VerDocumentos } from "../../_lib/link-documentos";
 import { ActionButton } from "@/components/form";
-import { podeDadosBancarios, podeIrParaDocumentos } from "../../_lib/permissoes";
+import { podeIrParaDocumentos, podeIrParaFavorecidos } from "../../_lib/permissoes";
+import Link from "next/link";
 import { FornecedorForm } from "../fornecedor-form";
 import { alternarAtivoFornecedor, excluirFornecedor } from "../actions";
 
@@ -16,7 +17,6 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
     include: { _count: { select: { pedidos: true, contasPagar: true } } },
   });
   if (!fornecedor) notFound();
-  if (!podeDadosBancarios(user.perfil)) Object.assign(fornecedor, { bancoCodigo: null, agencia: null, conta: null, contaDigito: null, chavePix: null });
   const vinculos = fornecedor._count.pedidos + fornecedor._count.contasPagar;
   return (
     <>
@@ -36,8 +36,13 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
         }
       />
       <Card>
-        <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} podeBanco={podeDadosBancarios(user.perfil)} />
+        <FornecedorForm key={String(fornecedor.ativo)} fornecedor={fornecedor} />
       </Card>
+      {podeIrParaFavorecidos(user.perfil) && (
+        <p className="mt-3 text-[13px]">
+          <Link href={`/financeiro/favorecidos/${id}`} className="text-teal-700 hover:underline">Dados de pagamento</Link>
+        </p>
+      )}
       {podeIrParaDocumentos(user.perfil) && <VerDocumentos campo="fornecedorId" id={id} />}
     </>
   );

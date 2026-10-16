@@ -6,9 +6,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { checarCnpj, tipoChavePix, UFS } from "@/lib/documentos-br";
+import { checarCnpj, UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_SUPRIMENTOS } from "../_lib/acoes";
-import { mascarar, podeDadosBancarios } from "../_lib/permissoes";
 
 const schema = z.object({
   razaoSocial: zf.text(),
@@ -20,23 +19,6 @@ const schema = z.object({
   cidade: zf.optText(),
   uf: z.enum(UFS, { error: "UF inválida" }).optional().transform((v) => v ?? null),
   afe: zf.optText(),
-  bancoCodigo: z.string().regex(/^\d{3}$/, "Código do banco com 3 dígitos (ex.: 341)").optional().transform((v) => v ?? null),
-  agencia: z.string().regex(/^\d{1,5}$/, "Agência só com números, sem dígito").optional().transform((v) => v ?? null),
-  conta: z.string().regex(/^\d{1,12}$/, "Conta só com números, sem dígito").optional().transform((v) => v ?? null),
-  contaDigito: z.string().regex(/^[0-9Xx]{1,2}$/, "Dígito da conta inválido").optional().transform((v) => v?.toUpperCase() ?? null),
-  chavePix: z
-    .string()
-    .max(77, "Chave Pix muito longa")
-    .optional()
-    .superRefine((v, ctx) => {
-      if (!v) return;
-      try {
-        tipoChavePix(v);
-      } catch (e) {
-        ctx.addIssue({ code: "custom", message: (e as Error).message });
-      }
-    })
-    .transform((v) => v ?? null),
   ativo: zf.bool(),
 });
 
@@ -44,23 +26,16 @@ export async function salvarFornecedor(id: string | null, _: ActionState, fd: Fo
   const user = await requireUser([...PERFIS_SUPRIMENTOS, "FINANCEIRO"]);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
-  const data: Record<string, unknown> & typeof parsed.data = parsed.data;
-  const BANCARIOS = ["bancoCodigo", "agencia", "conta", "contaDigito", "chavePix"] as const;
-  // quem não paga não vê nem altera os dados bancários: ignora o que vier no formulário (o update não toca nesses campos)
-  if (!podeDadosBancarios(user.perfil)) for (const k of BANCARIOS) delete data[k];
+  // dados bancários/Pix não passam por aqui: a escrita nessas colunas é só do financeiro (financeiro/_lib/favorecidos-servico.ts)
+  const data = { ...parsed.data };
   try {
     const atual = id ? await db.fornecedor.findUnique({ where: { id } }) : null;
     if (id && !atual) return { error: "Fornecedor não encontrado." };
     const c = checarCnpj(data.cnpj, atual?.cnpj);
     if (!c.ok) return { error: "Verifique os campos destacados.", fieldErrors: { cnpj: c.error } };
     data.cnpj = c.value;
-    const saved = id ? await db.fornecedor.update({ where: { id }, data: data as typeof parsed.data }) : await db.fornecedor.create({ data: data as typeof parsed.data });
-    let detalhe = atual && atual.ativo !== saved.ativo ? ` (${saved.ativo ? "ativado" : "inativado"})` : "";
-    // troca de dados bancários é o golpe clássico de desvio de pagamento: fica na auditoria com antes e depois (mascarados)
-    if (atual) {
-      const mudou = BANCARIOS.filter((k) => (atual[k] ?? null) !== (saved[k] ?? null));
-      if (mudou.length) detalhe += ` — DADOS BANCÁRIOS ALTERADOS: ${mudou.map((k) => `${k} ${mascarar(atual[k])} → ${mascarar(saved[k])}`).join("; ")}`;
-    }
+    const saved = id ? await db.fornecedor.update({ where: { id }, data }) : await db.fornecedor.create({ data });
+    const detalhe = atual && atual.ativo !== saved.ativo ? ` (${saved.ativo ? "ativado" : "inativado"})` : "";
     await audit(user.id, id ? "editar" : "criar", "Fornecedor", saved.id, `${saved.razaoSocial}${detalhe}`);
   } catch (e) {
     return { error: errorMessage(e) };

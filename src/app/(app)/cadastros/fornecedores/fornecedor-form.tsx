@@ -3,7 +3,7 @@ import type { Fornecedor } from "@/generated/prisma/client";
 import { UF_OPTIONS } from "@/lib/documentos-br";
 import { salvarFornecedor } from "./actions";
 
-export function FornecedorForm({ fornecedor, podeBanco = false }: { fornecedor?: Fornecedor; podeBanco?: boolean }) {
+export function FornecedorForm({ fornecedor }: { fornecedor?: Fornecedor }) {
   const f = fornecedor;
   return (
     <Form action={salvarFornecedor.bind(null, f?.id ?? null)} redirectTo="/cadastros/fornecedores">
@@ -20,18 +20,6 @@ export function FornecedorForm({ fornecedor, podeBanco = false }: { fornecedor?:
           <Select label="UF" name="uf" defaultValue={f?.uf ?? ""} options={UF_OPTIONS} placeholder="—" />
         </div>
       </Grid>
-      {podeBanco && (
-      <fieldset className="rounded border border-slate-200 p-4">
-        <legend className="px-1 text-xs font-bold uppercase tracking-[.04em] text-slate-600">Dados para pagamento (SISPAG)</legend>
-        <Grid cols={4}>
-          <Field label="Banco (código)" name="bancoCodigo" defaultValue={f?.bancoCodigo ?? ""} maxLength={3} placeholder="341" />
-          <Field label="Agência" name="agencia" defaultValue={f?.agencia ?? ""} maxLength={5} hint="Sem dígito" />
-          <Field label="Conta" name="conta" defaultValue={f?.conta ?? ""} maxLength={12} hint="Sem dígito" />
-          <Field label="Dígito" name="contaDigito" defaultValue={f?.contaDigito ?? ""} maxLength={2} />
-          <Field label="Chave Pix" name="chavePix" defaultValue={f?.chavePix ?? ""} maxLength={77} className="sm:col-span-2" hint="E-mail, +55DDDNÚMERO, CPF/CNPJ só números ou chave aleatória" />
-        </Grid>
-      </fieldset>
-      )}
       <Field label="Ativo" name="ativo" type="checkbox" defaultChecked={f?.ativo ?? true} />
     </Form>
   );

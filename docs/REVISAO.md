@@ -228,6 +228,7 @@ Revisão feita pelo `arquiteto` sobre o sistema inteiro (autenticação, as 29 S
 
 **Corrigido nesta rodada**
 - **A1** Dados bancários e Pix de fornecedor: só FINANCEIRO/ADMIN veem e alteram (servidor ignora o campo vindo de outro perfil; a página nem envia o dado ao navegador). Troca de dado bancário vai para a auditoria com antes e depois mascarados.
+- **A1 (atualização UI-05, 16/10/2026):** a edição dos dados bancários/Pix saiu do cadastro de fornecedores e foi para `/financeiro/favorecidos` (`requireUser(["FINANCEIRO"])`, serviço que reconfere o perfil, validação de formato, auditoria antes/depois mascarados; lista mostra só o final da conta e da chave). O cadastro não lê nem grava mais essas colunas. Testes: `tests/financeiro/favorecidos.test.ts`, `tests/negocio-db/favorecidos.test.ts`.
 - **A2** `AUTH_SECRET` exige 32+ caracteres e recusa o valor de exemplo. `.env.example` agora vem vazio com instrução (`openssl rand -hex 32`).
 - **A3** Limite de login: 5 falhas em 15 min por e-mail (e por IP quando há proxy com `x-forwarded-for`); falhas auditadas; comparação de hash mesmo com e-mail inexistente. Testado no navegador (6ª tentativa bloqueada).
 - **A4** O seed não roda em produção. Novo `npm run admin:criar` cria os locais de estoque e o primeiro administrador (senha 12 a 72 caracteres, via variáveis de ambiente).

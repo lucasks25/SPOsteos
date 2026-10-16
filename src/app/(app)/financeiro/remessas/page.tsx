@@ -86,7 +86,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
               })}
             </Table>
             <p className="text-xs text-slate-500">
-              Contas sem dados bancários ficam bloqueadas: complete o fornecedor (banco, agência, conta ou chave Pix) ou cadastre o boleto na conta a pagar.
+              Contas sem dados bancários ficam bloqueadas: complete os dados de pagamento do fornecedor em <Link href="/financeiro/favorecidos?situacao=sem" className="text-teal-700 hover:underline">Favorecidos</Link> (banco, agência, conta ou chave Pix) ou cadastre o boleto na conta a pagar.
             </p>
           </Form>
         )}

@@ -142,7 +142,7 @@ src/app/(app)/<modulo>/...  telas de cada módulo
   - `Transferencia`: liga as duas pernas (SAIDA na origem, ENTRADA no destino). Muda o saldo de cada conta, mas **não é entrada/saída do mês no painel nem realizado do fluxo** (filtro `transferenciaId: null`).
   - `ExtratoLinha`: linha do extrato do banco (OFX ou CNAB 240), valor assinado; conciliada quando aponta para um `Lancamento`. Única por (conta, `fitid`), o que impede importar duas vezes.
   - `RemessaPagamento` / `RemessaPagamentoItem`: arquivos SISPAG gerados e a situação de cada pagamento no banco (ENVIADO, AGENDADO, PAGO, REJEITADO). O id do item vira o "seu número" `SP<id>` que volta no retorno.
-- **Fornecedor** ganhou dados para pagamento: `bancoCodigo`, `agencia`, `conta`, `contaDigito`, `chavePix`.
+- **Fornecedor** ganhou dados para pagamento: `bancoCodigo`, `agencia`, `conta`, `contaDigito`, `chavePix`. Só a tela `/financeiro/favorecidos` (action `financeiro/_lib/favorecidos-actions.ts`, serviço `favorecidos-servico.ts`) grava essas colunas; o cadastro de fornecedores não as toca.
 
 Para mudar o esquema: editar o schema, rodar `npx prisma migrate dev --name <nome>` e reiniciar o dev server.
 
@@ -188,7 +188,7 @@ Revisão de código e segurança, achados e o que foi ou não testado: **`docs/R
 |---|---|---|
 | Infra | Docker/Postgres, Prisma, 5 migrations, seed, build de produção | `tsc`, `next build` |
 | Login, layout, menu por perfil | — | navegador |
-| Cadastros | produtos, fabricantes, fornecedores (com dados bancários/Pix), hospitais, médicos, convênios, **procedimentos** (materiais padrão), **representantes** | navegador (parcial) |
+| Cadastros | produtos, fabricantes, fornecedores (só dados cadastrais; banco/Pix em Financeiro > Favorecidos), hospitais, médicos, convênios, **procedimentos** (materiais padrão), **representantes** | navegador (parcial) |
 | Administração | **usuários** (criar, perfil, ativar, redefinir senha; o admin não se desativa) e **log de auditoria** (filtros, 50 por página) | renderização |
 | Qualidade | quarentena/inspeção, lotes, rastreabilidade, registros ANVISA | já existia; não retestado |
 | Comercial | cirurgias (anexos, faturamento), pedidos de venda (registrar NF → conta a receber, cancelar), **agenda semanal**, **orçamentos** (itens com preço da tabela, status, impressão), **tabelas de preço** (itens, vigência, incluir todos, margem), **comissões e margem** (por representante, hospital e médico) | ponta a ponta no navegador + banco (ver abaixo) |
@@ -238,7 +238,7 @@ As rotas já estão no menu (`src/components/nav.ts`). Uma rota sem arquivo dá 
 ### 9.1 Cadastros — `src/app/(app)/cadastros/*` e `src/app/(app)/admin/*`
 Para cada cadastro: lista com busca, novo, editar, e ativar/inativar quando houver o campo `ativo`. Preferir inativar a excluir. Só excluir quando não houver relações; erros de FK devem virar mensagem amigável.
 1. **fabricantes**: nome, CNPJ, país.
-2. **fornecedores**: razão social, fantasia, CNPJ (validar dígitos; validador em `cadastros/_lib/documentos.ts`), IE, contato, cidade/UF, AFE ANVISA.
+2. **fornecedores**: razão social, fantasia, CNPJ (validar dígitos; validador em `cadastros/_lib/documentos.ts`), IE, contato, cidade/UF, AFE ANVISA. **Sem dados bancários/Pix**: ficam em `/financeiro/favorecidos` (UI-05); o detalhe mostra só o link "Dados de pagamento" para FINANCEIRO/ADMIN.
 3. **hospitais**: todos os campos + prazoPagamentoDias + tabela de preço. Ao criar, também cria o local consignado (`localDoHospital` dentro de uma transação). O detalhe é só o cadastro (cada módulo é dono das suas telas): mostra links só leitura, conforme o perfil, para as cirurgias (`/comercial/cirurgias?hospital=`), o estoque consignado (`/estoque/saldos?local=`) e as contas a receber (`/financeiro/receber?hospital=`) do hospital. Fornecedor, fabricante e produto trazem apenas o link "Ver documentos" (`/qualidade/documentos?fornecedorId|fabricanteId|produtoId=`); documentos são criados e editados só na Qualidade.
 4. **medicos**: nome, CRM+UF (único), especialidade, contato.
 5. **convenios**: nome, registro ANS, CNPJ.

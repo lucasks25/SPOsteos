@@ -87,6 +87,7 @@ export const NAV: NavGroup[] = [
       { href: "/financeiro/pagar", label: "Contas a pagar" },
       { href: "/financeiro/aprovacoes", label: "Aprovar contas a pagar" },
       { href: "/financeiro/remessas", label: "Pagamentos SISPAG" },
+      { href: "/financeiro/favorecidos", label: "Favorecidos" },
     ],
   },
   {
