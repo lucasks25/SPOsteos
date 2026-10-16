@@ -101,3 +101,18 @@ export async function atualizarCustoMedio(tx: Tx, produtoId: string, quantidadeE
   await tx.produto.update({ where: { id: produtoId }, data: { custoMedio: novoCusto } });
   return novoCusto;
 }
+
+/**
+ * Remove o local consignado de um hospital que vai ser excluído. Só se o local nunca teve movimentação
+ * (saldo, kardex ou remessa): devolve `false`, sem apagar, caso contrário.
+ */
+export async function removerLocalDoHospital(tx: Tx, localId: string): Promise<boolean> {
+  const c = await tx.localEstoque.findUnique({
+    where: { id: localId },
+    select: { _count: { select: { saldos: true, movOrigem: true, movDestino: true, remessas: true } } },
+  });
+  if (!c) return true;
+  if (c._count.saldos + c._count.movOrigem + c._count.movDestino + c._count.remessas > 0) return false;
+  await tx.localEstoque.delete({ where: { id: localId } });
+  return true;
+}

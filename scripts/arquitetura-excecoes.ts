@@ -20,5 +20,4 @@ export const EXCECOES: readonly Excecao[] = [
   { regra: "kernel-importa-app", de: "src/lib/pendencias.ts", para: "src/app/(app)/financeiro/_lib/painel.ts", item: "ARQ-05" },
   { regra: "kernel-importa-app", de: "src/lib/pendencias.ts", para: "src/app/(app)/comercial/_lib/autorizacao-servico.ts", item: "ARQ-05" },
   { regra: "kernel-importa-app", de: "src/lib/pendencias.ts", para: "src/app/(app)/qualidade/_lib/documentos-servico.ts", item: "ARQ-05" },
-  { regra: "escrita-alheia", de: "src/app/(app)/cadastros/hospitais/actions.ts", para: "localEstoque", item: "ARQ-09" },
 ];

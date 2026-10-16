@@ -4,8 +4,9 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { db } from "@/lib/db";
+import { ErroNegocio } from "@/lib/erros";
 import { requireUser } from "@/lib/auth";
-import { localDoHospital } from "@/lib/estoque";
+import { localDoHospital, removerLocalDoHospital } from "@/lib/estoque";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj, UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_HOSPITAL } from "../_lib/acoes";
@@ -85,12 +86,12 @@ export async function excluirHospital(id: string): Promise<ActionState> {
       return { error: "Não é possível excluir: o local consignado do hospital possui movimentação. Inative-o." };
     }
     await db.$transaction(async (tx) => {
-      if (h.local) await tx.localEstoque.delete({ where: { id: h.local.id } });
+      if (h.local && !(await removerLocalDoHospital(tx, h.local.id))) throw new ErroNegocio("Não é possível excluir: o local consignado do hospital possui movimentação. Inative-o.");
       await tx.hospital.delete({ where: { id } });
     });
     await audit(user.id, "excluir", "Hospital", id, h.razaoSocial);
   } catch (e) {
-    return { error: deleteErrorMessage(e) };
+    return { error: e instanceof ErroNegocio ? e.message : deleteErrorMessage(e) };
   }
   revalidatePath("/cadastros/hospitais");
   redirect("/cadastros/hospitais");

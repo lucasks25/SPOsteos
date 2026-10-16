@@ -56,7 +56,7 @@ export const mkHospital = (o: { tabelaPrecoId?: string } = {}) =>
   db.hospital.create({ data: { razaoSocial: `${P} hospital ${uid()}`, cnpj: `9${Date.now()}${seq++}`.slice(0, 14).padEnd(14, "0"), tabelaPrecoId: o.tabelaPrecoId } });
 
 export const mkFornecedor = () =>
-  db.fornecedor.create({ data: { razaoSocial: `${P} fornecedor ${uid()}`, cnpj: `8${Date.now()}${seq++}`.slice(0, 14).padEnd(14, "0") } });
+  db.fornecedor.create({ data: { razaoSocial: `${P} fornecedor ${uid()}`, cnpj: `7${String(Date.now()).slice(-8)}${String(seq++).padStart(5, "0")}` } });
 
 export const saldoDe = async (loteId: string, localId: string) =>
   (await db.saldo.findUnique({ where: { loteId_localId: { loteId, localId } } }))?.quantidade ?? 0;
