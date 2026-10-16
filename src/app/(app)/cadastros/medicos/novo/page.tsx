@@ -7,7 +7,7 @@ export default async function NovoMedicoPage() {
   await requireUser(PERFIS_COMERCIAL);
   return (
     <>
-      <PageHeader title="Novo médico" subtitle="Cadastre o cirurgião ou solicitante com CRM e contato." />
+      <PageHeader voltar={{ href: "/cadastros/medicos", label: "Médicos" }} title="Novo médico" subtitle="Cadastre o cirurgião ou solicitante com CRM e contato." />
       <Card>
         <MedicoForm />
       </Card>

@@ -7,7 +7,7 @@ export default async function NovoFabricantePage() {
   await requireUser(PERFIS_SUPRIMENTOS);
   return (
     <>
-      <PageHeader title="Novo fabricante" subtitle="Cadastre o fabricante dos materiais; o CNPJ é opcional para estrangeiros." />
+      <PageHeader voltar={{ href: "/cadastros/fabricantes", label: "Fabricantes" }} title="Novo fabricante" subtitle="Cadastre o fabricante dos materiais; o CNPJ é opcional para estrangeiros." />
       <Card>
         <FabricanteForm />
       </Card>

@@ -18,7 +18,7 @@ export default async function EditarUsuarioPage({ params }: { params: Promise<{ 
   const proprio = u.id === admin.id;
   return (
     <>
-      <PageHeader title={u.nome} subtitle={`${u.email} · último login: ${ultimoLogin ? dateTime(ultimoLogin.criadoEm) : "nunca"}`} />
+      <PageHeader voltar={{ href: "/admin/usuarios", label: "Usuários" }} title={u.nome} subtitle={`${u.email} · último login: ${ultimoLogin ? dateTime(ultimoLogin.criadoEm) : "nunca"}`} />
       <div className="grid gap-4 lg:grid-cols-2">
         <Card title="Dados e perfil">
           <Form action={editarUsuario.bind(null, id)} redirectTo="/admin/usuarios">

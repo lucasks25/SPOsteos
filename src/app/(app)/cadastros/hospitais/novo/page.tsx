@@ -9,7 +9,7 @@ export default async function NovoHospitalPage() {
   const tabelas = await db.tabelaPreco.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } });
   return (
     <>
-      <PageHeader title="Novo hospital" subtitle="Um local de estoque consignado será criado automaticamente." />
+      <PageHeader voltar={{ href: "/cadastros/hospitais", label: "Hospitais" }} title="Novo hospital" subtitle="Um local de estoque consignado será criado automaticamente." />
       <Card>
         <HospitalForm tabelas={tabelas} />
       </Card>

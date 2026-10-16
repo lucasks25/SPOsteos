@@ -7,7 +7,7 @@ export default async function NovoConvenioPage() {
   await requireUser(PERFIS_COMERCIAL);
   return (
     <>
-      <PageHeader title="Novo convênio" subtitle="Cadastre a operadora de plano de saúde com registro ANS e CNPJ." />
+      <PageHeader voltar={{ href: "/cadastros/convenios", label: "Convênios" }} title="Novo convênio" subtitle="Cadastre a operadora de plano de saúde com registro ANS e CNPJ." />
       <Card>
         <ConvenioForm />
       </Card>

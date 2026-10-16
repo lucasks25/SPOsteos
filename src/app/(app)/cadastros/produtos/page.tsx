@@ -24,9 +24,9 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader title="Produtos" subtitle="Materiais, implantes e instrumentais com registro ANVISA; cada setor mantém o que lhe cabe e o preço base é do Comercial." actions={edita ? <LinkButton href="/cadastros/produtos/novo">Novo produto</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={produtos.length} />
-        <Stat label="Abaixo do mínimo" value={abaixoMin} hint="produtos com estoque abaixo do mínimo" />
-        <Stat label="Registro a vencer" value={regVencendo} hint="vencido ou vencendo em 90 dias" />
+        <Stat icon="lista" label="Listados" value={produtos.length} />
+        <Stat icon="pacote" label="Abaixo do mínimo" value={abaixoMin} hint="produtos com estoque abaixo do mínimo" />
+        <Stat icon="calendario" label="Registro a vencer" value={regVencendo} hint="vencido ou vencendo em 90 dias" />
       </KpiGrid>
       <SearchBar placeholder="Código, descrição, registro ANVISA ou GTIN" defaultValue={q} />
       <Table titulo="Produtos" icone="pacote" contagem={produtos.length} head={["Produto", "Registro ANVISA", "Venc. registro", "Preço base", "Estoque", ""]} empty={produtos.length === 0} emptyText={q ? "Nenhum produto encontrado para essa busca." : "Nenhum produto encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/produtos/novo" variant="secondary" icon="mais">Cadastrar produto</LinkButton> : undefined}>

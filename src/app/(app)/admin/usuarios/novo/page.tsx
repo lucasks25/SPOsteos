@@ -8,7 +8,7 @@ export default async function NovoUsuarioPage() {
   await requireUser([]);
   return (
     <>
-      <PageHeader title="Novo usuário" subtitle="Defina o perfil de acesso e uma senha inicial; o usuário pode ser inativado depois." />
+      <PageHeader voltar={{ href: "/admin/usuarios", label: "Usuários" }} title="Novo usuário" subtitle="Defina o perfil de acesso e uma senha inicial; o usuário pode ser inativado depois." />
       <Card>
         <Form action={criarUsuario} redirectTo="/admin/usuarios">
           <Grid cols={2}>

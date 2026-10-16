@@ -24,6 +24,7 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
   return (
     <>
       <PageHeader
+        voltar={{ href: "/cadastros/fornecedores", label: "Fornecedores" }}
         title={fornecedor.nomeFantasia ?? fornecedor.razaoSocial}
         subtitle={`CNPJ ${fornecedor.cnpj} · ${fornecedor._count.pedidos} pedido(s) de compra`}
         actions={
@@ -46,7 +47,7 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
         </SomenteLeitura>
       </Card>
       {podeIrParaFavorecidos(user.perfil) && (
-        <p className="mt-3 text-[13px]">
+        <p className="mt-3 text-sm">
           <Link href={`/financeiro/favorecidos/${id}`} className="text-teal-700 hover:underline">Dados de pagamento</Link>
         </p>
       )}

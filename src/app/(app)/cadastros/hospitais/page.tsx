@@ -33,9 +33,9 @@ export default async function HospitaisPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader title="Hospitais" subtitle="Hospitais clientes e seus locais de consignação; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/hospitais/novo">Novo hospital</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={hospitais.length} />
-        <Stat label="Com tabela de preço" value={hospitais.filter((h) => h.tabelaPreco).length} hint="preço negociado" />
-        <Stat label="Inativos" value={hospitais.filter((h) => !h.ativo).length} hint="na lista atual" />
+        <Stat icon="lista" label="Listados" value={hospitais.length} />
+        <Stat icon="etiqueta" label="Com tabela de preço" value={hospitais.filter((h) => h.tabelaPreco).length} hint="preço negociado" />
+        <Stat icon="alerta" label="Inativos" value={hospitais.filter((h) => !h.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />

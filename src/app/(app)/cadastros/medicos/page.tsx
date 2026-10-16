@@ -32,9 +32,9 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
     <>
       <PageHeader title="Médicos" subtitle="Cirurgiões e solicitantes que aparecem nas cirurgias; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/medicos/novo">Novo médico</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={medicos.length} />
-        <Stat label="Cirurgias" value={num(medicos.reduce((s, m) => s + m._count.cirurgias, 0))} hint="dos médicos listados" />
-        <Stat label="Inativos" value={medicos.filter((m) => !m.ativo).length} hint="na lista atual" />
+        <Stat icon="lista" label="Listados" value={medicos.length} />
+        <Stat icon="atividade" label="Cirurgias" value={num(medicos.reduce((s, m) => s + m._count.cirurgias, 0))} hint="dos médicos listados" />
+        <Stat icon="alerta" label="Inativos" value={medicos.filter((m) => !m.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Nome, CRM ou especialidade" defaultValue={q}>
         <StatusFilter value={status} />

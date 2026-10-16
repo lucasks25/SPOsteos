@@ -14,7 +14,7 @@ export default async function EditarRepresentantePage({ params }: { params: Prom
   if (!rep) notFound();
   return (
     <>
-      <PageHeader title={rep.nome} subtitle="Representante comercial" />
+      <PageHeader voltar={{ href: "/cadastros/representantes", label: "Representantes" }} title={rep.nome} subtitle="Representante comercial" />
       <Card>
         <SomenteLeitura edita={edita} dono="Comercial">
           <RepresentanteForm rep={rep} />

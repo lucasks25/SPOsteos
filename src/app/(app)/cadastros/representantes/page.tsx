@@ -20,9 +20,9 @@ export default async function RepresentantesPage({ searchParams }: { searchParam
     <>
       <PageHeader title="Representantes" subtitle="Representantes comerciais e o percentual de comissão de cada um; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/representantes/novo">Novo representante</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={reps.length} />
-        <Stat label="Cirurgias" value={num(reps.reduce((s, r) => s + r._count.cirurgias, 0))} hint="dos representantes listados" />
-        <Stat label="Inativos" value={reps.filter((r) => !r.ativo).length} hint="na lista atual" />
+        <Stat icon="lista" label="Listados" value={reps.length} />
+        <Stat icon="atividade" label="Cirurgias" value={num(reps.reduce((s, r) => s + r._count.cirurgias, 0))} hint="dos representantes listados" />
+        <Stat icon="alerta" label="Inativos" value={reps.filter((r) => !r.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Nome" defaultValue={q}>
         <StatusFilter value={status} />

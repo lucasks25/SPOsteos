@@ -22,9 +22,9 @@ export default async function FabricantesPage({ searchParams }: { searchParams: 
     <>
       <PageHeader title="Fabricantes" subtitle="Quem fabrica os materiais que vendemos; Compras, Estoque e Qualidade mantêm a lista." actions={edita ? <LinkButton href="/cadastros/fabricantes/novo">Novo fabricante</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={fabricantes.length} />
-        <Stat label="Produtos" value={num(fabricantes.reduce((s, f) => s + f._count.produtos, 0))} hint="dos fabricantes listados" />
-        <Stat label="Sem CNPJ" value={fabricantes.filter((f) => !f.cnpj).length} hint="cadastro incompleto" />
+        <Stat icon="lista" label="Listados" value={fabricantes.length} />
+        <Stat icon="pacote" label="Produtos" value={num(fabricantes.reduce((s, f) => s + f._count.produtos, 0))} hint="dos fabricantes listados" />
+        <Stat icon="documento" label="Sem CNPJ" value={fabricantes.filter((f) => !f.cnpj).length} hint="cadastro incompleto" />
       </KpiGrid>
       <SearchBar placeholder="Nome, CNPJ ou país" defaultValue={q} />
       <Table titulo="Fabricantes" icone="predio" contagem={fabricantes.length} head={["Nome", "CNPJ", "País", "Produtos", ""]} empty={fabricantes.length === 0} emptyText={q ? "Nenhum fabricante encontrado para essa busca." : "Nenhum fabricante encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/fabricantes/novo" variant="secondary" icon="mais">Cadastrar fabricante</LinkButton> : undefined}>

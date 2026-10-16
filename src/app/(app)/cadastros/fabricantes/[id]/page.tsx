@@ -19,6 +19,7 @@ export default async function EditarFabricantePage({ params }: { params: Promise
   return (
     <>
       <PageHeader
+        voltar={{ href: "/cadastros/fabricantes", label: "Fabricantes" }}
         title={fabricante.nome}
         subtitle={`${fabricante._count.produtos} produto(s) vinculado(s)`}
         actions={

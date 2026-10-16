@@ -26,9 +26,9 @@ export default async function ConveniosPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader title="Convênios" subtitle="Operadoras de planos de saúde usadas em cirurgias e orçamentos; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/convenios/novo">Novo convênio</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={convenios.length} />
-        <Stat label="Cirurgias" value={num(convenios.reduce((s, c) => s + c._count.cirurgias, 0))} hint="dos convênios listados" />
-        <Stat label="Inativos" value={convenios.filter((c) => !c.ativo).length} hint="na lista atual" />
+        <Stat icon="lista" label="Listados" value={convenios.length} />
+        <Stat icon="atividade" label="Cirurgias" value={num(convenios.reduce((s, c) => s + c._count.cirurgias, 0))} hint="dos convênios listados" />
+        <Stat icon="alerta" label="Inativos" value={convenios.filter((c) => !c.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Nome, registro ANS ou CNPJ" defaultValue={q}>
         <StatusFilter value={status} />

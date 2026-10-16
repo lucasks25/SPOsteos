@@ -37,6 +37,7 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <PageHeader
+        voltar={{ href: "/cadastros/hospitais", label: "Hospitais" }}
         title={hospital.nomeFantasia ?? hospital.razaoSocial}
         subtitle={`${hospital.razaoSocial} · CNPJ ${hospital.cnpj}`}
         actions={
@@ -59,7 +60,7 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
         </SomenteLeitura>
       </Card>
       {links.length > 0 && (
-        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-600">
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-sm text-slate-600">
           Ver em outros módulos:
           {links.map((l) => <Link key={l.href} href={l.href} className="text-teal-700 hover:underline">{l.label}</Link>)}
         </p>

@@ -7,7 +7,7 @@ export default async function NovoRepresentantePage() {
   await requireUser(PERFIS_COMERCIAL);
   return (
     <>
-      <PageHeader title="Novo representante" subtitle="Cadastre o representante comercial e o percentual de comissão." />
+      <PageHeader voltar={{ href: "/cadastros/representantes", label: "Representantes" }} title="Novo representante" subtitle="Cadastre o representante comercial e o percentual de comissão." />
       <Card>
         <RepresentanteForm />
       </Card>

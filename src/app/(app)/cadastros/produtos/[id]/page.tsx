@@ -19,7 +19,7 @@ export default async function EditarProdutoPage({ params }: { params: Promise<{ 
   if (!produto) notFound();
   return (
     <>
-      <PageHeader title={produto.descricao} subtitle={`Código ${produto.codigo}`} />
+      <PageHeader voltar={{ href: "/cadastros/produtos", label: "Produtos" }} title={produto.descricao} subtitle={`Código ${produto.codigo}`} />
       <Card>
         <SomenteLeitura edita={edita} dono="Comercial, Compras, Qualidade ou Estoque">
           <ProdutoForm produto={produto} fabricantes={fabricantes} podePreco={podeAlterarPreco(user.perfil)} />

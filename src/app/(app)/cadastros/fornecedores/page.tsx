@@ -32,9 +32,9 @@ export default async function FornecedoresPage({ searchParams }: { searchParams:
     <>
       <PageHeader title="Fornecedores" subtitle="De quem compramos os materiais; mantido pelo setor de Compras (dados de pagamento ficam no Financeiro)." actions={edita ? <LinkButton href="/cadastros/fornecedores/novo">Novo fornecedor</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat label="Listados" value={fornecedores.length} />
-        <Stat label="Sem AFE" value={fornecedores.filter((f) => !f.afe).length} hint="autorização pendente" />
-        <Stat label="Inativos" value={fornecedores.filter((f) => !f.ativo).length} hint="na lista atual" />
+        <Stat icon="lista" label="Listados" value={fornecedores.length} />
+        <Stat icon="documento" label="Sem AFE" value={fornecedores.filter((f) => !f.afe).length} hint="autorização pendente" />
+        <Stat icon="alerta" label="Inativos" value={fornecedores.filter((f) => !f.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />

@@ -9,7 +9,7 @@ export function SomenteLeitura({ edita, dono, children }: { edita: boolean; dono
   if (edita) return <>{children}</>;
   return (
     <>
-      <p className="mb-3 rounded border border-slate-200 bg-slate-50 px-3 py-2 text-[13px] text-slate-600">Somente consulta: este cadastro é mantido pelo setor {dono}.</p>
+      <p className="mb-3 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-600">Somente consulta: este cadastro é mantido pelo setor {dono}.</p>
       <fieldset disabled className="[&_button[type=submit]]:hidden">
         {children}
       </fieldset>

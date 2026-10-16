@@ -7,7 +7,7 @@ export default async function NovoProcedimentoPage() {
   await requireUser(PERFIS_COMERCIAL);
   return (
     <>
-      <PageHeader title="Novo procedimento" subtitle="Descreva o procedimento; depois de criar, inclua os materiais padrão." />
+      <PageHeader voltar={{ href: "/cadastros/procedimentos", label: "Procedimentos" }} title="Novo procedimento" subtitle="Descreva o procedimento; depois de criar, inclua os materiais padrão." />
       <Card>
         <ProcedimentoForm />
       </Card>

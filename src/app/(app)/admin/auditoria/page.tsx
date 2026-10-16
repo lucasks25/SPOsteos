@@ -34,7 +34,7 @@ export default async function AuditoriaPage({
     q.set("page", String(p));
     return `/admin/auditoria?${q}`;
   };
-  const sel = "h-8 rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+  const sel = "h-10 rounded-lg border border-field bg-white px-3 text-sm text-slate-900 hover:border-slate-500 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-500/20";
   return (
     <>
       <PageHeader title="Log de auditoria" subtitle={`Quem fez o quê e quando no sistema, para conferência do administrador: ${total} registro(s).`} />
@@ -72,7 +72,7 @@ export default async function AuditoriaPage({
           </tr>
         ))}
       </Table>
-      <div className="mt-4 flex items-center justify-between text-[13px] text-slate-600">
+      <div className="mt-4 flex items-center justify-between text-sm text-slate-600">
         <span>Página {page} de {paginas}</span>
         <div className="flex gap-2">
           {page > 1 && <Link href={link(page - 1)} className={btn.secondary}>Anterior</Link>}

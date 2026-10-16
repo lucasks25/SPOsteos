@@ -5,7 +5,7 @@ export function StatusFilter({ value }: { value?: string }) {
       name="status"
       aria-label="Situação do cadastro"
       defaultValue={value ?? ""}
-      className="h-8 rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25"
+      className="h-10 rounded-lg border border-field bg-white px-3 text-sm text-slate-900 hover:border-slate-500 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-500/20"
     >
       <option value="">Ativos</option>
       <option value="inativos">Inativos</option>

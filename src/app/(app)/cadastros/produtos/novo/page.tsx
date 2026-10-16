@@ -10,7 +10,7 @@ export default async function NovoProdutoPage() {
   const fabricantes = await db.fabricante.findMany({ orderBy: { nome: "asc" } });
   return (
     <>
-      <PageHeader title="Novo produto" subtitle="Cadastre o material com registro ANVISA, fabricante e estoque mínimo." />
+      <PageHeader voltar={{ href: "/cadastros/produtos", label: "Produtos" }} title="Novo produto" subtitle="Cadastre o material com registro ANVISA, fabricante e estoque mínimo." />
       <Card>
         <ProdutoForm fabricantes={fabricantes} podePreco={podeAlterarPreco(user.perfil)} />
       </Card>
