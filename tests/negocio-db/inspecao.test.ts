@@ -99,3 +99,27 @@ test("marcar vencidos: só LIBERADO vencido muda", async () => {
   );
   assert.equal(await statusLote(venc.id), "LIBERADO");
 });
+
+// Varredura funcional (REVISAO §20): inspeção repetida e lote com parte já liberada.
+test("inspeção repetida (segunda aba / reenvio) é recusada: sem saldo na quarentena nada muda", async () => {
+  const { l } = await emQuarentena(5);
+  await inspecionar(l.id);
+  const antes = await db.inspecao.count({ where: { loteId: l.id } });
+  await assert.rejects(inspecionar(l.id, { resultado: "BLOQUEADO" }), /não tem saldo na quarentena/);
+  assert.equal(await statusLote(l.id), "LIBERADO");
+  assert.equal(await db.inspecao.count({ where: { loteId: l.id } }), antes);
+});
+
+test("nova entrega de lote já liberado: reprovar é recusado (não rebaixa o que já está no depósito); aprovar move só a quarentena", async () => {
+  const { p, l } = await emQuarentena(10);
+  await inspecionar(l.id);
+  // nova entrega do mesmo lote cai na quarentena com o lote ainda LIBERADO
+  await db.$transaction((t) => movimentar(t, { tipo: "ENTRADA", produtoId: p.id, loteId: l.id, quantidade: 5, destinoId: LOCAIS.QUARENTENA, custoUnit: 10 }));
+  await assert.rejects(inspecionar(l.id, { resultado: "NAO_CONFORME" }), /já está liberada/);
+  assert.equal(await statusLote(l.id), "LIBERADO");
+  assert.equal(await saldoDe(l.id, LOCAIS.QUARENTENA), 5);
+  const r = await inspecionar(l.id);
+  assert.equal(r.movido, 5);
+  assert.equal(await saldoDe(l.id, LOCAIS.DEPOSITO), 15);
+  await conferirKardex(l.id);
+});

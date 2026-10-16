@@ -176,3 +176,21 @@ test("despesa incluída ao mesmo tempo que o recebimento: ou entra no custo, ou 
     assert.equal(Math.round((rec as PromiseFulfilledResult<{ valorEstoque: number }>).value.valorEstoque * 100), calc.linhas[0].totalCent);
   }
 });
+
+// Varredura funcional (REVISAO §20): cancelar o pedido deixava as contas das despesas abertas (iam para aprovação/SISPAG).
+test("cancelar pedido de importação cancela as contas a pagar das despesas; pedido recebido não cancela", async () => {
+  const { cancelarPedidoCompraTx } = await import("@/app/(app)/compras/_lib/cancelamento-servico");
+  const [a, b, c] = [await mkProduto(), await mkProduto(), await mkProduto()];
+  const ped = await pedidoUsd([a.id, b.id, c.id]);
+  const d1 = await despesa(ped.id, { tipo: "DESPACHANTE", valor: 300, gerarConta: true, fornecedorId, vencimento: dia(15) });
+  await despesa(ped.id, { tipo: "FRETE_INTERNACIONAL", valor: 80 }); // sem conta
+  const r = await db.$transaction((tx) => cancelarPedidoCompraTx(tx, ped.id));
+  assert.equal(r.contasCanceladas, 1);
+  assert.equal((await db.pedidoCompra.findUniqueOrThrow({ where: { id: ped.id } })).status, "CANCELADO");
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: d1.contaPagarId! } })).status, "CANCELADO");
+  await assert.rejects(db.$transaction((tx) => cancelarPedidoCompraTx(tx, ped.id)), /Só é possível cancelar pedidos em aberto/);
+
+  const ped2 = await pedidoUsd([a.id, b.id, c.id]);
+  await receber(ped2.itens[0], 1, `C-${uid()}`);
+  await assert.rejects(db.$transaction((tx) => cancelarPedidoCompraTx(tx, ped2.id)), /Só é possível cancelar/);
+});

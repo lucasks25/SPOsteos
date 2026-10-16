@@ -11,6 +11,7 @@ import { itensJson } from "../_lib/itens";
 import { INCOTERMS, MOEDAS } from "../_lib/custo-importacao";
 import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
 import { receberItemTx } from "../_lib/recebimento";
+import { cancelarPedidoCompraTx } from "../_lib/cancelamento-servico";
 import { ErroNegocio } from "@/lib/erros";
 
 const schemaPedido = z.object({
@@ -90,13 +91,14 @@ export async function cancelarPedidoCompra(pedidoId: number): Promise<ActionStat
   const user = await requireUser(PERFIS_COMPRAS);
   pedidoId = argInt(pedidoId);
   try {
-    const r = await db.pedidoCompra.updateMany({ where: { id: pedidoId, status: "ABERTO" }, data: { status: "CANCELADO" } });
-    if (r.count === 0) return { error: "Só é possível cancelar pedidos em aberto, sem recebimentos." };
-    await audit(user.id, "cancelar", "PedidoCompra", pedidoId, documentoPedido(pedidoId));
+    const r = await db.$transaction((tx) => cancelarPedidoCompraTx(tx, pedidoId));
+    await audit(user.id, "cancelar", "PedidoCompra", pedidoId, `${documentoPedido(pedidoId)}${r.contasCanceladas ? ` — ${r.contasCanceladas} conta(s) a pagar de despesa cancelada(s)` : ""}`);
   } catch (e) {
     return { error: errorMessage(e) };
   }
   revalidatePath("/compras/pedidos");
   revalidatePath(`/compras/pedidos/${pedidoId}`);
+  revalidatePath("/financeiro/pagar");
+  revalidatePath("/financeiro/aprovacoes");
   return { ok: true };
 }

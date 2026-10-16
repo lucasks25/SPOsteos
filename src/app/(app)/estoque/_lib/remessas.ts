@@ -229,3 +229,9 @@ export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[
 export async function cancelarRemessa(tx: Tx, id: number) {
   await trocarStatus(tx, id, "ABERTA", { status: "CANCELADA" });
 }
+
+/** Conferência com TODOS os campos (devolvido/consumido) vazios: clique por engano. "0" digitado não conta como vazio. */
+export function conferenciaEmBranco(campos: [FormDataEntryValue | null, FormDataEntryValue | null][]) {
+  const vazio = (v: FormDataEntryValue | null) => v === null || (typeof v === "string" && v.trim() === "");
+  return campos.length > 0 && campos.every(([d, c]) => vazio(d) && vazio(c));
+}

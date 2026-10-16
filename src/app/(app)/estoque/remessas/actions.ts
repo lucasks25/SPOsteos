@@ -8,8 +8,9 @@ import { requireUser } from "@/lib/auth";
 import { argInt } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { PERFIS_EDITAR } from "../_lib/perfis";
-import { cancelarRemessa, conferirRemessa, criarRemessa, docRemessa, enviarRemessa } from "../_lib/remessas";
+import { cancelarRemessa, conferenciaEmBranco, conferirRemessa, criarRemessa, docRemessa, enviarRemessa } from "../_lib/remessas";
 import { ErroNegocio } from "@/lib/erros";
+import { idInt } from "@/lib/ids";
 
 const TX_OPTS = { timeout: 30_000 };
 
@@ -58,8 +59,8 @@ export async function criarRemessaAction(_: ActionState, fd: FormData): Promise<
 }
 
 function idDe(fd: FormData) {
-  const id = Number(fd.get("id"));
-  if (!Number.isInteger(id) || id <= 0) throw new ErroNegocio("Remessa inválida.");
+  const id = idInt(fd.get("id"));
+  if (!id) throw new ErroNegocio("Remessa inválida.");
   return id;
 }
 
@@ -96,7 +97,7 @@ export async function cancelarRemessaAction(_: ActionState, fd: FormData): Promi
   return { ok: true };
 }
 
-const qtd = z.coerce.number({ error: "Número inválido" }).int("Deve ser inteiro").min(0, "Não pode ser negativo");
+const qtd = z.coerce.number({ error: "Número inválido" }).int("Deve ser inteiro").min(0, "Não pode ser negativo").max(1_000_000, "Máximo 1.000.000");
 
 export async function conferirRemessaAction(id: number, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);
@@ -116,6 +117,11 @@ export async function conferirRemessaAction(id: number, _: ActionState, fd: Form
     return { itemId: it.id, devolvido, consumido };
   });
   if (Object.keys(fieldErrors).length > 0) return { error: "Verifique as quantidades destacadas.", fieldErrors };
+  // Conferir fecha o vale e não tem volta: formulário inteiro em branco é quase sempre clique por engano.
+  // Zeros digitados continuam valendo (tudo permanece consignado no hospital).
+  if (conferenciaEmBranco(itens.map((it) => [fd.get(`dev_${it.id}`), fd.get(`con_${it.id}`)]))) {
+    return { error: "Nenhuma quantidade informada. Preencha devolvido e consumido de cada item (0 quando não houver); se o material ainda não voltou do hospital, deixe o vale como enviado e confira depois." };
+  }
   try {
     await db.$transaction((tx) => conferirRemessa(tx, id, retornos, user.nome), TX_OPTS);
     const dev = retornos.reduce((s, r) => s + r.devolvido, 0);

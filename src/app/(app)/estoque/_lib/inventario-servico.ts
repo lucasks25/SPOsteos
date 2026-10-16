@@ -48,6 +48,7 @@ export async function criarInventario(tx: Tx, o: { hospitalId: string; observaca
 
 const validarContado = (n: number | null) => {
   if (n !== null && (!Number.isInteger(n) || n < 0)) throw new ErroNegocio("A quantidade contada deve ser um número inteiro, zero ou maior.");
+  if (n !== null && n > 1_000_000) throw new ErroNegocio("Quantidade contada acima do limite (1.000.000). Confira o número digitado.");
 };
 
 /** Grava as quantidades contadas (null apaga). Em CONTADO, apagar uma contagem volta o inventário para ABERTO. */

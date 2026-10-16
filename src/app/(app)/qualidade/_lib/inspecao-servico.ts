@@ -34,7 +34,27 @@ export async function inspecionarLoteServico(tx: Tx, loteId: string, data: Dados
       throw new ErroNegocio(`Registro ANVISA do produto vencido em ${date(lote.produto.validadeRegistro)} — não pode ser liberado.`);
     }
   }
+  // Trava o saldo da quarentena: duas inspeções do mesmo lote (reenvio, segunda aba) passam uma de cada vez,
+  // e a segunda encontra a quarentena vazia.
+  await tx.$queryRaw`SELECT id FROM "Saldo" WHERE "loteId" = ${loteId} AND "localId" = ${LOCAIS.QUARENTENA} FOR UPDATE`;
   const saldo = await tx.saldo.findUnique({ where: { loteId_localId: { loteId, localId: LOCAIS.QUARENTENA } } });
+  if (!saldo || saldo.quantidade <= 0) {
+    throw new ErroNegocio("Este lote não tem saldo na quarentena: a inspeção já foi registrada ou o material já saiu. Atualize a página.");
+  }
+  if (data.resultado !== "LIBERADO") {
+    // O status é do lote inteiro: reprovar uma nova entrega de lote já liberado rebaixaria também o que está no depósito/hospitais.
+    const fora = await tx.saldo.aggregate({
+      where: { loteId, quantidade: { gt: 0 }, localId: { notIn: [LOCAIS.QUARENTENA, LOCAIS.NAO_CONFORME] } },
+      _sum: { quantidade: true },
+    });
+    const qtdFora = fora._sum.quantidade ?? 0;
+    if (qtdFora > 0) {
+      throw new ErroNegocio(
+        `Parte deste lote já está liberada (${qtdFora} un. no depósito ou em hospitais) e a reprovação mudaria o lote inteiro. ` +
+          "Se o problema atinge todo o lote, abra um recolhimento (Qualidade › Recolhimentos); se é só desta entrega, devolva ao fornecedor e lance a saída da quarentena em Estoque › Ajustes e perdas.",
+      );
+    }
+  }
   const insp = await tx.inspecao.create({
     data: {
       loteId,
