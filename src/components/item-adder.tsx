@@ -21,7 +21,7 @@ export function ItemAdder({
   label?: string;
 }) {
   return (
-    <Form action={action} submitLabel={label} resetOnSuccess className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_7rem_9rem_auto] [&>div:last-child]:pt-0">
+    <Form action={action} submitLabel={label} submitVariant="secondary" resetOnSuccess className="grid grid-cols-1 items-end gap-3 sm:grid-cols-[1fr_7rem_9rem_auto] [&>div:last-child]:pt-0">
       <Select label="Produto" name="produtoId" options={produtos} required />
       {comQuantidade ? <Field label="Qtd." name="quantidade" type="number" min="1" defaultValue={1} required /> : <div />}
       {comPreco ? <Field label="Preço (R$)" name="preco" type="number" step="0.01" min="0" hint="vazio = preço base" /> : <div />}

@@ -31,7 +31,7 @@ export default async function EditarUsuarioPage({ params }: { params: Promise<{ 
           </Form>
         </Card>
         <Card title="Redefinir senha">
-          <Form action={redefinirSenha.bind(null, id)} submitLabel="Redefinir senha" resetOnSuccess>
+          <Form action={redefinirSenha.bind(null, id)} submitLabel="Redefinir senha" submitVariant="secondary" resetOnSuccess>
             <Field label="Nova senha *" name="senha" type="password" minLength={8} required autoComplete="new-password" hint="Mínimo de 8 caracteres" />
           </Form>
         </Card>

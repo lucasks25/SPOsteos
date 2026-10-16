@@ -25,7 +25,7 @@ export function TituloForm({
   const cfg = TIPOS[tipo];
   const t = titulo;
   return (
-    <Form action={salvarTitulo.bind(null, tipo, t?.id ?? null)} submitLabel={t ? "Salvar alterações" : "Criar título"}>
+    <Form action={salvarTitulo.bind(null, tipo, t?.id ?? null)} submitLabel={t ? "Salvar alterações" : "Criar título"} submitVariant={t ? "secondary" : "primary"}>
       <Grid cols={3}>
         <Field label="Descrição *" name="descricao" defaultValue={t?.descricao} required maxLength={200} className="sm:col-span-2" />
         <Select
@@ -100,7 +100,7 @@ export function ClassificarForm({
   centros: { value: string; label: string }[];
 }) {
   return (
-    <Form action={classificarTitulo.bind(null, tipo, titulo.id)} submitLabel="Salvar classificação">
+    <Form action={classificarTitulo.bind(null, tipo, titulo.id)} submitLabel="Salvar classificação" submitVariant="secondary">
       <Grid cols={3}>
         <Select label="Conta do plano *" name="planoContaId" defaultValue={titulo.planoContaId ?? ""} options={planos} placeholder="Selecione..." required />
         <Select label="Centro de custo" name="centroCustoId" defaultValue={titulo.centroCustoId ?? ""} options={centros} placeholder="(nenhum)" />
@@ -113,7 +113,7 @@ export function ClassificarForm({
 /** Glosa: parte da cobrança que o hospital não reconhece. Abate o saldo sem dinheiro e vai para Deduções no DRE. */
 export function GlosaForm({ titulo, hoje }: { titulo: TituloRow; hoje: Date }) {
   return (
-    <Form action={glosarTitulo.bind(null, titulo.id)} submitLabel="Registrar glosa" resetOnSuccess>
+    <Form action={glosarTitulo.bind(null, titulo.id)} submitLabel="Registrar glosa" submitVariant="secondary" resetOnSuccess>
       <Grid cols={3}>
         <Select label="Categoria *" name="categoria" required options={CATEGORIAS_GLOSA.map((c) => ({ value: c, label: ROTULO_CATEGORIA_GLOSA[c] }))} />
         <Field label="Valor glosado (R$) *" name="valor" type="number" step="0.01" min="0.01" max={titulo.saldo.toFixed(2)} required hint={`Saldo do título: ${money(titulo.saldo)}`} />

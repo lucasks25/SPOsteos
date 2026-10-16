@@ -7,7 +7,7 @@ import { salvarOrcamento } from "./actions";
 export function OrcamentoForm({ orc, hospitais, convenios }: { orc?: Orcamento; hospitais: Opcao[]; convenios: Opcao[] }) {
   const validadePadrao = diasAtras(-15);
   return (
-    <Form action={salvarOrcamento.bind(null, orc?.id ?? null)} submitLabel={orc ? "Salvar" : "Criar e incluir itens"}>
+    <Form action={salvarOrcamento.bind(null, orc?.id ?? null)} submitLabel={orc ? "Salvar" : "Criar e incluir itens"} submitVariant={orc ? "secondary" : "primary"}>
       <Grid cols={2}>
         <Select label="Hospital *" name="hospitalId" options={hospitais} defaultValue={orc?.hospitalId ?? ""} required />
         <Select label="Convênio" name="convenioId" options={convenios} defaultValue={orc?.convenioId ?? ""} />

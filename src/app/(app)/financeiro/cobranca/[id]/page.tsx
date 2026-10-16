@@ -72,7 +72,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
         {podeCancelar && (
           <Card title="Cancelar remessa" icon="alerta">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa.</p>
-            <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa" confirm={`Cancelar a remessa de cobrança #${r.id}? Os boletos voltam a poder entrar em outra remessa. Não envie este arquivo ao banco.`}>
+            <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa" submitVariant="secondary" confirm={`Cancelar a remessa de cobrança #${r.id}? Os boletos voltam a poder entrar em outra remessa. Não envie este arquivo ao banco.`}>
               <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} />
             </Form>
           </Card>
@@ -90,7 +90,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
           {r.itens.map((i) => (
             <tr key={i.id}>
               <Td className="font-mono text-xs">{i.nossoNumero}</Td>
-              <Td>{i.ocorrencia === "01" ? "Registro" : "Pedido de baixa"}</Td>
+              <Td>{i.ocorrencia === "01" ? "Registro" : i.ocorrencia === "06" ? `Alterar vencimento para ${i.vencimento ? date(i.vencimento) : "?"}` : "Pedido de baixa"}</Td>
               <Td className="max-w-xs">
                 <Celula href={`/financeiro/receber/${i.contaReceber.id}`} principal={i.contaReceber.hospital ? i.contaReceber.hospital.nomeFantasia || i.contaReceber.hospital.razaoSocial : "Sem hospital"} sub={`${i.contaReceber.descricao} · vence ${date(i.contaReceber.vencimento)}`} />
               </Td>

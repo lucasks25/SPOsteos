@@ -91,7 +91,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
             <p className="mb-3 text-sm text-slate-600">
               Para mover dinheiro entre contas use <Link href="/financeiro/contas" className="font-semibold text-teal-700 hover:underline">Transferência</Link>.
             </p>
-            <Form action={lancarAvulso.bind(null, id)} submitLabel="Lançar" resetOnSuccess>
+            <Form action={lancarAvulso.bind(null, id)} submitLabel="Lançar" submitVariant="secondary" resetOnSuccess>
               <Grid cols={4}>
                 <Select
                   label="Tipo *"
