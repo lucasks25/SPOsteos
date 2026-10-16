@@ -3,6 +3,7 @@ import { LOCAIS, localDoHospital, movimentar } from "@/lib/estoque";
 import { toNumber } from "@/lib/format";
 import { inicioDoDiaUTC, type LinhaRemessa, type LoteDisp } from "./fefo";
 import { ErroNegocio } from "@/lib/erros";
+import { registrarConsumoCirurgiaTx, type ItemConsumo } from "@/app/(app)/comercial/_lib/publico";
 
 /**
  * Regras de negócio de remessas (vales de consignação).
@@ -159,7 +160,7 @@ export type RetornoItem = { itemId: string; devolvido: number; consumido: number
 /**
  * ENVIADA → CONFERIDA: devolvido volta ao DEPÓSITO (RETORNO), consumido sai do hospital (CONSUMO).
  * O restante permanece consignado no hospital. Se houver cirurgia vinculada, gera CirurgiaConsumo
- * e marca a cirurgia como REALIZADA (se AGENDADA/CONFIRMADA).
+ * e marca a cirurgia como REALIZADA via API pública do comercial (só quando há consumo).
  */
 export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[], usuario: string) {
   await trocarStatus(tx, id, "ENVIADA", { status: "CONFERIDA", conferidaEm: new Date() });
@@ -171,6 +172,7 @@ export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[
   const documento = remessa.cirurgia ? docCirurgia(remessa.cirurgia.numero) : docRemessa(id);
   const observacaoConsumo = remessa.cirurgia ? `Remessa ${docRemessa(id)}` : undefined;
 
+  const consumos: ItemConsumo[] = [];
   for (const item of remessa.itens) {
     const r = porItem.get(item.id) ?? { itemId: item.id, devolvido: 0, consumido: 0 };
     const { devolvido, consumido } = r;
@@ -209,18 +211,13 @@ export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[
         observacao: observacaoConsumo,
         usuario,
       });
-      if (remessa.cirurgiaId) {
-        await tx.cirurgiaConsumo.create({
-          data: { cirurgiaId: remessa.cirurgiaId, produtoId: item.produtoId, loteId: item.loteId, quantidade: consumido },
-        });
-      }
+      consumos.push({ produtoId: item.produtoId, loteId: item.loteId, quantidade: consumido });
     }
     await tx.remessaItem.update({ where: { id: item.id }, data: { devolvido, consumido } });
   }
 
-  if (remessa.cirurgia && (remessa.cirurgia.status === "AGENDADA" || remessa.cirurgia.status === "CONFIRMADA")) {
-    await tx.cirurgia.update({ where: { id: remessa.cirurgia.id }, data: { status: "REALIZADA" } });
-  }
+  // Regra única de status do comercial (aceita AGENDADA/CONFIRMADA/REALIZADA; recusa FATURADA/CANCELADA).
+  if (remessa.cirurgiaId && consumos.length > 0) await registrarConsumoCirurgiaTx(tx, remessa.cirurgiaId, consumos);
   return remessa;
 }
 

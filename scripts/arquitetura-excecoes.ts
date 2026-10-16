@@ -38,6 +38,4 @@ export const EXCECOES: readonly Excecao[] = [
   { regra: "escrita-alheia", de: "src/app/(app)/compras/_lib/recebimento.ts", para: "lote", item: "ARQ-08" },
   { regra: "escrita-alheia", de: "src/app/(app)/compras/_lib/recebimento.ts", para: "produto", item: "ARQ-09" },
   { regra: "escrita-alheia", de: "src/app/(app)/compras/_lib/recebimento.ts", para: "contaPagar", item: "ARQ-06" },
-  { regra: "escrita-alheia", de: "src/app/(app)/estoque/_lib/remessas.ts", para: "cirurgiaConsumo", item: "ARQ-07" },
-  { regra: "escrita-alheia", de: "src/app/(app)/estoque/_lib/remessas.ts", para: "cirurgia", item: "ARQ-07" },
 ];

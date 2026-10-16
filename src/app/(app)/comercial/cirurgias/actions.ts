@@ -6,11 +6,9 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { localDoHospital, movimentar } from "@/lib/estoque";
-import { toNumber } from "@/lib/format";
-import { parseDataHoraSP, hojeUTC } from "@/lib/datas";
+import { parseDataHoraSP } from "@/lib/datas";
 import { faturarCirurgia } from "../_lib/faturamento";
-import { ErroNegocio } from "@/lib/erros";
+import { registrarConsumoDiretoTx, removerConsumoTx } from "../_lib/consumo-servico";
 
 const EDITAM = ["COMERCIAL"] as const;
 
@@ -107,32 +105,7 @@ export async function registrarConsumo(cirurgiaId: string, _: ActionState, fd: F
   if (!parsed.success) return parsed.state;
   const { loteId, quantidade } = parsed.data;
   try {
-    await db.$transaction(async (tx) => {
-      const c = await tx.cirurgia.findUnique({ where: { id: cirurgiaId } });
-      if (!c) throw new ErroNegocio("Cirurgia não encontrada.");
-      if (!["AGENDADA", "CONFIRMADA", "REALIZADA"].includes(c.status)) {
-        throw new ErroNegocio(`Não é possível registrar consumo em cirurgia ${c.status.toLowerCase()}.`);
-      }
-      const lote = await tx.lote.findUnique({ where: { id: loteId }, include: { produto: true } });
-      if (!lote) throw new ErroNegocio("Lote não encontrado.");
-      if (lote.status !== "LIBERADO") throw new ErroNegocio(`Lote ${lote.numero} não está liberado (${lote.status.toLowerCase()}).`);
-      if (lote.validade.getTime() < hojeUTC().getTime()) throw new ErroNegocio(`Lote ${lote.numero} está vencido.`);
-      const localId = await localDoHospital(tx, c.hospitalId);
-      await movimentar(tx, {
-        tipo: "CONSUMO",
-        produtoId: lote.produtoId,
-        loteId: lote.id,
-        quantidade,
-        origemId: localId,
-        destinoId: null,
-        custoUnit: toNumber(lote.produto.custoMedio),
-        documento: `CIR-${c.numero}`,
-        observacao: `Consumo direto — paciente ${c.paciente}`,
-        usuario: user.nome,
-      });
-      await tx.cirurgiaConsumo.create({ data: { cirurgiaId, produtoId: lote.produtoId, loteId: lote.id, quantidade } });
-      if (c.status !== "REALIZADA") await tx.cirurgia.update({ where: { id: cirurgiaId }, data: { status: "REALIZADA" } });
-    });
+    await db.$transaction((tx) => registrarConsumoDiretoTx(tx, { cirurgiaId, loteId, quantidade, usuario: user.nome }));
   } catch (e) {
     return { error: errorMessage(e) };
   }
@@ -146,31 +119,7 @@ export async function removerConsumo(consumoId: string, _: ActionState): Promise
   const user = await requireUser(["COMERCIAL", "ESTOQUE"]);
   let cirurgiaId = "";
   try {
-    await db.$transaction(async (tx) => {
-      const consumo = await tx.cirurgiaConsumo.findUnique({ where: { id: consumoId }, include: { cirurgia: true, produto: true } });
-      if (!consumo) throw new ErroNegocio("Consumo não encontrado.");
-      const c = consumo.cirurgia;
-      cirurgiaId = c.id;
-      if (c.status === "FATURADA" || c.status === "CANCELADA") throw new ErroNegocio(`Cirurgia ${c.status.toLowerCase()}: consumo não pode ser removido.`);
-      const localId = await localDoHospital(tx, c.hospitalId);
-      await movimentar(tx, {
-        tipo: "AJUSTE",
-        produtoId: consumo.produtoId,
-        loteId: consumo.loteId,
-        quantidade: consumo.quantidade,
-        origemId: null,
-        destinoId: localId,
-        custoUnit: toNumber(consumo.produto.custoMedio),
-        documento: `CIR-${c.numero}`,
-        observacao: "estorno",
-        usuario: user.nome,
-      });
-      await tx.cirurgiaConsumo.delete({ where: { id: consumoId } });
-      const restantes = await tx.cirurgiaConsumo.count({ where: { cirurgiaId: c.id } });
-      if (restantes === 0 && c.status === "REALIZADA") {
-        await tx.cirurgia.update({ where: { id: c.id }, data: { status: "CONFIRMADA" } });
-      }
-    });
+    cirurgiaId = await db.$transaction((tx) => removerConsumoTx(tx, consumoId, user.nome));
   } catch (e) {
     return { error: errorMessage(e) };
   }
