@@ -4,12 +4,12 @@ import Link from "next/link";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 import { Icon, ICONE_ITEM, type IconName } from "@/components/icons";
 import type { NavGroup } from "@/components/nav";
-import { definirTema } from "@/lib/tema-actions";
+import { PainelUsuario, iniciais, type PosicaoMenu } from "@/components/topbar-menus";
 
 export type Modulo = { nome: string; grupos: NavGroup[]; href: string };
 
-/** Ícone de cada módulo (setor) no menu lateral. */
-const ICONE_MODULO: Record<string, IconName> = {
+/** Ícone de cada módulo (setor) no menu lateral e na faixa de módulos do modo topo. */
+export const ICONE_MODULO: Record<string, IconName> = {
   Painel: "painel",
   Comercial: "atividade",
   Estoque: "pacote",
@@ -22,7 +22,7 @@ const ICONE_MODULO: Record<string, IconName> = {
 };
 
 /** Fecha um painel suspenso ao clicar fora ou com Esc. */
-function useFecharFora(aberto: boolean, fechar: () => void, raiz: React.RefObject<HTMLElement | null>) {
+export function useFecharFora(aberto: boolean, fechar: () => void, raiz: React.RefObject<HTMLElement | null>) {
   useEffect(() => {
     if (!aberto) return;
     const fora = (e: MouseEvent) => {
@@ -144,24 +144,30 @@ export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: 
   );
 }
 
-/** Rodapé do menu lateral: avatar, nome e perfil; abre aparência (tema) e sair. */
-export function UsuarioLateral({ nome, perfil, sair, recolhida }: { nome: string; perfil: string; sair: () => Promise<void>; recolhida: boolean }) {
+/** Rodapé do menu lateral: avatar, nome e perfil; abre aparência (tema e posição do menu), trocar senha e sair. */
+export function UsuarioLateral({ nome, perfil, sair, recolhida, posicao, mudarPosicao }: {
+  nome: string;
+  perfil: string;
+  sair: () => Promise<void>;
+  recolhida: boolean;
+  posicao: PosicaoMenu;
+  mudarPosicao: (p: PosicaoMenu) => void;
+}) {
   const [aberto, setAberto] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
   useFecharFora(aberto, () => setAberto(false), ref);
-  const iniciais = nome.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
 
   return (
     <div ref={ref} className="relative border-t border-[rgb(255_255_255/0.1)] p-3">
       <button
         type="button"
         onClick={() => setAberto((a) => !a)}
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={aberto}
         aria-label={`Menu do usuário ${nome}`}
         className="flex w-full items-center gap-3 rounded-lg p-1.5 text-left transition-colors hover:bg-[rgb(255_255_255/0.06)]"
       >
-        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-destaque font-display text-xs font-extrabold text-sidebar">{iniciais}</span>
+        <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-sidebar-destaque font-display text-xs font-extrabold text-sidebar">{iniciais(nome)}</span>
         <span className="menu-rotulo min-w-0 flex-1">
           <span className="block truncate text-sm font-semibold text-sidebar-fg-ativo">{nome}</span>
           <span className="block truncate text-xs capitalize text-sidebar-fg">{perfil}</span>
@@ -169,40 +175,21 @@ export function UsuarioLateral({ nome, perfil, sair, recolhida }: { nome: string
         <Icon name="seta" size={15} className="menu-rotulo shrink-0 rotate-180 text-sidebar-fg" />
       </button>
       {aberto && (
-        <div role="menu" className={`absolute z-50 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ${recolhida ? "bottom-3 left-full ml-3" : "bottom-full left-3 mb-2"}`}>
-          <div className="border-b border-slate-200 px-4 py-3">
-            <div className="truncate text-sm font-bold text-slate-900">{nome}</div>
-            <div className="text-xs capitalize text-slate-500">{perfil}</div>
-          </div>
-          <form action={definirTema} className="border-b border-slate-200 px-4 py-3">
-            <div className="mb-2 text-xs font-semibold text-slate-600">Aparência</div>
-            <div className="grid grid-cols-3 gap-1 rounded-full bg-slate-100 p-1">
-              {[["claro", "Claro"], ["escuro", "Escuro"], ["auto", "Sistema"]].map(([v, r]) => (
-                <button key={v} name="tema" value={v} className="h-7 rounded-full text-xs font-semibold text-slate-700 hover:bg-white hover:text-teal-700 hover:shadow-sm">
-                  {r}
-                </button>
-              ))}
-            </div>
-          </form>
-          <Link href="/conta/senha" onClick={() => setAberto(false)} className="flex w-full items-center gap-2.5 border-b border-slate-200 px-4 py-3 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700">
-            <Icon name="cadeado" size={16} />
-            Trocar minha senha
-          </Link>
-          <form action={sair}>
-            <button className="flex w-full items-center gap-2.5 px-4 py-3 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-rose-600">
-              <Icon name="sair" size={16} />
-              Sair
-            </button>
-          </form>
+        <div role="dialog" aria-label="Menu do usuário" className={`absolute z-50 w-64 overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ${recolhida ? "bottom-3 left-full ml-3" : "bottom-full left-3 mb-2"}`}>
+          <PainelUsuario nome={nome} perfil={perfil} sair={sair} posicao={posicao} mudarPosicao={mudarPosicao} fechar={() => setAberto(false)} />
         </div>
       )}
     </div>
   );
 }
 
-/** Contêiner do menu lateral: fixo e recolhível no desktop; gaveta com fundo escurecido no celular. */
-export function BarraLateral({ marca, recolhida, gaveta, fecharGaveta, alternarRecolhida, children }: {
+/**
+ * Contêiner do menu lateral: fixo e recolhível no desktop; gaveta com fundo escurecido no celular.
+ * `soCelular` (menu no topo): só a gaveta existe; a partir de 1024 px o menu é a barra do topo (menu-topo.tsx).
+ */
+export function BarraLateral({ marca, recolhida, gaveta, fecharGaveta, alternarRecolhida, soCelular = false, children }: {
   marca: ReactNode;
+  soCelular?: boolean;
   recolhida: boolean;
   gaveta: boolean;
   fecharGaveta: () => void;
@@ -216,18 +203,21 @@ export function BarraLateral({ marca, recolhida, gaveta, fecharGaveta, alternarR
         id="menu-lateral"
         data-recolhida={recolhida}
         aria-label="Navegação"
-        className={`barra-lateral fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-fg shadow-xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none print:hidden ${gaveta ? "translate-x-0" : "-translate-x-full"}`}
+        className={`barra-lateral fixed inset-y-0 left-0 z-50 flex flex-col bg-sidebar text-sidebar-fg shadow-xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none print:hidden ${soCelular ? "lg:hidden" : ""} ${gaveta ? "translate-x-0" : "-translate-x-full"}`}
       >
         <div className="flex h-16 shrink-0 items-center gap-2 px-4">
           <Link href="/" aria-label="Início" onClick={fecharGaveta} className="min-w-0 flex-1 overflow-hidden rounded-lg py-1">
-            {marca}
+            <span className="marca-completa block">{marca}</span>
+            {/* menu recolhido: só o símbolo, a logo horizontal não cabe em 72 px */}
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src="/marca/isotipo-branco.png" alt="" aria-hidden="true" className="marca-isotipo mx-auto hidden h-8 w-auto" />
           </Link>
           <button type="button" onClick={fecharGaveta} aria-label="Fechar menu" className="flex h-9 w-9 items-center justify-center rounded-full text-sidebar-fg hover:bg-[rgb(255_255_255/0.1)] lg:hidden">
             <Icon name="fechar" size={18} />
           </button>
         </div>
         {children}
-        <button
+        {!soCelular && <button
           type="button"
           onClick={alternarRecolhida}
           aria-label={recolhida ? "Expandir menu" : "Recolher menu"}
@@ -235,7 +225,7 @@ export function BarraLateral({ marca, recolhida, gaveta, fecharGaveta, alternarR
           className="absolute -right-3 top-[1.375rem] hidden h-6 w-6 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-600 shadow-sm hover:text-teal-700 lg:flex"
         >
           <Icon name="direita" size={14} className={recolhida ? "" : "rotate-180"} />
-        </button>
+        </button>}
       </aside>
     </>
   );

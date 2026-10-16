@@ -12,10 +12,22 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
     ...g,
     items: g.items.filter((i) => user.perfil === "ADMIN" || !i.perfis || i.perfis.includes(user.perfil)),
   }));
-  // preferência de interface: menu lateral recolhido (cookie gravado pelo próprio menu)
-  const recolhida = (await cookies()).get("opme_menu")?.value === "recolhido";
+  // preferências de interface: menu lateral recolhido (cookie gravado pelo próprio menu) e posição do menu
+  // (lateral ou topo; gravada por definirPosicaoMenu em src/lib/tema-actions.ts). Lidas aqui para não piscar ao carregar.
+  const jar = await cookies();
+  const recolhida = jar.get("opme_menu")?.value === "recolhido";
+  const posicao = jar.get("opme_menu_pos")?.value === "topo" ? "topo" : "esquerda";
   return (
-    <AppShell groups={groups} nome={user.nome} perfil={user.perfil.toLowerCase()} sair={logout} marca={<Marca variante="topo" sobreEscuro />} recolhidaInicial={recolhida}>
+    <AppShell
+      groups={groups}
+      nome={user.nome}
+      perfil={user.perfil.toLowerCase()}
+      sair={logout}
+      marca={<Marca variante="topo" sobreEscuro />}
+      marcaClara={<Marca variante="topo" />}
+      recolhidaInicial={recolhida}
+      posicaoInicial={posicao}
+    >
       {children}
     </AppShell>
   );

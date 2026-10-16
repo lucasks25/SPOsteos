@@ -155,6 +155,21 @@ As duas fontes são OFL e servidas pelo `next/font/google` (`src/app/layout.tsx`
 - **Barra superior** (`src/components/app-shell.tsx`), 4rem, branca translúcida e fixa: busca global em pílula (Ctrl K), tema (lua/sol), ajuda e atalhos, sino de pendências.
 - Rotas e permissões do menu não mudaram: vêm de `src/components/nav.ts`, filtradas por perfil em `src/app/(app)/layout.tsx`.
 
+### Posição do menu (à esquerda ou no topo)
+
+Preferência de cada usuário, em **menu do usuário → Aparência → Posição do menu** (rodapé do menu lateral ou avatar da barra do topo; só aparece a partir de 1024 px, porque abaixo disso os dois modos são a mesma gaveta). Não há tela de preferências em `/conta` (só a troca de senha), então o menu do usuário é o único lugar.
+
+- **À esquerda** (padrão): a casca descrita acima, sem mudança de comportamento.
+- **No topo** (estilo Bling, `src/components/menu-topo.tsx`), duas faixas fixas no topo e conteúdo na largura toda (sem coluna de menu):
+  - **Faixa 1** (56 px, branca, borda inferior fina): logo SP OSTEOS (36 px de altura) à esquerda; à direita lupa (abre a mesma busca global num painel; Ctrl K abre e foca), tema, ajuda, sino e avatar com nome e perfil (duas linhas de 12 px) e seta. Botões de 36 px, cantos de 6 px, 8 px entre eles.
+  - **Faixa 2** (44 px, fundo `--sidebar`, o mesmo azul-marinho do menu lateral nos dois temas): módulos na horizontal, ícone de 16 px + rótulo de 14 px, 16 px de recuo, 4 px entre itens. Ativo: véu claro e **sublinhado de 2 px** em `--sidebar-destaque` (o mesmo destaque do item ativo no menu lateral). O que não cabe na largura vai para **"Mais ▾"** (medido em tempo real; com o menu do ADMIN, cabem todos os 9 a partir de 1280 px).
+  - **Menu suspenso** abaixo da faixa 2, painel branco com borda e sombra de menu: lista simples quando o módulo tem um grupo; **mega-menu em colunas** quando tem mais de um (Financeiro: Geral, Receber, Pagar, Banco, Resultado; Qualidade: Geral, Ação de campo, Conformidade). O painel alinha ao módulo e não passa da borda direita do conteúdo.
+  - Acessibilidade (padrão "disclosure navigation" do WAI-ARIA APG): botões com `aria-expanded`/`aria-controls`; Enter/Espaço abre e fecha, seta para baixo entra no painel, setas esquerda/direita andam entre módulos ou entre colunas, Home/End, Esc fecha e devolve o foco ao módulo; fecha ao clicar fora, ao sair com Tab, ao redimensionar e ao navegar. Mouse: abre ao passar (140 ms) ou ao clicar.
+  - Alinhamento: as duas faixas usam a mesma largura máxima (1680 px) e o mesmo recuo do `.conteudo` (24 px; 32 px a partir de 1440 px), então logo, primeiro módulo e título da página começam na mesma linha.
+  - Abaixo de 1024 px: a mesma barra do celular e a mesma gaveta do modo lateral (`BarraLateral soCelular`).
+- **Persistência**: cookie `opme_menu_pos` (`esquerda` | `topo`, 1 ano, `httpOnly`, `sameSite=lax`) gravado pela Server Action `definirPosicaoMenu` (`src/lib/tema-actions.ts`: `requireUser` + `argEnum`). O layout `src/app/(app)/layout.tsx` lê o cookie no servidor e a página já nasce no modo certo (sem piscar). A troca na tela é instantânea (estado do `AppShell`); a ação só persiste. O shell expõe `data-menu="esquerda|topo"`.
+- Tema claro e escuro funcionam nos dois modos (tokens `slate`/`white`/`sidebar`); a impressão esconde as duas barras (`print:hidden`).
+
 ## 7. Padrões de tela
 
 ### Lista (ex.: `/financeiro/receber`, `/cadastros/produtos`)

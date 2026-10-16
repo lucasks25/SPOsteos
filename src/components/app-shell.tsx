@@ -1,13 +1,14 @@
 "use client";
 
 import { usePathname, useRouter } from "next/navigation";
-import { useCallback, useEffect, useMemo, useState, type ReactNode } from "react";
+import { startTransition, useCallback, useEffect, useMemo, useState, useSyncExternalStore, type ReactNode } from "react";
 import { Icon } from "@/components/icons";
 import { BuscaGlobal } from "@/components/busca-global";
-import { MenuAjuda, Sino, botaoIcone, useAtalhosGlobais, type MenuId } from "@/components/topbar-menus";
+import { BotaoTema, MenuAjuda, Sino, botaoIcone, useAtalhosGlobais, type MenuId, type PosicaoMenu } from "@/components/topbar-menus";
 import { BarraLateral, NavLateral, UsuarioLateral, type Modulo } from "@/components/menu-lateral";
+import { MenuTopo } from "@/components/menu-topo";
 import type { NavGroup } from "@/components/nav";
-import { definirTema } from "@/lib/tema-actions";
+import { definirPosicaoMenu } from "@/lib/tema-actions";
 
 function agrupar(groups: NavGroup[]): Modulo[] {
   const mapa = new Map<string, NavGroup[]>();
@@ -64,42 +65,43 @@ function useAlinharColunas() {
   }, [pathname]);
 }
 
-/** Botão de tema na barra superior: alterna claro/escuro a partir do tema em uso (o "Sistema" fica no menu do usuário). */
-function BotaoTema() {
-  return (
-    <form action={definirTema}>
-      <button
-        name="tema"
-        value="escuro"
-        onClick={(e) => {
-          const raiz = document.documentElement;
-          const escuro = raiz.dataset.theme === "dark" || (!raiz.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
-          e.currentTarget.value = escuro ? "claro" : "escuro";
-        }}
-        aria-label="Alternar tema claro ou escuro"
-        title="Alternar tema"
-        className={botaoIcone}
-      >
-        <Icon name="lua" size={19} className="tema-icone-lua" />
-        <Icon name="sol" size={19} className="tema-icone-sol" />
-      </button>
-    </form>
-  );
-}
-
 const COOKIE_MENU = "opme_menu";
 
 /**
- * Casca do app (docs/DESIGN-SYSTEM.md, seção 6): menu lateral escuro com os setores (recolhível no desktop, gaveta no celular)
- * e barra superior branca fina com busca global (Ctrl K), ajuda, pendências e tema.
+ * true a partir de 1024 px; null no servidor e na hidratação (aí as duas barras são renderizadas e o CSS escolhe, sem piscar).
+ * Depois de hidratar, só a barra da largura atual fica montada: evita duas buscas globais e dois sinos consultando pendências.
  */
-export function AppShell({ groups, nome, perfil, sair, marca, recolhidaInicial = false, children }: {
+const LG = "(min-width: 1024px)";
+function useDesktop(): boolean | null {
+  return useSyncExternalStore(
+    (avisar) => {
+      const m = window.matchMedia(LG);
+      m.addEventListener("change", avisar);
+      return () => m.removeEventListener("change", avisar);
+    },
+    () => window.matchMedia(LG).matches,
+    () => null,
+  );
+}
+
+/**
+ * Casca do app (docs/DESIGN-SYSTEM.md, seção 6). Duas posições de menu, escolhidas pelo usuário em "Aparência":
+ * - "esquerda" (padrão): menu lateral escuro com os setores (recolhível no desktop, gaveta no celular) e barra superior
+ *   branca fina com busca global (Ctrl K), ajuda, pendências e tema;
+ * - "topo" (estilo Bling): uma barra só, com os módulos na horizontal e menus suspensos (menu-topo.tsx); no celular, a mesma gaveta.
+ * O modo inicial vem do cookie `opme_menu_pos` lido no servidor (sem piscar); a troca é na hora, e a Server Action só persiste.
+ */
+export function AppShell({ groups, nome, perfil, sair, marca, marcaClara, recolhidaInicial = false, posicaoInicial = "esquerda", children }: {
   groups: NavGroup[];
   nome: string;
   perfil: string;
   sair: () => Promise<void>;
+  /** marca sobre fundo escuro (menu lateral e gaveta) */
   marca?: ReactNode;
+  /** marca sobre fundo claro (barra do topo) */
+  marcaClara?: ReactNode;
   recolhidaInicial?: boolean;
+  posicaoInicial?: PosicaoMenu;
   children: ReactNode;
 }) {
   const pathname = usePathname();
@@ -110,6 +112,9 @@ export function AppShell({ groups, nome, perfil, sair, marca, recolhidaInicial =
   const [menu, setMenu] = useState<MenuId | null>(null);
   const [recolhida, setRecolhida] = useState(recolhidaInicial);
   const [gaveta, setGaveta] = useState(false);
+  const [posicao, setPosicao] = useState<PosicaoMenu>(posicaoInicial);
+  const topo = posicao === "topo";
+  const desktop = useDesktop();
   const alternar = useCallback((id: MenuId) => (a: boolean) => setMenu(a ? id : null), []);
   const fecharGaveta = useCallback(() => setGaveta(false), []);
 
@@ -137,36 +142,61 @@ export function AppShell({ groups, nome, perfil, sair, marca, recolhidaInicial =
     document.cookie = `${COOKIE_MENU}=${nova ? "recolhido" : "aberto"}; path=/; max-age=31536000; samesite=lax`;
   };
 
+  const mudarPosicao = useCallback((p: PosicaoMenu) => {
+    setPosicao(p);
+    setMenu(null);
+    startTransition(() => definirPosicaoMenu(p));
+  }, []);
+
   return (
-    <div className="min-h-screen lg:flex">
+    <div data-menu={posicao} className={`min-h-screen ${topo ? "" : "lg:flex"}`}>
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded-full focus:bg-white focus:px-4 focus:py-2 focus:text-sm focus:font-semibold focus:shadow-lg">
         Pular para o conteúdo
       </a>
 
-      <BarraLateral marca={marca} recolhida={recolhida} gaveta={gaveta} fecharGaveta={fecharGaveta} alternarRecolhida={alternarRecolhida}>
-        <NavLateral modulos={modulos} ativo={ativo} recolhida={recolhida} aoNavegar={fecharGaveta} />
-        <UsuarioLateral nome={nome} perfil={perfil} sair={sair} recolhida={recolhida} />
+      {/* no modo topo o menu lateral existe só como gaveta do celular (some a partir de 1024 px) */}
+      <BarraLateral marca={marca} recolhida={recolhida && !topo} gaveta={gaveta} fecharGaveta={fecharGaveta} alternarRecolhida={alternarRecolhida} soCelular={topo}>
+        <NavLateral modulos={modulos} ativo={ativo} recolhida={recolhida && !topo} aoNavegar={fecharGaveta} />
+        <UsuarioLateral nome={nome} perfil={perfil} sair={sair} recolhida={recolhida && !topo} posicao={posicao} mudarPosicao={mudarPosicao} />
       </BarraLateral>
 
       <div className="flex min-w-0 flex-1 flex-col">
-        <header className="sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md print:hidden">
-          <div className="flex h-16 items-center gap-2 px-4 md:px-7">
-            <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded={gaveta} className={`${botaoIcone} -ml-2 lg:hidden`}>
-              <Icon name="menu" size={20} />
-            </button>
-            {/* abaixo de 1024 px o menu lateral some: o isotipo da marca fica ao lado do botão de menu */}
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img src="/marca/isotipo.png" alt="SP OSTEOS" className="h-7 w-auto shrink-0 lg:hidden" />
-            <div className="flex min-w-0 flex-1">
-              <BuscaGlobal groups={groups} />
+        {topo && desktop !== false && (
+          <MenuTopo
+            modulos={modulos}
+            ativo={ativo}
+            groups={groups}
+            marca={marcaClara}
+            nome={nome}
+            perfil={perfil}
+            sair={sair}
+            posicao={posicao}
+            mudarPosicao={mudarPosicao}
+            menu={menu}
+            alternar={alternar}
+          />
+        )}
+        {/* barra do modo lateral; no modo topo é a barra do celular (abaixo de 1024 px) */}
+        {(!topo || desktop !== true) && (
+          <header className={`sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md print:hidden ${topo ? "lg:hidden" : ""}`}>
+            <div className="flex h-16 items-center gap-2 px-4 md:px-7">
+              <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded={gaveta} className={`${botaoIcone} -ml-2 lg:hidden`}>
+                <Icon name="menu" size={20} />
+              </button>
+              {/* abaixo de 1024 px o menu lateral some: o isotipo da marca fica ao lado do botão de menu */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src="/marca/isotipo.png" alt="SP OSTEOS" className="h-7 w-auto shrink-0 lg:hidden" />
+              <div className="flex min-w-0 flex-1">
+                <BuscaGlobal groups={groups} />
+              </div>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <BotaoTema />
+                <MenuAjuda aberto={menu === "ajuda"} setAberto={alternar("ajuda")} />
+                <Sino aberto={menu === "sino"} setAberto={alternar("sino")} />
+              </div>
             </div>
-            <div className="flex shrink-0 items-center gap-0.5">
-              <BotaoTema />
-              <MenuAjuda aberto={menu === "ajuda"} setAberto={alternar("ajuda")} />
-              <Sino aberto={menu === "sino"} setAberto={alternar("sino")} />
-            </div>
-          </div>
-        </header>
+          </header>
+        )}
 
         <main id="conteudo" className="conteudo w-full flex-1 print:p-0">
           {children}

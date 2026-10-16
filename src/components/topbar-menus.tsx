@@ -3,8 +3,102 @@
 import Link from "next/link";
 import { useEffect, useRef, useState, type KeyboardEvent as ReactKeyEvent, type ReactNode } from "react";
 import { Icon, type IconName } from "@/components/icons";
+import { definirTema } from "@/lib/tema-actions";
 
 export type MenuId = "ajuda" | "sino";
+/** Posição do menu principal: coluna à esquerda (padrão) ou barra no topo com menus suspensos (estilo Bling). */
+export type PosicaoMenu = "esquerda" | "topo";
+
+export const iniciais = (nome: string) =>
+  nome.split(/\s+/).filter(Boolean).slice(0, 2).map((p) => p[0]!.toUpperCase()).join("");
+
+/** Botão de tema na barra superior: alterna claro/escuro a partir do tema em uso (o "Sistema" fica no menu do usuário). */
+export function BotaoTema() {
+  return (
+    <form action={definirTema}>
+      <button
+        name="tema"
+        value="escuro"
+        onClick={(e) => {
+          const raiz = document.documentElement;
+          const escuro = raiz.dataset.theme === "dark" || (!raiz.dataset.theme && window.matchMedia("(prefers-color-scheme: dark)").matches);
+          e.currentTarget.value = escuro ? "claro" : "escuro";
+        }}
+        aria-label="Alternar tema claro ou escuro"
+        title="Alternar tema"
+        className={botaoIcone}
+      >
+        <Icon name="lua" size={19} className="tema-icone-lua" />
+        <Icon name="sol" size={19} className="tema-icone-sol" />
+      </button>
+    </form>
+  );
+}
+
+const segmento = "h-7 rounded-[5px] text-xs font-semibold text-slate-700 hover:text-teal-700 aria-pressed:bg-white aria-pressed:text-teal-700 aria-pressed:shadow-sm";
+
+/**
+ * Conteúdo do menu do usuário (rodapé do menu lateral ou avatar da barra no topo): aparência (tema e posição do menu),
+ * trocar senha e sair. A posição do menu só aparece a partir de 1024 px: abaixo disso os dois modos são a mesma gaveta.
+ */
+export function PainelUsuario({ nome, perfil, sair, posicao, mudarPosicao, fechar }: {
+  nome: string;
+  perfil: string;
+  sair: () => Promise<void>;
+  posicao: PosicaoMenu;
+  mudarPosicao: (p: PosicaoMenu) => void;
+  fechar: () => void;
+}) {
+  return (
+    <>
+      <div className="border-b border-slate-200 px-4 py-3">
+        <div className="truncate text-sm font-bold text-slate-900">{nome}</div>
+        <div className="text-xs capitalize text-slate-500">{perfil}</div>
+      </div>
+      <div className="border-b border-slate-200 px-4 py-3">
+        <div className="mb-2 text-xs font-semibold text-slate-600">Aparência</div>
+        <form action={definirTema}>
+          <div role="group" aria-label="Tema" className="grid grid-cols-3 gap-0.5 rounded-md border border-slate-200 bg-slate-100 p-0.5">
+            {[["claro", "Claro"], ["escuro", "Escuro"], ["auto", "Sistema"]].map(([v, r]) => (
+              <button key={v} name="tema" value={v} className={segmento}>
+                {r}
+              </button>
+            ))}
+          </div>
+        </form>
+        <div className="mt-3 hidden lg:block">
+          <div id="rotulo-posicao-menu" className="mb-1.5 text-xs text-slate-500">Posição do menu</div>
+          <div role="group" aria-labelledby="rotulo-posicao-menu" className="grid grid-cols-2 gap-0.5 rounded-md border border-slate-200 bg-slate-100 p-0.5">
+            {([["esquerda", "À esquerda"], ["topo", "No topo"]] as const).map(([v, r]) => (
+              <button
+                key={v}
+                type="button"
+                aria-pressed={posicao === v}
+                onClick={() => {
+                  fechar();
+                  if (posicao !== v) mudarPosicao(v);
+                }}
+                className={segmento}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+      <Link href="/conta/senha" onClick={fechar} className="flex w-full items-center gap-2.5 border-b border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700">
+        <Icon name="cadeado" size={16} />
+        Trocar minha senha
+      </Link>
+      <form action={sair}>
+        <button className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-rose-600">
+          <Icon name="sair" size={16} />
+          Sair
+        </button>
+      </form>
+    </>
+  );
+}
 
 /** Dropdown da barra superior: fecha com Esc (devolvendo o foco ao botão) e ao clicar fora. */
 function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", children }: {
