@@ -34,7 +34,7 @@ export default async function ConveniosPage({ searchParams }: { searchParams: Pr
         {convenios.map((c) => (
           <tr key={c.id}>
             <Td className="font-medium">
-              {c.nome} {!c.ativo && <Badge>inativo</Badge>}
+              {c.nome} {!c.ativo && <Badge>inativo</Badge>} {!c.exigeAutorizacao && <Badge color="yellow">sem exigência de autorização</Badge>}
             </Td>
             <Td className="font-mono text-xs">{c.registroAns ?? "—"}</Td>
             <Td className="font-mono text-xs">{c.cnpj ?? "—"}</Td>

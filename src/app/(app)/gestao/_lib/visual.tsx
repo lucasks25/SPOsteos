@@ -22,3 +22,5 @@ export const BadgeSituacao = ({ situacao }: { situacao: SituacaoGiro }) => <Badg
 
 export const fmtPct = (v: number | null) => (v === null ? "—" : `${v.toFixed(1).replace(".", ",")}%`);
 export const PERFIS_GESTAO = ["COMERCIAL", "ESTOQUE", "COMPRAS", "FINANCEIRO"] as const;
+/** Relatório de glosas: só quem negocia com o convênio (comercial) e quem registra a glosa (financeiro). */
+export const PERFIS_GLOSAS = ["COMERCIAL", "FINANCEIRO"] as const;

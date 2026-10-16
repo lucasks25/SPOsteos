@@ -12,6 +12,7 @@ export function ConvenioForm({ convenio }: { convenio?: Convenio }) {
         <Field label="CNPJ" name="cnpj" defaultValue={c?.cnpj ?? ""} placeholder="00.000.000/0000-00" />
       </Grid>
       <Field label="Ativo" name="ativo" type="checkbox" defaultChecked={c?.ativo ?? true} />
+      <Field label="Exige autorização prévia para OPME" name="exigeAutorizacao" type="checkbox" defaultChecked={c?.exigeAutorizacao ?? true} hint="Ligado: as cirurgias deste convênio passam pela verificação de risco de glosa (guia autorizada x material consumido)." />
     </Form>
   );
 }

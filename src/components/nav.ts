@@ -1,6 +1,6 @@
 import type { Perfil } from "@/generated/prisma/client";
 
-export type NavItem = { href: string; label: string };
+export type NavItem = { href: string; label: string; /** restringe só este item (além do grupo); ADMIN vê tudo */ perfis?: Perfil[] };
 export type NavGroup = { label: string; perfis?: Perfil[]; items: NavItem[]; /** aba de módulo na barra superior; por padrão o próprio rótulo do grupo */ modulo?: string };
 
 /** Menu principal. `perfis` restringe a exibição (ADMIN vê tudo). */
@@ -120,6 +120,7 @@ export const NAV: NavGroup[] = [
       { href: "/gestao/margem", label: "Margem" },
       { href: "/gestao/vencimentos", label: "Vencimentos" },
       { href: "/gestao/vendas", label: "Vendas por mês" },
+      { href: "/gestao/glosas", label: "Glosas", perfis: ["COMERCIAL", "FINANCEIRO"] },
     ],
   },
   {

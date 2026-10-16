@@ -4,6 +4,7 @@ import { FORMAS_PAGAMENTO, TIPOS, type Tipo, type TituloRow } from "./config";
 import { baixarTitulo, classificarTitulo, glosarTitulo, salvarTitulo } from "./actions";
 import { linhaDigitavel } from "./boleto";
 import { ymd } from "./datas";
+import { CATEGORIAS_GLOSA, ROTULO_CATEGORIA_GLOSA } from "./glosa-categorias";
 
 /** Formulário de criação/edição manual de título (somente em aberto). */
 export function TituloForm({
@@ -114,6 +115,7 @@ export function GlosaForm({ titulo, hoje }: { titulo: TituloRow; hoje: Date }) {
   return (
     <Form action={glosarTitulo.bind(null, titulo.id)} submitLabel="Registrar glosa" resetOnSuccess>
       <Grid cols={3}>
+        <Select label="Categoria *" name="categoria" required options={CATEGORIAS_GLOSA.map((c) => ({ value: c, label: ROTULO_CATEGORIA_GLOSA[c] }))} />
         <Field label="Valor glosado (R$) *" name="valor" type="number" step="0.01" min="0.01" max={titulo.saldo.toFixed(2)} required hint={`Saldo do título: ${money(titulo.saldo)}`} />
         <Field label="Data *" name="data" type="date" defaultValue={ymd(hoje)} max={ymd(hoje)} required />
         <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} hint="Ex.: item não autorizado pelo convênio" />

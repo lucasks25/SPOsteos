@@ -1,11 +1,12 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/form";
-import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
-import { cancelarTitulo, estornarBaixaAction, estornarGlosaAction } from "./actions";
+import { cancelarTitulo, estornarBaixaAction, estornarGlosaAction, recursoGlosaAction } from "./actions";
+import { ROTULO_CATEGORIA_GLOSA } from "./glosa-categorias";
 import { hojeUTC } from "./datas";
 import { opcoesContas } from "./contas";
 import { listarParceiros, obterTitulo } from "./queries";
@@ -33,7 +34,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
     tipo === "receber" ? db.glosa.findMany({ where: { contaReceberId: id }, orderBy: { data: "asc" } }) : Promise.resolve([]),
   ]);
   const semBaixas = baixas.length === 0;
-  const editavel = titulo.status === "ABERTO" && semBaixas && glosas.length === 0;
+  const editavel = titulo.status === "ABERTO" && semBaixas && glosas.every((g) => g.recurso === "REVERTIDA");
 
   return (
     <>
@@ -112,20 +113,44 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           </Table>
 
         {glosas.length > 0 && (
-            <Table titulo="Glosas" icone="alerta" contagem={glosas.length} head={["Data", "Valor", "Motivo", ""]}>
-              {glosas.map((g) => (
-                <tr key={g.id}>
-                  <Td>{date(g.data)}</Td>
-                  <Td className="text-right tnum">{money(toNumber(g.valor))}</Td>
-                  <Td className="max-w-md whitespace-normal">{g.motivo}</Td>
-                  <Td>
-                    <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="small" confirm="Estornar esta glosa?">
-                      Estornar
-                    </ActionButton>
-                  </Td>
-                </tr>
-              ))}
-            </Table>
+          <Table titulo="Glosas" icone="alerta" contagem={glosas.length} head={["Data", "Categoria", "Valor", "Motivo", "Recurso", ""]}>
+            {glosas.map((g) => (
+              <tr key={g.id}>
+                <Td>{date(g.data)}</Td>
+                <Td>{ROTULO_CATEGORIA_GLOSA[g.categoria]}</Td>
+                <Td className="text-right tnum">{money(toNumber(g.valor))}</Td>
+                <Td className="max-w-md whitespace-normal">{g.motivo}</Td>
+                <Td>
+                  {g.recurso === "NENHUM" ? <span className="text-slate-500">—</span> : <StatusBadge status={g.recurso} />}
+                  {g.recursoEm && g.recurso !== "NENHUM" && <div className="text-[11px] text-slate-500">{date(g.recursoEm)}</div>}
+                </Td>
+                <Td>
+                  <div className="flex flex-wrap gap-1">
+                    {g.recurso === "NENHUM" && (
+                      <ActionButton action={recursoGlosaAction} hidden={{ id: g.id, acao: "RECORRER" }} variant="small" confirm="Registrar que esta glosa está em recurso junto ao convênio/hospital?">
+                        Registrar recurso
+                      </ActionButton>
+                    )}
+                    {g.recurso === "EM_RECURSO" && (
+                      <>
+                        <ActionButton action={recursoGlosaAction} hidden={{ id: g.id, acao: "REVERTER" }} variant="small" confirm={`Marcar como revertida? O hospital aceitou pagar: a glosa de ${money(toNumber(g.valor))} deixa de abater o título, que volta a ter esse saldo em aberto.`}>
+                          Marcar revertida
+                        </ActionButton>
+                        <ActionButton action={recursoGlosaAction} hidden={{ id: g.id, acao: "MANTER" }} variant="small" confirm="Marcar como mantida? O recurso foi negado; o saldo do título não muda.">
+                          Marcar mantida
+                        </ActionButton>
+                      </>
+                    )}
+                    {g.recurso !== "REVERTIDA" && (
+                      <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="small" confirm="Estornar esta glosa? (use só para corrigir um lançamento errado; se o hospital aceitou pagar, use Marcar revertida)">
+                        Estornar
+                      </ActionButton>
+                    )}
+                  </div>
+                </Td>
+              </tr>
+            ))}
+          </Table>
         )}
 
         {tipo === "receber" && titulo.status === "ABERTO" && (

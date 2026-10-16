@@ -5,6 +5,7 @@ import type { Perfil } from "@/generated/prisma/client";
 import type { IconName } from "@/components/icons";
 import { hojeUTC } from "@/app/(app)/financeiro/_lib/datas";
 import { faixasAbertas } from "@/app/(app)/financeiro/_lib/painel";
+import { contarCirurgiasSemAutorizacao } from "@/app/(app)/comercial/_lib/autorizacao-servico";
 import { contarAlertas } from "@/app/(app)/qualidade/_lib/documentos-servico";
 
 const DIA = 24 * 60 * 60 * 1000;
@@ -25,6 +26,7 @@ export function areasDoPerfil(p: Perfil) {
     estoque: ve(p, "ESTOQUE", "QUALIDADE", "COMPRAS", "COMERCIAL"),
     documentos: ve(p, "QUALIDADE", "COMPRAS"),
     recolhimentos: ve(p, "QUALIDADE", "ESTOQUE"),
+    autorizacoes: ve(p, "COMERCIAL"),
   };
 }
 
@@ -44,6 +46,8 @@ export type DadosPendencias = {
   documentos: { vencidos: number; vencendo30: number; total: number };
   /** recolhimentos de lote em aberto/andamento e os com prazo vencido (QUALIDADE, ESTOQUE e ADMIN) */
   recolhimentos: { abertos: number; vencidos: number };
+  /** cirurgias nos próximos 7 dias, em convênio que exige autorização, sem guia AUTORIZADA/PARCIAL válida (COMERCIAL e ADMIN) */
+  semAutorizacao: number;
 };
 
 export type Pendencia = { key: string; href: string; icon: IconName; tom: "warn" | "danger"; titulo: string; nota: string; acao: string; qtd: number };
@@ -63,14 +67,14 @@ async function contarRecolhimentos(hoje: Date) {
  * (o resto volta zerado). Única fonte: o painel e GET /api/pendencias usam esta função.
  */
 export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencias> {
-  const { comercial, financeiro, estoque, documentos, recolhimentos } = areasDoPerfil(perfil);
+  const { comercial, financeiro, estoque, documentos, recolhimentos, autorizacoes } = areasDoPerfil(perfil);
   const hoje = hojeSP();
   const hojeFin = hojeUTC();
   const em30 = new Date(hoje.getTime() + 30 * DIA);
   const em90 = new Date(hoje.getTime() + 90 * DIA);
   const zero = Promise.resolve(0);
 
-  const [recFaixas, pagarFaixas, aFaturar, quarentena, lotesVencendo, produtos, saldosLib, registros, remessas, aprovacoes, docs, recolh] = await Promise.all([
+  const [recFaixas, pagarFaixas, aFaturar, quarentena, lotesVencendo, produtos, saldosLib, registros, remessas, aprovacoes, docs, recolh, semAutorizacao] = await Promise.all([
     financeiro ? faixasAbertas("receber", hojeFin) : Promise.resolve(null),
     financeiro ? faixasAbertas("pagar", hojeFin) : Promise.resolve(null),
     comercial ? db.cirurgia.count({ where: { status: "REALIZADA" } }) : zero,
@@ -85,6 +89,7 @@ export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencia
     financeiro ? db.contaPagar.count({ where: { aprovadoEm: null, status: "ABERTO" } }) : zero,
     documentos ? contarAlertas(hojeFin) : Promise.resolve(semDocumentos),
     recolhimentos ? contarRecolhimentos(hojeFin) : Promise.resolve(semRecolhimentos),
+    autorizacoes ? contarCirurgiasSemAutorizacao(new Date()) : zero,
   ]);
 
   const saldoMap = new Map(saldosLib.map((s) => [s.produtoId, s._sum.quantidade ?? 0]));
@@ -104,6 +109,7 @@ export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencia
     aprovacoes,
     documentos: docs,
     recolhimentos: recolh,
+    semAutorizacao,
   };
 }
 
@@ -115,6 +121,7 @@ export function listarPendencias(d: DadosPendencias): Pendencia[] {
   };
   const rc = d.recolhimentos;
   add("recol", rc.abertos, { href: "/qualidade/recolhimentos", icon: "alerta", tom: rc.vencidos > 0 ? "danger" : "warn", titulo: `${rc.abertos} recolhimento(s) de lote em aberto`, nota: rc.vencidos > 0 ? `${rc.vencidos} com prazo vencido` : "ação de campo em andamento", acao: "Acompanhar" });
+  add("aut", d.semAutorizacao, { href: "/comercial/agenda", icon: "escudo", tom: "danger", titulo: `${d.semAutorizacao} cirurgia(s) nos próximos 7 dias sem autorização do convênio`, nota: "sem guia autorizada: risco de glosa", acao: "Regularizar" });
   add("rec", d.recVencido.qtd, { href: "/financeiro/receber?vencidos=1", icon: "receber", tom: "danger", titulo: `${d.recVencido.qtd} título(s) a receber vencido(s)`, nota: `${money(d.recVencido.valor)} em atraso`, acao: "Cobrar" });
   add("venc", d.lotesVencendo, { href: "/qualidade/lotes", icon: "alerta", tom: "danger", titulo: `${d.lotesVencendo} lote(s) vencido(s) ou vencendo`, nota: "validade em até 30 dias, com saldo", acao: "Abrir" });
   add("min", d.abaixoMin, { href: "/compras/sugestao", icon: "tendencia", tom: "danger", titulo: `${d.abaixoMin} produto(s) abaixo do mínimo`, nota: "disponível liberado insuficiente", acao: "Comprar" });

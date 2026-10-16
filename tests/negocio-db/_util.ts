@@ -19,6 +19,7 @@ export async function limparTudo() {
   await limparDocumentos();
   const prod = { produto: { codigo: { startsWith: P } } };
   const hosp = { razaoSocial: { startsWith: P } };
+  await db.glosa.deleteMany({ where: { contaReceber: { OR: [{ descricao: { startsWith: P } }, { hospital: hosp }] } } });
   await db.contaReceber.deleteMany({ where: { descricao: { startsWith: P } } });
   await db.contaReceber.deleteMany({ where: { hospital: hosp } });
   await db.contaPagar.deleteMany({ where: { fornecedor: { razaoSocial: { startsWith: P } } } });
@@ -28,7 +29,9 @@ export async function limparTudo() {
   await db.remessaItem.deleteMany({ where: prod });
   await db.remessa.deleteMany({ where: { OR: [{ local: { hospital: hosp } }, { cirurgia: { paciente: { startsWith: P } } }] } });
   await db.pedidoVenda.deleteMany({ where: { hospital: hosp } });
-  await db.cirurgia.deleteMany({ where: { paciente: { startsWith: P } } }); // consumos em cascata
+  await db.cirurgia.deleteMany({ where: { paciente: { startsWith: P } } }); // consumos e autorizações em cascata
+  await db.convenio.deleteMany({ where: { nome: { startsWith: P } } });
+  await db.procedimento.deleteMany({ where: { descricao: { startsWith: P } } });
   await db.movimento.deleteMany({ where: prod });
   await db.saldo.deleteMany({ where: prod });
   await db.pedidoCompra.deleteMany({ where: { fornecedor: { razaoSocial: { startsWith: P } } } });

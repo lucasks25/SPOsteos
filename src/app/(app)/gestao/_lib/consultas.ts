@@ -1,13 +1,15 @@
 import "server-only";
 import { hojeUTC } from "../../financeiro/_lib/datas";
 import { curvaAbc } from "./abc";
-import { carregarEntradasGiro, carregarPedidosFaturados, carregarSaldosLote, carregarVendasMeses } from "./dados";
+import { carregarGlosasRelatorio, carregarEntradasGiro, carregarPedidosFaturados, carregarSaldosLote, carregarVendasMeses } from "./dados";
 import { calcularGiro, PRAZO_REPOSICAO_PADRAO, type SituacaoGiro } from "./giro";
 import { margens } from "./margens";
 import { periodoDe } from "./periodo";
 import { lotesEmRisco, riscoPorHospital, totaisPorFaixa } from "./vencimentos";
 import { mesBrasilia, vendasPorMes } from "./vendas-mes";
-import { addDias } from "../../financeiro/_lib/datas";
+import { addDias, parseDia } from "../../financeiro/_lib/datas";
+import { CATEGORIAS_GLOSA } from "../../financeiro/_lib/glosa-categorias";
+import { resumirGlosas } from "./glosas";
 
 /** searchParams da página ou da rota de exportação. */
 export type SP = Record<string, string | string[] | undefined>;
@@ -71,4 +73,13 @@ export async function vendasDados(sp: SP) {
   const total = soma((m) => m.valor);
   const anterior = soma((m) => m.anterior);
   return { hospitalId, meses, total, anterior, variacaoPct: anterior > 0 ? Math.round(((total - anterior) / anterior) * 10000) / 100 : null, pedidos: meses.reduce((s, m) => s + m.pedidos, 0) };
+}
+
+export async function glosasDados(sp: SP) {
+  const periodo = periodoDe(sp.de, sp.ate, hojeUTC(), 90);
+  const hospitalId = um(sp.hospital);
+  const convenioId = um(sp.convenio);
+  const categoria = CATEGORIAS_GLOSA.find((c) => c === um(sp.categoria));
+  const { faturados, glosas } = await carregarGlosasRelatorio({ gte: periodo.gte, lt: periodo.lt, de: parseDia(periodo.de)!, ate: parseDia(periodo.ate)!, hospitalId, convenioId, categoria });
+  return { periodo, hospitalId, convenioId, categoria, pedidos: faturados.length, ...resumirGlosas(faturados, glosas) };
 }

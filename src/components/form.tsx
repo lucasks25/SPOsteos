@@ -32,6 +32,7 @@ export function Form({
   redirectTo,
   className,
   resetOnSuccess,
+  confirm,
 }: {
   action: Action;
   children: ReactNode;
@@ -39,6 +40,8 @@ export function Form({
   redirectTo?: string;
   className?: string;
   resetOnSuccess?: boolean;
+  /** pede confirmação (diálogo) antes de enviar; use para avisos que o usuário decide */
+  confirm?: string;
 }) {
   const [state, formAction] = useActionState(action, undefined);
   const [pending, startTransition] = useTransition();
@@ -97,7 +100,7 @@ export function Form({
           {children}
           {submitLabel !== null && (
             <div className="border-t border-slate-100 pt-4">
-              <SubmitButton>{submitLabel}</SubmitButton>
+              <SubmitButton confirm={confirm}>{submitLabel}</SubmitButton>
             </div>
           )}
         </form>

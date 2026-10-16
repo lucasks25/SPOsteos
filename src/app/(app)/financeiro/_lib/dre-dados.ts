@@ -48,7 +48,7 @@ export async function carregarLinhasDre(inicio: Date, fim: Date, centroCustoId: 
       where: { tipo: { in: ["PERDA", "AJUSTE"] }, criadoEm: { gte: instIni, lt: instFim } },
       select: { criadoEm: true, quantidade: true, custoUnit: true, origemId: true, destinoId: true },
     }),
-    db.glosa.findMany({ where: { data: competencia, contaReceber: { is: centroCustoId ? { centroCustoId } : {} } }, select: { data: true, valor: true } }),
+    db.glosa.findMany({ where: { data: competencia, recurso: { not: "REVERTIDA" }, contaReceber: { is: centroCustoId ? { centroCustoId } : {} } }, select: { data: true, valor: true } }),
   ]);
 
   for (const t of receber) out.push(linha(chaveMes(t.competencia), t.planoContaId, toNumber(t.valor)));

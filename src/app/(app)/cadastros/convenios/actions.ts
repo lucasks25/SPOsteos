@@ -18,6 +18,7 @@ const schema = z.object({
     .transform((v) => v ?? null),
   cnpj: zf.optText(),
   ativo: zf.bool(),
+  exigeAutorizacao: zf.bool(),
 });
 
 export async function salvarConvenio(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {

@@ -13,7 +13,8 @@ import { addDias, hojeUTC } from "./datas";
 import { lerBoleto } from "./boleto";
 import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";
-import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa } from "./titulos";
+import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa, registrarRecurso } from "./titulos";
+import { CATEGORIAS_GLOSA } from "./glosa-categorias";
 import { ErroNegocio } from "@/lib/erros";
 
 const positivo = () => zf.money().refine((v) => v > 0, "Informe um valor maior que zero");
@@ -214,23 +215,29 @@ export async function classificarTitulo(tipoArg: Tipo, id: string, _: ActionStat
   return { ok: true };
 }
 
-const schemaGlosa = z.object({ valor: positivo(), data: zf.date("Informe a data"), motivo: zf.text("Informe o motivo") });
+const schemaGlosa = z.object({
+  valor: positivo(),
+  data: zf.date("Informe a data"),
+  motivo: zf.text("Informe o motivo"),
+  categoria: z.enum(CATEGORIAS_GLOSA, { error: "Escolha a categoria da glosa" }),
+});
 
 /** Registra glosa (o hospital não reconhece parte da cobrança): abate o título sem dinheiro e vai para Deduções no DRE. */
 export async function glosarTitulo(id: string, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
   const parsed = parseForm(schemaGlosa, fd);
   if (!parsed.success) return parsed.state;
-  const { valor, data, motivo } = parsed.data;
+  const { valor, data, motivo, categoria } = parsed.data;
   if (data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
   try {
-    const g = await db.$transaction((tx) => registrarGlosa(tx, { tituloId: id, valor, data, motivo }));
-    await audit(user.id, "glosar", "ContaReceber", id, `${money(valor)} — ${motivo} (glosa ${g.id})`);
+    const g = await db.$transaction((tx) => registrarGlosa(tx, { tituloId: id, valor, data, motivo, categoria }));
+    await audit(user.id, "glosar", "ContaReceber", id, `${money(valor)} — ${categoria} — ${motivo} (glosa ${g.id})`);
   } catch (e) {
     return { error: errorMessage(e) };
   }
   revalidar("receber", id);
   revalidatePath("/financeiro/dre");
+  revalidatePath("/gestao/glosas");
   return { ok: true };
 }
 
@@ -243,6 +250,26 @@ export async function estornarGlosaAction(_: ActionState, fd: FormData): Promise
     await audit(user.id, "estornar glosa", "ContaReceber", tituloId, parsed.data.id);
     revalidar("receber", tituloId);
     revalidatePath("/financeiro/dre");
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
+  return { ok: true };
+}
+
+const schemaRecurso = z.object({ id: zf.text(), acao: z.enum(["RECORRER", "REVERTER", "MANTER"], { error: "Ação inválida" }) });
+
+/** Recurso da glosa: registrar recurso, marcar revertida (reabre o saldo do título) ou mantida. */
+export async function recursoGlosaAction(_: ActionState, fd: FormData): Promise<ActionState> {
+  const user = await requireUser(["FINANCEIRO"]);
+  const parsed = parseForm(schemaRecurso, fd);
+  if (!parsed.success) return { error: "Glosa inválida." };
+  const { id, acao } = parsed.data;
+  try {
+    const tituloId = await db.$transaction((tx) => registrarRecurso(tx, id, acao, hojeUTC()));
+    await audit(user.id, `glosa: ${acao.toLowerCase()}`, "ContaReceber", tituloId, id);
+    revalidar("receber", tituloId);
+    revalidatePath("/financeiro/dre");
+    revalidatePath("/gestao/glosas");
   } catch (e) {
     return { error: errorMessage(e) };
   }

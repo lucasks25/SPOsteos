@@ -176,6 +176,7 @@ export function StatusBadge({ status }: { status: string }) {
     CONTADO: "blue", FECHADO: "green",
     EM_ANDAMENTO: "blue", CONCLUIDO: "green", PENDENTE: "yellow", COMUNICADO: "blue", RECOLHIDO: "green", SEM_SALDO: "gray",
     RASCUNHO: "gray", ENVIADO: "blue", APROVADO: "green", RECUSADO: "red",
+    SOLICITADA: "yellow", AUTORIZADA: "green", NEGADA: "red", EXPIRADA: "red", EM_RECURSO: "blue", REVERTIDA: "green", MANTIDA: "gray", NENHUM: "gray",
   };
   return <Badge color={map[status] ?? "gray"}>{status.replaceAll("_", " ").toLowerCase()}</Badge>;
 }

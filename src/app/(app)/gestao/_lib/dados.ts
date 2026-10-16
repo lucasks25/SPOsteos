@@ -6,6 +6,8 @@ import { DIAS_CONSUMO, type EntradaGiro } from "./giro";
 import type { PedidoMargem } from "./margens";
 import type { SaldoLote } from "./vencimentos";
 import { janelaVendas, type VendaPedido } from "./vendas-mes";
+import type { CategoriaGlosaKey } from "../../financeiro/_lib/glosa-categorias";
+import type { GlosaLinha, PedidoFaturadoGlosa } from "./glosas";
 
 /** Pedidos de venda FATURADOS com faturadoEm em [gte, lt), com itens (preço e custo congelados). Uma consulta só. */
 export async function carregarPedidosFaturados(f: { gte: Date; lt: Date; hospitalId?: string; representanteId?: string }): Promise<PedidoMargem[]> {
@@ -109,4 +111,38 @@ export async function carregarVendasMeses(fim: { ano: number; mes: number }, hos
     select: { faturadoEm: true, total: true },
   });
   return rows.flatMap((r) => (r.faturadoEm ? [{ faturadoEm: r.faturadoEm, total: toNumber(r.total) }] : []));
+}
+
+/** Pedidos faturados no período (data da NF) e glosas com data no período, com convênio (da cirurgia) e hospital. Duas consultas. */
+export async function carregarGlosasRelatorio(f: { gte: Date; lt: Date; de: Date; ate: Date; hospitalId?: string; convenioId?: string; categoria?: CategoriaGlosaKey }) {
+  const filtroPedido = {
+    ...(f.hospitalId ? { hospitalId: f.hospitalId } : {}),
+    ...(f.convenioId ? { cirurgia: { is: { convenioId: f.convenioId } } } : {}),
+  };
+  const [pedidos, glosas] = await Promise.all([
+    db.pedidoVenda.findMany({
+      where: { status: "FATURADO", faturadoEm: { gte: f.gte, lt: f.lt }, ...filtroPedido },
+      select: { total: true, hospitalId: true, hospital: { select: { razaoSocial: true, nomeFantasia: true } }, cirurgia: { select: { convenio: { select: { id: true, nome: true } } } } },
+    }),
+    db.glosa.findMany({
+      where: {
+        data: { gte: f.de, lte: f.ate },
+        ...(f.categoria ? { categoria: f.categoria } : {}),
+        contaReceber: { is: { ...(f.hospitalId ? { hospitalId: f.hospitalId } : {}), ...(f.convenioId ? { pedido: { is: { cirurgia: { is: { convenioId: f.convenioId } } } } } : {}) } },
+      },
+      select: {
+        valor: true,
+        categoria: true,
+        recurso: true,
+        contaReceber: { select: { hospitalId: true, hospital: { select: { razaoSocial: true, nomeFantasia: true } }, pedido: { select: { cirurgia: { select: { convenio: { select: { id: true, nome: true } } } } } } } },
+      },
+    }),
+  ]);
+  const semConv = "Sem convênio (particular, SUS ou título avulso)";
+  const faturados: PedidoFaturadoGlosa[] = pedidos.map((p) => ({ convenioId: p.cirurgia?.convenio?.id ?? null, convenio: p.cirurgia?.convenio?.nome ?? semConv, hospitalId: p.hospitalId, hospital: nomeHospital(p.hospital), total: toNumber(p.total) }));
+  const linhas: GlosaLinha[] = glosas.map((g) => {
+    const cv = g.contaReceber.pedido?.cirurgia?.convenio;
+    return { valor: toNumber(g.valor), categoria: g.categoria, recurso: g.recurso, convenioId: cv?.id ?? null, convenio: cv?.nome ?? semConv, hospitalId: g.contaReceber.hospitalId, hospital: g.contaReceber.hospital ? nomeHospital(g.contaReceber.hospital) : "Sem hospital" };
+  });
+  return { faturados, glosas: linhas };
 }

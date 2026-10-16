@@ -1,5 +1,5 @@
 import "server-only";
-import type { FormaPagamento } from "@/generated/prisma/client";
+import type { CategoriaGlosa, FormaPagamento } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { money, toNumber } from "@/lib/format";
@@ -80,8 +80,9 @@ const filtroLancamentos = (tipo: Tipo, id: string) => (tipo === "receber" ? { co
 export async function recalcularTitulo(tx: Tx, tipo: Tipo, id: string) {
   const titulo = await carregar(tx, tipo, id);
   const s = await tx.lancamento.aggregate({ where: filtroLancamentos(tipo, id), _sum: { valor: true, principal: true, desconto: true }, _max: { data: true }, _count: true });
-  // glosa (só contas a receber) extingue parte do título sem dinheiro, como o desconto, mas não conta como baixa de caixa
-  const g = tipo === "receber" ? await tx.glosa.aggregate({ where: { contaReceberId: id }, _sum: { valor: true }, _max: { data: true }, _count: true }) : null;
+  // glosa (só contas a receber) extingue parte do título sem dinheiro, como o desconto, mas não conta como baixa de caixa.
+  // Glosa REVERTIDA (recurso aceito) já não abate o título: fica só como histórico.
+  const g = tipo === "receber" ? await tx.glosa.aggregate({ where: { contaReceberId: id, recurso: { not: "REVERTIDA" } }, _sum: { valor: true }, _max: { data: true }, _count: true }) : null;
   const glosado = toNumber(g?._sum.valor);
   const pago = toNumber(s._sum.valor);
   const baixado = arredondar(toNumber(s._sum.principal) + toNumber(s._sum.desconto) + glosado);
@@ -157,7 +158,7 @@ export async function estornarBaixa(tx: Tx, tipo: Tipo, lancamentoId: string) {
 
 // ───────────── glosa (só contas a receber) ─────────────
 
-export type GlosaInput = { tituloId: string; valor: number; data: Date; motivo: string };
+export type GlosaInput = { tituloId: string; valor: number; data: Date; motivo: string; categoria?: CategoriaGlosa };
 
 /** Registra a glosa: abate o saldo do título sem mexer no caixa. Não pode passar do saldo. */
 export async function registrarGlosa(tx: Tx, input: GlosaInput) {
@@ -170,18 +171,51 @@ export async function registrarGlosa(tx: Tx, input: GlosaInput) {
   if (titulo.status !== "ABERTO") throw new FinanceiroError("O título não está em aberto.");
   const saldo = saldoTitulo(titulo.valor, titulo.valorBaixado);
   if (cent(valor) > cent(saldo)) throw new FinanceiroError(`A glosa (${money(valor)}) é maior que o saldo do título (${money(saldo)}).`);
-  const g = await tx.glosa.create({ data: { contaReceberId: input.tituloId, valor, data: input.data, motivo } });
+  const g = await tx.glosa.create({ data: { contaReceberId: input.tituloId, valor, data: input.data, motivo, categoria: input.categoria ?? "OUTRA" } });
   await recalcularTitulo(tx, "receber", input.tituloId);
   return g;
 }
 
 /** Estorna a glosa e reabre o título se ele deixar de estar quitado. */
 export async function estornarGlosa(tx: Tx, glosaId: string) {
-  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true } });
+  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true, recurso: true } });
   if (!g) throw new FinanceiroError("Glosa não encontrada.");
+  if (g.recurso === "REVERTIDA") throw new FinanceiroError("Esta glosa já foi revertida (o título já foi reaberto). Ela fica no histórico.");
   await garantirMesAberto(tx, [g.data], "estornar uma glosa dessa data");
   await carregar(tx, "receber", g.contaReceberId, true);
   await tx.glosa.delete({ where: { id: glosaId } });
+  await recalcularTitulo(tx, "receber", g.contaReceberId);
+  return g.contaReceberId;
+}
+
+export type RecursoAcao = "RECORRER" | "REVERTER" | "MANTER";
+
+/**
+ * Recurso da glosa (contestação ao convênio/hospital). Máquina de estados:
+ *   NENHUM --RECORRER--> EM_RECURSO --REVERTER--> REVERTIDA (final)
+ *                                   \-MANTER---> MANTIDA   (final)
+ * REVERTER é a única que mexe em dinheiro: o hospital aceitou pagar, então a glosa deixa de abater o título
+ * (recalcularTitulo ignora REVERTIDA) e ele reabre com o saldo de volta. É o mesmo efeito do estorno, com a
+ * diferença de que o registro fica no histórico e no relatório. Por isso exige mês aberto na data da glosa
+ * (como o estorno) e trava a linha do título. RECORRER e MANTER não alteram saldo nem DRE (sem trava de mês).
+ * O desfecho só vale depois de registrar o recurso.
+ */
+export async function registrarRecurso(tx: Tx, glosaId: string, acao: RecursoAcao, quando: Date) {
+  const g = await tx.glosa.findUnique({ where: { id: glosaId }, select: { contaReceberId: true, data: true, recurso: true } });
+  if (!g) throw new FinanceiroError("Glosa não encontrada.");
+  if (acao === "RECORRER") {
+    if (g.recurso !== "NENHUM") throw new FinanceiroError("Esta glosa já teve recurso registrado.");
+    await tx.glosa.update({ where: { id: glosaId }, data: { recurso: "EM_RECURSO", recursoEm: quando } });
+    return g.contaReceberId;
+  }
+  if (g.recurso !== "EM_RECURSO") throw new FinanceiroError("Registre primeiro o recurso (glosa em recurso) para informar o resultado.");
+  if (acao === "MANTER") {
+    await tx.glosa.update({ where: { id: glosaId }, data: { recurso: "MANTIDA", recursoEm: quando } });
+    return g.contaReceberId;
+  }
+  await garantirMesAberto(tx, [g.data], "reverter uma glosa dessa data");
+  await carregar(tx, "receber", g.contaReceberId, true); // trava a linha do título
+  await tx.glosa.update({ where: { id: glosaId }, data: { recurso: "REVERTIDA", recursoEm: quando } });
   await recalcularTitulo(tx, "receber", g.contaReceberId);
   return g.contaReceberId;
 }

@@ -6,6 +6,8 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
 import { cancelarPedidoVenda, registrarNf } from "../actions";
+import { riscoGlosaDaCirurgia } from "../../_lib/autorizacao-servico";
+import { PainelAchados, textoAvisoFaturamento } from "../../_lib/autorizacao-view";
 
 const DIA = 86_400_000;
 
@@ -28,6 +30,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
   const total = toNumber(pedido.total);
   const custo = toNumber(pedido.custoTotal);
   const margem = total - custo;
+  const risco = pedido.cirurgia && pedido.status === "ABERTO" ? await riscoGlosaDaCirurgia(pedido.cirurgia.id) : null;
   const prazo = pedido.hospital.prazoPagamentoDias ?? 30;
   const venc = new Date(new Date(new Date().toISOString().slice(0, 10)).getTime() + prazo * DIA);
 
@@ -86,7 +89,13 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         {pedido.status === "ABERTO" && (
           <Card title="Registrar nota fiscal" icon="documento">
             <p className="mb-3 text-sm text-slate-600">A emissão da NF-e ainda é feita fora do sistema. Informe o número para faturar e gerar a conta a receber.</p>
-            <Form action={registrarNf.bind(null, pedido.id)} submitLabel="Registrar NF e gerar conta a receber">
+            {risco?.grave && (
+              <div className="mb-3 space-y-2">
+                <p className="text-sm font-medium text-rose-700">Risco de glosa: a autorização do convênio não cobre o material desta cirurgia. Você pode registrar a NF mesmo assim; o sistema pedirá confirmação.</p>
+                <PainelAchados risco={risco} />
+              </div>
+            )}
+            <Form action={registrarNf.bind(null, pedido.id)} submitLabel="Registrar NF e gerar conta a receber" confirm={risco?.grave ? textoAvisoFaturamento(risco.achados, "registrar a NF") : undefined}>
               <Grid cols={3}>
                 <Field label="Número da NF *" name="numeroNf" required maxLength={30} />
                 <Field label="Vencimento *" name="vencimento" type="date" defaultValue={inputDate(venc)} required hint={`Hoje + ${prazo} dias (prazo do hospital)`} />

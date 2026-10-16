@@ -131,13 +131,15 @@ model Medico {
 }
 
 model Convenio {
-  id          String      @id @default(cuid())
-  nome        String
-  registroAns String?
-  cnpj        String?
-  ativo       Boolean     @default(true)
-  cirurgias   Cirurgia[]
-  orcamentos  Orcamento[]
+  id               String      @id @default(cuid())
+  nome             String
+  registroAns      String?
+  cnpj             String?
+  ativo            Boolean     @default(true)
+  /// false = a verificação de risco de glosa (autorização prévia) ignora as cirurgias deste convênio
+  exigeAutorizacao Boolean     @default(true)
+  cirurgias        Cirurgia[]
+  orcamentos       Orcamento[]
 }
 
 model Procedimento {
@@ -200,6 +202,7 @@ model Produto {
   pedidoVendaItens  PedidoVendaItem[]
   orcamentoItens    OrcamentoItem[]
   remessaItens      RemessaItem[]
+  autorizacaoItens  AutorizacaoItem[]
   consumos          CirurgiaConsumo[]
   inventarioItens   InventarioConsignacaoItem[]
   documentos        Documento[]
@@ -431,6 +434,7 @@ model Cirurgia {
   pedido                PedidoVenda?
   anexos                Anexo[]
   recolhimentoPacientes RecolhimentoPaciente[]
+  autorizacoes          AutorizacaoConvenio[]
 }
 
 // Material efetivamente utilizado na cirurgia (folha de consumo / pós-cirúrgico)
@@ -443,6 +447,46 @@ model CirurgiaConsumo {
   loteId     String
   lote       Lote     @relation(fields: [loteId], references: [id])
   quantidade Int
+}
+
+// ── Autorização prévia / guia do convênio ligada à cirurgia. O convênio é o da própria cirurgia (Cirurgia.convenioId).
+// Uma cirurgia pode ter mais de uma guia (reenvio, complemento); a verificação soma as válidas.
+enum StatusAutorizacao {
+  SOLICITADA
+  AUTORIZADA
+  PARCIAL
+  NEGADA
+  EXPIRADA
+}
+
+model AutorizacaoConvenio {
+  id           String            @id @default(cuid())
+  cirurgiaId   String
+  cirurgia     Cirurgia          @relation(fields: [cirurgiaId], references: [id], onDelete: Cascade)
+  numeroGuia   String?
+  senha        String? // senha / código de autorização do convênio
+  status       StatusAutorizacao @default(SOLICITADA)
+  solicitadaEm DateTime // dia (meia-noite UTC)
+  autorizadaEm DateTime?
+  validade     DateTime? // último dia em que a autorização vale
+  observacao   String?
+  criadoEm     DateTime          @default(now())
+  itens        AutorizacaoItem[]
+
+  @@index([cirurgiaId])
+}
+
+model AutorizacaoItem {
+  id                   String              @id @default(cuid())
+  autorizacaoId        String
+  autorizacao          AutorizacaoConvenio @relation(fields: [autorizacaoId], references: [id], onDelete: Cascade)
+  produtoId            String
+  produto              Produto             @relation(fields: [produtoId], references: [id])
+  quantidadeSolicitada Int
+  quantidadeAutorizada Int                 @default(0)
+  valorAutorizado      Decimal?            @db.Decimal(14, 2) // total autorizado do item, quando o convênio informa
+
+  @@unique([autorizacaoId, produtoId])
 }
 
 model Anexo {
@@ -880,16 +924,38 @@ model CentroCusto {
   pedidosVenda  PedidoVenda[]
 }
 
+enum CategoriaGlosa {
+  SEM_AUTORIZACAO
+  DIVERGENCIA_MATERIAL_GUIA
+  SEM_JUSTIFICATIVA_TECNICA
+  ADMINISTRATIVA
+  TECNICA
+  LINEAR
+  OUTRA
+}
+
+enum RecursoGlosa {
+  NENHUM
+  EM_RECURSO
+  REVERTIDA
+  MANTIDA
+}
+
 // Glosa: o hospital não reconhece parte da cobrança. Extingue parte do título sem dinheiro (entra em valorBaixado)
 // e vai para Deduções no DRE (conta GLOSA), na data da glosa. Não é desconto: desconto vai para o resultado financeiro.
 model Glosa {
-  id             String       @id @default(cuid())
+  id             String         @id @default(cuid())
   contaReceberId String
-  contaReceber   ContaReceber @relation(fields: [contaReceberId], references: [id], onDelete: Restrict)
-  valor          Decimal      @db.Decimal(14, 2)
+  contaReceber   ContaReceber   @relation(fields: [contaReceberId], references: [id], onDelete: Restrict)
+  valor          Decimal        @db.Decimal(14, 2)
   data           DateTime
   motivo         String
-  criadoEm       DateTime     @default(now())
+  categoria      CategoriaGlosa @default(OUTRA)
+  // Recurso ao convênio/hospital. REVERTIDA = glosa desfeita: o registro fica (histórico e relatório), mas
+  // deixa de abater o título e de entrar no DRE (recalcularTitulo e o DRE ignoram). MANTIDA e EM_RECURSO não mexem em saldo.
+  recurso        RecursoGlosa   @default(NENHUM)
+  recursoEm      DateTime?
+  criadoEm       DateTime       @default(now())
 
   @@index([contaReceberId])
   @@index([data])

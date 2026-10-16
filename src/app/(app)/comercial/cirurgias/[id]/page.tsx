@@ -9,6 +9,9 @@ import { nomeHospital } from "../../_lib/opcoes";
 import { hojeUTC } from "../../_lib/datas";
 import { cancelarCirurgia, confirmarCirurgia, faturar, registrarConsumo, removerConsumo } from "../actions";
 import { enviarAnexo, excluirAnexo } from "../anexos";
+import { riscoGlosaDaCirurgia } from "../../_lib/autorizacao-servico";
+import { textoAvisoFaturamento } from "../../_lib/autorizacao-view";
+import { AutorizacaoCard } from "./autorizacao-card";
 
 export default async function CirurgiaPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(["COMERCIAL", "FINANCEIRO", "ESTOQUE"]);
@@ -29,6 +32,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
   });
   if (!c) notFound();
 
+  const risco = await riscoGlosaDaCirurgia(c.id);
   const pode = (perfis: string[]) => user.perfil === "ADMIN" || perfis.includes(user.perfil);
   const comercial = pode(["COMERCIAL"]);
   const editavel = c.status !== "FATURADA" && c.status !== "CANCELADA";
@@ -60,7 +64,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
               <ActionButton action={cancelarCirurgia.bind(null, c.id)} variant="danger" confirm="Cancelar esta cirurgia?">Cancelar cirurgia</ActionButton>
             )}
             {podeFaturar && (
-              <ActionButton action={faturar.bind(null, c.id)} variant="primary" confirm="Gerar o pedido de venda a partir do consumo?">Faturar</ActionButton>
+              <ActionButton action={faturar.bind(null, c.id)} variant="primary" confirm={risco.grave ? textoAvisoFaturamento(risco.achados, "gerar o pedido de venda") : "Gerar o pedido de venda a partir do consumo?"}>Faturar</ActionButton>
             )}
           </>
         }
@@ -89,6 +93,14 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
             ]}
           />
         </Card>
+
+        <AutorizacaoCard
+          cirurgiaId={c.id}
+          dataHora={c.dataHora}
+          convenio={c.convenio ? { nome: c.convenio.nome, exigeAutorizacao: c.convenio.exigeAutorizacao } : null}
+          risco={risco}
+          podeEditar={comercial && c.status !== "CANCELADA"}
+        />
 
         <Table
           titulo="Remessas / vales de consignação"

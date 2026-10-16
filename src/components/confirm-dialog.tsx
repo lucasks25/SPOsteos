@@ -23,7 +23,7 @@ function ConfirmDialog({ message, onDone }: { message: string; onDone: (ok: bool
       className="m-auto w-[min(26rem,calc(100vw-2rem))] rounded border border-slate-200 bg-white p-0 text-slate-900 shadow-xl backdrop:bg-slate-900/40"
     >
       <form method="dialog" className="space-y-4 p-4">
-        <p id="confirm-msg" className="text-[13px]">
+        <p id="confirm-msg" className="whitespace-pre-line text-[13px]">
           {message}
         </p>
         <div className="flex justify-end gap-2">
