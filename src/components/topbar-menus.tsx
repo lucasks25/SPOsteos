@@ -50,7 +50,7 @@ function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", chil
     <div ref={raiz} className="relative" onKeyDown={teclas}>
       {botao({ className: "" })}
       {aberto && (
-        <div id={`menu-${id}`} role="dialog" aria-label={rotulo} className={`absolute right-0 top-10 z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded border border-slate-200 bg-white shadow-[var(--shadow-overlay)] ${largura}`}>
+        <div id={`menu-${id}`} role="dialog" aria-label={rotulo} className={`absolute right-0 top-10 z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg bg-white shadow-[var(--shadow-overlay)] ${largura}`}>
           {children}
         </div>
       )}
@@ -58,7 +58,7 @@ function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", chil
   );
 }
 
-const botaoIcone = "relative flex h-8 w-8 items-center justify-center rounded border border-transparent text-slate-600 hover:bg-slate-100 hover:text-slate-900 focus-visible:outline-2 focus-visible:outline-teal-700";
+const botaoIcone = "relative flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900";
 
 const ATALHOS_AJUDA: [string, string][] = [
   ["Ctrl K", "Buscar telas e dados"],
@@ -87,10 +87,10 @@ export function MenuAjuda({ aberto, setAberto }: { aberto: boolean; setAberto: (
         </button>
       )}
     >
-      <div className="border-b border-slate-200 px-3 py-2 text-[13px] font-bold text-slate-900">Atalhos de teclado</div>
+      <div className="border-b border-slate-200 px-3 py-2 text-sm font-bold text-slate-900">Atalhos de teclado</div>
       <dl className="px-3 py-2">
         {ATALHOS_AJUDA.map(([tecla, desc]) => (
-          <div key={tecla} className="flex items-center justify-between gap-3 py-1 text-[13px]">
+          <div key={tecla} className="flex items-center justify-between gap-3 py-1 text-sm">
             <dt className="text-slate-700">{desc}</dt>
             <dd>
               <kbd className="whitespace-nowrap rounded border border-slate-300 bg-slate-50 px-1.5 text-[11px] leading-5 text-slate-700">{tecla}</kbd>
@@ -173,23 +173,23 @@ export function Sino({ aberto, setAberto }: { aberto: boolean; setAberto: (a: bo
       )}
     >
       <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-        <span className="text-[13px] font-bold text-slate-900">Pendências{total ? ` (${total})` : ""}</span>
+        <span className="text-sm font-bold text-slate-900">Pendências{total ? ` (${total})` : ""}</span>
         <Link href="/" onClick={() => setAberto(false)} className="text-xs font-semibold text-teal-700 hover:underline">Ver no painel</Link>
       </div>
       {itens === null ? (
-        <div className="px-3 py-4 text-[13px] text-slate-500" role="status">{falhou ? "Não foi possível carregar as pendências." : "Carregando…"}</div>
+        <div className="px-3 py-4 text-sm text-slate-500" role="status">{falhou ? "Não foi possível carregar as pendências." : "Carregando…"}</div>
       ) : itens.length === 0 ? (
-        <div className="px-3 py-4 text-[13px] text-slate-500">Nada pendente para o seu perfil. Tudo em dia.</div>
+        <div className="px-3 py-4 text-sm text-slate-500">Nada pendente para o seu perfil. Tudo em dia.</div>
       ) : (
         <ul className="max-h-[60vh] divide-y divide-slate-200 overflow-y-auto">
           {itens.map((i) => (
             <li key={i.key}>
               <Link data-item href={i.href} onClick={() => setAberto(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 focus:bg-teal-50 focus:outline-none">
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded text-white ${i.tom === "danger" ? "bg-rose-600" : "bg-amber-500"}`} aria-hidden="true">
+                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${i.tom === "danger" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-700"}`} aria-hidden="true">
                   <Icon name={i.icon} size={14} />
                 </span>
                 <span className="min-w-0 flex-1">
-                  <span className="block truncate text-[13px] font-semibold text-slate-900">{i.titulo}</span>
+                  <span className="block truncate text-sm font-semibold text-slate-900">{i.titulo}</span>
                   <span className="block truncate text-xs text-slate-600">{i.nota}</span>
                 </span>
               </Link>

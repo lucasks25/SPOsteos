@@ -88,7 +88,7 @@ export function BuscaGlobal({ groups }: { groups: NavGroup[] }) {
 
   return (
     <div className="relative w-full max-w-[520px]" role="search">
-      <Icon name="busca" size={15} className="pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-slate-500" />
+      <Icon name="busca" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
       <input
         ref={ref}
         value={q}
@@ -123,11 +123,11 @@ export function BuscaGlobal({ groups }: { groups: NavGroup[] }) {
         aria-controls="busca-lista"
         aria-autocomplete="list"
         aria-activedescendant={mostrar && ativa ? ativa.id : undefined}
-        className="h-8 w-full rounded border border-slate-300 bg-slate-50 pl-8 pr-14 text-[13px] text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-700 focus:bg-white focus:outline-none focus:ring-2 focus:ring-teal-700/25"
+        className="h-9 w-full rounded-full border border-slate-300 bg-slate-50 pl-9 pr-14 text-sm text-slate-900 placeholder:text-slate-500 hover:border-teal-400 focus:border-focus focus:bg-white focus:outline-none focus:ring-1 focus:ring-focus"
       />
       {!termo && <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-slate-300 bg-white px-1.5 text-[11px] leading-5 text-slate-500 sm:block">Ctrl K</kbd>}
       {mostrar && (
-        <ul id="busca-lista" role="listbox" aria-label="Resultados da busca" className="absolute left-0 right-0 top-9 z-50 max-h-[70vh] overflow-y-auto rounded border border-slate-200 bg-white py-1 shadow-[var(--shadow-overlay)]">
+        <ul id="busca-lista" role="listbox" aria-label="Resultados da busca" className="absolute left-0 right-0 top-10 z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-[var(--shadow-overlay)]">
           {(["Telas", "Dados"] as const).map((secao) => {
             const itens = linhas.filter((l) => l.secao === secao);
             return (

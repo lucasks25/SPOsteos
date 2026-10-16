@@ -133,7 +133,7 @@ export function Combobox({
         <ul
           id={listId}
           role="listbox"
-          className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded border border-slate-300 bg-white py-1 text-[13px] text-slate-900 shadow-lg"
+          className="absolute z-30 mt-1 max-h-60 w-full overflow-auto rounded-lg border border-slate-200 bg-white py-1 text-sm text-slate-900 shadow-[var(--shadow-overlay)]"
         >
           {placeholder !== "" && !busca && (
             <li

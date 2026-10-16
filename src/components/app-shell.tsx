@@ -50,27 +50,27 @@ function MenuUsuario({ nome, perfil, sair }: { nome: string; perfil: string; sai
 
   return (
     <div ref={ref} className="relative">
-      <button type="button" onClick={() => setAberto((a) => !a)} aria-haspopup="menu" aria-expanded={aberto} aria-label={`Menu do usuário ${nome}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-teal-700 text-xs font-bold text-white hover:bg-teal-800">
+      <button type="button" onClick={() => setAberto((a) => !a)} aria-haspopup="menu" aria-expanded={aberto} aria-label={`Menu do usuário ${nome}`} className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-xs font-bold text-on-primary hover:bg-primary-hover">
         {iniciais}
       </button>
       {aberto && (
-        <div role="menu" className="absolute right-0 top-10 z-50 w-60 overflow-hidden rounded border border-slate-200 bg-white shadow-[var(--shadow-overlay)]">
+        <div role="menu" className="absolute right-0 top-10 z-50 w-60 overflow-hidden rounded-lg bg-white shadow-[var(--shadow-overlay)]">
           <div className="border-b border-slate-200 px-3 py-2.5">
-            <div className="truncate text-[13px] font-bold text-slate-900">{nome}</div>
+            <div className="truncate text-sm font-bold text-slate-900">{nome}</div>
             <div className="text-xs capitalize text-slate-500">{perfil}</div>
           </div>
           <form action={definirTema} className="border-b border-slate-200 px-3 py-2.5">
-            <div className="mb-1.5 text-[11px] font-bold uppercase tracking-[.04em] text-slate-500">Aparência</div>
+            <div className="mb-1.5 text-xs font-semibold text-slate-600">Aparência</div>
             <div className="grid grid-cols-3 gap-1">
               {[["claro", "Claro"], ["escuro", "Escuro"], ["auto", "Sistema"]].map(([v, r]) => (
-                <button key={v} name="tema" value={v} className="h-7 rounded border border-slate-300 bg-white text-xs font-medium text-slate-700 hover:bg-slate-50">
+                <button key={v} name="tema" value={v} className="h-[1.625rem] rounded-lg border border-slate-300 bg-white text-xs font-semibold text-teal-700 hover:bg-slate-100">
                   {r}
                 </button>
               ))}
             </div>
           </form>
           <form action={sair}>
-            <button className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-[13px] text-slate-700 hover:bg-slate-50">
+            <button className="flex w-full items-center gap-2 px-3 py-2.5 text-left text-sm text-slate-700 hover:bg-slate-100">
               <Icon name="sair" size={15} />
               Sair
             </button>
@@ -117,8 +117,11 @@ function useAlinharColunas() {
   }, [pathname]);
 }
 
-/** Estrutura do Vionex V2: faixa 1 (48 px) logo, busca e usuário; faixa 2 (40 px) módulos; faixa 3 (36 px) telas do módulo. */
-export function AppShell({ groups, nome, perfil, sair, children }: { groups: NavGroup[]; nome: string; perfil: string; sair: () => Promise<void>; children: ReactNode }) {
+/**
+ * Barra superior no estilo Fiori Shell Bar (tema Horizonte, ver docs/DESIGN-SYSTEM.md): faixa 1 (2.75rem) marca, busca, ajuda,
+ * pendências e avatar; faixa 2 abas de módulo; faixa 3 abas das telas do módulo (como a barra de abas do Fiori, só texto).
+ */
+export function AppShell({ groups, nome, perfil, sair, marca, children }: { groups: NavGroup[]; nome: string; perfil: string; sair: () => Promise<void>; marca?: ReactNode; children: ReactNode }) {
   const pathname = usePathname();
   useAlinharColunas();
   const modulos = useMemo(() => agrupar(groups), [groups]);
@@ -142,10 +145,10 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
       <a href="#conteudo" className="sr-only focus:not-sr-only focus:fixed focus:left-3 focus:top-3 focus:z-[60] focus:rounded focus:bg-white focus:px-3 focus:py-2 focus:text-sm focus:shadow-lg">
         Pular para o conteúdo
       </a>
-      <header className="sticky top-0 z-40 border-b border-slate-200 bg-white print:hidden">
-        <div className="flex h-12 items-center gap-3 border-b border-slate-200 px-3 md:px-4">
-          <Link href="/" aria-label="Início" className="flex shrink-0 items-center gap-2">
-            <span className="flex h-7 w-7 items-center justify-center rounded bg-teal-700 text-sm font-bold text-white">O</span>
+      <header className="sticky top-0 z-40 bg-shell shadow-[var(--shadow-header)] print:hidden">
+        <div className="flex h-11 items-center gap-3 border-b border-shell-border px-3 md:px-4">
+          <Link href="/" aria-label="Início" className="flex shrink-0 items-center gap-2 rounded-lg px-1 py-1 hover:bg-slate-100">
+            {marca ?? <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary text-sm font-bold text-on-primary">O</span>}
           </Link>
           <div className="flex min-w-0 flex-1 justify-center md:justify-start md:pl-4">
             <BuscaGlobal groups={groups} />
@@ -158,7 +161,6 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
         </div>
 
         <nav aria-label="Módulos" className="abas flex h-10 items-stretch overflow-x-auto px-3 md:px-4">
-          <span className="mr-4 hidden shrink-0 items-center text-[13px] font-bold text-slate-900 sm:flex">OPME</span>
           {modulos.map((m) => {
             const on = m.nome === moduloAtivo?.nome;
             return (
@@ -166,20 +168,20 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
                 key={m.nome}
                 href={m.href}
                 aria-current={on ? "page" : undefined}
-                className={`relative flex shrink-0 items-center px-3 text-[13px] transition-colors ${on ? "font-bold text-slate-900" : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"}`}
+                className={`relative flex shrink-0 items-center px-3 text-sm transition-colors ${on ? "font-semibold text-teal-700" : "text-slate-700 hover:text-teal-700"}`}
               >
                 {m.nome}
-                {on && <span className="absolute inset-x-0 bottom-0 h-[3px] bg-teal-700" />}
+                {on && <span className="absolute inset-x-2 bottom-0 h-[0.1875rem] rounded-t-full bg-teal-700" />}
               </Link>
             );
           })}
         </nav>
 
         {temSubabas && moduloAtivo && (
-          <nav aria-label={`Telas de ${moduloAtivo.nome}`} className="abas flex h-9 items-stretch overflow-x-auto border-t border-slate-200 bg-slate-50 px-3 md:px-4">
+          <nav aria-label={`Telas de ${moduloAtivo.nome}`} className="abas flex h-9 items-stretch overflow-x-auto border-t border-slate-200 bg-shell px-3 md:px-4">
             {moduloAtivo.grupos.map((g, gi) => (
               <div key={g.label} className={`flex shrink-0 items-stretch ${gi > 0 ? "ml-2 border-l border-slate-200 pl-2" : ""}`}>
-                {moduloAtivo.grupos.length > 1 && <span className="flex items-center pr-1.5 text-[10px] font-bold uppercase tracking-[.04em] text-slate-500">{g.label}</span>}
+                {moduloAtivo.grupos.length > 1 && <span className="flex items-center pr-1.5 text-xs text-slate-500">{g.label}</span>}
                 {g.items.map((i) => {
                   const on = ativo?.href === i.href;
                   return (
@@ -187,10 +189,10 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
                       key={i.href}
                       href={i.href}
                       aria-current={on ? "page" : undefined}
-                      className={`relative flex shrink-0 items-center px-2.5 text-[13px] transition-colors ${on ? "font-bold text-teal-700" : "text-slate-600 hover:text-slate-900"}`}
+                      className={`relative flex shrink-0 items-center px-2.5 text-sm transition-colors ${on ? "font-semibold text-teal-700" : "text-slate-700 hover:text-teal-700"}`}
                     >
                       {i.label}
-                      {on && <span className="absolute inset-x-1 bottom-0 h-0.5 bg-teal-700" />}
+                      {on && <span className="absolute inset-x-1.5 bottom-0 h-0.5 rounded-t-full bg-teal-700" />}
                     </Link>
                   );
                 })}
@@ -200,7 +202,7 @@ export function AppShell({ groups, nome, perfil, sair, children }: { groups: Nav
         )}
       </header>
 
-      <main id="conteudo" className="mx-auto w-full max-w-[1600px] flex-1 px-3 py-4 md:px-6 md:py-5 print:max-w-none print:p-0">
+      <main id="conteudo" className="conteudo w-full flex-1 print:p-0">
         {children}
       </main>
     </div>

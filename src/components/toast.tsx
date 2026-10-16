@@ -37,7 +37,7 @@ export function dismissToast(id: number) {
   emit();
 }
 
-/** Exibe um toast discreto no canto inferior direito. Pode ser chamado de qualquer componente cliente. */
+/** Exibe um toast (MessageToast do Fiori) centralizado no rodapé da tela. Pode ser chamado de qualquer componente cliente. */
 export function toast(msg: string, kind: Kind = "ok") {
   if (typeof document === "undefined") return;
   ensureHost();
@@ -56,7 +56,7 @@ function ToastItem({ item }: { item: Item }) {
   }, [item.id]);
   const erro = item.kind === "erro";
   return (
-    <div className="pointer-events-auto flex min-w-60 max-w-sm items-start gap-2 rounded border border-slate-200 bg-white px-3 py-2 text-[13px] text-slate-900 shadow-lg">
+    <div className="pointer-events-auto flex w-[min(24rem,calc(100vw-2rem))] items-start gap-2 rounded-lg bg-white px-3 py-2.5 text-sm text-slate-900 shadow-[var(--shadow-overlay)]">
       <Icon name={erro ? "alerta" : "ok"} size={16} className={erro ? "mt-0.5 shrink-0 text-rose-600" : "mt-0.5 shrink-0 text-emerald-600"} />
       <span className="flex-1">{item.msg}</span>
       <button type="button" onClick={() => dismissToast(item.id)} aria-label="Fechar aviso" className="-mr-1 rounded px-1 text-base leading-none text-slate-500 hover:text-slate-900">
@@ -69,7 +69,7 @@ function ToastItem({ item }: { item: Item }) {
 export function ToastHost() {
   const list = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return (
-    <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed bottom-4 right-4 z-[100] flex flex-col items-end gap-2">
+    <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 flex-col items-center gap-2">
       {list.map((i) => (
         <ToastItem key={i.id} item={i} />
       ))}

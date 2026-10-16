@@ -4,7 +4,7 @@ import { createContext, useActionState, useContext, useEffect, useRef, useTransi
 import { useFormStatus } from "react-dom";
 import { useRouter } from "next/navigation";
 import { Icon } from "@/components/icons";
-import { btn, cx } from "@/components/ui";
+import { btn, campo, cx } from "@/components/ui";
 import { Combobox } from "@/components/combobox";
 import { confirmar } from "@/components/confirm-dialog";
 import { MONEY_RE, maskFor, maskInitial, maskInput } from "@/components/masks";
@@ -94,20 +94,20 @@ export function Form({
           onReset={() => (sujo.current = false)}
           className={cx("space-y-4", className)}>
           {state?.error && (
-            <div role="alert" className="flex items-start gap-2 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+            <div role="alert" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-rose-600" />
               <span>{state.error}</span>
             </div>
           )}
           {state?.ok && state.aviso && (
-            <div role="status" className="flex items-start gap-2 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
+            <div role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-amber-600" />
               <span>{state.aviso}</span>
             </div>
           )}
           {children}
           {submitLabel !== null && (
-            <div className="border-t border-slate-100 pt-4">
+            <div className="border-t border-slate-200 pt-4">
               <SubmitButton confirm={confirm}>{submitLabel}</SubmitButton>
             </div>
           )}
@@ -149,15 +149,14 @@ export function SubmitButton({ children, variant = "primary", confirm }: { child
   );
 }
 
-const inputCls =
-  "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 placeholder:text-slate-500 transition-colors hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25 disabled:cursor-not-allowed disabled:bg-slate-50 disabled:text-slate-500 aria-[invalid=true]:border-rose-500 aria-[invalid=true]:focus:ring-rose-500/20";
+const inputCls = campo; // estilo Horizon definido em ui.tsx
 
 function Wrap({ label, name, children, className, hint }: { label: string; name: string; children: ReactNode; className?: string; hint?: string }) {
   const errors = useContext(ErrorsCtx);
   const obrigatorio = /\*\s*$/.test(label);
   return (
     <label className={cx("block", className)}>
-      <span className="mb-1 block text-xs text-slate-700">
+      <span className="mb-1 block text-sm text-slate-600">
         {obrigatorio ? label.replace(/\s*\*$/, "") : label}
         {obrigatorio && <span className="ml-0.5 text-rose-600" aria-hidden="true">*</span>}
       </span>
@@ -265,7 +264,7 @@ type AreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: st
 export function TextArea({ label, name, className, ...rest }: AreaProps) {
   return (
     <Wrap label={label} name={name} className={className}>
-      <textarea name={name} rows={3} aria-invalid={useContext(ErrorsCtx)[name] ? true : undefined} {...rest} className={inputCls} />
+      <textarea name={name} rows={3} aria-invalid={useContext(ErrorsCtx)[name] ? true : undefined} {...rest} className={cx(inputCls, "h-auto py-1.5")} />
     </Wrap>
   );
 }
