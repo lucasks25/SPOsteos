@@ -59,7 +59,7 @@ test("(viii) mês fechado recusa toda mutação financeira com data no mês (var
   const r2 = await tx((x) => salvarContaReceberTx(x, null, rec(500)));
   const pg = await tx((x) => salvarContaPagarTx(x, null, pag(400), "teste"));
   const pg3 = await tx((x) => salvarContaPagarTx(x, null, pag(200), "teste"));
-  const pg2 = await tx((x) => gerarContaPagarTx(x, { descricao: `${P} fech gerada`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 150, vencimento: D(28), competencia: D(10), chavePlano: "CUSTO_IMPORTACAO" }));
+  const pg2 = await tx((x) => gerarContaPagarTx(x, { descricao: `${P} fech gerada`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 150, vencimento: D(28), competencia: D(10), chavePlano: "CUSTO_IMPORTACAO", usuarioId: null }));
   await tx((x) => aprovarContasPagarTx(x, [pg], "aprovador-teste")); // criada à mão nasce sem aprovação (§21)
   const rem = await tx((x) => gerarRemessaDaContaTx(x, { contaId: conta.id, modo: "TED_BOLETO", dataPagto: D(20), ids: [pg] }));
   const itemSp = await db.remessaPagamentoItem.findFirstOrThrow({ where: { remessaId: rem.remessaId } });
@@ -117,9 +117,9 @@ test("(viii) mês fechado recusa toda mutação financeira com data no mês (var
     ["cancelar título a receber", () => tx((x) => cancelarTituloTx(x, "receber", r2))],
     ["cancelar título a pagar", () => tx((x) => cancelarTituloTx(x, "pagar", pg3))],
     ["reclassificar título", () => tx((x) => classificarTituloTx(x, "receber", r2, { planoContaId: pRec, centroCustoId: null, competencia: D(10) }))],
-    ["gerarContaPagarTx (outros módulos)", () => tx((x) => gerarContaPagarTx(x, { descricao: `${P} fech gerada 2`, fornecedorId, pedidoId: null, categoria: "Compra de mercadoria", valor: 10, vencimento: D(28), competencia: D(10), chavePlano: "ESTOQUE" }))],
+    ["gerarContaPagarTx (outros módulos)", () => tx((x) => gerarContaPagarTx(x, { descricao: `${P} fech gerada 2`, fornecedorId, pedidoId: null, categoria: "Compra de mercadoria", valor: 10, vencimento: D(28), competencia: D(10), chavePlano: "ESTOQUE", usuarioId: null }))],
     ["gerarContaReceberTx (outros módulos)", () => tx((x) => gerarContaReceberTx(x, { descricao: `${P} fech gerada r`, hospitalId, pedidoId: null, valor: 10, vencimento: D(28), competencia: D(10), centroCustoId: null, chavePlano: "RECEITA_VENDA" }))],
-    ["alterar conta gerada", () => tx((x) => alterarContaPagarGeradaTx(x, pg2, { descricao: `${P} fech gerada`, valor: 151, vencimento: D(28), fornecedorId, chavePlano: "CUSTO_IMPORTACAO" }))],
+    ["alterar conta gerada", () => tx((x) => alterarContaPagarGeradaTx(x, pg2, { descricao: `${P} fech gerada`, valor: 151, vencimento: D(28), fornecedorId, chavePlano: "CUSTO_IMPORTACAO", usuarioId: null }))],
     ["cancelar conta gerada", () => tx((x) => cancelarContaPagarGeradaTx(x, pg2))],
     ["retorno SISPAG pago no mês", () => tx((x) => aplicarRetornoTx(x, [{ seuNumero: `SP${itemSp.id}`, segmento: "A", ocorrencias: ["00"], nossoNumero: "", dataEfetiva: D(20), valorEfetivo: 400 }], contagemVazia()))],
     ["retorno de cobrança liquidado no mês", () => tx((x) => aplicarRetornoCobrancaTx(x, ret(D(20)), contagemCobrancaVazia()))],

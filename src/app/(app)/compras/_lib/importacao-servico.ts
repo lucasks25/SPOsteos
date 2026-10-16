@@ -144,7 +144,7 @@ async function validarDespesa(tx: Tx, p: PedidoTravado, d: DespesaInput) {
 const descricaoConta = (pedidoId: number, d: { tipo: TipoDespesaImportacao; descricao: string | null }) =>
   `${documentoPedido(pedidoId)} — ${ROTULO_DESPESA[d.tipo]}${d.descricao ? ` (${d.descricao})` : ""}`;
 
-async function criarConta(tx: Tx, pedidoId: number, d: DespesaInput, integra: boolean) {
+async function criarConta(tx: Tx, pedidoId: number, d: DespesaInput, integra: boolean, usuarioId: string | null) {
   return gerarContaPagarTx(tx, {
     descricao: descricaoConta(pedidoId, d),
     fornecedorId: d.fornecedorId,
@@ -154,12 +154,13 @@ async function criarConta(tx: Tx, pedidoId: number, d: DespesaInput, integra: bo
     competencia: hojeUTC(),
     vencimento: d.vencimento!,
     chavePlano: planoDaDespesa(d.tipo, integra),
+    usuarioId, // criador da conta: não a aprova (docs/REVISAO.md §21)
     // aprovadoEm nulo (regra do financeiro): como a conta do recebimento, aguarda aprovação antes do SISPAG
   });
 }
 
 /** Inclui (despesaId nulo) ou altera uma despesa. Só antes do primeiro recebimento. */
-export async function salvarDespesaTx(tx: Tx, pedidoId: number, despesaId: string | null, d: DespesaInput) {
+export async function salvarDespesaTx(tx: Tx, pedidoId: number, despesaId: string | null, d: DespesaInput, usuarioId: string | null = null) {
   const p = await travarPedido(tx, pedidoId);
   exigirEditavel(p, despesaId ? "alterar despesas" : "incluir despesas");
   await validarDespesa(tx, p, d);
@@ -167,7 +168,7 @@ export async function salvarDespesaTx(tx: Tx, pedidoId: number, despesaId: strin
   const dados = { tipo: d.tipo, descricao: d.descricao, valor: d.valor, integraCusto: integra, criterio: d.criterio, itemId: d.itemId };
 
   if (!despesaId) {
-    const contaPagarId = d.gerarConta ? await criarConta(tx, pedidoId, d, integra) : null;
+    const contaPagarId = d.gerarConta ? await criarConta(tx, pedidoId, d, integra, usuarioId) : null;
     const nova = await tx.pedidoCompraDespesa.create({ data: { pedidoId, ...dados, contaPagarId } });
     return { id: nova.id, contaPagarId };
   }
@@ -178,7 +179,7 @@ export async function salvarDespesaTx(tx: Tx, pedidoId: number, despesaId: strin
   if (contaPagarId) {
     if (d.gerarConta) {
       const alterada = await alterarContaPagarGeradaTx(tx, contaPagarId, {
-        descricao: descricaoConta(pedidoId, d), valor: d.valor, vencimento: d.vencimento!, fornecedorId: d.fornecedorId, chavePlano: planoDaDespesa(d.tipo, integra),
+        descricao: descricaoConta(pedidoId, d), valor: d.valor, vencimento: d.vencimento!, fornecedorId: d.fornecedorId, chavePlano: planoDaDespesa(d.tipo, integra), usuarioId,
       });
       if (!alterada) contaPagarId = null; // cancelada no financeiro: desvincula
     } else {
@@ -186,7 +187,7 @@ export async function salvarDespesaTx(tx: Tx, pedidoId: number, despesaId: strin
       contaPagarId = null;
     }
   }
-  if (!contaPagarId && d.gerarConta) contaPagarId = await criarConta(tx, pedidoId, d, integra);
+  if (!contaPagarId && d.gerarConta) contaPagarId = await criarConta(tx, pedidoId, d, integra, usuarioId);
   await tx.pedidoCompraDespesa.update({ where: { id: despesaId }, data: { ...dados, contaPagarId } });
   return { id: despesaId, contaPagarId };
 }

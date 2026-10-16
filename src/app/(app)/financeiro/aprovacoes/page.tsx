@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { aprovarContasPagar } from "../_lib/aprovacao-actions";
-import { autoresConta, podeAprovarPropria, rotulosAutoria } from "../_lib/aprovacao-servico";
+import { autoresConta, podeAprovarPropria, rotulosAutoria, versaoAprovacao } from "../_lib/aprovacao-servico";
 
 export default async function AprovacoesPage() {
   const user = await requireUser(["FINANCEIRO"]);
@@ -31,7 +31,7 @@ export default async function AprovacoesPage() {
               return (
               <tr key={t.id}>
                 <Td>
-                  <input type="checkbox" name="id" value={t.id} disabled={propria} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} title={propria ? "Você criou ou alterou esta conta: outra pessoa do financeiro aprova." : undefined} />
+                  <input type="checkbox" name="id" value={`${t.id}:${versaoAprovacao(t)}`} disabled={propria} className="h-4 w-4" aria-label={`Selecionar ${t.descricao}`} title={propria ? "Você criou ou alterou esta conta: outra pessoa do financeiro aprova." : undefined} />
                 </Td>
                 <Td>{date(t.vencimento)}</Td>
                 <Td className="max-w-xs truncate">

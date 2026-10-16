@@ -199,9 +199,9 @@ test("inventário (decisão M6): falta 'cobrar do hospital' sai do estoque sem v
 
 test("separação de funções: conta gerada por compras, já aprovada, que muda de valor/fornecedor volta para aprovação", async () => {
   const outro = (await mkFornecedor()).id;
-  const id = await tx((t) => gerarContaPagarTx(t, { descricao: `${P} frete`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 100, vencimento: dia(10), competencia: dia(0), chavePlano: "CUSTO_IMPORTACAO" }));
+  const id = await tx((t) => gerarContaPagarTx(t, { descricao: `${P} frete`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 100, vencimento: dia(10), competencia: dia(0), chavePlano: "CUSTO_IMPORTACAO", usuarioId: null }));
   await tx((t) => aprovarContasPagarTx(t, [id], "aprovador-teste"));
-  await tx((t) => alterarContaPagarGeradaTx(t, id, { descricao: `${P} frete`, valor: 100000, vencimento: dia(10), fornecedorId: outro, chavePlano: "CUSTO_IMPORTACAO" }));
+  await tx((t) => alterarContaPagarGeradaTx(t, id, { descricao: `${P} frete`, valor: 100000, vencimento: dia(10), fornecedorId: outro, chavePlano: "CUSTO_IMPORTACAO", usuarioId: null }));
   const c = await db.contaPagar.findUniqueOrThrow({ where: { id } });
   assert.equal(c.aprovadoEm, null, `aprovada para 100 ao fornecedor original; agora ${c.valor} a outro fornecedor e aprovadoEm = ${c.aprovadoEm?.toISOString()}`);
 });

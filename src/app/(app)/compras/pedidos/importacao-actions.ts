@@ -94,7 +94,7 @@ export async function salvarDespesa(pedidoId: number, despesaId: string | null, 
   if (d.gerarConta && !d.vencimento) return { error: "Informe o vencimento da conta a pagar.", fieldErrors: { vencimento: "Obrigatório para gerar a conta" } };
   try {
     const r = await db.$transaction((tx) =>
-      salvarDespesaTx(tx, pedidoId, despesaId, { ...d, integraCusto: integra === "PADRAO" ? null : integra === "SIM" }),
+      salvarDespesaTx(tx, pedidoId, despesaId, { ...d, integraCusto: integra === "PADRAO" ? null : integra === "SIM" }, user.id),
     );
     await audit(
       user.id,

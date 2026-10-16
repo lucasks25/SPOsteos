@@ -115,12 +115,12 @@ test("conta a pagar com boleto: valor ou vencimento diferentes do código de bar
 });
 
 test("conta gerada por compras: mudar só a descrição mantém a aprovação; mudar o vencimento derruba", async () => {
-  const base = { descricao: `${P} frete`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 100, vencimento: dia(10), competencia: dia(0), chavePlano: "CUSTO_IMPORTACAO" as const };
+  const base = { descricao: `${P} frete`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 100, vencimento: dia(10), competencia: dia(0), chavePlano: "CUSTO_IMPORTACAO" as const, usuarioId: null };
   const id = await tx((t) => gerarContaPagarTx(t, base));
   await tx((t) => aprovarContasPagarTx(t, [id], "aprovador-teste"));
-  await tx((t) => alterarContaPagarGeradaTx(t, id, { descricao: `${P} frete internacional`, valor: 100, vencimento: dia(10), fornecedorId, chavePlano: "CUSTO_IMPORTACAO" }));
+  await tx((t) => alterarContaPagarGeradaTx(t, id, { descricao: `${P} frete internacional`, valor: 100, vencimento: dia(10), fornecedorId, chavePlano: "CUSTO_IMPORTACAO", usuarioId: null }));
   assert.ok((await db.contaPagar.findUniqueOrThrow({ where: { id } })).aprovadoEm);
-  await tx((t) => alterarContaPagarGeradaTx(t, id, { descricao: `${P} frete internacional`, valor: 100, vencimento: dia(11), fornecedorId, chavePlano: "CUSTO_IMPORTACAO" }));
+  await tx((t) => alterarContaPagarGeradaTx(t, id, { descricao: `${P} frete internacional`, valor: 100, vencimento: dia(11), fornecedorId, chavePlano: "CUSTO_IMPORTACAO", usuarioId: null }));
   const c = await db.contaPagar.findUniqueOrThrow({ where: { id } });
   assert.deepEqual([c.aprovadoEm, c.aprovadoPor], [null, null]);
 });

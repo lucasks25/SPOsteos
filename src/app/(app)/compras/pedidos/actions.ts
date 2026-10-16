@@ -76,7 +76,7 @@ export async function receberItem(pedidoId: number, itemId: string, _: ActionSta
     await db.$transaction(async (tx) => {
       const item = await tx.pedidoCompraItem.findUnique({ where: { id: itemId }, select: { pedidoId: true } });
       if (item?.pedidoId !== pedidoId) throw new ErroNegocio("Item não pertence a este pedido.");
-      await receberItemTx(tx, { itemId, ...parsed.data, usuario: user.nome });
+      await receberItemTx(tx, { itemId, ...parsed.data, usuario: user.nome, usuarioId: user.id });
     });
     await audit(user.id, "receber", "PedidoCompra", pedidoId, `${documentoPedido(pedidoId)} — lote ${parsed.data.lote}, ${parsed.data.quantidade} un.`);
   } catch (e) {

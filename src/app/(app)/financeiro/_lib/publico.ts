@@ -24,6 +24,8 @@ export type NovaContaPagar = {
   competencia: Date;
   /** Conta do plano usada pelo sistema (PlanoConta.chaveSistema). */
   chavePlano: ChaveSistema;
+  /** Quem gerou (vira `criadoPor`: não aprova esta conta; docs/REVISAO.md §21). Nulo só para rotina sem usuário. */
+  usuarioId: string | null;
 };
 
 /** Cria a conta a pagar (aprovadoEm nulo: aguarda aprovação do financeiro antes do SISPAG). Devolve o id. */
@@ -41,6 +43,7 @@ export async function gerarContaPagarTx(tx: Tx, d: NovaContaPagar): Promise<stri
       competencia: d.competencia,
       vencimento: d.vencimento,
       planoContaId,
+      criadoPor: d.usuarioId,
     },
   });
   return conta.id;
@@ -52,7 +55,7 @@ export async function gerarContaPagarTx(tx: Tx, d: NovaContaPagar): Promise<stri
  */
 async function exigirContaAlteravel(tx: Tx, contaId: string) {
   await tx.$queryRaw`SELECT id FROM "ContaPagar" WHERE id = ${contaId} FOR UPDATE`;
-  const c = await tx.contaPagar.findUniqueOrThrow({ where: { id: contaId }, select: { status: true, valorBaixado: true, competencia: true, valor: true, vencimento: true, fornecedorId: true, aprovadoEm: true, _count: { select: { pagamentos: { where: { status: { in: ["ENVIADO", "AGENDADO"] } } } } } } });
+  const c = await tx.contaPagar.findUniqueOrThrow({ where: { id: contaId }, select: { status: true, valorBaixado: true, competencia: true, valor: true, vencimento: true, fornecedorId: true, aprovadoEm: true, alteradoPor: true, _count: { select: { pagamentos: { where: { status: { in: ["ENVIADO", "AGENDADO"] } } } } } } });
   if (c.status === "CANCELADO") return c;
   if (c.status !== "ABERTO" || c.valorBaixado !== null) throw new ErroNegocio("A conta a pagar desta despesa já tem baixa. Estorne a baixa no financeiro antes de alterar.");
   if (c._count.pagamentos > 0) throw new ErroNegocio("A conta a pagar desta despesa está numa remessa SISPAG ativa.");
@@ -66,6 +69,8 @@ export type DadosContaPagarGerada = {
   vencimento: Date;
   fornecedorId: string | null;
   chavePlano: ChaveSistema;
+  /** Quem alterou: se mudar valor, fornecedor ou vencimento, entra em `alteradoPor` e não aprova (docs/REVISAO.md §21). */
+  usuarioId: string | null;
 };
 
 /**
@@ -89,6 +94,7 @@ export async function alterarContaPagarGeradaTx(tx: Tx, contaId: string, d: Dado
       fornecedorId: d.fornecedorId,
       planoContaId,
       ...(mudouAprovado && c.aprovadoEm ? { aprovadoEm: null, aprovadoPor: null } : {}),
+      ...(mudouAprovado && d.usuarioId ? { alteradoPor: [...new Set([...c.alteradoPor, d.usuarioId])] } : {}),
     },
   });
   return true;

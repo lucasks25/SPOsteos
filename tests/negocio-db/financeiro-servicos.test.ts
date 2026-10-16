@@ -6,7 +6,8 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
-import { aprovarContasPagarTx } from "@/app/(app)/financeiro/_lib/aprovacao-servico";
+import { aprovarContasPagarTx, versaoAprovacao } from "@/app/(app)/financeiro/_lib/aprovacao-servico";
+import { alterarContaPagarGeradaTx, gerarContaPagarTx } from "@/app/(app)/financeiro/_lib/publico";
 import { gerarRemessaDaContaTx } from "@/app/(app)/financeiro/_lib/sispag-servico";
 import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx } from "@/app/(app)/financeiro/_lib/contas-servico";
 import { fecharMesTx, reabrirMesTx } from "@/app/(app)/financeiro/_lib/fechamento-servico";
@@ -179,6 +180,34 @@ test("segregação (c, exceção): ADMIN aprova a própria conta só se não hou
     assert.equal(await aprovarContasPagarTx(t, [id], admin.id), 1, "empresa sem outra pessoa no financeiro: o ADMIN aprova");
   });
   assert.equal(await db.usuario.count({ where: { perfil: "FINANCEIRO", ativo: true } }), finAtivos, "a transação foi desfeita (usuários DEMO intactos)");
+});
+
+test("aprovação confere o que o aprovador viu: conta alterada depois de a tela abrir é recusada (lote inteiro)", async () => {
+  const d = dadosPagar();
+  const id = await tx((x) => salvarContaPagarTx(x, null, d, "criador"));
+  const outra = await pagarPendente(10);
+  const ler = (i: string) => db.contaPagar.findUniqueOrThrow({ where: { id: i } });
+  const vista = { [id]: versaoAprovacao(await ler(id)), [outra.id]: versaoAprovacao(await ler(outra.id)) };
+  await tx((x) => salvarContaPagarTx(x, id, { ...d, valor: 8000 }, "editor")); // depois que o aprovador abriu a tela
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [id, outra.id], "aprovador", vista)), /mudou \(valor, vencimento, fornecedor ou boleto\) depois que a tela foi aberta/);
+  assert.deepEqual([(await ler(id)).aprovadoEm, (await ler(outra.id)).aprovadoEm], [null, null], "nada aprovado");
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [outra.id], "aprovador", {})), /mudou/, "sem a versão vista não aprova");
+  const nova = { [id]: versaoAprovacao(await ler(id)), [outra.id]: vista[outra.id] };
+  assert.equal(await tx((x) => aprovarContasPagarTx(x, [id, outra.id], "aprovador", nova)), 2);
+});
+
+test("segregação: conta gerada por compras grava quem gerou e quem alterou; nenhum dos dois aprova", async () => {
+  const base = { descricao: `${P} frete gerado`, fornecedorId, pedidoId: null, categoria: "Custos de importação", valor: 100, vencimento: dia(10), competencia: dia(0), chavePlano: "CUSTO_IMPORTACAO" as const };
+  const id = await tx((x) => gerarContaPagarTx(x, { ...base, usuarioId: "comprador" }));
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id } })).criadoPor, "comprador");
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [id], "comprador")), /não pode aprová-la/);
+  const alt = { descricao: base.descricao, vencimento: base.vencimento, fornecedorId, chavePlano: base.chavePlano };
+  await tx((x) => alterarContaPagarGeradaTx(x, id, { ...alt, valor: 100, usuarioId: "comprador-2" })); // nada sensível mudou
+  assert.deepEqual((await db.contaPagar.findUniqueOrThrow({ where: { id } })).alteradoPor, []);
+  await tx((x) => alterarContaPagarGeradaTx(x, id, { ...alt, valor: 120, usuarioId: "comprador-2" }));
+  assert.deepEqual((await db.contaPagar.findUniqueOrThrow({ where: { id } })).alteradoPor, ["comprador-2"]);
+  await assert.rejects(tx((x) => aprovarContasPagarTx(x, [id], "comprador-2")), /não pode aprová-la/);
+  assert.equal(await tx((x) => aprovarContasPagarTx(x, [id], "financeiro-1")), 1);
 });
 
 test("cancelar título: só em aberto e sem baixas, em mês aberto; classificar reclassifica em qualquer situação", async () => {

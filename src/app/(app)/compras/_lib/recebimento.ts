@@ -17,6 +17,8 @@ export type RecebimentoInput = {
   fabricacao: Date | null;
   serie: string | null;
   usuario: string;
+  /** Id de quem recebeu: vira o criador da conta a pagar (não a aprova; docs/REVISAO.md §21). */
+  usuarioId?: string;
 };
 
 const round2 = (n: number) => Math.round(n * 100) / 100;
@@ -105,6 +107,7 @@ export async function receberItemTx(tx: Tx, r: RecebimentoInput) {
       competencia: hojeUTC(),
       vencimento: new Date(hojeUTC().getTime() + 30 * 24 * 60 * 60 * 1000),
       chavePlano: "ESTOQUE",
+      usuarioId: r.usuarioId ?? null,
     });
   }
 
