@@ -14,6 +14,9 @@ import { contaDoRetorno, lerRetornoSispag } from "./sispag";
 import type { ModoRemessa } from "./sispag-regras";
 import { aplicarRetornoTx, cancelarRemessaTx, contagemVazia, gerarRemessaDaContaTx } from "./sispag-servico";
 
+/** Lote grande (centenas de itens) com banco remoto passa dos 5 s do padrão do Prisma; vale por cima do padrão global. */
+const TX_OPTS = { timeout: 60_000, maxWait: 10_000 };
+
 
 function revalidar(id?: number) {
   for (const p of ["/financeiro/remessas", "/financeiro/pagar", "/financeiro/fluxo", "/financeiro/contas", "/financeiro/conciliacao"]) revalidatePath(p);
@@ -35,7 +38,7 @@ export async function gerarRemessaPagamentos(_: ActionState, fd: FormData): Prom
 
   let remessaId: number;
   try {
-    const r = await db.$transaction((tx) => gerarRemessaDaContaTx(tx, { contaId, modo, dataPagto, ids }));
+    const r = await db.$transaction((tx) => gerarRemessaDaContaTx(tx, { contaId, modo, dataPagto, ids }), TX_OPTS);
     remessaId = r.remessaId;
     await audit(user.id, "gerar remessa SISPAG", "RemessaPagamento", remessaId, `${modo}: ${r.qtd} pagamento(s), ${money(r.total)}`);
   } catch (e) {
@@ -60,7 +63,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
     const resultados = lerRetornoSispag(texto);
     const cabecalho = contaDoRetorno(texto);
     if (resultados.length === 0) return { error: "O retorno não traz nenhum pagamento." };
-    for (const id of await db.$transaction((tx) => aplicarRetornoTx(tx, resultados, cont, cabecalho))) remessas.add(id);
+    for (const id of await db.$transaction((tx) => aplicarRetornoTx(tx, resultados, cont, cabecalho), TX_OPTS)) remessas.add(id);
     await audit(
       user.id,
       "processar retorno SISPAG",

@@ -2,7 +2,6 @@ import "server-only";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { money, toNumber } from "@/lib/format";
-import { listarContas } from "./contas";
 import { garantirMesAberto } from "./fechamento";
 import { validarClassificacao } from "./plano";
 
@@ -10,7 +9,7 @@ import { validarClassificacao } from "./plano";
 
 /** Lançamento sem título (tarifa, rendimento...) numa conta ativa, em mês aberto. */
 export async function lancarAvulsoTx(tx: Tx, contaId: string, d: { sentido: "ENTRADA" | "SAIDA"; descricao: string; planoContaId: string; centroCustoId: string | null; valor: number; data: Date }) {
-  const conta = await tx.contaBancaria.findUnique({ where: { id: contaId }, select: { ativo: true } });
+  const [conta] = await tx.$queryRaw<{ ativo: boolean }[]>`SELECT ativo FROM "ContaBancaria" WHERE id = ${contaId} FOR UPDATE`; // trava: ver alternarAtivoContaTx
   if (!conta?.ativo) throw new ErroNegocio("Conta inexistente ou inativa.");
   await validarClassificacao(tx, d.planoContaId, d.centroCustoId);
   await garantirMesAberto(tx, [d.data], "lançar nessa data");
@@ -74,13 +73,20 @@ export async function salvarContaTx(tx: Tx, id: string | null, d: DadosConta): P
   return { id: c.id, nome: c.nome, mudancas };
 }
 
-/** Ativa ou inativa a conta. Devolve o estado anterior e o nome (para a auditoria). */
+/**
+ * Ativa ou inativa a conta. Devolve o estado anterior e o nome (para a auditoria). Chamar DENTRO de uma transação:
+ * a linha da conta é travada e o saldo recalculado sob a trava, e baixa, lançamento avulso e transferência travam a
+ * mesma linha antes de ler `ativo`. Assim "inativar" e "dar baixa" simultâneos não deixam conta inativa com saldo.
+ */
 export async function alternarAtivoContaTx(tx: Tx, id: string) {
+  await tx.$queryRaw`SELECT id FROM "ContaBancaria" WHERE id = ${id} FOR UPDATE`;
   const c = await tx.contaBancaria.findUniqueOrThrow({ where: { id } });
   if (c.ativo) {
     // conta inativa sai do saldo, do painel e do fluxo: com saldo diferente de zero, os números deixariam de fechar
-    const conta = (await listarContas()).find((x) => x.id === id);
-    if (conta && Math.abs(conta.saldo) >= 0.005) throw new ErroNegocio(`A conta tem saldo de ${money(conta.saldo)}. Zere o saldo (transferência ou lançamento) antes de inativá-la.`);
+    const somas = await tx.lancamento.groupBy({ by: ["sentido"], where: { contaId: id }, _sum: { valor: true } });
+    const soma = (s: "ENTRADA" | "SAIDA") => toNumber(somas.find((x) => x.sentido === s)?._sum.valor);
+    const saldo = Math.round((toNumber(c.saldoInicial) + soma("ENTRADA") - soma("SAIDA")) * 100) / 100;
+    if (Math.abs(saldo) >= 0.005) throw new ErroNegocio(`A conta tem saldo de ${money(saldo)}. Zere o saldo (transferência ou lançamento) antes de inativá-la.`);
   } else if (c.tipo === "BANCO" && soDigitos(c.agencia) && soDigitos(c.numero)) {
     const ativas = await tx.contaBancaria.findMany({ where: { tipo: "BANCO", ativo: true }, select: { nome: true, agencia: true, numero: true } });
     const dup = ativas.find((o) => soDigitos(o.agencia) === soDigitos(c.agencia) && soDigitos(o.numero) === soDigitos(c.numero));

@@ -10,6 +10,7 @@ import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
 import { hojeUTC } from "@/lib/datas";
+import { CAMPO_TOKEN, registrarEnvioTx } from "@/lib/idempotencia";
 import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx, salvarContaTx } from "./contas-servico";
 import { estornarTransferencia, transferir } from "./titulos";
 
@@ -57,7 +58,7 @@ export async function alternarAtivoConta(id: string): Promise<ActionState> {
   const user = await requireUser(["FINANCEIRO"]);
   id = argId(id);
   try {
-    const c = await alternarAtivoContaTx(db, id);
+    const c = await db.$transaction((tx) => alternarAtivoContaTx(tx, id));
     await audit(user.id, c.eraAtiva ? "inativar" : "ativar", "ContaBancaria", id, c.nome);
   } catch (e) {
     return { error: errorMessage(e) };
@@ -85,7 +86,10 @@ export async function lancarAvulso(contaId: string, _: ActionState, fd: FormData
   const d = parsed.data;
   if (d.data > hojeUTC()) return { fieldErrors: { data: "Data não pode ser futura (hoje é o limite)" }, error: "Verifique os campos destacados." };
   try {
-    const l = await db.$transaction((tx) => lancarAvulsoTx(tx, contaId, d));
+    const l = await db.$transaction(async (tx) => {
+      await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio do mesmo formulário (outra aba, voltar) não duplica o lançamento
+      return lancarAvulsoTx(tx, contaId, d);
+    });
     await audit(user.id, "lançar", "Lancamento", l.id, `${d.sentido} ${money(d.valor)} — ${d.descricao}`);
   } catch (e) {
     return { error: errorMessage(e) };

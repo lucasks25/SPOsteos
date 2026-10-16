@@ -6,6 +6,9 @@ import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { aprovarContasPagarTx } from "./aprovacao-servico";
 
+/** Lote grande (centenas de itens) com banco remoto passa dos 5 s do padrão do Prisma; vale por cima do padrão global. */
+const TX_OPTS = { timeout: 60_000, maxWait: 10_000 };
+
 /**
  * Aprova contas a pagar vindas de recebimento de compra para poderem entrar em remessa SISPAG.
  * Separação de funções: quem recebe a compra (compras/estoque) não aprova o pagamento.
@@ -21,7 +24,7 @@ export async function aprovarContasPagar(_: ActionState, fd: FormData): Promise<
   }
   const ids = Object.keys(versoes);
   try {
-    const n = await db.$transaction((tx) => aprovarContasPagarTx(tx, ids, user.id, versoes));
+    const n = await db.$transaction((tx) => aprovarContasPagarTx(tx, ids, user.id, versoes), TX_OPTS);
     await audit(user.id, "aprovar contas a pagar", "ContaPagar", undefined, `${n} conta(s): ${ids.slice(0, 10).join(", ")}`);
   } catch (e) {
     return { error: errorMessage(e) };

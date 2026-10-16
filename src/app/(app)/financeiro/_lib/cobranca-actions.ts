@@ -11,6 +11,9 @@ import { decodificarOfx, OFX_MAX_BYTES } from "./ofx";
 import { lerRetornoCobranca } from "./cobranca";
 import { aplicarRetornoCobrancaTx, cancelarRemessaCobrancaTx, contagemCobrancaVazia, gerarRemessaCobrancaTx } from "./cobranca-servico";
 
+/** Lote grande (centenas de itens) com banco remoto passa dos 5 s do padrão do Prisma; vale por cima do padrão global. */
+const TX_OPTS = { timeout: 60_000, maxWait: 10_000 };
+
 function revalidar(id?: number) {
   for (const p of ["/financeiro/cobranca", "/financeiro/receber", "/financeiro/fluxo", "/financeiro/contas", "/financeiro/conciliacao", "/"]) revalidatePath(p);
   if (id) revalidatePath(`/financeiro/cobranca/${id}`);
@@ -46,7 +49,7 @@ export async function gerarCobranca(_: ActionState, fd: FormData): Promise<Actio
   if (total > 400) return { error: "Máximo de 400 títulos por remessa." };
   let remessaId: number;
   try {
-    const r = await db.$transaction((tx) => gerarRemessaCobrancaTx(tx, { contaId, ids: entrada, baixaIds: baixa, alteracoes }));
+    const r = await db.$transaction((tx) => gerarRemessaCobrancaTx(tx, { contaId, ids: entrada, baixaIds: baixa, alteracoes }), TX_OPTS);
     remessaId = r.remessaId;
     const venc = alteracoes.map((a) => `${a.id} → ${a.vencimento.toISOString().slice(0, 10)}`).join(", ");
     await audit(user.id, "gerar remessa de cobrança", "RemessaCobranca", remessaId, `${entrada.length} boleto(s), ${baixa.length} pedido(s) de baixa, ${alteracoes.length} alteração(ões) de vencimento${venc ? ` (${venc})` : ""}`);
@@ -69,7 +72,7 @@ export async function processarRetornoCobranca(_: ActionState, fd: FormData): Pr
     const bytes = new Uint8Array(await file.arrayBuffer());
     const sha = createHash("sha256").update(bytes).digest("hex"); // rastro do arquivo importado na auditoria
     const ret = lerRetornoCobranca(decodificarOfx(bytes));
-    remessas = await db.$transaction((tx) => aplicarRetornoCobrancaTx(tx, ret, cont));
+    remessas = await db.$transaction((tx) => aplicarRetornoCobrancaTx(tx, ret, cont), TX_OPTS);
     await audit(
       user.id,
       "processar retorno de cobrança",

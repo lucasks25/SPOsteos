@@ -16,6 +16,7 @@ import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa, registrar
 import { CATEGORIAS_GLOSA } from "./glosa-categorias";
 import { cancelarTituloTx, classificarTituloTx, diferencasTitulo, salvarContaPagarTx, salvarContaReceberTx } from "./titulos-servico";
 import { ErroNegocio } from "@/lib/erros";
+import { CAMPO_TOKEN, registrarEnvioTx } from "@/lib/idempotencia";
 
 const positivo = () => zf.money().refine((v) => v > 0, "Informe um valor maior que zero");
 
@@ -95,6 +96,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       const data = parsed.data;
       let mud = "";
       savedId = await db.$transaction(async (tx) => {
+        if (!id) await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio da criação (outra aba, voltar) não duplica o título
         if (id) mud = await diferencasTitulo(tx, "receber", id, data);
         return salvarContaReceberTx(tx, id, data);
       });
@@ -106,6 +108,7 @@ export async function salvarTitulo(tipoArg: Tipo, id: string | null, _: ActionSt
       let mud = "";
       const info: { aprovacaoRemovida?: boolean } = {};
       savedId = await db.$transaction(async (tx) => {
+        if (!id) await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio da criação (outra aba, voltar) não duplica o título
         if (id) mud = await diferencasTitulo(tx, "pagar", id, data);
         return salvarContaPagarTx(tx, id, data, user.id, info);
       });
@@ -130,7 +133,10 @@ export async function baixarTitulo(tipoArg: Tipo, id: string, _: ActionState, fd
   const { contaId, valor, juros, multa, desconto, data, forma } = parsed.data;
   if (data > hojeUTC()) return { fieldErrors: { data: "Data não pode ser futura (hoje é o limite)" }, error: "Verifique os campos destacados." };
   try {
-    await db.$transaction((tx) => registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, juros, multa, desconto, forma }));
+    await db.$transaction(async (tx) => {
+      await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio do mesmo formulário (outra aba, voltar) não duplica a baixa
+      await registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, juros, multa, desconto, forma });
+    });
     await audit(user.id, "baixar", TIPOS[tipo].entidade, id, `${money(valor)} em ${data.toISOString().slice(0, 10)}`);
   } catch (e) {
     return { error: errorMessage(e) };

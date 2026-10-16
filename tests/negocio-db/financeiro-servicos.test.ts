@@ -263,12 +263,12 @@ test("lançamento avulso: conta inativa e mês fechado recusam; excluir recusa b
 
 test("inativar conta com saldo é recusado; zerada inativa e reativa", async () => {
   const c = (await db.contaBancaria.create({ data: { nome: `${P} serv saldo`, tipo: "BANCO", saldoInicial: 100 } })).id;
-  await assert.rejects(alternarAtivoContaTx(db, c), /A conta tem saldo de/);
+  await assert.rejects(tx((x) => alternarAtivoContaTx(x, c)), /A conta tem saldo de/);
   await db.contaBancaria.update({ where: { id: c }, data: { saldoInicial: 0 } });
-  const r1 = await alternarAtivoContaTx(db, c);
+  const r1 = await tx((x) => alternarAtivoContaTx(x, c));
   assert.equal(r1.eraAtiva, true);
   assert.equal((await db.contaBancaria.findUniqueOrThrow({ where: { id: c } })).ativo, false);
-  const r2 = await alternarAtivoContaTx(db, c);
+  const r2 = await tx((x) => alternarAtivoContaTx(x, c));
   assert.equal(r2.eraAtiva, false);
   assert.equal((await db.contaBancaria.findUniqueOrThrow({ where: { id: c } })).ativo, true);
 });

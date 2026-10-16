@@ -1,5 +1,5 @@
 import "server-only";
-import type { CategoriaGlosa, FormaPagamento } from "@/generated/prisma/client";
+import { Prisma, type CategoriaGlosa, type FormaPagamento } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { money, toNumber } from "@/lib/format";
@@ -114,10 +114,12 @@ export type BaixaInput = {
 export async function registrarBaixa(tx: Tx, input: BaixaInput) {
   const { tipo, tituloId, contaId, data, forma } = input;
   await garantirMesAberto(tx, [data], "registrar baixa nessa data");
+  // Conta travada ANTES do título (mesma ordem da geração de cobrança): inativar a conta espera esta baixa terminar e,
+  // se a baixa vier depois, lê `ativo` já atualizado. Sem isso a conta ficaria inativa com saldo.
+  const [conta] = await tx.$queryRaw<{ ativo: boolean }[]>`SELECT ativo FROM "ContaBancaria" WHERE id = ${contaId} FOR UPDATE`;
   const titulo = await carregar(tx, tipo, tituloId, true);
   if (titulo.status !== "ABERTO") throw new FinanceiroError("O título não está em aberto.");
   const b = calcularBaixa(input, saldoTitulo(titulo.valor, titulo.valorBaixado));
-  const conta = await tx.contaBancaria.findUnique({ where: { id: contaId }, select: { ativo: true } });
   if (!conta) throw new FinanceiroError("Conta bancária não encontrada.");
   if (!conta.ativo) throw new FinanceiroError("A conta bancária está inativa.");
 
@@ -246,6 +248,8 @@ export async function transferir(tx: Tx, input: TransferenciaInput) {
   await garantirMesAberto(tx, [data], "transferir nessa data");
   if (origemId === destinoId) throw new FinanceiroError("Origem e destino precisam ser contas diferentes.");
   if (!(cent(valor) > 0)) throw new FinanceiroError("Informe um valor maior que zero.");
+  // trava as duas contas (em ordem de id, sem deadlock entre transferências opostas) antes de ler `ativo`: ver registrarBaixa
+  await tx.$queryRaw`SELECT id FROM "ContaBancaria" WHERE id IN (${Prisma.join([origemId, destinoId])}) ORDER BY id FOR UPDATE`;
   const contas = await tx.contaBancaria.findMany({ where: { id: { in: [origemId, destinoId] } }, select: { id: true, nome: true, ativo: true } });
   if (contas.length !== 2) throw new FinanceiroError("Conta de origem ou destino não encontrada.");
   const inativa = contas.find((c) => !c.ativo);
