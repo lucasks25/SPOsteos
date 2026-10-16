@@ -1,6 +1,6 @@
 # Marca SP OSTEOS
 
-Hoje o sistema mostra o nome "SP OSTEOS" em texto com o monograma "SPO" num quadrado da cor de marca. Quando o logotipo chegar, basta colocar os arquivos abaixo; nenhum código muda.
+Logotipos oficiais instalados em 16/10/2026 a partir do site público sp-osteos.com.br: `public/marca/logo.png` (colorido, fundo claro), `logo-escuro.png` (branco, menu lateral e tema escuro), `isotipo.png` (símbolo roxo/azul, marca d'água do login) e `src/app/icon.png` (favicon). As cores da marca são roxo (#4b2a85) e azul (#1b7fc4) com texto azul-marinho; o design system atual usa verde-petróleo — alinhar a paleta é decisão pendente do dono. Se faltar algum arquivo, o sistema volta ao monograma "SPO" em texto.
 
 ## Onde colocar o logotipo
 
@@ -10,6 +10,8 @@ Hoje o sistema mostra o nome "SP OSTEOS" em texto com o monograma "SPO" num quad
 | `public/marca/logo-escuro.svg` (ou `logo-escuro.png`) | tema escuro, faixa escura do login | mesmo tamanho; versão em cores claras/branca |
 
 Sem `logo-escuro`, o `logo` é usado em todos os temas. Só `logo-escuro` (sem `logo`) também funciona. SVG tem prioridade sobre PNG.
+
+As rotas `/marca/*` e `/icon.png` ficam fora da verificação de sessão do `src/proxy.ts`, para o login carregar a logo.
 
 A detecção (`fs.existsSync`) é feita no servidor em `src/components/marca.tsx` e fica em cache por processo: em produção, refaça o build/reinicie depois de colocar os arquivos; em desenvolvimento vale na hora.
 

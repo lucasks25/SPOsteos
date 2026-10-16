@@ -26,7 +26,7 @@ function logos(): Logos {
 
 export type VarianteMarca = "topo" | "login" | "impresso";
 
-const ALTURA: Record<VarianteMarca, string> = { topo: "h-8", login: "h-10", impresso: "h-12" };
+const ALTURA: Record<VarianteMarca, string> = { topo: "h-8", login: "h-14", impresso: "h-12" };
 
 export function Marca({ variante = "topo", sobreEscuro = false }: { variante?: VarianteMarca; sobreEscuro?: boolean }) {
   const { nome } = empresa();
