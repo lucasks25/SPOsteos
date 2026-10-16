@@ -6,10 +6,11 @@ import { KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@
 import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
+import { cirurgiasAguardandoVale } from "../_lib/cirurgias-aguardando";
 
 const STATUS: StatusRemessa[] = ["ABERTA", "ENVIADA", "CONFERIDA", "CANCELADA"];
 
-export default async function RemessasPage({ searchParams }: { searchParams: Promise<{ status?: string; hospitalId?: string; q?: string }> }) {
+export default async function RemessasPage({ searchParams }: { searchParams: Promise<{ status?: string; hospitalId?: string; q?: string; de?: string; ate?: string }> }) {
   const user = await requireUser(PERFIS_VER);
   const sp = await searchParams;
   const status = STATUS.includes(sp.status as StatusRemessa) ? (sp.status as StatusRemessa) : undefined;
@@ -28,7 +29,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
       : {}),
   };
 
-  const [remessas, hospitais] = await Promise.all([
+  const [remessas, hospitais, aguardando] = await Promise.all([
     db.remessa.findMany({
       where,
       include: {
@@ -41,6 +42,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
       take: 200,
     }),
     db.hospital.findMany({ where: { ativo: true }, select: { id: true, razaoSocial: true, nomeFantasia: true }, orderBy: { razaoSocial: "asc" } }),
+    cirurgiasAguardandoVale(db, { hospitalId: sp.hospitalId, de: sp.de, ate: sp.ate }),
   ]);
 
   const qtd = (st: string) => remessas.filter((r) => r.status === st).length;
@@ -63,7 +65,38 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
         <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Nº da remessa ou paciente" className="w-60" />
         <FiltroSelect label="Status" name="status" defaultValue={status} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.toLowerCase() }))} />
         <FiltroSelect label="Hospital" name="hospitalId" defaultValue={sp.hospitalId} todos="Todos os hospitais" options={hospitais.map((h) => ({ value: h.id, label: h.nomeFantasia ?? h.razaoSocial }))} />
+        <FiltroInput label="Cirurgia de" name="de" type="date" defaultValue={sp.de} />
+        <FiltroInput label="Cirurgia até" name="ate" type="date" defaultValue={sp.ate} />
       </Filtros>
+      <Table
+        titulo="Cirurgias aguardando vale"
+        icone="atividade"
+        contagem={aguardando.length}
+        head={["Cirurgia", "Data/hora", "Hospital", "Médico", "Procedimento", "Situação", "Ações"]}
+        empty={aguardando.length === 0}
+        emptyText="Nenhuma cirurgia agendada ou confirmada está sem vale para os filtros informados."
+      >
+        {aguardando.map((c) => (
+          <tr key={c.id}>
+            <Td>
+              <Link href={`/comercial/cirurgias/${c.id}`} className="font-medium text-teal-700 hover:underline">CIR-{c.numero}</Link>
+              <div className="text-xs text-slate-500">{c.paciente}</div>
+            </Td>
+            <Td>{dateTime(c.dataHora)}</Td>
+            <Td className="max-w-[16rem] truncate">{c.hospital.nomeFantasia ?? c.hospital.razaoSocial}</Td>
+            <Td>{c.medico.nome}</Td>
+            <Td>{c.procedimento?.descricao ?? "—"}</Td>
+            <Td><StatusBadge status={c.status} /></Td>
+            <Td>
+              {podeEditar(user.perfil) ? (
+                <LinkButton href={`/estoque/remessas/nova?cirurgiaId=${c.id}`} variant="small">Gerar vale</LinkButton>
+              ) : (
+                <span className="text-xs text-slate-500">—</span>
+              )}
+            </Td>
+          </tr>
+        ))}
+      </Table>
       <Table
         titulo="Remessas / vales"
         icone="caminhao"

@@ -38,6 +38,8 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
   const editavel = c.status !== "FATURADA" && c.status !== "CANCELADA";
   const pedidoAtivo = c.pedido && c.pedido.status !== "CANCELADO" ? c.pedido : null;
   const podeFaturar = c.status === "REALIZADA" && c.consumos.length > 0 && !pedidoAtivo && pode(["COMERCIAL", "FINANCEIRO"]);
+  const vazioAguardandoVale = c.remessas.every((r) => r.status === "CANCELADA") && ["AGENDADA", "CONFIRMADA"].includes(c.status);
+  const verEstoque = pode(["ESTOQUE", "COMERCIAL", "QUALIDADE"]);
   const podeConsumir = ["AGENDADA", "CONFIRMADA", "REALIZADA"].includes(c.status) && pode(["COMERCIAL", "ESTOQUE"]);
 
   // estoque consignado disponível no hospital (lotes liberados e dentro da validade)
@@ -102,11 +104,17 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           podeEditar={comercial && c.status !== "CANCELADA"}
         />
 
+        {vazioAguardandoVale && (
+          <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+            Vale pendente: o Estoque gera o vale desta cirurgia.
+            {verEstoque && <> <Link href="/estoque/remessas" className="font-medium underline">Ver cirurgias aguardando vale no Estoque</Link></>}
+          </div>
+        )}
+
         <Table
           titulo="Remessas / vales de consignação"
           icone="caminhao"
           contagem={c.remessas.length}
-          acoes={editavel && c.status !== "REALIZADA" ? <LinkButton href={`/estoque/remessas/nova?cirurgiaId=${c.id}`} variant="secondary" icon="mais">Gerar remessa/vale</LinkButton> : undefined}
           head={["Remessa", "Local", "Itens", "Situação", "Enviada em", "Ações"]}
           empty={c.remessas.length === 0}
           emptyText="Nenhuma remessa/vale gerado para esta cirurgia."
