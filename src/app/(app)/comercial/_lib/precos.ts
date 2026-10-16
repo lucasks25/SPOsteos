@@ -39,6 +39,17 @@ export async function precosDoHospital(client: Client, hospitalId: string | null
   return result;
 }
 
+/**
+ * O hospital tem tabela de preço, mas ela não está vigente em `ref`? Nesse caso `precosDoHospital` usa o preço base
+ * em silêncio: quem fatura/orça precisa ser avisado. Devolve o nome da tabela, ou null quando não há o que avisar.
+ */
+export async function tabelaForaDeVigencia(client: Client, hospitalId: string | null, ref = new Date()): Promise<string | null> {
+  if (!hospitalId) return null;
+  const h = await client.hospital.findUnique({ where: { id: hospitalId }, select: { tabelaPreco: { select: { nome: true, vigenciaInicio: true, vigenciaFim: true } } } });
+  const t = h?.tabelaPreco;
+  return t && !tabelaVigente(t, ref) ? t.nome : null;
+}
+
 /** Mapa hospitalId → { produtoId → preço } das tabelas vigentes (para preencher formulários no cliente). */
 export async function tabelasPorHospital(ref = new Date()) {
   const hospitais = await db.hospital.findMany({

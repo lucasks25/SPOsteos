@@ -6,11 +6,12 @@ import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { num } from "@/lib/format";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
+import { soStrings } from "@/lib/search-params";
 
 export default async function MedicosPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
   const user = await requireUser();
   const edita = podeEditarCadastro(user.perfil, PERFIS_COMERCIAL);
-  const { q, status } = await searchParams;
+  const { q, status } = soStrings(await searchParams);
   const medicos = await db.medico.findMany({
     where: {
       ...ativoWhere(status),
@@ -30,16 +31,16 @@ export default async function MedicosPage({ searchParams }: { searchParams: Prom
   });
   return (
     <>
-      <PageHeader title="Médicos" subtitle="Cirurgiões e solicitantes que aparecem nas cirurgias; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/medicos/novo">Novo médico</LinkButton> : undefined} />
+      <PageHeader title="Médicos" subtitle="Cirurgiões e solicitantes que aparecem nas cirurgias." actions={edita ? <LinkButton href="/cadastros/medicos/novo">Novo médico</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat icon="lista" label="Listados" value={medicos.length} />
-        <Stat icon="atividade" label="Cirurgias" value={num(medicos.reduce((s, m) => s + m._count.cirurgias, 0))} hint="dos médicos listados" />
-        <Stat icon="alerta" label="Inativos" value={medicos.filter((m) => !m.ativo).length} hint="na lista atual" />
+        <Stat label="Listados" value={medicos.length} />
+        <Stat label="Cirurgias" value={num(medicos.reduce((s, m) => s + m._count.cirurgias, 0))} hint="dos médicos listados" />
+        <Stat label="Inativos" value={medicos.filter((m) => !m.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Nome, CRM ou especialidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table titulo="Médicos" icone="medico" contagem={medicos.length} head={["Médico", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton> : undefined}>
+      <Table titulo="Médicos" contagem={medicos.length} head={["Médico", "Especialidade", "Contato", "Cirurgias", ""]} empty={medicos.length === 0} emptyText={q ? "Nenhum médico encontrado para essa busca." : "Nenhum médico encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/medicos/novo" variant="secondary" icon="mais">Cadastrar médico</LinkButton> : undefined}>
         {medicos.map((m) => (
           <tr key={m.id}>
             <Td>

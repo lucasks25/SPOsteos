@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auditLeitura } from "@/lib/forms";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -21,6 +22,7 @@ import {
 import { pendenciasDoRecolhimento, situacaoAlvos } from "../../_lib/recolhimento-servico";
 import { atualizarFotoAction, cancelarAction, comunicarPacientesAction, concluirAction, justificarAction, notaAction, recolherAction } from "../actions";
 import { idInt } from "@/lib/ids";
+import { soStrings } from "@/lib/search-params";
 
 type SP = { aba?: string };
 const ABAS = [
@@ -41,7 +43,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
   const opera = podeOperarRecolhimento(user.perfil);
   const recolhe = podeRecolherFisico(user.perfil);
   const ativo = !encerrado(rec.status);
-  const abaPedida = (await searchParams).aba;
+  const abaPedida = (soStrings(await searchParams)).aba;
   const aba = ABAS.find(([k]) => k === abaPedida)?.[0] ?? "lotes";
   const hoje = hojeUTC();
 
@@ -58,6 +60,8 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
     ativo ? pendenciasDoRecolhimento(db, id) : Promise.resolve([] as string[]),
   ]);
   const r = resumirRecolhimento(itens.map((i) => i.calc), pacientes);
+  // a aba de pacientes mostra nomes (dado de saúde): auditada; as outras abas não (docs/LGPD.md §5)
+  if (verPac && aba === "pacientes" && pacientes.length > 0) await auditLeitura(user.id, "Recolhimento", id, `${docRecolhimento(id)}: ${pacientes.length} paciente(s)/cirurgia(s)`);
   const pacTotal = verPac ? null : await db.recolhimentoPaciente.count({ where: { recolhimentoId: id } });
   const venc = prazoVencido(rec.prazo, rec.status, hoje);
   const doc = docRecolhimento(id);
@@ -69,7 +73,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
     <>
       <PageHeader
         title={`Recolhimento ${doc}`}
-        subtitle={`${ROTULO_ORIGEM[rec.origem]} · classe ${rec.classe} · aberto em ${dateTime(rec.abertoEm)} por ${rec.abertoPor}`}
+        meta={[`${ROTULO_ORIGEM[rec.origem]} · classe ${rec.classe} · aberto em ${dateTime(rec.abertoEm)} por ${rec.abertoPor}`]}
         voltar={{ href: "/qualidade/recolhimentos", label: "Recolhimentos" }}
         actions={
           <>
@@ -86,15 +90,15 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
         }
       />
       <KpiGrid cols={5}>
-        <Stat icon="atividade" label="Situação" value={<StatusBadge status={rec.status} />} hint={rec.prazo ? `prazo ${date(rec.prazo)}${venc ? " (vencido)" : ""}` : "sem prazo definido"} tone={venc ? "danger" : "default"} />
-        <Stat icon="pacote" label="Encontrado na abertura" value={num(r.encontrado)} hint={`${r.alvos} local(is) com saldo`} />
-        <Stat icon="ok" label="Recolhido" value={num(r.recolhido)} hint="movido para o não conforme" />
-        <Stat icon="caminhao" label="A recolher" value={num(r.aRecolher)} hint={`${r.alvosPendentes} local(is) pendente(s)`} tone={r.aRecolher && ativo ? "danger" : "default"} />
-        <Stat icon="medico" label="Pacientes a comunicar" value={verPac ? num(r.pacientesAComunicar) : "—"} hint={verPac ? `${r.pacientes} cirurgia(s) com o lote` : `${num(pacTotal ?? 0)} cirurgia(s); nomes só para Qualidade`} tone={verPac && r.pacientesAComunicar && ativo ? "warn" : "default"} />
+        <Stat label="Situação" value={<StatusBadge status={rec.status} />} hint={rec.prazo ? `prazo ${date(rec.prazo)}${venc ? " (vencido)" : ""}` : "sem prazo definido"} tone={venc ? "danger" : "default"} />
+        <Stat label="Encontrado na abertura" value={num(r.encontrado)} hint={`${r.alvos} local(is) com saldo`} />
+        <Stat label="Recolhido" value={num(r.recolhido)} hint="movido para o não conforme" />
+        <Stat label="A recolher" value={num(r.aRecolher)} hint={`${r.alvosPendentes} local(is) pendente(s)`} tone={r.aRecolher && ativo ? "danger" : "default"} />
+        <Stat label="Pacientes a comunicar" value={verPac ? num(r.pacientesAComunicar) : "—"} hint={verPac ? `${r.pacientes} cirurgia(s) com o lote` : `${num(pacTotal ?? 0)} cirurgia(s); nomes só para Qualidade`} tone={verPac && r.pacientesAComunicar && ativo ? "warn" : "default"} />
       </KpiGrid>
 
       <div className="space-y-3">
-        <Card title="Dados da ação de campo" icon="alerta">
+        <Card title="Dados da ação de campo">
           <Dl
             items={[
               ["Origem", ROTULO_ORIGEM[rec.origem]],
@@ -112,7 +116,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
         <Abas itens={ABAS.map(([k, label]) => ({ href: `/qualidade/recolhimentos/${id}?aba=${k}`, label, ativo: aba === k }))} className="!mb-0" />
 
         {aba === "lotes" && (
-          <Table titulo="Lotes bloqueados" icone="frasco" contagem={lotes.length} head={["Produto", "Lote", "Validade", "Status do lote", "Antes do recolhimento", "Bloqueado por este"]}>
+          <Table titulo="Lotes bloqueados" contagem={lotes.length} head={["Produto", "Lote", "Validade", "Status do lote", "Antes do recolhimento", "Bloqueado por este"]}>
             {lotes.map((l) => (
               <tr key={l.id}>
                 <Td className="max-w-xs"><div className="truncate font-medium text-slate-900">{l.lote.produto.descricao}</div><div className="font-mono text-xs text-slate-500">{l.lote.produto.codigo} · reg. {l.lote.produto.registroAnvisa ?? "—"}</div></Td>
@@ -130,7 +134,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
           <>
             <Table
               titulo="Locais com saldo na abertura"
-              icone="caixa"
+
               contagem={itens.length}
               head={["Local / hospital", "Produto / lote", "Na abertura", "Recolhido", "Saldo atual", "Situação", "Comunicado", "Ações"]}
               empty={itens.length === 0}
@@ -190,7 +194,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
 
         {aba === "pacientes" &&
           (verPac ? (
-            <Card title="Pacientes e cirurgias que usaram o lote" icon="medico" actions={<span className="tnum text-xs text-slate-600">{pacientes.length} registro(s) · dados sensíveis (LGPD)</span>}>
+            <Card title="Pacientes e cirurgias que usaram o lote" actions={<span className="tnum text-xs text-slate-600">{pacientes.length} registro(s) · dados sensíveis (LGPD)</span>}>
               {pacientes.length === 0 ? (
                 <p className="text-sm text-slate-500">Nenhuma cirurgia usou estes lotes até agora.</p>
               ) : (
@@ -222,19 +226,19 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
               )}
             </Card>
           ) : (
-            <Card title="Pacientes e cirurgias" icon="medico"><p className="text-sm text-slate-600">{num(pacTotal ?? 0)} cirurgia(s) usaram os lotes. Os dados do paciente são sensíveis (LGPD) e ficam visíveis só para os perfis Qualidade e Admin.</p></Card>
+            <Card title="Pacientes e cirurgias"><p className="text-sm text-slate-600">{num(pacTotal ?? 0)} cirurgia(s) usaram os lotes. Os dados do paciente são sensíveis (LGPD) e ficam visíveis só para os perfis Qualidade e Admin.</p></Card>
           ))}
 
         {aba === "acoes" && (
           <>
             {ativo && opera && (
-              <Card title="Registrar ação" icon="lista">
+              <Card title="Registrar ação">
                 <Form action={notaAction.bind(null, id)} submitLabel="Registrar" resetOnSuccess>
                   <TextArea label="O que foi feito (contato com fabricante, ligação ao hospital, notificação à ANVISA…)" name="texto" required maxLength={1000} />
                 </Form>
               </Card>
             )}
-            <Table titulo="Cronologia" icone="calendario" contagem={acoes.length} head={["Data", "Usuário", "Tipo", "Descrição"]} empty={acoes.length === 0}>
+            <Table titulo="Cronologia" contagem={acoes.length} head={["Data", "Usuário", "Tipo", "Descrição"]} empty={acoes.length === 0}>
               {acoes.map((a) => (
                 <tr key={a.id} className="align-top">
                   <Td>{dateTime(a.criadoEm)}</Td>
@@ -249,7 +253,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
 
         {ativo && opera && (
           <div className="grid gap-3 lg:grid-cols-2">
-            <Card title="Concluir recolhimento" icon="ok">
+            <Card title="Concluir recolhimento">
               {pendencias.length > 0 && (
                 <ul className="mb-3 list-disc space-y-1 pl-5 text-sm text-rose-700">
                   {pendencias.slice(0, 8).map((p) => <li key={p}>{p}</li>)}
@@ -260,7 +264,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
                 <TextArea label="Parecer final *" name="conclusao" required maxLength={2000} />
               </Form>
             </Card>
-            <Card title="Cancelar recolhimento" icon="alerta">
+            <Card title="Cancelar recolhimento">
               {semRecolhido ? (
                 <Form action={cancelarAction.bind(null, id)} submitLabel="Cancelar e desbloquear lotes">
                   <p className="text-sm text-slate-600">Só os lotes que este recolhimento bloqueou voltam ao status anterior.</p>

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { mascarar, situacaoPagamento, type SituacaoPagamento } from "../_lib/favorecidos";
 import { situacaoAprovacao } from "../_lib/favorecidos-aprovacao";
+import { AbasNav } from "@/components/abas-nav";
 
 const SITUACAO: Record<SituacaoPagamento, { texto: string; cor: BadgeColor }> = {
   COMPLETO: { texto: "Conta e Pix", cor: "green" },
@@ -32,6 +33,7 @@ export default async function FavorecidosPage({ searchParams }: { searchParams: 
   return (
     <>
       <PageHeader title="Favorecidos" subtitle="Dados de pagamento dos fornecedores (banco, conta e chave Pix). Decidem para onde o SISPAG paga: toda alteração é auditada. Os dados cadastrais ficam em Cadastros." />
+      <AbasNav atual="/financeiro/favorecidos" />
       <KpiGrid cols={3}>
         <Stat label="Fornecedores ativos" value={linhas.length} />
         <Stat href="/financeiro/favorecidos?situacao=sem" label="Sem dados de pagamento" value={semDados} tone={semDados ? "warn" : "default"} hint="bloqueiam o SISPAG" />

@@ -16,7 +16,8 @@ export const ICONE_MODULO: Record<string, IconName> = {
   Qualidade: "escudo",
   Compras: "carrinho",
   Financeiro: "banco",
-  "Gestão": "grafico",
+  Faturamento: "documento",
+  "Relatórios": "grafico",
   Cadastros: "livro",
   "Administração": "engrenagem",
 };
@@ -53,10 +54,10 @@ const moduloOnRecolhido = "lg:bg-teal-50 lg:before:absolute lg:before:-left-3 lg
 function ItensDoModulo({ m, ativoHref, aoNavegar, flutuante }: { m: Modulo; ativoHref?: string; aoNavegar: () => void; flutuante?: boolean }) {
   return (
     // sob o módulo: linha-guia na altura do centro do ícone (12 px de recuo + metade de 18 px); no painel flutuante, sem guia
-    <div className={flutuante ? "" : "ml-[21px] border-l border-slate-200 pb-1"}>
+    <div className={flutuante ? "" : "menu-arvore ml-[21px] border-l border-slate-200 pb-1"}>
       {m.grupos.map((g) => (
         <div key={g.label}>
-          {m.grupos.length > 1 && g.label !== m.nome && <div className={`px-3 pb-1 pt-3 text-xs font-semibold text-slate-500 ${flutuante ? "" : "ml-1"}`}>{g.label}</div>}
+          {m.grupos.length > 1 && g.label !== m.nome && <div className={`menu-grupo px-3 pb-1 pt-3 text-xs font-semibold text-slate-500 ${flutuante ? "" : "ml-1"}`}>{g.label}</div>}
           <ul>
             {g.items.map((i) => {
               const on = ativoHref === i.href;
@@ -67,7 +68,7 @@ function ItensDoModulo({ m, ativoHref, aoNavegar, flutuante }: { m: Modulo; ativ
                     onClick={aoNavegar}
                     title={i.label.length > 24 ? i.label : undefined}
                     aria-current={on ? "page" : undefined}
-                    className={`${itemBase} h-[34px] px-3 text-[13.5px] ${flutuante ? "" : "ml-1"} ${
+                    className={`menu-sub ${itemBase} h-[34px] px-3 text-[13.5px] ${flutuante ? "" : "ml-1"} ${
                       on
                         ? `bg-teal-50 font-medium text-teal-700 ${flutuante ? "" : "before:absolute before:-left-[5px] before:top-1 before:bottom-1 before:w-0.5 before:bg-teal-600"}`
                         : "text-slate-600 hover:bg-slate-100 hover:text-slate-900"
@@ -100,7 +101,7 @@ export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: 
     <nav
       ref={raiz}
       aria-label="Menu principal"
-      className={`flex-1 overflow-y-auto px-3 py-2 [scrollbar-color:var(--c-slate-300)_transparent] [scrollbar-width:thin] ${recolhida ? "lg:overflow-visible" : ""}`}
+      className={`menu-nav flex-1 overflow-y-auto px-3 py-2 [scrollbar-color:var(--c-slate-300)_transparent] [scrollbar-width:thin] ${recolhida ? "lg:overflow-visible" : ""}`}
     >
       <ul className="space-y-0.5">
         {modulos.map((m) => {
@@ -114,7 +115,7 @@ export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: 
             const on = ativo?.href === m.href;
             return (
               <li key={m.nome}>
-                <Link href={m.href} onClick={aoNavegar} title={recolhida ? m.nome : undefined} aria-current={on ? "page" : undefined} className={`${itemBase} h-10 gap-3 px-3 text-sm font-medium ${on ? moduloOn : moduloOff}`}>
+                <Link href={m.href} onClick={aoNavegar} title={recolhida ? m.nome : undefined} aria-current={on ? "page" : undefined} className={`menu-mod ${itemBase} h-10 gap-3 px-3 text-sm font-medium ${on ? moduloOn : moduloOff}`}>
                   {ico}
                   {rotulo}
                 </Link>
@@ -137,13 +138,16 @@ export function NavLateral({ modulos, ativo, recolhida, aoNavegar }: { modulos: 
                   setPosFlutuante({ top, maxHeight: window.innerHeight - top - 8 });
                   setFlutuante((f) => (f === m.nome ? null : m.nome));
                 }}
-                className={`${itemBase} h-10 w-full gap-3 px-3 text-sm font-medium ${
+                data-on={doModulo || undefined}
+                className={`menu-mod ${itemBase} h-10 w-full gap-3 px-3 text-sm font-medium ${
                   doModulo ? `text-teal-700 [&_svg]:text-teal-700 hover:bg-slate-100 ${recolhida ? moduloOnRecolhido : ""}` : moduloOff
                 }`}
               >
                 {ico}
                 {rotulo}
-                <Icon name="seta" size={15} className={`menu-rotulo ml-auto shrink-0 text-slate-400! transition-transform ${aberto ? "rotate-180" : ""}`} />
+                {/* visual clássico (estilos/classico.css): caixa +/− da árvore no lugar da seta */}
+                <span className="menu-rotulo menu-caixa hidden" aria-hidden="true">{aberto ? "−" : "+"}</span>
+                <Icon name="seta" size={15} className={`menu-rotulo menu-seta ml-auto shrink-0 text-slate-400! transition-transform ${aberto ? "rotate-180" : ""}`} />
               </button>
               {aberto && (
                 <div className={recolhida ? "lg:hidden" : ""}>
@@ -186,7 +190,7 @@ export function UsuarioLateral({ nome, perfil, sair, recolhida, posicao, mudarPo
   useFecharFora(aberto, () => setAberto(false), ref);
 
   return (
-    <div ref={ref} className="relative border-t border-slate-200 px-3 pb-1 pt-2">
+    <div ref={ref} className="menu-usuario relative border-t border-slate-200 px-3 pb-1 pt-2">
       <button
         type="button"
         onClick={() => setAberto((a) => !a)}
@@ -237,7 +241,7 @@ export function BarraLateral({ marca, recolhida, gaveta, fecharGaveta, alternarR
         style={recolhida ? undefined : { width: 248 }}
         className={`barra-lateral fixed inset-y-0 left-0 z-50 flex flex-col border-r border-slate-200 bg-white text-slate-700 shadow-xl transition-transform duration-200 lg:sticky lg:top-0 lg:h-screen lg:shrink-0 lg:translate-x-0 lg:shadow-none print:hidden ${soCelular ? "lg:hidden" : ""} ${gaveta ? "translate-x-0" : "-translate-x-full"}`}
       >
-        <div className="flex h-16 shrink-0 items-center gap-2 px-5">
+        <div className="menu-cabeca flex h-16 shrink-0 items-center gap-2 px-5">
           <Link href="/" aria-label="Início" onClick={fecharGaveta} className="min-w-0 flex-1 overflow-hidden rounded-md py-1">
             <span className="marca-completa block [&_img]:h-9">{marca}</span>
             {/* menu recolhido: só o símbolo (colorido no claro, branco no escuro), a logo horizontal não cabe em 72 px */}
@@ -258,7 +262,7 @@ export function BarraLateral({ marca, recolhida, gaveta, fecharGaveta, alternarR
         </div>
         {children}
         {!soCelular && (
-          <div className="hidden px-3 pb-2 lg:block">
+          <div className="menu-recolher hidden px-3 pb-2 lg:block">
             <button
               type="button"
               onClick={alternarRecolhida}

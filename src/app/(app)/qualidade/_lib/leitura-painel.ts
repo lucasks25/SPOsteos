@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { addDias } from "@/lib/datas";
+import { LOCAIS } from "@/lib/estoque";
 
 /** Leituras da qualidade para o painel e o sino (só leitura; ARQ-05). */
 
@@ -10,9 +11,9 @@ export async function contarRecolhimentos(hoje: Date) {
   return { abertos, vencidos };
 }
 
-/** Lotes em quarentena com saldo. */
+/** Lotes aguardando inspeção: mesmo critério da tela de quarentena (status QUARENTENA ou saldo no local de quarentena). */
 export async function contarLotesQuarentena(): Promise<number> {
-  return db.lote.count({ where: { status: "QUARENTENA", saldos: { some: { quantidade: { gt: 0 } } } } });
+  return db.lote.count({ where: { OR: [{ status: "QUARENTENA" }, { saldos: { some: { localId: LOCAIS.QUARENTENA, quantidade: { gt: 0 } } } }] } });
 }
 
 /** Lotes com saldo vencidos ou que vencem em até 30 dias a partir de `hoje`. */

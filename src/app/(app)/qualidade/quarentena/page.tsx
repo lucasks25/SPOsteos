@@ -2,14 +2,16 @@ import Link from "next/link";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { LOCAIS } from "@/lib/estoque";
-import { Badge, btn, KpiGrid, PageHeader, SearchBar, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, btn, PageHeader, SearchBar, StatusBadge, Table, Td } from "@/components/ui";
+import { Totais } from "../../_componentes/totais";
 import { date, diasAte, num } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
 import { PERFIS_QUALIDADE } from "../_lib/perfis";
+import { soStrings } from "@/lib/search-params";
 
 export default async function QuarentenaPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   await requireUser(PERFIS_QUALIDADE);
-  const { q } = await searchParams;
+  const { q } = soStrings(await searchParams);
   const hoje = hojeUTC();
   const lotes = await db.lote.findMany({
     where: {
@@ -38,22 +40,24 @@ export default async function QuarentenaPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader title="Quarentena e inspeção" subtitle="Para a Qualidade: lotes recebidos que aguardam inspeção antes de serem liberados para uso." />
-      <KpiGrid cols={3}>
-        <Stat icon="frasco" label="Lotes aguardando" value={num(lotes.length)} tone={lotes.length ? "warn" : "default"} />
-        <Stat icon="pacote" label="Unidades em quarentena" value={num(lotes.reduce((s, l) => s + l.saldos.reduce((a, x) => a + x.quantidade, 0), 0))} />
-        <Stat icon="calendario" label="Com validade vencida" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} />
-      </KpiGrid>
+      <PageHeader title="Quarentena e inspeção" subtitle="Lotes recebidos aguardando inspeção." />
+      <Totais
+        itens={[
+          { label: "Lotes aguardando", valor: num(lotes.length), tom: lotes.length ? "warn" : "default" },
+          { label: "Unidades em quarentena", valor: num(lotes.reduce((s, l) => s + l.saldos.reduce((a, x) => a + x.quantidade, 0), 0)) },
+          { label: "Com validade vencida", valor: num(lotes.filter((l) => l.validade < hoje).length), tom: lotes.some((l) => l.validade < hoje) ? "danger" : "default" },
+        ]}
+      />
       <SearchBar placeholder="Lote, código ou descrição do produto" defaultValue={q} />
-      <Table titulo="Aguardando inspeção" icone="frasco" contagem={lotes.length} head={["Produto", "Lote", "Validade", "Registro ANVISA", "Status", "Qtd. em quarentena", "Recebido em", ""]} empty={lotes.length === 0} emptyText={q ? "Nenhum lote em quarentena corresponde à busca." : "Nenhum lote aguardando inspeção."}>
+      <Table titulo="Aguardando inspeção" contagem={lotes.length} head={["Produto", "Lote", { label: "Validade", hideOnMobile: true }, { label: "Registro ANVISA", hideOnMobile: true }, "Status", "Qtd. em quarentena", { label: "Recebido em", hideOnMobile: true }, ""]} empty={lotes.length === 0} emptyText={q ? "Nenhum lote em quarentena corresponde à busca." : "Nenhum lote aguardando inspeção."}>
         {lotes.map((l) => {
           const qtd = l.saldos.reduce((s, x) => s + x.quantidade, 0);
           const vencido = l.validade < hoje;
           const regVencido = l.produto.validadeRegistro ? l.produto.validadeRegistro < hoje : false;
           return (
             <tr key={l.id}>
-              <Td>
-                <Link href={`/qualidade/quarentena/${l.id}`} className="font-medium text-teal-700 hover:underline">{l.produto.descricao}</Link>
+              <Td className="max-w-[16rem] max-sm:max-w-[9rem]">
+                <Link href={`/qualidade/quarentena/${l.id}`} className="link-linha block truncate font-medium text-teal-700 hover:underline">{l.produto.descricao}</Link>
                 <div className="text-xs text-slate-500"><span className="font-mono">{l.produto.codigo}</span></div>
               </Td>
               <Td className="font-mono text-xs">

@@ -23,6 +23,10 @@ export type DadosInspecao = {
 
 /** Registra a inspeção, muda o status do lote e move o saldo da quarentena (liberado vai ao depósito; os demais ao não conforme). */
 export async function inspecionarLoteServico(tx: Tx, loteId: string, data: DadosInspecao): Promise<{ movido: number }> {
+  // Trava o lote ANTES de ler o status e o recolhimento: abrirRecolhimento trava os mesmos lotes FOR UPDATE, então as duas
+  // serializam (sem isto a inspeção lia "sem recolhimento", o recolhimento bloqueava e a inspeção gravava LIBERADO por cima).
+  // Ordem Lote → Saldo, a mesma do recolhimento.
+  await tx.$queryRaw`SELECT id FROM "Lote" WHERE id = ${loteId} FOR UPDATE`;
   const lote = await tx.lote.findUnique({ where: { id: loteId }, include: { produto: true } });
   if (!lote) throw new ErroNegocio("Lote não encontrado.");
   const rec = await recolhimentoAtivoDoLote(tx, loteId);

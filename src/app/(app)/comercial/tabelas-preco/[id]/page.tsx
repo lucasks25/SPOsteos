@@ -27,7 +27,7 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
       <PageHeader
         title={t.nome}
         voltar={{ href: "/comercial/tabelas-preco", label: "Tabelas de preço" }}
-        subtitle={`${t.itens.length} produto(s) · hospitais: ${t.hospitais.map((h) => h.nomeFantasia ?? h.razaoSocial).join(", ") || "nenhum"}`}
+        meta={[`${t.itens.length} produto(s) · hospitais: ${t.hospitais.map((h) => h.nomeFantasia ?? h.razaoSocial).join(", ") || "nenhum"}`]}
         actions={
           edita && (
             <>
@@ -42,23 +42,23 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
         }
       />
       <KpiGrid cols={3}>
-        <Stat icon="etiqueta" label="Produtos com preço" value={t.itens.length} />
-        <Stat icon="predio" label="Hospitais vinculados" value={t.hospitais.length} />
-        <Stat icon="calendario" label="Vigência" value={<span className="text-base">{t.vigenciaInicio || t.vigenciaFim ? `${date(t.vigenciaInicio)} a ${date(t.vigenciaFim)}` : "sem prazo"}</span>} hint={tabelaVigente(t) ? <span className="text-emerald-700">vigente</span> : <span className="text-amber-700">fora de vigência</span>} />
+        <Stat label="Produtos com preço" value={t.itens.length} />
+        <Stat label="Hospitais vinculados" value={t.hospitais.length} />
+        <Stat label="Vigência" value={<span className="text-base">{t.vigenciaInicio || t.vigenciaFim ? `${date(t.vigenciaInicio)} a ${date(t.vigenciaFim)}` : "sem prazo"}</span>} hint={tabelaVigente(t) ? <span className="text-emerald-700">vigente</span> : <span className="text-amber-700">fora de vigência</span>} />
       </KpiGrid>
       <div className="space-y-4">
         {edita && (
-          <Card title="Dados da tabela" icon="etiqueta">
+          <Card title="Dados da tabela">
             <TabelaForm tabela={t} />
           </Card>
         )}
         {edita && (
-          <Card title="Incluir ou atualizar preço" icon="mais">
+          <Card title="Incluir ou atualizar preço">
             <ItemAdder action={salvarPreco.bind(null, id)} produtos={produtoOptions(produtos)} comPreco comQuantidade={false} label="Salvar preço" />
             <p className="mt-1 text-xs text-slate-600">Se o produto já estiver na tabela, o preço é atualizado.</p>
           </Card>
         )}
-        <Table titulo="Preços" icone="etiqueta" contagem={t.itens.length} head={["Produto", "Custo médio", "Preço base", "Preço na tabela", "Margem", ...(edita ? ["Ações"] : [])]} empty={t.itens.length === 0} emptyText="Nenhum preço nesta tabela. Os produtos usam o preço base até serem incluídos." emptyAction={edita ? <ActionButton action={incluirTodos.bind(null, id)}>Incluir todos pelo preço base</ActionButton> : undefined}>
+        <Table titulo="Preços" contagem={t.itens.length} head={["Produto", "Custo médio", "Preço base", "Preço na tabela", "Margem", ...(edita ? ["Ações"] : [])]} empty={t.itens.length === 0} emptyText="Nenhum preço nesta tabela. Os produtos usam o preço base até serem incluídos." emptyAction={edita ? <ActionButton action={incluirTodos.bind(null, id)}>Incluir todos pelo preço base</ActionButton> : undefined}>
           {t.itens.map((i) => {
             const preco = toNumber(i.preco);
             const custo = toNumber(i.produto.custoMedio);

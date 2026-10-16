@@ -24,13 +24,13 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
   const qate = (n: number) => q.slice(1, n + 1).reduce((s, x) => s + x, 0);
   return (
     <>
-      <PageHeader title="Vencimentos de lotes" subtitle="Relatório de leitura: lotes que vencem em até 180 dias, no depósito, consignados nos hospitais e em quarentena. Valor em risco = saldo × custo médio do produto. Não conforme fica de fora." />
+      <PageHeader title="Vencimentos de lotes" subtitle="Lotes que vencem em até 180 dias, no depósito, consignados nos hospitais e em quarentena. Valor em risco = saldo × custo médio do produto. Não conforme fica de fora." />
       <KpiGrid cols={5}>
-        <Stat label="Já vencido" value={money(v[0])} tone={v[0] > 0 ? "danger" : "default"} hint={`${num(q[0])} un.`} icon="calendario" />
-        <Stat label="Vence em 30 dias" value={money(ate(1))} tone={ate(1) > 0 ? "warn" : "default"} hint={`${num(qate(1))} un.`} icon="calendario" />
-        <Stat label="Vence em 60 dias" value={money(ate(2))} hint={`${num(qate(2))} un. (acumulado)`} icon="calendario" />
-        <Stat label="Vence em 90 dias" value={money(ate(3))} hint={`${num(qate(3))} un. (acumulado)`} icon="calendario" />
-        <Stat label="Vence em 180 dias" value={money(ate(4))} hint={`${num(qate(4))} un. (acumulado)`} icon="calendario" />
+        <Stat label="Já vencido" value={money(v[0])} tone={v[0] > 0 ? "danger" : "default"} hint={`${num(q[0])} un.`} />
+        <Stat label="Vence em 30 dias" value={money(ate(1))} tone={ate(1) > 0 ? "warn" : "default"} hint={`${num(qate(1))} un.`} />
+        <Stat label="Vence em 60 dias" value={money(ate(2))} hint={`${num(qate(2))} un. (acumulado)`} />
+        <Stat label="Vence em 90 dias" value={money(ate(3))} hint={`${num(qate(3))} un. (acumulado)`} />
+        <Stat label="Vence em 180 dias" value={money(ate(4))} hint={`${num(qate(4))} un. (acumulado)`} />
       </KpiGrid>
       <Filtros limparHref="/gestao/vencimentos">
         <FiltroSelect label="Faixa" name="faixa" options={FAIXAS_VENCIMENTO.map((n, i) => ({ value: String(i), label: n }))} defaultValue={f === null ? undefined : String(f)} />
@@ -38,7 +38,7 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
       <div className="space-y-3">
         <Table
           titulo="Lotes por validade"
-          icone="frasco"
+
           contagem={linhas.length}
           acoes={<span className="flex items-center gap-2">{verLotes && <Link href="/qualidade/lotes" className={btn.small}>Ver na Qualidade</Link>}<BotaoCsv href="/gestao/vencimentos/exportar" params={{}} /></span>}
           head={["Produto", "Lote", "Validade", <span key="d" className="block text-right">Dias</span>, "Local", <span key="q" className="block text-right">Quantidade</span>, <span key="v" className="block text-right">Valor em risco</span>, "Faixa"]}
@@ -68,7 +68,7 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
         </Table>
         <Table
           titulo="Consignado por hospital (valor em risco)"
-          icone="predio"
+
           contagem={d.hospitais.length}
           head={["Hospital", <span key="l" className="block text-right">Lotes</span>, ...FAIXAS_VENCIMENTO.map((n) => <span key={n} className="block text-right">{n}</span>), <span key="t" className="block text-right">Total</span>]}
           empty={d.hospitais.length === 0}

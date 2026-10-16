@@ -40,6 +40,9 @@ export async function registrarConsumoCirurgiaTx(tx: Tx, cirurgiaId: string, ite
 export async function registrarConsumoDiretoTx(tx: Tx, input: { cirurgiaId: string; loteId: string; quantidade: number; usuario: string }) {
   const { cirurgiaId, loteId, quantidade, usuario } = input;
   const c = await cirurgiaParaConsumo(tx, cirurgiaId);
+  // Trava o lote FOR SHARE antes de ler o status: um recolhimento aberto ao mesmo tempo (FOR UPDATE nos lotes) espera este
+  // consumo e o vê na foto, ou bloqueia antes e o consumo é recusado. Ordem Cirurgia → Lote → Saldo.
+  await tx.$queryRaw`SELECT id FROM "Lote" WHERE id = ${loteId} FOR SHARE`;
   const lote = await tx.lote.findUnique({ where: { id: loteId }, include: { produto: true } });
   if (!lote) throw new ErroNegocio("Lote não encontrado.");
   if (lote.status !== "LIBERADO") throw new ErroNegocio(`Lote ${lote.numero} não está liberado (${lote.status.toLowerCase()}).`);
@@ -54,7 +57,7 @@ export async function registrarConsumoDiretoTx(tx: Tx, input: { cirurgiaId: stri
     destinoId: null,
     custoUnit: toNumber(lote.produto.custoMedio),
     documento: `CIR-${c.numero}`,
-    observacao: `Consumo direto — paciente ${c.paciente}`,
+    observacao: `Consumo direto na cirurgia CIR-${c.numero}`, // sem o nome do paciente: o kardex é visto por outros setores (LGPD)
     usuario,
   });
   await registrarConsumoCirurgiaTx(tx, cirurgiaId, [{ produtoId: lote.produtoId, loteId: lote.id, quantidade }]);

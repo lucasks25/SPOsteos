@@ -3,8 +3,8 @@ import { Prisma, type FormaPagamento } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
-import { divergenciaBoleto } from "./boleto";
-import { gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPagamento } from "./sispag";
+import { divergenciaBoleto, lerBoleto } from "./boleto";
+import { foiDevolvido, gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPagamento } from "./sispag";
 import { contaEDac, formaPrevista, type ModoRemessa } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
 import { situacaoAprovacao, travarFornecedores } from "./favorecidos-aprovacao";
@@ -16,8 +16,8 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 const FORMA_BAIXA: Record<string, FormaPagamento> = { "45": "PIX", "30": "BOLETO", "31": "BOLETO", "01": "TED", "41": "TED" };
 
 /** `jaConciliados`: pago no retorno, mas o título já tinha sido baixado pela conciliação com o mesmo pagamento (não é duplicidade). */
-export type Contagem = { pagos: number; agendados: number; rejeitados: number; ignorados: number; jaBaixados: number; jaConciliados: number; divergentes: number; canceladasPagas: number };
-export const contagemVazia = (): Contagem => ({ pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0, jaConciliados: 0, divergentes: 0, canceladasPagas: 0 });
+export type Contagem = { pagos: number; agendados: number; rejeitados: number; ignorados: number; jaBaixados: number; jaConciliados: number; divergentes: number; canceladasPagas: number; devolvidos: number };
+export const contagemVazia = (): Contagem => ({ pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0, jaConciliados: 0, divergentes: 0, canceladasPagas: 0, devolvidos: 0 });
 
 type ContaRemessa = { titularCnpj: string | null; titularNome: string | null; agencia: string | null };
 
@@ -70,7 +70,7 @@ export async function gerarRemessaTx(
     const seuNumero = `SP${item.id}`;
     if (forma === "30" || forma === "31") {
       // valor nominal do boleto (= valor do título, conferido acima); boleto sem valor impresso: o valor do título
-      const valorBarras = Number(t.codigoBarras!.slice(9, 19)) / 100;
+      const valorBarras = lerBoleto(t.codigoBarras!).valor; // Anexo A: com fator < 1000 o valor ocupa as posições 6-19
       pagamentos.push({ forma, seuNumero, data: dataPagto, valor: saldo, codigoBarras: t.codigoBarras!, vencimento: t.vencimento, valorTitulo: valorBarras || toNumber(t.valor), favorecido });
     } else {
       pagamentos.push({ forma: forma as "01" | "41" | "45", seuNumero, data: dataPagto, valor: saldo, favorecido });
@@ -116,8 +116,18 @@ export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[],
         throw new ErroNegocio(`O retorno é da agência ${cabecalho.agencia} conta ${cabecalho.conta}-${cabecalho.dac}, mas a remessa #${item.remessaId} foi gerada pela conta "${c.nome}". Confira o arquivo.`);
       }
     }
-    if (item.status === "PAGO") continue; // retorno reprocessado: não baixa de novo
+    if (item.status === "PAGO") {
+      // DV/EX depois do "00" (nota 8, obs. A): o dinheiro voltou. Não estorna sozinho (a baixa pode já estar conciliada): marca DEV para o financeiro estornar.
+      const atuais = (item.ocorrencias ?? "").split(",");
+      if (foiDevolvido(r.ocorrencias) && !atuais.includes("DEV")) {
+        await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...atuais.filter(Boolean), ...r.ocorrencias.filter((c) => !atuais.includes(c)), "DEV"].join(",") } });
+        cont.devolvidos++;
+      }
+      continue; // retorno reprocessado: não baixa de novo
+    }
     const status = situacaoRetorno(r.ocorrencias);
+    // registro sem ocorrência nenhuma não é informação nova: não tira um item já rejeitado/agendado/cancelado do lugar
+    if (r.ocorrencias.length === 0 && item.status !== "ENVIADO") continue;
     // CAN: o banco pagou um item de remessa que foi cancelada aqui (o arquivo chegou a ser enviado): o dinheiro saiu de verdade
     const flags = item.status === "CANCELADO" && status === "PAGO" ? ["CAN"] : [];
     if (flags.length) cont.canceladasPagas++;

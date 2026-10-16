@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
+import { mascararNome } from "@/lib/privacidade";
 import { exigirUsuarioRota } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { NAV } from "@/components/nav";
 import { criarLimitador, numeroDoDocumento, validarConsulta } from "@/lib/busca-util";
+import { emParalelo } from "@/lib/paralelo";
 import type { Perfil } from "@/generated/prisma/client";
 
 export const dynamic = "force-dynamic";
@@ -31,9 +33,9 @@ export async function GET(req: Request) {
   if (!q) return NextResponse.json({ resultados: [] });
 
   const pode = telasDoPerfil(user.perfil);
-  const tarefas: Promise<Resultado[]>[] = [];
+  const tarefas: (() => Promise<Resultado[]>)[] = [];
   const quando = (href: string, fn: () => Promise<Resultado[]>) => {
-    if (pode.has(href)) tarefas.push(fn().catch(() => []));
+    if (pode.has(href)) tarefas.push(() => fn().catch(() => []));
   };
   const nPV = numeroDoDocumento(q, "PV");
   const nPC = numeroDoDocumento(q, "PC");
@@ -61,7 +63,7 @@ export async function GET(req: Request) {
   );
   quando("/comercial/cirurgias", async () =>
     (await db.cirurgia.findMany({ where: { OR: [{ paciente: ci(q) }, ...(nCIR !== null ? [{ numero: nCIR }] : [])] }, orderBy: { dataHora: "desc" }, take: LIMITE, select: { id: true, numero: true, paciente: true, hospital: { select: { razaoSocial: true, nomeFantasia: true } } } })).map((c) => ({
-      tipo: "cirurgia", titulo: `CIR-${c.numero} · ${c.paciente}`, subtitulo: nome(c.hospital), href: `/comercial/cirurgias/${c.id}`,
+      tipo: "cirurgia", titulo: `CIR-${c.numero} · ${mascararNome(c.paciente)}`, subtitulo: nome(c.hospital), href: `/comercial/cirurgias/${c.id}`,
     })),
   );
   quando("/comercial/pedidos", async () =>
@@ -90,7 +92,8 @@ export async function GET(req: Request) {
     })),
   );
 
-  const grupos = await Promise.all(tarefas);
+  // até 10 ILIKE por tecla: 4 por vez, para a busca não ocupar o pool que as transações usam
+  const grupos = await emParalelo(tarefas, 4);
   // intercala os grupos para o topo mostrar variedade, e corta em 10
   const resultados: Resultado[] = [];
   for (let i = 0; i < LIMITE && resultados.length < 10; i++) for (const g of grupos) if (g[i] && resultados.length < 10) resultados.push(g[i]);

@@ -26,7 +26,7 @@ export default async function EditarFornecedorPage({ params }: { params: Promise
       <PageHeader
         voltar={{ href: "/cadastros/fornecedores", label: "Fornecedores" }}
         title={fornecedor.nomeFantasia ?? fornecedor.razaoSocial}
-        subtitle={`CNPJ ${fornecedor.cnpj} · ${fornecedor._count.pedidos} pedido(s) de compra`}
+        meta={[`CNPJ ${fornecedor.cnpj} · ${fornecedor._count.pedidos} pedido(s) de compra`]}
         actions={
           edita ? (
             <>

@@ -1,12 +1,16 @@
 import { db } from "@/lib/db";
+import { mascararNome } from "@/lib/privacidade";
 import { requireUser } from "@/lib/auth";
 import Link from "next/link";
-import { Badge, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Celula } from "@/components/lista";
+import { Totais } from "../../_componentes/totais";
 import { dateTime, num } from "@/lib/format";
 import type { Prisma, StatusCirurgia } from "@/generated/prisma/client";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
 import { nomeHospital, opcoesHospitais, opcoesMedicos } from "@/app/(app)/cadastros/_lib/publico";
 import { periodo } from "@/lib/datas";
+import { soStrings } from "@/lib/search-params";
 
 const STATUS: StatusCirurgia[] = ["AGENDADA", "CONFIRMADA", "REALIZADA", "FATURADA", "CANCELADA"];
 
@@ -14,7 +18,7 @@ type SP = { q?: string; status?: string; hospital?: string; medico?: string; de?
 
 export default async function CirurgiasPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireUser(["COMERCIAL", "FINANCEIRO"]);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const status = STATUS.includes(sp.status as StatusCirurgia) ? (sp.status as StatusCirurgia) : undefined;
   const p = periodo(sp.de, sp.ate);
   const where: Prisma.CirurgiaWhereInput = {
@@ -46,7 +50,7 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Cirurgias"
-        subtitle="Para o Comercial: acompanhe o agendamento, o consumo de material e o faturamento de cada procedimento."
+        subtitle="Agendamento, consumo de material e faturamento."
         actions={
           <>
             <LinkButton href="/comercial/agenda" variant="secondary" icon="calendario">Agenda semanal</LinkButton>
@@ -54,12 +58,14 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
           </>
         }
       />
-      <KpiGrid>
-        <Stat icon="lista" label="Na lista" value={num(cirurgias.length)} hint={cirurgias.length === 300 ? "limite de 300 atingido" : "cirurgia(s)"} />
-        <Stat icon="calendario" label="Agendadas / confirmadas" value={num(n("AGENDADA") + n("CONFIRMADA"))} hint={<span className="text-sky-700">{n("CONFIRMADA")} confirmada(s)</span>} />
-        <Stat icon="atividade" label="Realizadas, a faturar" value={num(n("REALIZADA"))} hint={<span className={n("REALIZADA") ? "text-amber-700" : undefined}>aguardam faturamento</span>} tone={n("REALIZADA") ? "warn" : "default"} />
-        <Stat icon="documento" label="Faturadas" value={num(n("FATURADA"))} hint={<span className="text-emerald-700">com pedido de venda</span>} />
-      </KpiGrid>
+      <Totais
+        itens={[
+          { label: "Na lista", valor: `${num(cirurgias.length)}${cirurgias.length === 300 ? " (limite de 300)" : ""}` },
+          { label: "Agendadas / confirmadas", valor: `${num(n("AGENDADA") + n("CONFIRMADA"))} (${n("CONFIRMADA")} confirmadas)` },
+          { label: "A faturar", valor: num(n("REALIZADA")), tom: n("REALIZADA") ? "warn" : "default" },
+          { label: "Faturadas", valor: num(n("FATURADA")) },
+        ]}
+      />
       <Filtros limparHref="/comercial/cirurgias">
         <FiltroInput label="Paciente" name="q" defaultValue={sp.q} placeholder="Nome do paciente" />
         <FiltroSelect label="Status" name="status" defaultValue={status} options={STATUS.map((s) => ({ value: s, label: s.toLowerCase() }))} />
@@ -70,21 +76,17 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
       </Filtros>
       <Table
         titulo="Cirurgias"
-        icone="atividade"
         contagem={cirurgias.length}
-        head={["Cirurgia", "Paciente", "Hospital", "Convênio", "Situação", "Ações"]}
+        head={["Cirurgia", "Paciente", { label: "Hospital / médico", hideOnMobile: true }, { label: "Convênio", hideOnMobile: true }, "Situação"]}
         empty={cirurgias.length === 0}
         emptyText="Nenhuma cirurgia encontrada para os filtros informados."
         emptyAction={<LinkButton href="/comercial/cirurgias/nova" variant="secondary">Agendar cirurgia</LinkButton>}
       >
         {cirurgias.map((c) => (
           <tr key={c.id}>
-            <Td>
-              <Link href={`/comercial/cirurgias/${c.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">CIR-{c.numero}</Link>
-              <div className="text-xs text-slate-500">{dateTime(c.dataHora)}</div>
-            </Td>
-            <Td className="max-w-[16rem]">
-              <div className="truncate font-medium text-teal-700">{c.paciente} {c.sus && <Badge color="blue">SUS</Badge>}</div>
+            <Td><Celula href={`/comercial/cirurgias/${c.id}`} principal={<span className="font-mono text-xs font-semibold">CIR-{c.numero}</span>} sub={dateTime(c.dataHora)} /></Td>
+            <Td className="max-w-[16rem] max-sm:max-w-[8.5rem]">
+              <div className="truncate font-medium">{mascararNome(c.paciente)} {c.sus && <Badge color="blue">SUS</Badge>}</div>
               <div className="truncate text-xs text-slate-500">{c.procedimento?.descricao ?? "Procedimento não informado"}</div>
             </Td>
             <Td className="max-w-[16rem]">
@@ -94,10 +96,7 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
             <Td>{c.convenio?.nome ?? (c.sus ? "SUS" : "—")}</Td>
             <Td>
               <StatusBadge status={c.status} />
-              {c._count.remessas > 0 && <span className="ml-1 text-xs text-slate-500">{c._count.remessas} vale(s)</span>}
-            </Td>
-            <Td>
-              <LinkButton href={`/comercial/cirurgias/${c.id}`} variant="small">Abrir</LinkButton>
+              {c._count.remessas > 0 && <span className="ml-1.5 text-xs text-slate-500">{c._count.remessas} vale(s)</span>}
             </Td>
           </tr>
         ))}

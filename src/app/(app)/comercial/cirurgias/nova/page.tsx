@@ -9,7 +9,7 @@ export default async function NovaCirurgiaPage() {
   return (
     <>
       <PageHeader title="Nova cirurgia" subtitle="O Comercial cadastra a cirurgia. Depois de salvar, o Estoque separa o material e gera o vale de consignação." />
-      <Card title="Dados" icon="documento">
+      <Card title="Dados">
         <CirurgiaForm opcoes={opcoes} />
       </Card>
     </>

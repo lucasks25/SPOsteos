@@ -4,7 +4,9 @@ import { requireUser } from "@/lib/auth";
 import { btn, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { diasAtras, money, num, toNumber } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
+import { consumoLiquidoPorProduto } from "@/lib/estoque";
 import { PERFIS_COMPRAS } from "../_lib/perfis";
+import { soStrings } from "@/lib/search-params";
 
 const DIAS_CONSUMO = 90;
 
@@ -15,7 +17,7 @@ const DIAS_CONSUMO = 90;
  */
 export default async function SugestaoPage({ searchParams }: { searchParams: Promise<{ todos?: string }> }) {
   await requireUser(PERFIS_COMPRAS);
-  const { todos } = await searchParams;
+  const { todos } = soStrings(await searchParams);
   const hoje = hojeUTC();
   const desde = diasAtras(DIAS_CONSUMO);
   const [produtos, disponivel, quarentena, pendentes, consumo] = await Promise.all([
@@ -27,12 +29,12 @@ export default async function SugestaoPage({ searchParams }: { searchParams: Pro
     }),
     db.saldo.groupBy({ by: ["produtoId"], where: { quantidade: { gt: 0 }, local: { tipo: "QUARENTENA" } }, _sum: { quantidade: true } }),
     db.pedidoCompraItem.findMany({ where: { pedido: { status: { in: ["ABERTO", "PARCIAL"] } } }, select: { produtoId: true, quantidade: true, recebido: true } }),
-    db.movimento.groupBy({ by: ["produtoId"], where: { tipo: "CONSUMO", criadoEm: { gte: desde } }, _sum: { quantidade: true } }),
+    consumoLiquidoPorProduto({ desde }), // CONSUMO menos estornos (RETORNO de estorno de consumo)
   ]);
   const mapa = (rows: { produtoId: string; _sum: { quantidade: number | null } }[]) => new Map(rows.map((r) => [r.produtoId, r._sum.quantidade ?? 0]));
   const disp = mapa(disponivel);
   const quar = mapa(quarentena);
-  const cons = mapa(consumo);
+  const cons = consumo;
   const pend = new Map<string, number>();
   for (const p of pendentes) pend.set(p.produtoId, (pend.get(p.produtoId) ?? 0) + Math.max(0, p.quantidade - p.recebido));
 
@@ -59,13 +61,13 @@ export default async function SugestaoPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Sugestão de compra"
-        subtitle={`Para Compras: quanto comprar de cada produto = estoque mínimo + consumo médio mensal (últimos ${DIAS_CONSUMO} dias) − o que já está disponível − o que já foi pedido.`}
+        subtitle={`Quanto comprar de cada produto = estoque mínimo + consumo médio mensal (últimos ${DIAS_CONSUMO} dias) − o que já está disponível − o que já foi pedido.`}
         actions={comSugestao.length > 0 && <LinkButton href={urlPedido(comSugestao)}>Gerar pedido com todas as sugestões</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat label="Produtos a comprar" value={num(comSugestao.length)} tone={comSugestao.length ? "warn" : "default"} icon="carrinho" />
-        <Stat label="Unidades sugeridas" value={num(comSugestao.reduce((s, l) => s + l.sugestao, 0))} icon="pacote" />
-        <Stat label="Valor estimado (custo médio)" value={money(comSugestao.reduce((s, l) => s + l.valor, 0))} icon="pagar" />
+        <Stat label="Produtos a comprar" value={num(comSugestao.length)} tone={comSugestao.length ? "warn" : "default"} />
+        <Stat label="Unidades sugeridas" value={num(comSugestao.reduce((s, l) => s + l.sugestao, 0))} />
+        <Stat label="Valor estimado (custo médio)" value={money(comSugestao.reduce((s, l) => s + l.valor, 0))} />
       </KpiGrid>
       <div className="mb-3 flex justify-end">
         {todos ? (
@@ -74,7 +76,7 @@ export default async function SugestaoPage({ searchParams }: { searchParams: Pro
           <Link href="/compras/sugestao?todos=1" className={btn.secondary}>Mostrar todos os produtos</Link>
         )}
       </div>
-      <Table titulo="Produtos" icone="tendencia" contagem={exibidas.length} head={["Produto", "Disponível", "Quarentena", "Pendente", `Consumo ${DIAS_CONSUMO}d`, "Média/mês", "Mínimo", "Sugestão", "Valor", ""]} empty={exibidas.length === 0} emptyText={todos ? "Nenhum produto ativo cadastrado." : "Nenhum produto precisa de compra agora: o estoque disponível cobre o mínimo e o consumo."}>
+      <Table titulo="Produtos" contagem={exibidas.length} head={["Produto", "Disponível", "Quarentena", "Pendente", `Consumo ${DIAS_CONSUMO}d`, "Média/mês", "Mínimo", "Sugestão", "Valor", ""]} empty={exibidas.length === 0} emptyText={todos ? "Nenhum produto ativo cadastrado." : "Nenhum produto precisa de compra agora: o estoque disponível cobre o mínimo e o consumo."}>
         {exibidas.map((l) => (
           <tr key={l.id}>
             <Td className="max-w-sm truncate">

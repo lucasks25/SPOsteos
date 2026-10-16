@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { auditLeitura } from "@/lib/forms";
 import { CabecalhoImpresso } from "@/components/marca";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
@@ -33,6 +34,7 @@ export default async function RelatorioRecolhimentoPage({ params }: { params: Pr
     db.recolhimentoAcao.findMany({ where: { recolhimentoId: id }, orderBy: { criadoEm: "asc" } }),
   ]);
   const r = resumirRecolhimento(itens.map((i) => i.calc), contagemPac);
+  if (verPac && pacientes.length > 0) await auditLeitura(user.id, "Recolhimento", id, `${docRecolhimento(id)} relatório: ${pacientes.length} paciente(s)/cirurgia(s)`);
   const final = rec.status === "CONCLUIDO";
   const th = "border border-black px-2 py-1 text-left text-[11px] font-bold uppercase";
   const td = "border border-black px-2 py-1 align-top";

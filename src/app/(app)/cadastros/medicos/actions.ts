@@ -11,12 +11,12 @@ import { UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_COMERCIAL } from "../_lib/acoes";
 
 const schema = z.object({
-  nome: zf.text(),
+  nome: zf.nome(),
   crm: zf.text("CRM obrigatório").transform((v) => v.replace(/\D/g, "")).pipe(z.string().min(3, "CRM inválido").max(10, "CRM inválido")),
   ufCrm: z.enum(UFS, { error: "UF do CRM obrigatória" }),
-  especialidade: zf.optText(),
+  especialidade: zf.optText(200),
   email: z.email("E-mail inválido").optional().transform((v) => v ?? null),
-  telefone: zf.optText(),
+  telefone: zf.optText(40),
   ativo: zf.bool(),
 });
 

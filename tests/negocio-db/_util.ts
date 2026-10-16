@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { hashDadosPagamento } from "@/app/(app)/financeiro/_lib/favorecidos-aprovacao";
 
 import { hojeUTC } from "@/lib/datas";
+import { isCnpj } from "@/lib/documentos-br";
 
 export const P = "TESTEDB";
 export const num = (v: unknown) => Number(String(v ?? 0));
@@ -57,8 +58,14 @@ export const mkLote = (produtoId: string, o: { validadeDias?: number; status?: "
 export const mkHospital = (o: { tabelaPrecoId?: string } = {}) =>
   db.hospital.create({ data: { razaoSocial: `${P} hospital ${uid()}`, cnpj: `9${Date.now()}${seq++}`.slice(0, 14).padEnd(14, "0"), tabelaPrecoId: o.tabelaPrecoId } });
 
-export const mkFornecedor = () =>
-  db.fornecedor.create({ data: { razaoSocial: `${P} fornecedor ${uid()}`, cnpj: `7${String(Date.now()).slice(-8)}${String(seq++).padStart(5, "0")}` } });
+/** CNPJ único e com dígitos verificadores válidos (a remessa SISPAG recusa DV errado). */
+function cnpjTeste(): string {
+  const base = `7${String(Date.now()).slice(-8)}${String(seq++ % 1000).padStart(3, "0")}`;
+  for (let dv = 0; dv < 100; dv++) if (isCnpj(base + String(dv).padStart(2, "0"))) return base + String(dv).padStart(2, "0");
+  throw new Error("sem DV para " + base);
+}
+
+export const mkFornecedor = () => db.fornecedor.create({ data: { razaoSocial: `${P} fornecedor ${uid()}`, cnpj: cnpjTeste() } });
 
 export const saldoDe = async (loteId: string, localId: string) =>
   (await db.saldo.findUnique({ where: { loteId_localId: { loteId, localId } } }))?.quantidade ?? 0;

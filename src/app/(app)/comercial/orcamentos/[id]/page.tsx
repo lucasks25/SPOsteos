@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { auditLeitura } from "@/lib/forms";
 import { CabecalhoImpresso } from "@/components/marca";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -26,6 +27,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
     opcoesConvenios(),
   ]);
   if (!o) notFound();
+  if (o.paciente) await auditLeitura(user.id, "Orcamento", o.id, `ORC-${o.id} (paciente)`); // dado de saúde (docs/LGPD.md §5)
   const edita = user.perfil === "ADMIN" || user.perfil === "COMERCIAL";
   const rascunho = o.status === "RASCUNHO";
   const total = o.itens.reduce((s, i) => s + i.quantidade * toNumber(i.precoUnit), 0);
@@ -39,7 +41,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
         <PageHeader
           title={`Orçamento ORC-${o.id}`}
           voltar={{ href: "/comercial/orcamentos", label: "Orçamentos" }}
-          subtitle={`${o.hospital.nomeFantasia ?? o.hospital.razaoSocial} · criado em ${dateTime(o.criadoEm)}`}
+          meta={[`${o.hospital.nomeFantasia ?? o.hospital.razaoSocial} · criado em ${dateTime(o.criadoEm)}`]}
           actions={
             <>
               <StatusBadge status={o.status} />
@@ -59,10 +61,10 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
           }
         />
         <KpiGrid>
-          <Stat icon="receber" label="Total" value={money(total)} hint={`${o.itens.length} item(ns)`} />
-          <Stat icon="documento" label="Situação" value={<StatusBadge status={o.status} />} />
-          <Stat icon="calendario" label="Validade" value={o.validade ? date(o.validade) : "—"} hint={o.validade && diasAte(o.validade) < 0 && o.status !== "APROVADO" ? <span className="text-rose-600">vencida</span> : undefined} />
-          <Stat icon="escudo" label="Convênio" value={<span className="text-base">{o.convenio?.nome ?? "Particular"}</span>} hint={o.paciente ? `Paciente: ${o.paciente}` : undefined} />
+          <Stat label="Total" value={money(total)} hint={`${o.itens.length} item(ns)`} />
+          <Stat label="Situação" value={<StatusBadge status={o.status} />} />
+          <Stat label="Validade" value={o.validade ? date(o.validade) : "—"} hint={o.validade && diasAte(o.validade) < 0 && o.status !== "APROVADO" ? <span className="text-rose-600">vencida</span> : undefined} />
+          <Stat label="Convênio" value={<span className="text-base">{o.convenio?.nome ?? "Particular"}</span>} hint={o.paciente ? `Paciente: ${o.paciente}` : undefined} />
         </KpiGrid>
       </div>
       <div className="mb-4 hidden print:block">
@@ -73,11 +75,11 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
 
       <div className="space-y-4">
         {edita && rascunho ? (
-          <Card title="Dados do orçamento" icon="documento" className="print:hidden">
+          <Card title="Dados do orçamento" className="print:hidden">
             <OrcamentoForm orc={o} hospitais={hospitais} convenios={convenios} />
           </Card>
         ) : null}
-        <Card title="Destinatário" icon="predio" className={cx("print:shadow-none", edita && rascunho && "hidden print:block")}>
+        <Card title="Destinatário" className={cx("print:shadow-none", edita && rascunho && "hidden print:block")}>
           <Dl
             items={[
               ["Hospital", `${o.hospital.razaoSocial} (CNPJ ${o.hospital.cnpj})`],
@@ -89,14 +91,14 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
           />
         </Card>
         {edita && rascunho && (
-          <Card title="Incluir item" icon="mais" className="print:hidden">
+          <Card title="Incluir item" className="print:hidden">
             <ItemAdder action={adicionarItemOrcamento.bind(null, id)} produtos={produtoOptions(produtos)} comPreco />
             <p className="mt-1 text-xs text-slate-600">Preço vazio = tabela do hospital (ou preço base).</p>
           </Card>
         )}
         <Table
           titulo="Itens"
-          icone="lista"
+
           contagem={o.itens.length}
           head={["Produto", "Fabricante", "Reg. ANVISA", "Qtd.", "Preço unit.", "Subtotal", ...(edita && rascunho ? ["Ações"] : [])]}
           empty={o.itens.length === 0}

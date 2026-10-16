@@ -26,6 +26,13 @@ describe("risco de glosa por autorização", () => {
     assert.equal(antes.grave, false);
   });
 
+  it("cirurgia faturada ou cancelada não emite o achado de falta de autorização", () => {
+    const r = (statusCirurgia: string) => verificarRiscoGlosa({ aplicavel: true, dataCirurgia: CIRURGIA, autorizacoes: [], consumos: [consumo("A", 1)], statusCirurgia });
+    assert.deepEqual(r("FATURADA").achados, []);
+    assert.deepEqual(r("CANCELADA").achados, []);
+    assert.deepEqual(codigos(r("REALIZADA")), ["SEM_AUTORIZACAO::grave"]);
+  });
+
   it("negada, expirada e pendente sem nenhuma guia válida", () => {
     assert.deepEqual(codigos(verificar([guia("NEGADA", [])], [consumo("A", 1)])), ["AUTORIZACAO_NEGADA::grave"]);
     assert.deepEqual(codigos(verificar([guia("EXPIRADA", [["A", 1]])], [consumo("A", 1)])), ["AUTORIZACAO_EXPIRADA::grave"]);

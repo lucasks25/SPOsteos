@@ -30,9 +30,9 @@ export default async function PedidosVendaPage({ searchParams }: { searchParams:
     <>
       <PageHeader title="Pedidos de venda" subtitle="Gerados ao faturar uma cirurgia realizada. O Comercial registra a nota fiscal; a cobrança fica no Financeiro." />
       <KpiGrid>
-        <Stat icon="carrinho" label="Na lista" value={money(soma(pedidos))} hint={`${pedidos.length} pedido(s)`} />
-        <Stat icon="receber" label="Abertos (sem NF)" value={money(aFaturar)} hint={<span className={aFaturar > 0 ? "text-amber-700" : undefined}>{abertos.length} pedido(s) a faturar</span>} tone={aFaturar > 0 ? "warn" : "default"} />
-        <Stat icon="documento" label="Faturados" value={money(soma(faturados))} hint={<span className="text-emerald-700">{faturados.length} pedido(s)</span>} />
+        <Stat label="Na lista" value={money(soma(pedidos))} hint={`${pedidos.length} pedido(s)`} />
+        <Stat label="Abertos (sem NF)" value={money(aFaturar)} hint={<span className={aFaturar > 0 ? "text-amber-700" : undefined}>{abertos.length} pedido(s) a faturar</span>} tone={aFaturar > 0 ? "warn" : "default"} />
+        <Stat label="Faturados" value={money(soma(faturados))} hint={<span className="text-emerald-700">{faturados.length} pedido(s)</span>} />
       </KpiGrid>
       <Filtros limparHref="/comercial/pedidos">
         <FiltroInput label="Busca" name="q" defaultValue={q} placeholder="PV-12, NF ou hospital" className="w-64" />
@@ -40,7 +40,7 @@ export default async function PedidosVendaPage({ searchParams }: { searchParams:
       </Filtros>
       <Table
         titulo="Pedidos de venda"
-        icone="carrinho"
+
         contagem={pedidos.length}
         head={["Pedido", "Hospital", "Nota fiscal", "Total", "Situação", "Ações"]}
         empty={pedidos.length === 0}

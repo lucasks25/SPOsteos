@@ -31,14 +31,14 @@ test("boleto: rejeita DV errado, convênio/tributo e tamanho inválido", () => {
 test("chave Pix: tipo pela nota 37", () => {
   assert.equal(tipoChavePix("financeiro@forn.com.br"), "02");
   assert.equal(tipoChavePix("+5511987654321"), "01");
-  assert.equal(tipoChavePix("12345678000199"), "03");
+  assert.equal(tipoChavePix("99999999000191"), "03");
   assert.equal(tipoChavePix("123e4567-e89b-12d3-a456-426614174000"), "04");
   assert.throws(() => tipoChavePix("11 98765-4321"), ErroNegocio);
 });
 
-const emp: Empresa = { cnpj: "12345678000199", nome: "Distribuidora OPME Ltda", agencia: "0123", conta: "12345", dac: "6" };
+const emp: Empresa = { cnpj: "99999999000191", nome: "Distribuidora OPME Ltda", agencia: "0123", conta: "12345", dac: "6" };
 const d = new Date("2026-10-20T00:00:00Z");
-const fav = (nome: string, extra = {}) => ({ nome, documento: "98765432000110", banco: "033", agencia: "1234", conta: "556677", digito: "8", ...extra });
+const fav = (nome: string, extra = {}) => ({ nome, documento: "99999999000272", banco: "033", agencia: "1234", conta: "556677", digito: "8", ...extra });
 const c = (l: string, i: number, f: number) => l.slice(i - 1, f);
 
 function remessaMista() {
@@ -47,7 +47,7 @@ function remessaMista() {
     [
       { forma: "41", seuNumero: "SP1", data: d, valor: 19200, favorecido: fav("Fornecedor Ação Ltda") },
       { forma: "01", seuNumero: "SP2", data: d, valor: 50.5, favorecido: fav("Forn Itau", { banco: "341" }) },
-      { forma: "31", seuNumero: "SP3", data: d, valor: 123.45, codigoBarras: BARRAS, vencimento: d, valorTitulo: 123.45, favorecido: fav("Forn Boleto") },
+      { forma: "30", seuNumero: "SP3", data: d, valor: 123.45, codigoBarras: BARRAS, vencimento: d, valorTitulo: 123.45, favorecido: fav("Forn Boleto") },
     ],
     new Date("2026-10-16T13:05:09Z"),
   );
@@ -71,7 +71,7 @@ test("remessa: estrutura, lotes por forma e posições dos campos", () => {
   assert.equal(c(L[6], 220, 224), "00005");
   assert.equal(c(L[6], 44, 73).trim(), "FORNECEDOR ACAO LTDA");
   // lote 3: boleto outro banco (J + J-52)
-  assert.equal(c(L[9], 12, 16), "31030");
+  assert.equal(c(L[9], 12, 16), "30030"); // boleto Itaú (341 no código de barras) = forma 30
   assert.equal(c(L[10], 18, 61), BARRAS);
   assert.equal(c(L[11], 14, 19), "J00052");
   // trailer de arquivo

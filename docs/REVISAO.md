@@ -62,26 +62,23 @@
 
 ## 2. Integração bancária — o que validar antes de produção
 
-| Item | Base | Situação | Risco | Como validar |
-|---|---|---|---|---|
-| Extrato CNAB 240 Itaú (`cnab240-extrato.ts`) | Manual Itaú v5.0 (fev/2011) | Testado com arquivos montados pelo manual | Existe a v08.5 (2018), que não conseguimos baixar (403). Pode haver diferença | Pedir ao cliente um arquivo real. O parser confere os totais do trailer e recusa se não baterem, então diferença de layout vira erro, não dado errado |
-| OFX (`ofx.ts`) | Padrão OFX 1.x/2.x | Testado com amostras sintéticas | Bancos variam (encoding, vírgula decimal, FITID ausente). Tudo isso é tratado | Importar um OFX real do Itaú do cliente |
-| Remessa SISPAG (`sispag.ts`) | Manual SISPAG v085 (out/2020) | Testado campo a campo contra o manual. Nunca enviado ao Itaú | Pontos a confirmar: segmento B do Pix, posições 063–127 (picture 9) preenchidas com zeros; endereço da empresa em branco no header de lote; aviso ao favorecido = 0; finalidade TED 00005; DAC de 2 caracteres na TED | **Itaú Empresas > Transmissão de arquivos > Validação** (o manual recomenda) e depois envio em ambiente de teste |
-| Retorno SISPAG | idem | Testado com retorno simulado a partir da remessa | O retorno real pode trazer segmentos Z/B (são ignorados) e ocorrências não mapeadas (viram REJEITADO com "ver nota 8") | Processar um retorno real do ambiente de teste |
-| Boletos de fornecedor (`boleto.ts`) | Anexo A do SISPAG | Testado com o exemplo oficial do manual | Baixo | — |
-| Cobrança para hospitais (emitir boleto) | — | **Não feito** | — | Precisa do manual atual de cobrança CNAB do Itaú |
+**Atualizado em 16/10/2026: o estado completo está em `docs/HOMOLOGACAO-ITAU.md`** (situação por módulo, correções com arquivo:linha, processo oficial do Itaú, pendências do titular, dúvidas para o analista, roteiro de teste e critério de produção).
 
-**Checklist para o cliente (titular da conta Itaú):**
-1. Contratar o SISPAG e a conciliação bancária CNAB 240 (escolher a periodicidade).
-2. Validar um arquivo de remessa gerado pelo sistema no validador do Itaú Empresas.
-3. Enviar em ambiente de teste e trazer o arquivo de retorno.
-4. Fornecer um arquivo de extrato CNAB 240 real (e/ou OFX).
-5. Para cobrança: contratar o convênio de cobrança e obter o manual atual.
+| Item | Base | Situação |
+|---|---|---|
+| Remessa SISPAG (`sispag.ts`) | Manual v085 (out/2020) | Funcional com ressalvas. Posições conferidas de 1 a 240 e aprovadas por validador independente (`cnab-validador.ts`). Dúvidas antigas encerradas pelo manual: DAC de 2 caracteres na TED (nota 11b), finalidade 00005 (nota 26), aviso 0 (nota 16). Em aberto: B Pix 063-127 zeros × brancos, endereço em branco no header de lote, banco 000 no Pix por chave; DV de CPF/CNPJ do favorecido em correção |
+| Retorno SISPAG | idem | Funcional com ressalvas. Nota 8 completa (`sispag-ocorrencias.ts`), ocorrência do trailer de lote aplicada, TED devolvida (DV) marcada DEV. Só testado com retorno simulado |
+| Extrato CNAB 240 (`cnab240-extrato.ts`) | v5.0 (2011) e v08.5 (2018), ambas oficiais | Funcional com ressalvas. Lote de aplicação 0202 ignorado, contadores e saldo conferidos. Nunca lido com arquivo real |
+| OFX (`ofx.ts`) | Padrão OFX | Funcional com ressalvas. Formato do ACCTID do Itaú a confirmar |
+| Boletos de fornecedor (`boleto.ts`) | Anexo A do SISPAG | Corrigido: moeda 9 e valor com fator < 1000 |
+| Cobrança (`cobranca*.ts`) | CNAB 400 (jan/2017) | Código pronto; depende do convênio de cobrança. Sem Pix no boleto (não há manual público) |
+
+**Depende do titular da conta Itaú** (detalhe em `HOMOLOGACAO-ITAU.md` §4): contratar SISPAG, extrato CNAB 240 e convênio de cobrança; liberar usuário de transmissão; rodar `docs/homologacao/arquivos/` no Validador de Layout; transmitir em teste e trazer o retorno; baixar extrato CNAB e OFX reais; confirmar tarifas, prazos e versão do layout com o gerente.
 
 Regras implementadas que um revisor deve conferir:
 - O lote Pix sai sempre em arquivo separado (item 2.2 do manual). Ver `gerarRemessaSispag`.
 - O "seu número" `SP<id>` liga o retorno ao item. Reprocessar o mesmo retorno **não** duplica baixa: item já PAGO é ignorado.
-- Pagamento confirmado (ocorrência `00`) baixa a conta a pagar com a data e o valor efetivos do retorno, na conta da remessa.
+- Pagamento confirmado (ocorrência `00`) baixa a conta a pagar com a data e o valor efetivos do retorno, na conta da remessa. `00` com DV/EX é rejeitado; EM/CP/FC/FD/PD/RS ficam agendados sem baixa e não liberam o título.
 - O título já baixado manualmente é marcado PAGO na remessa, mas não recebe segunda baixa.
 - Na conta bancária, o último dígito de `numero` é tratado como DAC (`contaEDac`).
 

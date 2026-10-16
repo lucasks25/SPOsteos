@@ -6,6 +6,7 @@ import { Celula } from "@/components/lista";
 import { transferirEntreContas } from "../_lib/contas-actions";
 import { hojeUTC, ymd } from "@/lib/datas";
 import { listarContas } from "../_lib/contas";
+import { AbasNav } from "@/components/abas-nav";
 
 export default async function ContasPage() {
   await requireUser(["FINANCEIRO"]);
@@ -20,6 +21,7 @@ export default async function ContasPage() {
         subtitle="Onde o dinheiro entra e sai. O saldo vem dos lançamentos (baixas e avulsos)."
         actions={<LinkButton href="/financeiro/contas/nova">Nova conta</LinkButton>}
       />
+      <AbasNav atual="/financeiro/contas" />
       <KpiGrid cols={3}>
         <Stat label="Disponibilidade total" value={money(total)} hint={`${ativas.length} conta(s) ativa(s)`} tone={total < 0 ? "danger" : "default"} />
         <Stat label="Em bancos" value={money(emBanco)} tone={emBanco < 0 ? "danger" : "default"} />

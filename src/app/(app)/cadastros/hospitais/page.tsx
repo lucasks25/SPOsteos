@@ -6,11 +6,12 @@ import { PERFIS_HOSPITAL } from "../_lib/acoes";
 import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { ativoWhere, StatusFilter } from "../_lib/status-filter";
+import { soStrings } from "@/lib/search-params";
 
 export default async function HospitaisPage({ searchParams }: { searchParams: Promise<{ q?: string; status?: string }> }) {
   const user = await requireUser();
   const edita = podeEditarCadastro(user.perfil, PERFIS_HOSPITAL);
-  const { q, status } = await searchParams;
+  const { q, status } = soStrings(await searchParams);
   const hospitais = await db.hospital.findMany({
     where: {
       ...ativoWhere(status),
@@ -31,16 +32,16 @@ export default async function HospitaisPage({ searchParams }: { searchParams: Pr
   });
   return (
     <>
-      <PageHeader title="Hospitais" subtitle="Hospitais clientes e seus locais de consignação; mantido pelo Comercial." actions={edita ? <LinkButton href="/cadastros/hospitais/novo">Novo hospital</LinkButton> : undefined} />
+      <PageHeader title="Hospitais" subtitle="Hospitais clientes e seus locais de consignação." actions={edita ? <LinkButton href="/cadastros/hospitais/novo">Novo hospital</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat icon="lista" label="Listados" value={hospitais.length} />
-        <Stat icon="etiqueta" label="Com tabela de preço" value={hospitais.filter((h) => h.tabelaPreco).length} hint="preço negociado" />
-        <Stat icon="alerta" label="Inativos" value={hospitais.filter((h) => !h.ativo).length} hint="na lista atual" />
+        <Stat label="Listados" value={hospitais.length} />
+        <Stat label="Com tabela de preço" value={hospitais.filter((h) => h.tabelaPreco).length} hint="preço negociado" />
+        <Stat label="Inativos" value={hospitais.filter((h) => !h.ativo).length} hint="na lista atual" />
       </KpiGrid>
       <SearchBar placeholder="Razão social, fantasia, CNPJ ou cidade" defaultValue={q}>
         <StatusFilter value={status} />
       </SearchBar>
-      <Table titulo="Hospitais" icone="predio" contagem={hospitais.length} head={["Hospital", "CNPJ", "Cidade/UF", "Prazo pgto.", "Tabela de preço", ""]} empty={hospitais.length === 0} emptyText={q ? "Nenhum hospital encontrado para essa busca." : "Nenhum hospital encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/hospitais/novo" variant="secondary" icon="mais">Cadastrar hospital</LinkButton> : undefined}>
+      <Table titulo="Hospitais" contagem={hospitais.length} head={["Hospital", "CNPJ", "Cidade/UF", "Prazo pgto.", "Tabela de preço", ""]} empty={hospitais.length === 0} emptyText={q ? "Nenhum hospital encontrado para essa busca." : "Nenhum hospital encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/hospitais/novo" variant="secondary" icon="mais">Cadastrar hospital</LinkButton> : undefined}>
         {hospitais.map((h) => (
           <tr key={h.id}>
             <Td>

@@ -52,7 +52,7 @@ export function Table({
   return (
     <div className="tabela overflow-hidden rounded-xl border border-slate-200 bg-white print:overflow-visible">
       {(titulo || contagem !== undefined || acoes) && (
-        <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 px-4 py-1.5">
+        <div className="tabela-cabeca flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 px-4 py-1.5">
           <h2 className="flex min-w-0 items-baseline gap-2 text-[0.9375rem] font-semibold text-slate-900">
             {titulo && <span className="truncate">{titulo}</span>}
             {contagem !== undefined && (

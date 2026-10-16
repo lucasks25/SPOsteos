@@ -6,6 +6,7 @@ import { Celula } from "@/components/lista";
 import { TIPOS, type Tipo, type TituloRow } from "./config";
 import { hojeUTC, ymd } from "@/lib/datas";
 import { listarParceiros, listarTitulos, parseFiltros, type Filtros } from "./queries";
+import { AbasNav } from "@/components/abas-nav";
 
 type SP = Record<string, string | string[] | undefined>;
 
@@ -71,6 +72,7 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
         subtitle={tipo === "receber" ? "Títulos de hospitais e convênios: filtre, abra um título e registre a baixa." : "Obrigações com fornecedores e despesas: filtre, abra um título e registre a baixa."}
         actions={<LinkButton href={`${cfg.path}/novo`} icon="mais">Novo título</LinkButton>}
       />
+      <AbasNav atual={`/financeiro/${tipo}`} />
       <KpiGrid cols={3}>
         <Stat label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
         <Stat href={`${cfg.path}?vencidos=1`} label="Vencido" value={money(totais.vencido.valor)} hint={`${totais.vencido.qtd} título(s)`} tone={totais.vencido.qtd ? "danger" : "default"} />

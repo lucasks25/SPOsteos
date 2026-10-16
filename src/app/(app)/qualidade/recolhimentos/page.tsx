@@ -7,12 +7,13 @@ import { date, num } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
 import { PERFIS_VER_RECOLHIMENTO, ROTULO_ORIGEM, docRecolhimento, encerrado, podeOperarRecolhimento, podeVerPacientes, prazoVencido, resumirRecolhimento, type StatusRecolhimento } from "../_lib/recolhimento";
 import { situacaoAlvos } from "../_lib/recolhimento-servico";
+import { soStrings } from "@/lib/search-params";
 
 const STATUS: StatusRecolhimento[] = ["ABERTO", "EM_ANDAMENTO", "CONCLUIDO", "CANCELADO"];
 
 export default async function RecolhimentosPage({ searchParams }: { searchParams: Promise<{ status?: string }> }) {
   const user = await requireUser(PERFIS_VER_RECOLHIMENTO);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const status = STATUS.includes(sp.status as StatusRecolhimento) ? (sp.status as StatusRecolhimento) : undefined;
   const verPac = podeVerPacientes(user.perfil);
   const hoje = hojeUTC();
@@ -46,21 +47,21 @@ export default async function RecolhimentosPage({ searchParams }: { searchParams
     <>
       <PageHeader
         title="Recolhimento de lote / tecnovigilância"
-        subtitle="Para a Qualidade (o Estoque recolhe o material): bloqueio do lote, material nos locais e hospitais, pacientes afetados, comunicados e relatório final."
+        subtitle="Bloqueio do lote, material nos locais e hospitais, pacientes afetados, comunicados e relatório final."
         actions={podeOperarRecolhimento(user.perfil) && <LinkButton href="/qualidade/recolhimentos/novo" icon="mais">Novo recolhimento</LinkButton>}
       />
       <KpiGrid cols={4}>
-        <Stat icon="alerta" label="Recolhimentos abertos" value={num(ativos.length)} hint="em aberto ou em andamento" tone={ativos.length ? "warn" : "default"} />
-        <Stat icon="calendario" label="Vencidos no prazo" value={num(vencidos)} hint="prazo anterior a hoje" tone={vencidos ? "danger" : "default"} />
-        <Stat icon="pacote" label="Unidades a recolher" value={num(aRecolherTotal)} hint="saldo ainda nos locais" tone={aRecolherTotal ? "danger" : "default"} />
-        <Stat icon="medico" label="Pacientes a comunicar" value={pacientesAComunicar === null ? "—" : num(pacientesAComunicar)} hint={pacientesAComunicar === null ? "visível só para Qualidade e Admin" : "cirurgias que usaram o lote"} tone={pacientesAComunicar ? "warn" : "default"} />
+        <Stat label="Recolhimentos abertos" value={num(ativos.length)} hint="em aberto ou em andamento" tone={ativos.length ? "warn" : "default"} />
+        <Stat label="Vencidos no prazo" value={num(vencidos)} hint="prazo anterior a hoje" tone={vencidos ? "danger" : "default"} />
+        <Stat label="Unidades a recolher" value={num(aRecolherTotal)} hint="saldo ainda nos locais" tone={aRecolherTotal ? "danger" : "default"} />
+        <Stat label="Pacientes a comunicar" value={pacientesAComunicar === null ? "—" : num(pacientesAComunicar)} hint={pacientesAComunicar === null ? "visível só para Qualidade e Admin" : "cirurgias que usaram o lote"} tone={pacientesAComunicar ? "warn" : "default"} />
       </KpiGrid>
       <Filtros limparHref="/qualidade/recolhimentos">
         <FiltroSelect label="Situação" name="status" defaultValue={status} todos="Todas" options={STATUS.map((s) => ({ value: s, label: s.replaceAll("_", " ").toLowerCase() }))} />
       </Filtros>
       <Table
         titulo="Recolhimentos"
-        icone="alerta"
+
         contagem={lista.length}
         head={["Nº", "Situação", "Origem", "Produto / lotes", "Motivo", "Prazo", "A recolher", ...(verPac ? ["Pacientes a comunicar"] : [])]}
         empty={lista.length === 0}

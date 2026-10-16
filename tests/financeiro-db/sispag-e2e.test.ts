@@ -31,8 +31,8 @@ before(async () => {
   conta = { id: c.id, titularCnpj: c.titularCnpj!, titularNome: c.titularNome!, agencia: c.agencia! };
   const f = (n: string, cnpj: string, extra: object) => db.fornecedor.create({ data: { razaoSocial: `TESTEDB ${n}`, cnpj, ...extra } }).then((x) => x.id);
   fItau = await f("Itau", "11222333000181", { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0" });
-  fOutro = await f("Outro banco", "22333444000172", { bancoCodigo: "237", agencia: "1111", conta: "22222", contaDigito: "3" });
-  fPix = await f("Pix", "33444555000163", { chavePix: "pix@forn.com.br" });
+  fOutro = await f("Outro banco", "99999999000353", { bancoCodigo: "237", agencia: "1111", conta: "22222", contaDigito: "3" });
+  fPix = await f("Pix", "99999999000434", { chavePix: "pix@forn.com.br" });
   await aprovarFavorecidosTeste();
 });
 after(async () => {
@@ -87,6 +87,20 @@ test("SISPAG ponta a ponta: remessa mista → retorno (pago + rejeitado) → bai
   // reprocessar o mesmo retorno não muda nada
   await db.$transaction((tx) => aplicarRetornoTx(tx, lerRetornoSispag(ret), contagemVazia()));
   assert.equal(await db.lancamento.count({ where: { contaPagarId: tA.id } }), 1);
+
+  // TED devolvida pelo banco favorecido depois do "00" (nota 8, DV): marca DEV para estorno manual, sem baixa nova nem estorno automático
+  const dev = contagemVazia();
+  const retDv = simularRetorno(rem.conteudo, { [sn[tA.id]]: "DV", [sn[tB.id]]: "CN" }, {});
+  await db.$transaction((tx) => aplicarRetornoTx(tx, lerRetornoSispag(retDv), dev));
+  assert.equal(dev.devolvidos, 1);
+  const itemA = await db.remessaPagamentoItem.findFirstOrThrow({ where: { contaPagarId: tA.id } });
+  assert.equal(itemA.status, "PAGO");
+  assert.match(itemA.ocorrencias ?? "", /(^|,)DV(,|$)/);
+  assert.match(itemA.ocorrencias ?? "", /(^|,)DEV$/);
+  assert.equal(await db.lancamento.count({ where: { contaPagarId: tA.id } }), 1);
+  const dev2 = contagemVazia();
+  await db.$transaction((tx) => aplicarRetornoTx(tx, lerRetornoSispag(retDv), dev2));
+  assert.equal(dev2.devolvidos, 0, "reprocessar a devolução não marca de novo");
 
   // o título rejeitado volta a poder entrar em nova remessa
   await db.$transaction((tx) => gerarRemessaTx(tx, { conta, cd, modo: "TED_BOLETO", dataPagto: hoje, ids: [tB.id] }));

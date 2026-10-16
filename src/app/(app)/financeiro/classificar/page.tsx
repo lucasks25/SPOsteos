@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { classificarLote } from "../_lib/classificar-actions";
 import { opcoesClassificacao } from "../_lib/plano";
+import { AbasNav } from "@/components/abas-nav";
 
 type Linha = { chave: string; tipo: string; data: Date; descricao: string; parceiro: string; valor: number };
 const nome = (p: { razaoSocial: string; nomeFantasia: string | null } | null) => (p ? p.nomeFantasia || p.razaoSocial : "—");
@@ -26,6 +27,7 @@ export default async function ClassificarPage() {
   return (
     <>
       <PageHeader title="Classificar pendentes" subtitle="Títulos e lançamentos avulsos sem conta do plano. Marque os itens, escolha a conta e aplique de uma vez; a competência não muda." />
+      <AbasNav atual="/financeiro/classificar" />
       {linhas.length === 0 ? (
         <Table head={["Competência", "Tipo", "Descrição", "Parceiro / conta", "Valor"]} empty emptyText="Nada pendente: tudo está classificado." emptyAction={<LinkButton href="/financeiro/dre" variant="secondary">Ver o DRE</LinkButton>}>
           {null}

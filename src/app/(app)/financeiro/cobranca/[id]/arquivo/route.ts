@@ -2,12 +2,15 @@ import { createHash } from "node:crypto";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/forms";
 import { exigirUsuarioRota } from "@/lib/auth";
+import { limitarRota } from "@/lib/limite-rota";
 import { idInt } from "@/lib/ids";
 
 /** Download do arquivo de remessa de cobrança (CNAB 400, linhas com CRLF). */
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string }> }) {
   const user = await exigirUsuarioRota(["FINANCEIRO"]);
   if (user instanceof Response) return user;
+  const excesso = limitarRota("download", user.id);
+  if (excesso) return excesso;
   const id = idInt((await ctx.params).id);
   if (id === null) return new Response("Remessa inválida", { status: 400 });
   const rem = await db.remessaCobranca.findUnique({ where: { id }, select: { id: true, conteudo: true, canceladaEm: true } });

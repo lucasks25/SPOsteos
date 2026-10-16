@@ -14,7 +14,7 @@ export default async function EditarDocumentoPage({ params }: { params: Promise<
   return (
     <>
       <PageHeader title={`Editar: ${d.titulo}`} subtitle={`${ROTULO_TIPO[d.tipo]} · ${ROTULO_ESCOPO[d.escopo]}. Tipo e vínculo não mudam; para outro vínculo, cadastre um novo documento.`} />
-      <Card title="Dados do documento" icon="escudo">
+      <Card title="Dados do documento">
         <DocumentoEditarForm d={{ id: d.id, tipo: d.tipo, titulo: d.titulo, numero: d.numero ?? "", orgaoEmissor: d.orgaoEmissor ?? "", emissao: inputDate(d.emissao), validade: inputDate(d.validade), observacao: d.observacao ?? "" }} />
       </Card>
     </>

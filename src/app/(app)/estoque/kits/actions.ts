@@ -10,7 +10,7 @@ import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/form
 import { PERFIS_EDITAR } from "../_lib/perfis";
 import * as servico from "../_lib/kits-servico";
 
-const schema = z.object({ codigo: zf.text(), descricao: zf.text() });
+const schema = z.object({ codigo: zf.text(undefined, 50), descricao: zf.nome() });
 
 export async function salvarKit(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser(PERFIS_EDITAR);

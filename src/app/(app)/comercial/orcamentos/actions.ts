@@ -6,9 +6,8 @@ import { z } from "zod";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { argEnum, argId, argInt, argIntOuNulo } from "@/lib/auth-args";
-import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
-import { mudarStatusOrcamentoTx, type StatusOrcamento } from "../_lib/orcamento-servico";
+import { exigirOrcamentoEditavelTx, mudarStatusOrcamentoTx, type StatusOrcamento } from "../_lib/orcamento-servico";
 import { precosDoHospital } from "../_lib/precos";
 
 const PERFIS = ["COMERCIAL"] as const;
@@ -16,16 +15,10 @@ const PERFIS = ["COMERCIAL"] as const;
 const schema = z.object({
   hospitalId: zf.text("Selecione o hospital"),
   convenioId: zf.optText(),
-  paciente: zf.optText(),
+  paciente: zf.optText(200),
   validade: zf.optDate(),
-  observacao: zf.optText(),
+  observacao: zf.obs(),
 });
-
-async function editavel(id: number) {
-  const o = await db.orcamento.findUniqueOrThrow({ where: { id } });
-  if (o.status !== "RASCUNHO") throw new ErroNegocio("Só é possível alterar orçamentos em rascunho.");
-  return o;
-}
 
 export async function salvarOrcamento(id: number | null, _: ActionState, fd: FormData): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
@@ -35,8 +28,11 @@ export async function salvarOrcamento(id: number | null, _: ActionState, fd: For
   let novoId: number | null = null;
   try {
     if (id) {
-      await editavel(id);
-      await db.orcamento.update({ where: { id }, data: parsed.data });
+      const orcamentoId = id;
+      await db.$transaction(async (tx) => {
+        await exigirOrcamentoEditavelTx(tx, orcamentoId);
+        await tx.orcamento.update({ where: { id: orcamentoId }, data: parsed.data });
+      });
     } else {
       const o = await db.orcamento.create({ data: parsed.data });
       novoId = o.id;
@@ -59,10 +55,13 @@ export async function adicionarItemOrcamento(orcamentoId: number, _: ActionState
   const parsed = parseForm(itemSchema, fd);
   if (!parsed.success) return parsed.state;
   try {
-    const o = await editavel(orcamentoId);
     const { produtoId, quantidade } = parsed.data;
-    const precoUnit = parsed.data.preco ?? (await precosDoHospital(db, o.hospitalId, [produtoId])).get(produtoId)?.preco ?? 0;
-    await db.orcamentoItem.create({ data: { orcamentoId, produtoId, quantidade, precoUnit } });
+    const precoUnit = await db.$transaction(async (tx) => {
+      const o = await exigirOrcamentoEditavelTx(tx, orcamentoId);
+      const preco = parsed.data.preco ?? (await precosDoHospital(tx, o.hospitalId, [produtoId])).get(produtoId)?.preco ?? 0;
+      await tx.orcamentoItem.create({ data: { orcamentoId, produtoId, quantidade, precoUnit: preco } });
+      return preco;
+    });
     await audit(user.id, "adicionar item", "Orcamento", orcamentoId, `${produtoId} x${quantidade} @ ${precoUnit}`);
   } catch (e) {
     return { error: errorMessage(e) };
@@ -76,8 +75,10 @@ export async function removerItemOrcamento(itemId: string): Promise<ActionState>
   itemId = argId(itemId);
   try {
     const it = await db.orcamentoItem.findUniqueOrThrow({ where: { id: itemId } });
-    await editavel(it.orcamentoId);
-    await db.orcamentoItem.delete({ where: { id: itemId } });
+    await db.$transaction(async (tx) => {
+      await exigirOrcamentoEditavelTx(tx, it.orcamentoId);
+      await tx.orcamentoItem.delete({ where: { id: itemId } });
+    });
     await audit(user.id, "remover item", "Orcamento", it.orcamentoId, it.produtoId);
     revalidatePath(`/comercial/orcamentos/${it.orcamentoId}`);
   } catch (e) {

@@ -59,8 +59,9 @@ export type ItemRemessaCobranca = EntradaTitulo | PedidoBaixa | AlteracaoVencime
 const TAM = 400;
 const DIA_MS = 24 * 60 * 60 * 1000;
 
+// item 2.2: maiúsculas, sem acento e sem caractere especial; "&" vira "E" (o manual desaconselha especiais)
 const limpar = (v: string | null | undefined) =>
-  (v ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/[^A-Z0-9 .,/\-&]/g, " ").replace(/\s+/g, " ").trim();
+  (v ?? "").normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase().replace(/&/g, " E ").replace(/[^A-Z0-9 .,/\-]/g, " ").replace(/\s+/g, " ").trim();
 
 /** Alfanumérico estrito: estoura se não couber (identificadores, nome e endereço do pagador). */
 function alfa(v: string | null | undefined, tam: number, rotulo: string) {
@@ -140,11 +141,11 @@ export function nossoNumeroComDac(b: { agencia: string; conta: string; carteira:
   return `${b.carteira}/${nossoNumero8(nossoNumero)}-${dacNossoNumero(b, nossoNumero)}`;
 }
 
-const BASE_FATOR = Date.UTC(1997, 9, 7); // fator 1000 = 03/07/2000 (anexo 6)
+const BASE_FATOR = Date.UTC(1997, 9, 7); // data base 07/10/1997; fator 1000 = 03/07/2000 (anexo 6)
 
 /**
- * Fator de vencimento (anexo 6): 1000 em 03/07/2000, +1 por dia; depois de 9999 (21/02/2025)
- * volta a 1000 (22/02/2025). Ciclo de 9000 dias.
+ * Fator de vencimento: 1000 em 03/07/2000, +1 por dia, até 9999 = 21/02/2025 (anexo 6 do manual de 2017, que para aí).
+ * O reinício em 1000 = 22/02/2025 (ciclo de 9000 dias) é regra da FEBRABAN posterior ao manual: não está nos PDFs do Itaú.
  */
 export function fatorVencimento(vencimento: Date): number {
   const f = fatorDoVencimento(vencimento);
@@ -153,8 +154,8 @@ export function fatorVencimento(vencimento: Date): number {
 }
 
 /**
- * Data de um fator, escolhendo o ciclo que cai na janela de validade do anexo 6
- * (até 3000 dias antes e 5500 depois da data de referência).
+ * Data de um fator, escolhendo o ciclo que cai na janela de até 3000 dias antes e 5500 depois da data de referência
+ * (critério da FEBRABAN para o reinício de 2025; não consta do manual Itaú de 2017).
  */
 export function dataDoFator(fator: number, referencia: Date): Date {
   if (!Number.isInteger(fator) || fator < 1000 || fator > 9999) throw new CobrancaError(`Fator de vencimento inválido: ${fator}.`);
@@ -344,7 +345,10 @@ export function gerarRemessaCobranca(beneficiario: Beneficiario, itens: ItemReme
 // ───────────── retorno ─────────────
 
 export type CategoriaOcorrencia =
-  | "ENTRADA_CONFIRMADA" | "ENTRADA_REJEITADA" | "LIQUIDACAO" | "BAIXA" | "ALTERACAO" | "REJEICAO_INSTRUCAO" | "TARIFA" | "OUTRA";
+  | "ENTRADA_CONFIRMADA" | "ENTRADA_REJEITADA" | "LIQUIDACAO" | "BAIXA" | "ALTERACAO" | "REJEICAO_INSTRUCAO" | "TARIFA" | "CHEQUE_DEVOLVIDO" | "OUTRA";
+
+/** Baixas que, pela descrição da nota 17, indicam dinheiro recebido fora da liquidação 06/07/08 (10, 59). */
+export const BAIXAS_COM_PAGAMENTO = ["10", "59"];
 
 const CATEGORIAS: [CategoriaOcorrencia, string[]][] = [
   ["ENTRADA_CONFIRMADA", ["02", "64", "71", "73"]],
@@ -353,6 +357,7 @@ const CATEGORIAS: [CategoriaOcorrencia, string[]][] = [
   ["BAIXA", ["05", "09", "10", "32", "47", "59"]],
   ["ALTERACAO", ["04", "12", "13", "14"]],
   ["REJEICAO_INSTRUCAO", ["15", "16", "17", "18", "24", "74"]],
+  ["CHEQUE_DEVOLVIDO", ["69"]], // cheque usado no pagamento voltou: a liquidação já baixada deixa de valer
   ["TARIFA", ["23", "26", "27", "28", "29", "30", "33", "34", "35", "36", "37", "38", "39", "40", "41", "42", "43", "44", "45", "46", "48", "51", "52", "53", "54", "55", "56", "61", "62", "80", "82", "83", "85", "86", "87", "88", "89", "90", "91", "92", "93"]],
 ];
 

@@ -26,7 +26,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
   if (!r) notFound();
   const total = r.itens.reduce((s, i) => s + toNumber(i.valor), 0);
   const pagos = r.itens.filter((i) => i.status === "PAGO");
-  const alertas = r.itens.filter((i) => /(^|,)(DUP|CAN|DIV)(,|$)/.test(i.ocorrencias ?? ""));
+  const alertas = r.itens.filter((i) => /(^|,)(DUP|CAN|DIV|DEV)(,|$)/.test(i.ocorrencias ?? ""));
   const podeCancelar = !r.canceladaEm && !r.itens.some((i) => i.status === "PAGO" || i.status === "AGENDADO");
 
   return (
@@ -59,7 +59,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           <ul className="mt-1 list-disc pl-5">
             {alertas.map((i) => (
               <li key={i.id}>
-                SP{i.id} — {i.contaPagar.descricao}: {descreverOcorrencias((i.ocorrencias ?? "").split(",").filter((c) => ["DUP", "CAN", "DIV"].includes(c)))}
+                SP{i.id} — {i.contaPagar.descricao}: {descreverOcorrencias((i.ocorrencias ?? "").split(",").filter((c) => ["DUP", "CAN", "DIV", "DEV"].includes(c)))}
               </li>
             ))}
           </ul>

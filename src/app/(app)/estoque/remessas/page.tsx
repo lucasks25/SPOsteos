@@ -1,19 +1,23 @@
 import Link from "next/link";
+import { mascararNome } from "@/lib/privacidade";
 import type { Prisma, StatusRemessa } from "@/generated/prisma/client";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Celula } from "@/components/lista";
+import { Totais } from "../../_componentes/totais";
 import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
 import { cirurgiasAguardandoVale } from "../_lib/cirurgias-aguardando";
 import { idInt } from "@/lib/ids";
+import { soStrings } from "@/lib/search-params";
 
 const STATUS: StatusRemessa[] = ["ABERTA", "ENVIADA", "CONFERIDA", "CANCELADA"];
 
 export default async function RemessasPage({ searchParams }: { searchParams: Promise<{ status?: string; hospitalId?: string; q?: string; de?: string; ate?: string }> }) {
   const user = await requireUser(PERFIS_VER);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const verCirurgia = user.perfil !== "QUALIDADE"; // a cirurgia (dados de paciente) é do Comercial
   const status = STATUS.includes(sp.status as StatusRemessa) ? (sp.status as StatusRemessa) : undefined;
   const numero = sp.q ? Number(sp.q.replace(/\D/g, "")) : NaN;
@@ -54,17 +58,19 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Remessas / vales de consignação"
-        subtitle="Para o Estoque: materiais separados e enviados aos hospitais para cirurgias, e a conferência do que voltou."
+        subtitle="Material enviado aos hospitais e conferência do retorno."
         actions={podeEditar(user.perfil) && <LinkButton href="/estoque/remessas/nova" icon="mais">Nova remessa</LinkButton>}
       />
-      <KpiGrid>
-        <Stat icon="caminhao" label="Na lista" value={num(remessas.length)} hint={`${num(unid(remessas))} unidade(s)`} />
-        <Stat icon="pacote" label="Abertas (a enviar)" value={num(qtd("ABERTA"))} hint={<span className={qtd("ABERTA") ? "text-amber-700" : undefined}>separadas, sem envio</span>} tone={qtd("ABERTA") ? "warn" : "default"} />
-        <Stat icon="caminhao" label="Enviadas (a conferir)" value={num(qtd("ENVIADA"))} hint={<span className="text-sky-700">{num(unid(remessas.filter((r) => r.status === "ENVIADA")))} un. nos hospitais</span>} />
-        <Stat icon="ok" label="Conferidas" value={num(qtd("CONFERIDA"))} hint={<span className="text-emerald-700">retorno concluído</span>} />
-      </KpiGrid>
+      <Totais
+        itens={[
+          { label: "Na lista", valor: `${num(remessas.length)} (${num(unid(remessas))} un.)` },
+          { label: "Abertas, a enviar", valor: num(qtd("ABERTA")), tom: qtd("ABERTA") ? "warn" : "default" },
+          { label: "Enviadas, a conferir", valor: `${num(qtd("ENVIADA"))} (${num(unid(remessas.filter((r) => r.status === "ENVIADA")))} un. nos hospitais)` },
+          { label: "Conferidas", valor: num(qtd("CONFERIDA")) },
+        ]}
+      />
       <Filtros limparHref="/estoque/remessas">
-        <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Nº da remessa ou paciente" className="w-60" />
+        <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Remessa ou paciente" className="w-full sm:w-60" />
         <FiltroSelect label="Status" name="status" defaultValue={status} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.toLowerCase() }))} />
         <FiltroSelect label="Hospital" name="hospitalId" defaultValue={sp.hospitalId} todos="Todos os hospitais" options={hospitais.map((h) => ({ value: h.id, label: h.nomeFantasia ?? h.razaoSocial }))} />
         <FiltroInput label="Cirurgia de" name="de" type="date" defaultValue={sp.de} />
@@ -72,22 +78,18 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
       </Filtros>
       <Table
         titulo="Cirurgias aguardando vale"
-        icone="atividade"
         contagem={aguardando.length}
-        head={["Cirurgia", "Data/hora", "Hospital", "Médico", "Procedimento", "Situação", "Ações"]}
+        head={["Cirurgia", "Data/hora", { label: "Hospital", hideOnMobile: true }, { label: "Médico", hideOnMobile: true }, { label: "Procedimento", hideOnMobile: true }, "Situação", ""]}
         empty={aguardando.length === 0}
         emptyText="Nenhuma cirurgia agendada ou confirmada está sem vale para os filtros informados."
       >
         {aguardando.map((c) => (
           <tr key={c.id}>
-            <Td>
-              {verCirurgia ? <Link href={`/comercial/cirurgias/${c.id}`} className="font-medium text-teal-700 hover:underline">CIR-{c.numero}</Link> : <span className="font-medium">CIR-{c.numero}</span>}
-              <div className="text-xs text-slate-500">{c.paciente}</div>
-            </Td>
+            <Td><Celula href={verCirurgia ? `/comercial/cirurgias/${c.id}` : undefined} principal={`CIR-${c.numero}`} sub={mascararNome(c.paciente)} /></Td>
             <Td>{dateTime(c.dataHora)}</Td>
             <Td className="max-w-[16rem] truncate">{c.hospital.nomeFantasia ?? c.hospital.razaoSocial}</Td>
             <Td>{c.medico.nome}</Td>
-            <Td>{c.procedimento?.descricao ?? "—"}</Td>
+            <Td className="max-w-56 truncate" title={c.procedimento?.descricao}>{c.procedimento?.descricao ?? "—"}</Td>
             <Td><StatusBadge status={c.status} /></Td>
             <Td>
               {podeEditar(user.perfil) ? (
@@ -101,24 +103,20 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
       </Table>
       <Table
         titulo="Remessas / vales"
-        icone="caminhao"
         contagem={remessas.length}
-        head={["Remessa", "Hospital", "Cirurgia", "Kit", "Itens", "Situação", "Enviada", "Ações"]}
+        head={["Remessa", { label: "Hospital", hideOnMobile: true }, { label: "Cirurgia", hideOnMobile: true }, { label: "Kit", hideOnMobile: true }, "Itens", "Situação", { label: "Enviada", hideOnMobile: true }]}
         empty={remessas.length === 0}
         emptyText="Nenhuma remessa encontrada para os filtros informados."
         emptyAction={podeEditar(user.perfil) ? <LinkButton href="/estoque/remessas/nova" variant="secondary">Nova remessa</LinkButton> : undefined}
       >
         {remessas.map((r) => (
           <tr key={r.id}>
-            <Td>
-              <Link href={`/estoque/remessas/${r.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">REM-{r.id}</Link>
-              <div className="text-xs text-slate-500">{date(r.criadoEm)}</div>
-            </Td>
+            <Td><Celula href={`/estoque/remessas/${r.id}`} principal={<span className="font-mono text-xs font-semibold">REM-{r.id}</span>} sub={date(r.criadoEm)} /></Td>
             <Td className="max-w-[16rem] truncate font-medium">{r.local.hospital?.nomeFantasia ?? r.local.hospital?.razaoSocial ?? r.local.nome}</Td>
             <Td>
               {r.cirurgia ? (
                 <>
-                  <div className="font-medium text-teal-700">CIR-{r.cirurgia.numero} · {r.cirurgia.paciente}</div>
+                  <div className="font-medium">CIR-{r.cirurgia.numero} · {mascararNome(r.cirurgia.paciente)}</div>
                   <div className="text-xs text-slate-500">{dateTime(r.cirurgia.dataHora)}</div>
                 </>
               ) : (
@@ -129,9 +127,6 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
             <Td className="tnum text-right">{num(r.itens.reduce((s, i) => s + i.quantidade, 0))}</Td>
             <Td><StatusBadge status={r.status} /></Td>
             <Td>{r.enviadaEm ? dateTime(r.enviadaEm) : "—"}</Td>
-            <Td>
-              <LinkButton href={`/estoque/remessas/${r.id}`} variant="small">Abrir</LinkButton>
-            </Td>
           </tr>
         ))}
       </Table>

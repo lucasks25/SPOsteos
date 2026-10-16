@@ -10,7 +10,8 @@
  */
 
 import { ErroNegocio } from "@/lib/erros";
-import { tipoChavePix } from "@/lib/documentos-br";
+import { isCpfOrCnpj, tipoChavePix } from "@/lib/documentos-br";
+import { lerBoleto } from "./boleto";
 
 export class SispagError extends ErroNegocio {}
 
@@ -96,7 +97,8 @@ function contaFavorecido(p: { forma: FormaSispag; favorecido: Favorecido }): str
   const dig = (f.digito ?? "").trim();
   if (!f.agencia || !f.conta || !dig) throw new SispagError(`Fornecedor ${f.nome} sem agência/conta/dígito cadastrados.`);
   if (p.forma === "01") {
-    if (dig.length !== 1) throw new SispagError(`Conta Itaú de ${f.nome}: o dígito deve ter 1 caractere.`);
+    // nota 11a: DAC Itaú é 9(01); "X" viraria "0" em silêncio
+    if (!/^\d$/.test(dig)) throw new SispagError(`Conta Itaú de ${f.nome}: o dígito deve ser 1 número.`);
     return "0" + num(f.agencia, 4) + " " + "000000" + num(f.conta, 6) + " " + num(dig, 1);
   }
   // 41 TED: agência(5) branco conta(12) [branco|1º dígito] dígito
@@ -130,6 +132,10 @@ function headerLote(e: Empresa, lote: number, forma: FormaSispag) {
 
 function segmentoA(lote: number, n: number, p: Extract<Pagamento, { forma: "01" | "41" | "45" }>) {
   const f = p.favorecido;
+  // TED (41) vai para outro banco: código de 3 dígitos, nem zeros nem 341 (Itaú é crédito em conta, forma 01; nota 11b)
+  if (p.forma === "41" && (!/^\d{3}$/.test(f.banco ?? "") || f.banco === "000" || f.banco === "341")) {
+    throw new SispagError(`TED para ${f.nome}: código do banco favorecido inválido ("${f.banco ?? ""}").`);
+  }
   return reg([
     [1, 3, "341"], [4, 7, num(lote, 4)], [8, 8, "3"], [9, 13, num(n, 5)], [14, 14, "A"], [15, 17, "000"],
     [18, 20, p.forma === "45" ? "009" : "000"],
@@ -151,6 +157,8 @@ function segmentoB(lote: number, n: number, p: Extract<Pagamento, { forma: "01" 
     const chave = (f.chavePix ?? "").trim();
     if (!chave) throw new SispagError(`Fornecedor ${f.nome} sem chave Pix cadastrada.`);
     const tipo = tipoChavePix(chave);
+    // nota 40: a chave vai como está (e-mail/aleatória sem mudar caixa); só ASCII visível, sem espaço nem acento
+    if (!/^[\x21-\x7E]+$/.test(chave)) throw new SispagError(`Chave Pix de ${f.nome} com espaço, acento ou caractere inválido.`);
     return reg([
       ...base, [15, 16, tipo], [17, 17, " "], [18, 18, docTipo(f.documento)], [19, 32, num(f.documento, 14)],
       [33, 62, brancos(30)], [63, 127, zeros(65)], [128, 227, tipo === "02" || tipo === "04" ? alfaBruto(chave, 100) : alfa(chave, 100)],
@@ -166,6 +174,9 @@ function segmentoB(lote: number, n: number, p: Extract<Pagamento, { forma: "01" 
 
 function segmentoJ(lote: number, n: number, p: Extract<Pagamento, { forma: "30" | "31" }>) {
   if (!/^\d{44}$/.test(p.codigoBarras)) throw new SispagError(`Código de barras inválido para ${p.favorecido.nome}.`);
+  lerBoleto(p.codigoBarras); // Anexo A: DV geral (módulo 11), moeda 9 e não é concessionária/tributo (segmento O)
+  // nota 5: 30 = título em cobrança no Itaú (banco 341 no código de barras); 31 = outros bancos
+  if ((p.forma === "30") !== p.codigoBarras.startsWith("341")) throw new SispagError(`Boleto de ${p.favorecido.nome}: forma ${p.forma} não corresponde ao banco ${p.codigoBarras.slice(0, 3)} do código de barras.`);
   return reg([
     [1, 3, "341"], [4, 7, num(lote, 4)], [8, 8, "3"], [9, 13, num(n, 5)], [14, 14, "J"], [15, 17, "000"],
     [18, 61, p.codigoBarras], // banco, moeda, DV, fator, valor e campo livre: mesma ordem do código de barras
@@ -198,10 +209,13 @@ export function gerarRemessaSispag(empresa: Empresa, pagamentos: Pagamento[], ag
   if (pagamentos.length === 0) throw new SispagError("Nenhum pagamento na remessa.");
   const temPix = pagamentos.some((p) => p.forma === "45");
   if (temPix && pagamentos.some((p) => p.forma !== "45")) throw new SispagError("Pagamentos Pix precisam ir em arquivo separado das demais formas.");
+  // nota 1 / nota 15: CPF/CNPJ com dígito verificador errado volta rejeitado (CI/BI); melhor recusar aqui
+  if (!isCpfOrCnpj(empresa.cnpj)) throw new SispagError("CNPJ/CPF do titular da conta a debitar inválido (dígito verificador). Corrija na conta bancária.");
   for (const p of pagamentos) {
     if (!(p.valor > 0)) throw new SispagError(`Valor inválido para ${p.favorecido.nome}.`);
     const doc = p.favorecido.documento.replace(/\D/g, "");
-    if (doc.length !== 11 && doc.length !== 14) throw new SispagError(`CPF/CNPJ do favorecido ${p.favorecido.nome} inválido.`);
+    if (!isCpfOrCnpj(doc)) throw new SispagError(`CPF/CNPJ do favorecido ${p.favorecido.nome} inválido (tamanho ou dígito verificador). Corrija no cadastro do fornecedor.`);
+    if (!alfa(p.favorecido.nome, 30).trim()) throw new SispagError("Favorecido sem nome (ocorrência AO no banco).");
   }
 
   const linhas = [headerArquivo(empresa, agora)];
@@ -246,7 +260,6 @@ function dataRet(s: string): Date | null {
 
 const ocorr = (s: string) => (s.match(/.{1,2}/g) ?? []).map((c) => c.trim()).filter(Boolean);
 
-/** Lê o arquivo de retorno do SISPAG e devolve o resultado de cada pagamento (segmentos A e J). */
 /** Agência, conta e DAC da empresa no header do arquivo (posições 53-57, 59-70 e 72), sem zeros à esquerda. */
 export function contaDoRetorno(texto: string) {
   const h = (texto.split(/\r?\n/)[0] ?? "").padEnd(TAM, " ");
@@ -254,6 +267,10 @@ export function contaDoRetorno(texto: string) {
   return { agencia: n(campo(h, 53, 57)), conta: n(campo(h, 59, 70)), dac: campo(h, 72, 72).trim() };
 }
 
+/**
+ * Lê o arquivo de retorno do SISPAG e devolve o resultado de cada pagamento (segmentos A e J).
+ * Segmentos B, C, Z e J-52 são complementos (nota 9: mesmo número do A/J) e são ignorados.
+ */
 export function lerRetornoSispag(texto: string): ResultadoPagamento[] {
   const linhas = texto.split(/\r?\n/).filter((l) => l.trim() !== "");
   if (linhas.length < 2) throw new SispagError("Arquivo vazio ou incompleto.");
@@ -263,6 +280,7 @@ export function lerRetornoSispag(texto: string): ResultadoPagamento[] {
 
   const out: ResultadoPagamento[] = [];
   let ocorrLote: string[] = [];
+  let inicioLote = 0;
   let ultimoJ = "";
   for (const [i, bruta] of linhas.entries()) {
     if (bruta.length > TAM) throw new SispagError(`Linha ${i + 1} com mais de 240 caracteres.`);
@@ -270,7 +288,14 @@ export function lerRetornoSispag(texto: string): ResultadoPagamento[] {
     const tipo = campo(l, 8, 8);
     if (tipo === "1") {
       ocorrLote = ocorr(campo(l, 231, 240));
+      inicioLote = out.length;
       ultimoJ = "";
+      continue;
+    }
+    if (tipo === "5") {
+      // ocorrência no trailer de lote (ex.: TA, totais com diferença) vale para os pagamentos do lote sem ocorrência própria
+      const t = ocorr(campo(l, 231, 240));
+      if (t.length) for (const r of out.slice(inicioLote)) if (r.ocorrencias.length === 0) r.ocorrencias = t;
       continue;
     }
     if (tipo !== "3") continue;
@@ -303,33 +328,4 @@ export function lerRetornoSispag(texto: string): ResultadoPagamento[] {
   return out;
 }
 
-/** Situação a partir das ocorrências (nota 8). */
-export function situacaoRetorno(ocorrencias: string[]): "PAGO" | "AGENDADO" | "REJEITADO" {
-  if (ocorrencias.includes("00")) return "PAGO";
-  if (ocorrencias.length === 0 || ocorrencias.every((c) => ["BD", "BE", "AE", "IR", "LA"].includes(c))) return "AGENDADO";
-  return "REJEITADO";
-}
-
-/** Descrição das ocorrências mais comuns em pagamento a fornecedores (nota 8 do manual). */
-export const OCORRENCIAS: Record<string, string> = {
-  "00": "Pagamento efetuado", AE: "Data de pagamento alterada", AG: "Número do lote inválido",
-  AH: "Número sequencial do registro inválido", AJ: "Tipo de movimento inválido", AL: "Código do banco favorecido inválido",
-  AM: "Agência do favorecido inválida", AN: "Conta corrente do favorecido inválida", AO: "Nome do favorecido inválido",
-  AP: "Data de pagamento inválida", AR: "Valor inválido", BC: "Nosso número inválido", BD: "Pagamento agendado",
-  BE: "Agendado com forma alterada para OP", BI: "CNPJ/CPF do favorecido inválido (J-52/B) ou documento Pix inválido",
-  CD: "CNPJ/CPF divergente do cadastrado", CE: "Pagamento cancelado", CF: "Valor do documento inválido",
-  CI: "CNPJ/CPF inválido", CK: "Tipo de inscrição inválido", CN: "Conta não cadastrada", DV: "DOC/TED devolvido pelo banco favorecido",
-  HA: "Erro no lote", HM: "Erro no header de arquivo", IB: "Valor do documento inválido", II: "Data de vencimento inválida",
-  IM: "Tipo x forma não compatível", IN: "Banco/agência não cadastrados", IO: "DAC/valor/identificador inválido",
-  IP: "DAC do código de barras inválido", IR: "Pagamento alterado", LA: "Data de pagamento do lote alterada",
-  LC: "Lote de pagamentos cancelado", NA: "Cancelado por falta de autorização", NR: "Operação não realizada",
-  RJ: "Registro rejeitado", SS: "Cancelado por saldo insuficiente / limite diário excedido",
-  TA: "Lote não aceito: totais com diferença", TI: "Titularidade inválida",
-  // marcas do sistema (não vêm do banco)
-  DUP: "PAGO EM DUPLICIDADE: o título já estava quitado; peça a devolução",
-  CAN: "Remessa cancelada no sistema, mas o banco pagou: o dinheiro saiu",
-  DIV: "Valor pago diferente do saldo do título: concilie pelo extrato",
-  CONC: "Já conciliado: o título foi baixado pelo extrato com o mesmo pagamento antes do retorno (não é duplicidade)",
-};
-
-export const descreverOcorrencias = (codigos: string[]) => codigos.map((c) => `${c} — ${OCORRENCIAS[c] ?? "ver nota 8 do manual SISPAG"}`).join("; ");
+export { OCORRENCIAS, descreverOcorrencias, foiDevolvido, situacaoRetorno } from "./sispag-ocorrencias";

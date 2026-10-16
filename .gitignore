@@ -47,13 +47,38 @@ next-env.d.ts
 /storage
 /public/uploads
 
-# ferramentas de agentes (geradas localmente, não fazem parte do produto)
+# ferramentas de agentes de IA (geradas localmente, não fazem parte do produto; padrões aninhados de propósito:
+# já houve bancos de memória de agente versionados dentro de src/app)
 .claude-flow/
-/.swarm
+**/.claude-flow/
+.swarm/
+**/.swarm/
 /.agents
 /.windsurf
-/agentdb.rvf*
-/ruvector.db
+**/ruvector.db*
+**/agentdb*
+**/*.rvf
+**/*.rvf.*
 /skills-lock.json
 /.claude/*
 !/.claude/agents
+
+# bancos locais e dumps (nunca versionar dados)
+*.sqlite
+*.sqlite3
+*.dump
+*.sql.gz
+*.age
+
+# produção: segredos, certificados e backups nunca vão para o git (docs/PRODUCAO-SEGURA.md)
+/secrets/
+/certs/
+/backups/
+*.key
+*.crt
+*.p12
+*.pfx
+
+# manuais do Itaú (documentos do banco, um deles "Corporativo | Interno"): ficam só na máquina, fora do repositório público
+docs/manuais/*.pdf
+docs/manuais/*.txt

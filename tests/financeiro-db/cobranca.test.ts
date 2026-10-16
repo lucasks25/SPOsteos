@@ -292,3 +292,44 @@ test("liquidação de título já baixado pela conciliação com o mesmo pagamen
   assert.match(it.motivos ?? "", /CONC/);
   assert.doesNotMatch(it.motivos ?? "", /DUP/);
 });
+
+test("nota 31: a data de emissão (151-156) é a competência do título (dia da NF), não o dia da remessa", async () => {
+  const t = await db.contaReceber.create({ data: { descricao: "TESTEDB receber NF antiga", valor: 400, vencimento: addDias(hoje, 20), competencia: addDias(hoje, -5), hospitalId } });
+  const r = await gerar([t.id]);
+  const rem = await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId } });
+  const det = rem.conteudo.split("\r\n").find((l) => l[0] === "1")!;
+  assert.equal(det.slice(150, 156), ddmmaa(addDias(hoje, -5)));
+  // competência no futuro (título manual): a emissão fica no dia da remessa
+  const f = await db.contaReceber.create({ data: { descricao: "TESTEDB receber competencia futura", valor: 400, vencimento: addDias(hoje, 40), competencia: addDias(hoje, 30), hospitalId } });
+  const r2 = await gerar([f.id]);
+  const det2 = (await db.remessaCobranca.findUniqueOrThrow({ where: { id: r2.remessaId } })).conteudo.split("\r\n").find((l) => l[0] === "1")!;
+  assert.equal(det2.slice(150, 156), ddmmaa(hoje));
+});
+
+test("baixa 10 depois da liquidação não desfaz o LIQUIDADO; 10/59 sem liquidação e cheque devolvido (69) viram alerta", async () => {
+  const a = await titulo(300);
+  const b = await titulo(200);
+  const c = await titulo(100);
+  const r = await gerar([a.id, b.id, c.id]);
+  const rem = (await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId } })).conteudo;
+  const [na, nb, nc] = await Promise.all([a, b, c].map(async (t) => (await lerT(t.id)).nossoNumero!));
+  await aplicar(simular(rem, [{ nn: na, cod: "02" }, { nn: nb, cod: "02" }, { nn: nc, cod: "02" }]));
+  const cont = await aplicar(
+    simular(rem, [
+      { nn: na, cod: "06", extra: [[254, v13(300)], [296, ddmmaa(hoje)]] },
+      { nn: na, cod: "10" },
+      { nn: nb, cod: "59" },
+      { nn: nc, cod: "69", extra: [[378, "11"]] },
+    ]),
+  );
+  assert.equal(cont.liquidados, 1);
+  assert.equal(cont.baixasComPagamento, 1);
+  assert.equal(cont.chequesDevolvidos, 1);
+  const [ta, tb, tc] = await Promise.all([lerT(a.id), lerT(b.id), lerT(c.id)]);
+  assert.deepEqual([ta.status, ta.cobrancaStatus], ["PAGO", "LIQUIDADO"]);
+  assert.deepEqual([tb.status, tb.cobrancaStatus], ["ABERTO", "BAIXADO"]); // não baixa sozinho: o dinheiro é conferido na conciliação
+  assert.equal(tc.status, "ABERTO");
+  const itens = await db.remessaCobrancaItem.findMany({ where: { remessaId: r.remessaId }, orderBy: { id: "asc" } });
+  assert.match(itens.find((i) => i.contaReceberId === b.id)!.motivos ?? "", /B59/);
+  assert.match(itens.find((i) => i.contaReceberId === c.id)!.motivos ?? "", /CHQDEV11/);
+});

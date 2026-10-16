@@ -26,7 +26,7 @@ export default async function LoteDetalhePage({ params }: { params: Promise<{ id
     <>
       <PageHeader
         title={`Lote ${lote.numero}`}
-        subtitle={`${lote.produto.codigo} — ${lote.produto.descricao}`}
+        meta={[`${lote.produto.codigo} — ${lote.produto.descricao}`]}
         voltar={{ href: "/qualidade/lotes", label: "Lotes" }}
         actions={
           <>
@@ -38,7 +38,7 @@ export default async function LoteDetalhePage({ params }: { params: Promise<{ id
         }
       />
       <div className="space-y-4">
-        <Card title="Dados do lote" icon="frasco">
+        <Card title="Dados do lote">
           <Dl
             items={[
               ["Status", <StatusBadge key="s" status={lote.status} />],

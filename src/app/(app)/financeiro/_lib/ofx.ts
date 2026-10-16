@@ -16,9 +16,20 @@ export function decodificarOfx(buf: Uint8Array): string {
   }
 }
 
+/** Entidades XML/SGML que os bancos gravam em NAME/MEMO (ex.: "A &amp; B"). */
+const ENTIDADES: Record<string, string> = { amp: "&", lt: "<", gt: ">", quot: '"', apos: "'", nbsp: " " };
+const desescapar = (v: string) =>
+  v.replace(/&(#x[0-9a-f]+|#\d+|[a-z]+);/gi, (m, e: string) => {
+    if (e[0] === "#") {
+      const n = e[1] === "x" || e[1] === "X" ? parseInt(e.slice(2), 16) : Number(e.slice(1));
+      return Number.isInteger(n) && n > 31 && n < 0x10000 ? String.fromCharCode(n) : " ";
+    }
+    return ENTIDADES[e.toLowerCase()] ?? m;
+  });
+
 function tag(bloco: string, nome: string): string | null {
   const m = new RegExp(`<${nome}>([^<\\r\\n]*)`, "i").exec(bloco);
-  const v = m?.[1]?.trim();
+  const v = m?.[1] ? desescapar(m[1]).trim() : "";
   return v ? v : null;
 }
 
@@ -40,7 +51,8 @@ export function parseValorOfx(s: string | null): number | null {
   return Math.round(Number(t) * 100) / 100;
 }
 
-export type ResultadoOfx = { linhas: LinhaOfx[]; ignoradas: number };
+/** contas = ACCTID distintos dos <BANKACCTFROM> (ou <CCACCTFROM>) do arquivo, só dígitos. */
+export type ResultadoOfx = { linhas: LinhaOfx[]; ignoradas: number; contas: string[] };
 
 export function lerOfx(texto: string): ResultadoOfx {
   const blocos = texto.match(/<STMTTRN>[\s\S]*?(?=<\/STMTTRN>|<STMTTRN>|<\/BANKTRANLIST>|$)/gi) ?? [];
@@ -65,5 +77,6 @@ export function lerOfx(texto: string): ResultadoOfx {
     usados.set(base, n + 1);
     linhas.push({ fitid: n === 0 ? base : `${base}#${n}`, data, valor, descricao });
   }
-  return { linhas, ignoradas };
+  const contas = [...new Set((texto.match(/<(?:BANK|CC)ACCTFROM>[\s\S]*?(?=<\/(?:BANK|CC)ACCTFROM>|<BANKTRANLIST>|$)/gi) ?? []).map((b) => (tag(b, "ACCTID") ?? "").replace(/\D/g, "")).filter(Boolean))];
+  return { linhas, ignoradas, contas };
 }

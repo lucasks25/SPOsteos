@@ -15,13 +15,13 @@ export default async function AbcPage({ searchParams }: { searchParams: Promise<
   const parte = (v: number) => (abc.total > 0 ? fmtPct((v / abc.total) * 100) : "—");
   return (
     <>
-      <PageHeader title="Curva ABC de produtos" subtitle="Relatório de leitura para todos os setores: quais produtos geram a receita. Considera os pedidos faturados no período (data da nota fiscal). Classe A = até 80% da receita acumulada, B = até 95%, C = o restante." />
+      <PageHeader title="Curva ABC de produtos" subtitle="Quais produtos geram a receita. Considera os pedidos faturados no período (data da nota fiscal). Classe A = até 80% da receita acumulada, B = até 95%, C = o restante." />
       <KpiGrid cols={5}>
-        <Stat label="Receita faturada" value={money(abc.total)} hint={`${d.pedidos} pedido(s) faturado(s)`} icon="receber" />
-        <Stat label="Produtos vendidos" value={num(abc.linhas.length)} icon="pacote" />
-        <Stat label="Classe A" value={num(abc.contagem.A)} hint={`${money(abc.valor.A)} (${parte(abc.valor.A)})`} icon="grafico" />
-        <Stat label="Classe B" value={num(abc.contagem.B)} hint={`${money(abc.valor.B)} (${parte(abc.valor.B)})`} icon="grafico" />
-        <Stat label="Classe C" value={num(abc.contagem.C)} hint={`${money(abc.valor.C)} (${parte(abc.valor.C)})`} icon="grafico" />
+        <Stat label="Receita faturada" value={money(abc.total)} hint={`${d.pedidos} pedido(s) faturado(s)`} />
+        <Stat label="Produtos vendidos" value={num(abc.linhas.length)} />
+        <Stat label="Classe A" value={num(abc.contagem.A)} hint={`${money(abc.valor.A)} (${parte(abc.valor.A)})`} />
+        <Stat label="Classe B" value={num(abc.contagem.B)} hint={`${money(abc.valor.B)} (${parte(abc.valor.B)})`} />
+        <Stat label="Classe C" value={num(abc.contagem.C)} hint={`${money(abc.valor.C)} (${parte(abc.valor.C)})`} />
       </KpiGrid>
       <Filtros limparHref="/gestao/abc">
         <FiltroInput label="De" name="de" type="date" defaultValue={d.periodo.de} />
@@ -30,7 +30,7 @@ export default async function AbcPage({ searchParams }: { searchParams: Promise<
       </Filtros>
       <Table
         titulo="Produtos por receita"
-        icone="grafico"
+
         contagem={abc.linhas.length}
         acoes={<BotaoCsv href="/gestao/abc/exportar" params={{ de: d.periodo.de, ate: d.periodo.ate, hospital: d.hospitalId }} />}
         head={["#", "Produto", <span key="q" className="block text-right">Quantidade</span>, <span key="r" className="block text-right">Receita</span>, <span key="p" className="block text-right">Participação</span>, <span key="a" className="block text-right">Acumulado</span>, "Classe"]}

@@ -14,8 +14,11 @@ test("AUTH_SECRET: ausente, curto, de exemplo ou repetitivo é recusado; aleató
 
 test("produção sem AUTH_SECRET forte: o servidor não sobe (register lança)", () => {
   const env = process.env as Record<string, string | undefined>;
-  const antes = { s: env.AUTH_SECRET, n: env.NODE_ENV, r: env.NEXT_RUNTIME };
+  const antes = { s: env.AUTH_SECRET, n: env.NODE_ENV, r: env.NEXT_RUNTIME, k: env.DATA_KEY, d: env.ALLOW_INSECURE_DB };
   try {
+    // as outras checagens da subida (DATA_KEY, banco sem TLS) passam: o teste isola a do AUTH_SECRET
+    env.DATA_KEY = "3c9909afec25354d551dae21590bb26e38d53f2173b8d3dc3eee4c047e7ab1c1";
+    env.ALLOW_INSECURE_DB = "1";
     env.NEXT_RUNTIME = "nodejs";
     env.NODE_ENV = "production";
     env.AUTH_SECRET = "curto";
@@ -31,5 +34,8 @@ test("produção sem AUTH_SECRET forte: o servidor não sobe (register lança)",
     env.AUTH_SECRET = antes.s;
     env.NODE_ENV = antes.n;
     env.NEXT_RUNTIME = antes.r;
+    env.DATA_KEY = antes.k;
+    env.ALLOW_INSECURE_DB = antes.d;
+    for (const k of ["DATA_KEY", "ALLOW_INSECURE_DB", "AUTH_SECRET", "NEXT_RUNTIME"] as const) if (env[k] === undefined) delete env[k];
   }
 });

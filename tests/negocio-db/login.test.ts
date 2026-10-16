@@ -7,6 +7,7 @@ import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
+import { apagarAuditoriaTeste } from "./_auditoria";
 import { autenticar, MAX_FALHAS, MAX_FALHAS_IP, MSG_BLOQUEADO, MSG_INVALIDO, trocarSenha } from "@/lib/auth-login";
 
 const SENHA = "senha-correta-123";
@@ -18,10 +19,8 @@ async function limpar() {
   await db.tentativaLogin.deleteMany({ where: { chave: { startsWith: "ip:198.51.100." } } });
   const ids = (await db.usuario.findMany({ where: { email: { startsWith: "testedb-login-" } }, select: { id: true } })).map((u) => `senha:${u.id}`);
   await db.tentativaLogin.deleteMany({ where: { chave: { in: ids } } });
-  await db.logAuditoria.deleteMany({ where: { detalhes: { startsWith: "testedb-login-" } } });
-  const us = await db.usuario.findMany({ where: { email: { startsWith: "testedb-login-" } }, select: { id: true } });
-  await db.logAuditoria.deleteMany({ where: { usuarioId: { in: us.map((u) => u.id) } } });
-  await db.usuario.deleteMany({ where: { email: { startsWith: "testedb-login-" } } });
+  // LogAuditoria é imutável (trigger) e a FK do autor é Restrict: apaga log e usuários de teste numa transação de manutenção
+  await apagarAuditoriaTeste({ detalhes: { startsWith: "testedb-login-" } }, { email: { startsWith: "testedb-login-" } });
 }
 const mkUsuario = (n: string, ativo = true) => db.usuario.create({ data: { nome: `TESTEDB ${n}`, email: email(n), perfil: "COMERCIAL", senhaHash: hash, ativo } });
 
@@ -79,7 +78,7 @@ test("tentativa bloqueada não prolonga o bloqueio (não grava falha nova)", asy
 
 test("trocar a própria senha: exige a atual, limita tentativas, derruba as outras sessões e a nova vale no login", async () => {
   const u = await mkUsuario("troca");
-  assert.deepEqual(await trocarSenha(u.id, SENHA, "curta"), { ok: false, erro: "A nova senha precisa ter de 10 a 72 caracteres.", campo: "nova" });
+  assert.deepEqual(await trocarSenha(u.id, SENHA, "curta"), { ok: false, erro: "A senha precisa ter pelo menos 10 caracteres.", campo: "nova" });
   assert.equal((await trocarSenha(u.id, SENHA, SENHA)).ok, false);
   assert.deepEqual(await trocarSenha(u.id, "errada", "nova-senha-forte-1"), { ok: false, erro: "Senha atual incorreta.", campo: "atual" });
   const r = await trocarSenha(u.id, SENHA, "nova-senha-forte-1");

@@ -34,10 +34,13 @@ const SEM_LOGIN: Record<string, string> = {
   "app/login/actions.ts#login": "é o próprio login",
   "app/login/actions.ts#logout": "usa getUser(); sem sessão só apaga o cookie",
   "lib/tema-actions.ts#definirTema": "grava só a preferência de tema num cookie; não lê nem grava dados",
+  "app/login/actions.ts#confirmarCodigoLogin": "2ª etapa do login: exige o cookie assinado de senha conferida (lerMfaPendente) e o código",
+  "app/login/actions.ts#cancelarCodigoLogin": "só apaga o cookie da 2ª etapa do login",
 };
 
 const VALIDADORES = new Set(["argId", "argIdOuNulo", "argInt", "argIntOuNulo", "argBool", "argEnum", "checkTipo"]);
-const EXIGE = /\b(requireUser|requirePerfil)\(/;
+// requireUserPendente: só nas telas de primeiro acesso (troca de senha provisória, cadastro do 2º fator obrigatório)
+const EXIGE = /\b(requireUser|requireUserPendente|requirePerfil)\(/;
 
 type Funcao = { arquivo: string; nome: string; no: ts.FunctionDeclaration; sf: ts.SourceFile };
 
@@ -165,7 +168,7 @@ test("revisão independente: o guarda pega re-export, parâmetro desestruturado,
 test("toda page.tsx autenticada e todo route.ts exige usuário", () => {
   const falhas = todos
     .filter((f) => (/\(app\)/.test(f) && /[/\\](page|layout)\.tsx$/.test(f)) || /[/\\]route\.ts$/.test(f))
-    .filter((f) => !/\b(requireUser|exigirUsuarioRota)\(/.test(readFileSync(f, "utf8")))
+    .filter((f) => !/\b(requireUser|requireUserPendente|exigirUsuarioRota)\(/.test(readFileSync(f, "utf8")))
     .map(rel);
   assert.deepEqual(falhas, []);
 });

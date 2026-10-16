@@ -6,6 +6,7 @@ import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { dateTime, money, num } from "@/lib/format";
 import { addDias, inicioDiaBrasilia, parseDia } from "@/lib/datas";
 import { PERFIS_VER } from "../_lib/perfis";
+import { soStrings } from "@/lib/search-params";
 
 const POR_PAGINA = 100;
 const TIPOS = ["ENTRADA", "REMESSA", "RETORNO", "CONSUMO", "TRANSFERENCIA", "AJUSTE", "PERDA"] as const;
@@ -16,8 +17,8 @@ type SP = { produto?: string; lote?: string; local?: string; tipo?: string; de?:
 export default async function KardexPage({ searchParams }: { searchParams: Promise<SP> }) {
   const user = await requireUser(PERFIS_VER);
   const verLote = ["ADMIN", "ESTOQUE", "QUALIDADE"].includes(user.perfil); // a tela do lote é da Qualidade
-  const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
+  const sp = soStrings(await searchParams);
+  const page = Math.min(1000, Math.max(1, Math.trunc(Number(sp.page)) || 1)); // teto: página gigante na URL não pode virar skip/take enorme
   const de = parseDia(sp.de), ate = parseDia(sp.ate); // data inválida na URL é ignorada (antes derrubava a tela)
   const where = {
     ...(sp.produto ? { produtoId: sp.produto } : {}),
@@ -67,9 +68,9 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Kardex" subtitle="Histórico de entradas e saídas por lote, para consulta do Estoque, Comercial e Qualidade. Filtre por produto e local para ver o saldo corrente." />
       <KpiGrid cols={3}>
-        <Stat icon="livro" label="Movimentos no filtro" value={num(total)} hint={`página ${page} de ${paginas}`} />
-        <Stat icon="pacote" label="Entradas na página" value={num(movs.filter((m) => m.tipo === "ENTRADA").reduce((n, m) => n + m.quantidade, 0))} hint={<span className="text-emerald-700">unidades</span>} />
-        <Stat icon="ajustes" label="Perdas e ajustes na página" value={num(movs.filter((m) => m.tipo === "PERDA" || m.tipo === "AJUSTE").length)} hint={<span className="text-amber-700">lançamento(s)</span>} />
+        <Stat label="Movimentos no filtro" value={num(total)} hint={`página ${page} de ${paginas}`} />
+        <Stat label="Entradas na página" value={num(movs.filter((m) => m.tipo === "ENTRADA").reduce((n, m) => n + m.quantidade, 0))} hint={<span className="text-emerald-700">unidades</span>} />
+        <Stat label="Perdas e ajustes na página" value={num(movs.filter((m) => m.tipo === "PERDA" || m.tipo === "AJUSTE").length)} hint={<span className="text-amber-700">lançamento(s)</span>} />
       </KpiGrid>
       <Filtros limparHref="/estoque/kardex">
         <FiltroSelect label="Produto" name="produto" defaultValue={sp.produto} todos="Todos os produtos" options={produtos.map((p) => ({ value: p.id, label: `${p.codigo} — ${p.descricao}` }))} />
@@ -82,7 +83,7 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
 
       <Table
         titulo="Movimentações"
-        icone="livro"
+
         contagem={total}
         head={["Data/hora", "Tipo", "Produto", "Lote", "Origem → destino", "Qtd.", "Custo unit.", "Documento", ...(comSaldo ? ["Saldo"] : [])]}
         empty={movs.length === 0}

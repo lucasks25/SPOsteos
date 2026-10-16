@@ -6,6 +6,7 @@ import { dateTime } from "@/lib/format";
 import { addMeses, hojeUTC, inicioMes } from "@/lib/datas";
 import { fecharMes, reabrirMes } from "../_lib/fechamento-actions";
 import { rotuloMes } from "../_lib/fechamento";
+import { AbasNav } from "@/components/abas-nav";
 
 const NUM = 12;
 
@@ -18,6 +19,7 @@ export default async function FechamentoPage() {
   return (
     <>
       <PageHeader title="Fechamento de mês" subtitle="Só meses já encerrados aparecem aqui: o mês corrente não pode ser fechado. Mês fechado fica congelado: ninguém cria, altera ou estorna baixa, glosa, transferência, lançamento avulso ou título com data nele." />
+      <AbasNav atual="/financeiro/fechamento" />
       <Table
         titulo="Últimos 12 meses"
         head={["Mês", "Situação", "Ações"]}

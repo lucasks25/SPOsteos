@@ -11,7 +11,7 @@ export default async function NovoInventarioPage() {
   return (
     <>
       <PageHeader title="Novo inventário de consignado" subtitle="Registra o saldo atual do hospital para você contar o material. Os movimentos feitos depois da foto são avisados no fechamento." />
-      <Card title="Hospital" icon="predio">
+      <Card title="Hospital">
         <Form action={criarInventarioAction} submitLabel="Criar inventário">
           <Select label="Hospital *" name="hospitalId" required options={hospitais.map((h) => ({ value: h.id, label: h.nomeFantasia ?? h.razaoSocial }))} />
           <TextArea label="Observação" name="observacao" maxLength={500} />

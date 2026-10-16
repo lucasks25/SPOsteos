@@ -1,16 +1,19 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { Aviso, Badge, Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { date, dateTime, money, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
 import { registrarAjuste } from "./actions";
 
+const LIMITE_LOTES = 5000; // o seletor lista até este número de lotes
+
 export default async function AjustesPage() {
   const user = await requireUser(PERFIS_VER);
-  const [locais, lotes, ultimos] = await Promise.all([
+  const [locais, lotes, totalLotes, ultimos] = await Promise.all([
     db.localEstoque.findMany({ orderBy: { nome: "asc" } }),
-    db.lote.findMany({ include: { produto: { select: { codigo: true, descricao: true } } }, orderBy: [{ produto: { descricao: "asc" } }, { validade: "asc" }], take: 1000 }),
+    db.lote.findMany({ include: { produto: { select: { codigo: true, descricao: true } } }, orderBy: [{ produto: { descricao: "asc" } }, { validade: "asc" }], take: LIMITE_LOTES }),
+    db.lote.count(),
     db.movimento.findMany({
       where: { tipo: { in: ["AJUSTE", "PERDA"] } },
       include: { produto: { select: { codigo: true, descricao: true } }, lote: { select: { numero: true } }, origem: true, destino: true },
@@ -20,15 +23,15 @@ export default async function AjustesPage() {
   ]);
   return (
     <>
-      <PageHeader title="Ajustes e perdas" subtitle="Para o Estoque: correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex (histórico de movimentações)." />
+      <PageHeader title="Ajustes e perdas" subtitle="Correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex (histórico de movimentações)." />
       <KpiGrid cols={3}>
-        <Stat icon="lista" label="Lançamentos recentes" value={num(ultimos.length)} hint="últimos 50" />
-        <Stat icon="alerta" label="Perdas" value={num(ultimos.filter((m) => m.tipo === "PERDA").length)} hint={<span className="text-rose-600">{money(ultimos.filter((m) => m.tipo === "PERDA").reduce((v, m) => v + Number(m.custoUnit) * m.quantidade, 0))}</span>} />
-        <Stat icon="ajustes" label="Ajustes" value={num(ultimos.filter((m) => m.tipo === "AJUSTE").length)} hint="entradas e saídas de inventário" />
+        <Stat label="Lançamentos recentes" value={num(ultimos.length)} hint="últimos 50" />
+        <Stat label="Perdas" value={num(ultimos.filter((m) => m.tipo === "PERDA").length)} hint={<span className="text-rose-600">{money(ultimos.filter((m) => m.tipo === "PERDA").reduce((v, m) => v + Number(m.custoUnit) * m.quantidade, 0))}</span>} />
+        <Stat label="Ajustes" value={num(ultimos.filter((m) => m.tipo === "AJUSTE").length)} hint="entradas e saídas de inventário" />
       </KpiGrid>
       <div className="space-y-3">
         {podeEditar(user.perfil) && (
-          <Card title="Novo lançamento" icon="ajustes">
+          <Card title="Novo lançamento">
             <Form action={registrarAjuste} submitLabel="Registrar" resetOnSuccess>
               <Grid cols={3}>
                 <Select
@@ -51,11 +54,16 @@ export default async function AjustesPage() {
                   options={lotes.map((l) => ({ value: l.id, label: `${l.produto.codigo} — ${l.produto.descricao} · lote ${l.numero} · val. ${date(l.validade)}` }))}
                 />
               </Grid>
+              {totalLotes > lotes.length && (
+                <Aviso tom="alerta" className="mb-3">
+                  O seletor mostra só {num(lotes.length)} dos {num(totalLotes)} lotes (ordem alfabética do produto). Se o lote procurado não aparece, avise o administrador.
+                </Aviso>
+              )}
               <TextArea label="Motivo / observação (obrigatório para perda)" name="observacao" maxLength={500} />
             </Form>
           </Card>
         )}
-        <Table titulo="Últimos 50 lançamentos" icone="lista" contagem={ultimos.length} head={["Data/hora", "Tipo", "Produto", "Local", "Qtd.", "Valor", "Motivo"]} empty={ultimos.length === 0} emptyText="Nenhum ajuste ou perda lançado até agora.">
+        <Table titulo="Últimos 50 lançamentos" contagem={ultimos.length} head={["Data/hora", "Tipo", "Produto", "Local", "Qtd.", "Valor", "Motivo"]} empty={ultimos.length === 0} emptyText="Nenhum ajuste ou perda lançado até agora.">
           {ultimos.map((m) => {
             const entrada = !!m.destinoId;
             return (

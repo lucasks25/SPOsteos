@@ -27,7 +27,7 @@ export default async function KitPage({ params }: { params: Promise<{ id: string
       <PageHeader
         title={`${kit.codigo} — ${kit.descricao}`}
         voltar={{ href: "/estoque/kits", label: "Caixas e kits" }}
-        subtitle={`${kit._count.remessas} remessa(s) · ${montaveis} kit(s) completo(s) disponíveis no depósito`}
+        meta={[`${kit._count.remessas} remessa(s) · ${montaveis} kit(s) completo(s) disponíveis no depósito`]}
         actions={
           edita && kit._count.remessas === 0 && (
             <ActionButton action={excluirKit.bind(null, id)} variant="danger" confirm="Excluir este kit?">Excluir</ActionButton>
@@ -35,22 +35,22 @@ export default async function KitPage({ params }: { params: Promise<{ id: string
         }
       />
       <KpiGrid cols={3}>
-        <Stat icon="lista" label="Itens no kit" value={kit.itens.length} hint={`${num(kit.itens.reduce((n, i) => n + i.quantidade, 0))} unidade(s)`} />
-        <Stat icon="pacote" label="Kits completos no depósito" value={montaveis} hint={<span className={montaveis > 0 ? "text-emerald-700" : "text-amber-700"}>{montaveis > 0 ? "disponíveis" : "falta material"}</span>} tone={montaveis > 0 ? "default" : "warn"} />
-        <Stat icon="caminhao" label="Remessas geradas" value={kit._count.remessas} />
+        <Stat label="Itens no kit" value={kit.itens.length} hint={`${num(kit.itens.reduce((n, i) => n + i.quantidade, 0))} unidade(s)`} />
+        <Stat label="Kits completos no depósito" value={montaveis} hint={<span className={montaveis > 0 ? "text-emerald-700" : "text-amber-700"}>{montaveis > 0 ? "disponíveis" : "falta material"}</span>} tone={montaveis > 0 ? "default" : "warn"} />
+        <Stat label="Remessas geradas" value={kit._count.remessas} />
       </KpiGrid>
       <div className="space-y-3">
         {edita && (
-          <Card title="Dados do kit" icon="pacote">
+          <Card title="Dados do kit">
             <KitForm kit={kit} />
           </Card>
         )}
         {edita && (
-          <Card title="Incluir item" icon="mais">
+          <Card title="Incluir item">
             <ItemAdder action={adicionarItemKit.bind(null, id)} produtos={produtoOptions(produtos)} />
           </Card>
         )}
-        <Table titulo="Itens do kit" icone="lista" contagem={kit.itens.length} head={["Produto", "Qtd. no kit", "Disponível no depósito", ...(edita ? ["Ações"] : [])]} empty={kit.itens.length === 0} emptyText="Este kit ainda não tem itens. Use o campo acima para incluir produtos.">
+        <Table titulo="Itens do kit" contagem={kit.itens.length} head={["Produto", "Qtd. no kit", "Disponível no depósito", ...(edita ? ["Ações"] : [])]} empty={kit.itens.length === 0} emptyText="Este kit ainda não tem itens. Use o campo acima para incluir produtos.">
           {kit.itens.map((i) => {
             const d = disp.get(i.produtoId) ?? 0;
             return (

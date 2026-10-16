@@ -11,13 +11,13 @@ import { checarCnpj } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_COMERCIAL } from "../_lib/acoes";
 
 const schema = z.object({
-  nome: zf.text(),
+  nome: zf.nome(),
   registroAns: z
     .string()
     .regex(/^\d{6}$/, "Registro ANS deve ter 6 dígitos")
     .optional()
     .transform((v) => v ?? null),
-  cnpj: zf.optText(),
+  cnpj: zf.optText(40),
   ativo: zf.bool(),
   exigeAutorizacao: zf.bool(),
 });

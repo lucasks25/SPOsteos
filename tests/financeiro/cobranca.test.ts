@@ -269,3 +269,62 @@ test("retorno: recusa remessa, linha fora de 400, sequência e totais do trailer
   assert.throws(() => lerRetornoCobranca([L[0], L[1]].join("\r\n")), /trailer/);
   assert.throws(() => lerRetornoCobranca(put(ok, 77, "237")), /header inválido/);
 });
+
+test("fator: próximo reinício (9999 em 13/10/2049, 1000 em 14/10/2049)", () => {
+  assert.equal(fatorVencimento(D("2049-10-13")), 9999);
+  assert.equal(fatorVencimento(D("2049-10-14")), 1000);
+});
+
+test("item 2.2: '&' e acentos não vão ao arquivo", () => {
+  const txt = gerarRemessaCobranca(ben, [entrada({ pagador: { ...pagador, nome: "Johnson & Johnson Saúde" } })], new Date("2026-10-16T12:00:00Z"));
+  const det = txt.split("\r\n")[1];
+  assert.equal(c(det, 235, 274).trimEnd(), "JOHNSON E JOHNSON SAUDE");
+  assert.ok(/^[\x20-\x7E\r\n]*$/.test(txt), "só ASCII imprimível");
+});
+
+/**
+ * Retorno de exemplo montado só pelo manual (seção 3.2 e notas 17, 20 e 28), sem partir da remessa: header, seis
+ * detalhes (02 com mensagem da tabela 10, 03 com dois motivos da tabela 1, 06 liquidação com tarifa e juros, 10 baixa
+ * por ter sido liquidado, 57 com instrução cancelada 1156 e 69 cheque devolvido motivo 11 da tabela 9) e trailer.
+ */
+test("retorno CNAB 400 de exemplo montado posição a posição pelo manual", () => {
+  const branco = " ".repeat(400);
+  const hdr = [[1, "0"], [2, "2"], [3, "RETORNO"], [10, "01"], [12, "COBRANCA".padEnd(15)], [27, "0057"], [31, "00"], [33, "72192"], [38, "0"], [47, "DISTRIBUIDORA OPME LTDA".padEnd(30)], [77, "341"], [80, "BANCO ITAU SA".padEnd(15)], [95, "161026"], [101, "01600"], [106, "BPI"], [109, "00007"], [114, "161026"]] as const;
+  const det = (nn: string, cod: string, valor: number, extra: [number, string][] = []) => {
+    const campos: [number, string][] = [[1, "1"], [2, "02"], [4, "12345678000199"], [18, "0057"], [22, "00"], [24, "72192"], [29, "0"], [38, "TITULO-" + nn], [63, nn], [83, "109"], [86, nn], [94, String(dacNossoNumero(ben, nn))], [108, "I"], [109, cod], [111, "151026"], [117, "NF" + nn.slice(-4) + "    "], [127, nn], [147, "091126"], [153, v13(valor)], [166, "341"], [169, "0000"], [173, "0"], [174, "01"], ...extra];
+    return campos.reduce((l, [i, v]) => put(l, i, v), branco);
+  };
+  const L = [
+    hdr.reduce((l, [i, v]) => put(l, i, v), branco),
+    det("00000001", "02", 100_000, [[378, "01"]]),
+    det("00000002", "03", 50_000, [[378, "0811"]]),
+    det("00000003", "06", 120_000, [[176, v13(250)], [254, v13(120_500)], [267, v13(500)], [296, "171026"], [325, "HOSPITAL SAO LUCAS".padEnd(30)], [393, "CP"]]),
+    det("00000003", "10", 120_000),
+    det("00000004", "57", 80_000, [[302, "1156"]]),
+    det("00000005", "69", 70_000, [[254, v13(70_000)], [378, "11"]]),
+  ];
+  const total = 100_000 + 50_000 + 120_000 * 2 + 80_000 + 70_000;
+  L.push([[1, "9"], [2, "2"], [3, "01"], [5, "341"], [208, "00007"], [213, String(6).padStart(8, "0")], [221, String(total).padStart(14, "0")]].reduce((l, [i, v]) => put(l, i as number, v as string), branco));
+  const txt = L.map((l, i) => put(l, 395, String(i + 1).padStart(6, "0"))).join("\r\n") + "\r\n";
+  for (const l of txt.split("\r\n").filter(Boolean)) assert.equal(l.length, 400);
+
+  const r = lerRetornoCobranca(txt);
+  assert.deepEqual([r.sequencialArquivo, r.dataGeracao?.toISOString().slice(0, 10)], [7, "2026-10-16"]);
+  const [conf, rej, liq, baixa, cancel, cheque] = r.eventos;
+  assert.equal(conf.mensagens[0].descricao, "CEP sem atendimento de protesto no momento");
+  assert.deepEqual(rej.motivosRejeicao.map((m) => m.codigo), ["08", "11"]);
+  assert.deepEqual([liq.ocorrencia.categoria, liq.centavos.pago, liq.centavos.tarifa, liq.centavos.jurosMulta], ["LIQUIDACAO", 120_500, 250, 500]);
+  assert.equal(liq.codigoLiquidacao?.codigo, "CP");
+  assert.equal(liq.dataCredito?.toISOString().slice(0, 10), "2026-10-17");
+  assert.equal(baixa.ocorrencia.categoria, "BAIXA");
+  assert.equal(cancel.complemento?.descricao, "Não protestar");
+  assert.equal(cheque.ocorrencia.categoria, "CHEQUE_DEVOLVIDO");
+  assert.match(cheque.motivosRejeicao[0].descricao, /Sem fundos - 1ª apresentação/);
+  assert.equal(conf.dacNossoNumero, String(dacNossoNumero(ben, "00000001")));
+});
+
+test("anexos 2 e 3: código de barras e linha digitável do exemplo oficial (0057/12345-7, 110/12345678-8, R$ 123,45, 01/05/2002)", () => {
+  const barras = "34196166700000123451101234567880057123457000";
+  assert.equal(mod11Manual(barras.slice(0, 4) + barras.slice(5)), 6);
+  assert.equal(linhaDigitavel(barras), "34191.10121 34567.880058 71234.570001 6 16670000012345");
+});

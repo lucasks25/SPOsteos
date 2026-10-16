@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
-import { lerCnab240Extrato, loteDaConta, pareceCnab240 } from "./cnab240-extrato";
+import { lerCnab240Extrato, loteDaConta, loteDeAplicacao, pareceCnab240 } from "./cnab240-extrato";
 import { garantirMesAberto } from "./fechamento";
 import { lerOfx } from "./ofx";
 import { validarClassificacao } from "./plano";
@@ -25,7 +25,9 @@ export async function importarExtratoTexto(contaId: string, texto: string) {
   let detalhe = "";
   if (pareceCnab240(texto)) {
     origem = "CNAB";
-    const lotes = lerCnab240Extrato(texto);
+    // lote "Aplic Aut Mais - CDB" (extrato v08.5, tipo de conta 0202) tem a mesma agência/conta, mas não é conta corrente
+    const todos = lerCnab240Extrato(texto);
+    const lotes = todos.filter((l) => !loteDeAplicacao(l));
     if (lotes.length === 0) throw new ErroNegocio("O arquivo CNAB não tem lançamentos de conta.");
     const daConta = lotes.filter((l) => loteDaConta(l, conta) === true);
     let lote = daConta[0];
@@ -40,12 +42,21 @@ export async function importarExtratoTexto(contaId: string, texto: string) {
     linhas = lote.linhas;
     detalhe = lote.saldoFinal ? ` — saldo do banco ${lote.saldoFinal.valor.toFixed(2)}` : "";
     if (lote.futuros) detalhe += ` — ${lote.futuros} lançamento(s) futuro(s) ignorado(s)`;
+    if (todos.length > lotes.length) detalhe += ` — ${todos.length - lotes.length} lote(s) de aplicação automática ignorado(s)`;
+    if (!lote.saldoConfere) detalhe += " — atenção: saldo inicial + lançamentos não bate com o saldo final informado pelo banco; confira o extrato";
   } else {
     if (!/<STMTTRN>/i.test(texto)) throw new ErroNegocio("Arquivo não reconhecido. Envie o extrato em OFX ou CNAB 240 (Itaú).");
     origem = "OFX";
     const r = lerOfx(texto);
     linhas = r.linhas;
     if (r.ignoradas) detalhe = ` — ${r.ignoradas} linha(s) inválida(s) ignorada(s)`;
+    // OFX com várias contas misturaria extratos; com uma só, o formato do ACCTID varia por banco (Itaú: não confirmado),
+    // então a conferência com a conta cadastrada só avisa
+    if (r.contas.length > 1) throw new ErroNegocio(`O arquivo OFX tem ${r.contas.length} contas (${r.contas.join(", ")}). Exporte um arquivo por conta.`);
+    const num = (conta.numero ?? "").replace(/\D/g, "").replace(/^0+/, "");
+    const semDac = num.slice(0, -1);
+    const acct = r.contas[0]?.replace(/^0+/, "");
+    if (acct && num && !acct.endsWith(num) && !(semDac && acct.endsWith(semDac))) detalhe += ` — atenção: o arquivo é da conta ${r.contas[0]}, diferente da cadastrada (${conta.numero}); confira`;
   }
   if (linhas.length === 0) throw new ErroNegocio("Nenhuma transação válida no arquivo.");
   const datas = linhas.map((l) => l.data.getTime());

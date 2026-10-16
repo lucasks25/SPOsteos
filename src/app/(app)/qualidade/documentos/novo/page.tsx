@@ -5,12 +5,13 @@ import { Card, PageHeader } from "@/components/ui";
 import { ESCOPOS, PERFIS_EDITAR_DOCUMENTOS, ROTULO_TIPO, TIPOS, type EscopoDoc, type TipoDoc } from "../../_lib/documentos";
 import { VIGENTES } from "../../_lib/documentos-servico";
 import { DocumentoNovoForm, type Candidato, type Inicial } from "../documento-form";
+import { soStrings } from "@/lib/search-params";
 
 type SP = { escopo?: string; tipo?: string; fornecedorId?: string; fabricanteId?: string; produtoId?: string; renovar?: string };
 
 export default async function NovoDocumentoPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireUser(PERFIS_EDITAR_DOCUMENTOS);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const [fornecedores, fabricantes, produtos, vigentes] = await Promise.all([
     db.fornecedor.findMany({ where: { ativo: true }, select: { id: true, razaoSocial: true, nomeFantasia: true }, orderBy: { razaoSocial: "asc" } }),
     db.fabricante.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
@@ -35,7 +36,7 @@ export default async function NovoDocumentoPage({ searchParams }: { searchParams
   return (
     <>
       <PageHeader title={ren ? `Renovar: ${ROTULO_TIPO[ren.tipo]}` : "Novo documento"} subtitle={ren ? "O documento anterior será marcado como substituído e continua no histórico." : "Licenças, certificados, registros e contratos com alerta de vencimento."} />
-      <Card title="Dados do documento" icon="escudo">
+      <Card title="Dados do documento">
         <DocumentoNovoForm
           key={`${inicial.renovarId ?? ""}${inicial.escopo ?? ""}${inicial.fornecedorId ?? ""}${inicial.fabricanteId ?? ""}${inicial.produtoId ?? ""}`}
           fornecedores={fornecedores.map((f) => ({ value: f.id, label: f.nomeFantasia ?? f.razaoSocial }))}

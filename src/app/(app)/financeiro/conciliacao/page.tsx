@@ -7,6 +7,7 @@ import { carregarConciliacao } from "../_lib/conciliacao";
 import { opcoesClassificacao } from "../_lib/plano";
 import { desfazerConciliacao, importarExtrato } from "../_lib/conciliacao-actions";
 import { ItemExtrato, LinhaPendente } from "./linha";
+import { AbasNav } from "@/components/abas-nav";
 
 export default async function ConciliacaoPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireUser(["FINANCEIRO"]);
@@ -18,6 +19,7 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
     return (
       <>
         <PageHeader title="Conciliação bancária" subtitle="Compare o extrato do banco com o que foi baixado no sistema." />
+        <AbasNav atual="/financeiro/conciliacao" />
         <Card>
           <EmptyState
             text="Nenhuma conta bancária cadastrada. Cadastre uma para importar o extrato e conciliar."
@@ -35,6 +37,7 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
   return (
     <>
       <PageHeader title="Conciliação bancária" subtitle="Importe o extrato do banco (OFX ou CNAB 240) e case cada linha com uma baixa, um título ou um lançamento avulso." actions={<a href="#importar" className={btn.secondary}>Importar extrato</a>} />
+      <AbasNav atual="/financeiro/conciliacao" />
 
       <FilterBar>
         <Select label="Conta bancária" name="conta" defaultValue={escolhida.id} options={contas.map((c) => ({ value: c.id, label: c.nome }))} placeholder="" className="w-64" />

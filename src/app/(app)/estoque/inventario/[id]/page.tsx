@@ -33,6 +33,8 @@ const SaldoAtual = ({ i }: { i: Item }) => (
   </span>
 );
 
+const LIMITE_LOTES = 5000; // o seletor "incluir lote" lista até este número de lotes
+
 export default async function InventarioPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(PERFIS_VER_INVENTARIO);
   const id = idInt((await params).id);
@@ -42,9 +44,12 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
   const { inv, itens, resumo, foraDaFoto } = rev;
   const andamento = inv.status === "ABERTO" || inv.status === "CONTADO";
   const edita = podeEditar(user.perfil) && andamento;
-  const lotes = edita
-    ? await db.lote.findMany({ include: { produto: { select: { codigo: true, descricao: true } } }, orderBy: [{ produto: { descricao: "asc" } }, { validade: "asc" }], take: 1000 })
-    : [];
+  const [lotes, totalLotes] = edita
+    ? await Promise.all([
+        db.lote.findMany({ include: { produto: { select: { codigo: true, descricao: true } } }, orderBy: [{ produto: { descricao: "asc" } }, { validade: "asc" }], take: LIMITE_LOTES }),
+        db.lote.count(),
+      ])
+    : [[], 0];
   const doc = docInventario(inv.id);
   const nomeHosp = inv.hospital.nomeFantasia ?? inv.hospital.razaoSocial;
   const divergentes = itens.filter((i) => (i.calc.diferenca ?? 0) !== 0);
@@ -55,7 +60,7 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
       <PageHeader
         title={`Inventário ${doc}`}
         voltar={{ href: "/estoque/inventario", label: "Inventário" }}
-        subtitle={`${nomeHosp} · criado em ${dateTime(inv.criadoEm)} por ${inv.criadoPor}`}
+        meta={[`${nomeHosp} · criado em ${dateTime(inv.criadoEm)} por ${inv.criadoPor}`]}
         actions={
           <>
             <StatusBadge status={inv.status} />
@@ -76,9 +81,9 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
         }
       />
       <KpiGrid>
-        <Stat icon="lista" label="Itens contados" value={`${num(resumo.contados)} / ${num(resumo.itens)}`} hint={inv.contadoEm ? `contagem concluída em ${dateTime(inv.contadoEm)}` : "contagem em andamento"} tone={resumo.naoContados && andamento ? "warn" : "default"} />
-        <Stat icon="alerta" label="Divergências" value={num(resumo.divergentes)} hint={`${num(resumo.unidadesFalta)} un. a menos · ${num(resumo.unidadesSobra)} un. a mais`} tone={resumo.divergentes ? "danger" : "default"} />
-        <Stat icon="pagar" label="Perdas (faltas ao custo)" value={money(resumo.valorFalta)} hint={`sobras: ${money(resumo.valorSobra)}`} tone={resumo.valorFalta ? "danger" : "default"} />
+        <Stat label="Itens contados" value={`${num(resumo.contados)} / ${num(resumo.itens)}`} hint={inv.contadoEm ? `contagem concluída em ${dateTime(inv.contadoEm)}` : "contagem em andamento"} tone={resumo.naoContados && andamento ? "warn" : "default"} />
+        <Stat label="Divergências" value={num(resumo.divergentes)} hint={`${num(resumo.unidadesFalta)} un. a menos · ${num(resumo.unidadesSobra)} un. a mais`} tone={resumo.divergentes ? "danger" : "default"} />
+        <Stat label="Perdas (faltas ao custo)" value={money(resumo.valorFalta)} hint={`sobras: ${money(resumo.valorSobra)}`} tone={resumo.valorFalta ? "danger" : "default"} />
         <Stat label={inv.status === "FECHADO" ? "A cobrar do hospital" : "Situação"} value={inv.status === "FECHADO" ? money(totalCobrar) : <StatusBadge status={inv.status} />} hint={inv.status === "FECHADO" ? `fechado em ${dateTime(inv.fechadoEm)} por ${inv.fechadoPor}` : inv.status === "CANCELADO" ? `cancelado em ${dateTime(inv.canceladoEm)}` : "ainda não fechado"} />
       </KpiGrid>
 
@@ -97,7 +102,7 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
       <div className="space-y-3">
         {edita ? (
           <Form action={salvarContagemAction.bind(null, inv.id)} submitLabel="Salvar contagem">
-            <Table titulo="Contagem" icone="lista" contagem={itens.length} head={["Produto / lote", "Saldo no sistema", "Contado", "Diferença", "Valor"]} empty={itens.length === 0} emptyText="Este hospital não tinha saldo na foto. Inclua abaixo o material encontrado.">
+            <Table titulo="Contagem" contagem={itens.length} head={["Produto / lote", "Saldo no sistema", "Contado", "Diferença", "Valor"]} empty={itens.length === 0} emptyText="Este hospital não tinha saldo na foto. Inclua abaixo o material encontrado.">
               {itens.map((i) => (
                 <tr key={i.id}>
                   <Produto i={i} />
@@ -114,7 +119,7 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
         ) : (
           <Table
             titulo="Itens"
-            icone="lista"
+
             contagem={itens.length}
             head={["Produto / lote", "Foto", inv.status === "FECHADO" ? "Saldo no fechamento" : "Saldo atual", "Contado", "Diferença", "Valor", "Resolução", "A cobrar"]}
             empty={itens.length === 0}
@@ -142,8 +147,13 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
         )}
 
         {edita && (
-          <Card title="Incluir lote encontrado" icon="mais">
+          <Card title="Incluir lote encontrado">
             <Form action={incluirLoteAction.bind(null, inv.id)} submitLabel="Incluir" resetOnSuccess>
+              {totalLotes > lotes.length && (
+                <Aviso tom="alerta" className="mb-3">
+                  O seletor mostra só {num(lotes.length)} dos {num(totalLotes)} lotes. Se o lote procurado não aparece, avise o administrador.
+                </Aviso>
+              )}
               <Grid cols={3}>
                 <Select label="Lote *" name="loteId" required className="sm:col-span-2" options={lotes.map((l) => ({ value: l.id, label: `${l.produto.codigo} — ${l.produto.descricao} · lote ${l.numero} · val. ${date(l.validade)}` }))} />
                 <Field label="Quantidade encontrada *" name="contado" type="number" min="0" defaultValue={1} required />
@@ -156,7 +166,7 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
           <Form action={fecharInventarioAction.bind(null, inv.id)} submitLabel={null}>
             <Table
               titulo="Revisão e fechamento"
-              icone="escudo"
+
               contagem={divergentes.length}
               head={["Produto / lote", "Saldo agora", "Contado", "Diferença", "Valor", "Resolução", "Justificativa"]}
               empty={divergentes.length === 0}

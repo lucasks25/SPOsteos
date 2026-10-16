@@ -167,6 +167,19 @@ const TAB5: Record<string, string> = {
   "41": "Automaticamente rejeitada", "42": "Instrução recebida - pendente de análise",
 };
 
+/** Tabela 9 — motivo de devolução do cheque usado no pagamento (ocorrência 69, posições 378-379). */
+const TAB9: Record<string, string> = {
+  "11": "Sem fundos - 1ª apresentação (reapresentável)", "12": "Sem fundos - 2ª apresentação", "13": "Conta encerrada", "14": "Prática espúria",
+  "20": "Folha cancelada pelo correntista", "21": "Contra-ordem ou oposição (reapresentável)", "22": "Divergência ou insuficiência de assinatura (reapresentável)",
+  "23": "Órgão público sem requisitos do DL 200 (reapresentável)", "24": "Bloqueio judicial ou do Bacen (reapresentável)", "25": "Talonário cancelado pelo banco",
+  "28": "Contra-ordem por furto ou roubo", "29": "Talonário sem confirmação de recebimento (reapresentável)", "30": "Furto ou roubo de malotes",
+  "31": "Erro formal (reapresentável)", "32": "Carimbo de compensação (reapresentável)", "33": "Divergência de endosso (reapresentável)",
+  "34": "Apresentado por banco fora do cruzamento (reapresentável)", "35": "Cheque fraudado ou praça adulterada", "36": "Mais de um endosso (reapresentável)",
+  "40": "Moeda inválida", "41": "Apresentado a banco que não o pagador (reapresentável)", "42": "Não compensável na sessão (reapresentável)",
+  "43": "Reapresentado com o mesmo motivo", "44": "Cheque prescrito", "45": "Entidade obrigada a ordem bancária",
+  "48": "Valor acima do limite sem identificação do beneficiário (reapresentável)", "49": "Remessa nula",
+};
+
 /** Tabela 10 — mensagem informativa na entrada confirmada (ocorrência 02). */
 const TAB10: Record<string, string> = {
   "01": "CEP sem atendimento de protesto no momento",
@@ -186,6 +199,7 @@ export const MOTIVOS_POR_OCORRENCIA: Record<string, { tabela: string; codigos: R
   "16": { tabela: "3", codigos: TAB3 },
   "17": { tabela: "2", codigos: TAB2 },
   "18": { tabela: "5", codigos: TAB5 },
+  "69": { tabela: "9", codigos: TAB9 },
 };
 
 /** Nota 28 — código de liquidação (posições 393-394). */

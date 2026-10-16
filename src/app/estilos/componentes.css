@@ -23,6 +23,11 @@
       --pad-x: 2rem;
     }
   }
+  /* Menu no topo: sem a coluna lateral o conteúdo ocupa a largura toda, com recuo lateral menor (não centraliza em 1680 px). */
+  [data-menu="topo"] .conteudo {
+    max-width: none;
+    --pad-x: 1rem;
+  }
 
   /*
    * Faixa de indicadores (KpiGrid): UM contorno e fios finos entre as células (padrão dos resumos do Odoo/ERPNext),

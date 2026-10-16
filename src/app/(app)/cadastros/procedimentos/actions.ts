@@ -10,9 +10,9 @@ import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/form
 import { deleteErrorMessage, PERFIS_COMERCIAL } from "../_lib/acoes";
 
 const schema = z.object({
-  codigoTuss: zf.optText(),
-  descricao: zf.text(),
-  especialidade: zf.optText(),
+  codigoTuss: zf.optText(30),
+  descricao: zf.nome(),
+  especialidade: zf.optText(100),
 });
 
 export async function salvarProcedimento(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {

@@ -1,0 +1,29 @@
+Gerado em 2026-10-16T13:39:44.475Z | data de pagamento 2026-10-30 | empresa FICTÍCIA
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 01-credito-conta-itau.rem
+Tipo: remessa | linhas: 6 | lotes: 0001 (tipo 20, forma 01, 1 pagto, R$ 0.01)
+Resultado: APROVADO — nenhum erro
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 02-ted-outro-banco.rem
+Tipo: remessa | linhas: 6 | lotes: 0001 (tipo 20, forma 41, 1 pagto, R$ 0.02)
+Resultado: APROVADO — nenhum erro
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 03-boleto-itau.rem
+Tipo: remessa | linhas: 6 | lotes: 0001 (tipo 20, forma 30, 1 pagto, R$ 0.03)
+Resultado: APROVADO — nenhum erro
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 04-boleto-outro-banco.rem
+Tipo: remessa | linhas: 6 | lotes: 0001 (tipo 20, forma 31, 1 pagto, R$ 0.04)
+Resultado: APROVADO — nenhum erro
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 05-pix-chave.rem
+Tipo: remessa | linhas: 12 | lotes: 0001 (tipo 20, forma 45, 4 pagto, R$ 0.26)
+Resultado: APROVADO — nenhum erro
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 06-misto-ted-credito-boletos.rem
+Tipo: remessa | linhas: 18 | lotes: 0001 (tipo 20, forma 01, 1 pagto, R$ 0.12); 0002 (tipo 20, forma 41, 1 pagto, R$ 0.11); 0003 (tipo 20, forma 30, 1 pagto, R$ 0.13); 0004 (tipo 20, forma 31, 1 pagto, R$ 0.14)
+Resultado: APROVADO — nenhum erro
+
+Validação SISPAG CNAB 240 (manual Itaú v085) — 90-retorno-simulado-do-06.ret
+Tipo: retorno | linhas: 18 | lotes: 0001 (tipo 20, forma 01, 1 pagto, R$ 0.12); 0002 (tipo 20, forma 41, 1 pagto, R$ 0.11); 0003 (tipo 20, forma 30, 1 pagto, R$ 0.13); 0004 (tipo 20, forma 31, 1 pagto, R$ 0.14)
+Resultado: APROVADO — nenhum erro

@@ -6,13 +6,14 @@ import { money, num, toNumber } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
 import { diaSP, periodo } from "@/lib/datas";
 import { nomeHospital, opcoesRepresentantes } from "@/app/(app)/cadastros/_lib/publico";
+import { soStrings } from "@/lib/search-params";
 
 type Linha = { nome: string; pedidos: number; total: number; custo: number; comissao: number };
 const pct = (m: number, t: number) => (t > 0 ? `${((m / t) * 100).toFixed(1)}%` : "—");
 
 export default async function ComissoesPage({ searchParams }: { searchParams: Promise<{ de?: string; ate?: string; representante?: string }> }) {
   await requireUser(["COMERCIAL", "FINANCEIRO"]);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const hoje = diaSP(new Date());
   const de = sp.de ?? `${hoje.slice(0, 7)}-01`;
   const ate = sp.ate ?? hoje;
@@ -84,12 +85,12 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <PageHeader title="Comissões e margem" subtitle="Para o Comercial e o Financeiro: quanto foi vendido, o custo, a margem e a comissão dos representantes, com base nos pedidos faturados no período (data da nota fiscal)." />
+      <PageHeader title="Comissões e margem" subtitle="Quanto foi vendido, o custo, a margem e a comissão dos representantes, com base nos pedidos faturados no período (data da nota fiscal)." />
       <KpiGrid>
-        <Stat icon="receber" label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
-        <Stat icon="pagar" label="Custo" value={money(tot.custo)} />
-        <Stat icon="tendencia" label="Margem de contribuição" value={money(margem)} hint={<span className={margem < 0 ? "text-rose-600" : "text-emerald-700"}>{pct(margem, tot.total)}</span>} tone={margem < 0 ? "danger" : "default"} />
-        <Stat icon="percentual" label="Comissões" value={money(tot.comissao)} />
+        <Stat label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
+        <Stat label="Custo" value={money(tot.custo)} />
+        <Stat label="Margem de contribuição" value={money(margem)} hint={<span className={margem < 0 ? "text-rose-600" : "text-emerald-700"}>{pct(margem, tot.total)}</span>} tone={margem < 0 ? "danger" : "default"} />
+        <Stat label="Comissões" value={money(tot.comissao)} />
       </KpiGrid>
       <Filtros limparHref="/comercial/comissoes">
         <FiltroInput label="De" name="de" type="date" defaultValue={de} />
@@ -101,7 +102,7 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
         {tabela(porHospital, "Vendas por hospital", "Hospital", "predio")}
         <Table
           titulo="Cirurgias por médico (no período)"
-          icone="medico"
+
           contagem={porMedico.size}
           acoes={<Link href="/comercial/cirurgias" className={btn.small}>Ver cirurgias</Link>}
           head={["Médico", "Realizadas/faturadas", "Agendadas/confirmadas", "Total"]}

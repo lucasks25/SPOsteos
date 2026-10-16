@@ -21,16 +21,25 @@ enum Perfil {
 }
 
 model Usuario {
-  id           String         @id @default(cuid())
-  nome         String
-  email        String         @unique
-  senhaHash    String
-  perfil       Perfil         @default(COMERCIAL)
-  ativo        Boolean        @default(true)
+  id             String         @id @default(cuid())
+  nome           String
+  email          String         @unique
+  senhaHash      String
+  perfil         Perfil         @default(COMERCIAL)
+  ativo          Boolean        @default(true)
   // Sobe a cada troca de senha e a cada logout: sessões (JWT) emitidas antes deixam de valer.
-  sessaoVersao Int            @default(0)
-  criadoEm     DateTime       @default(now())
-  logs         LogAuditoria[]
+  sessaoVersao   Int            @default(0)
+  // Troca obrigatória da senha no próximo acesso: usuário criado ou senha redefinida pelo admin.
+  senhaExpirada  Boolean        @default(false)
+  // MFA (TOTP, RFC 6238). Segredo cifrado com AES-256-GCM (chave derivada do AUTH_SECRET); nulo = sem MFA.
+  mfaSegredo     String?
+  mfaAtivadoEm   DateTime?
+  // Último passo de 30 s aceito: o mesmo código não vale duas vezes (anti-replay).
+  mfaUltimoPasso Int?
+  // Códigos de recuperação de uso único: HMAC-SHA256 de cada código (nunca em claro).
+  mfaRecuperacao String[]       @default([])
+  criadoEm       DateTime       @default(now())
+  logs           LogAuditoria[]
 }
 
 // Tentativas de login que falharam (por e-mail e por IP) para limitar força bruta.
@@ -42,10 +51,12 @@ model TentativaLogin {
   @@index([chave, criadaEm])
 }
 
+// Imutável: trigger no Postgres recusa UPDATE/DELETE/TRUNCATE (migration 20261016235000_lgpd_auditoria_imutavel, docs/LGPD.md §6).
+// Restrict: usuário com histórico não é apagado (desative-o); o log nunca perde quem fez.
 model LogAuditoria {
   id         String   @id @default(cuid())
   usuarioId  String?
-  usuario    Usuario? @relation(fields: [usuarioId], references: [id])
+  usuario    Usuario? @relation(fields: [usuarioId], references: [id], onDelete: Restrict)
   acao       String
   entidade   String
   entidadeId String?
@@ -68,22 +79,22 @@ model Fabricante {
 }
 
 model Fornecedor {
-  id           String         @id @default(cuid())
-  razaoSocial  String
-  nomeFantasia String?
-  cnpj         String         @unique
-  ie           String?
-  email        String?
-  telefone     String?
-  cidade       String?
-  uf           String?
-  afe          String? // Autorização de Funcionamento ANVISA
+  id                    String         @id @default(cuid())
+  razaoSocial           String
+  nomeFantasia          String?
+  cnpj                  String         @unique
+  ie                    String?
+  email                 String?
+  telefone              String?
+  cidade                String?
+  uf                    String?
+  afe                   String? // Autorização de Funcionamento ANVISA
   // dados para pagamento (SISPAG): banco/agência/conta ou chave Pix
-  bancoCodigo  String? // código de compensação, ex.: 341
-  agencia      String?
-  conta        String?
-  contaDigito  String?
-  chavePix     String?
+  bancoCodigo           String? // código de compensação, ex.: 341
+  agencia               String?
+  conta                 String?
+  contaDigito           String?
+  chavePix              String?
   // aprovação dos dados de pagamento (dupla checagem): o SISPAG só paga se o hash de (cnpj + banco/agência/conta/dígito + Pix)
   // for igual ao aprovado. Quem alterou não aprova (financeiro/_lib/favorecidos-aprovacao.ts, docs/REVISAO.md §19).
   pagamentoAlteradoEm   DateTime?
@@ -91,11 +102,12 @@ model Fornecedor {
   pagamentoAprovadoHash String?
   pagamentoAprovadoEm   DateTime?
   pagamentoAprovadoPor  String?
-  ativo        Boolean        @default(true)
-  criadoEm     DateTime       @default(now())
-  pedidos      PedidoCompra[]
-  contasPagar  ContaPagar[]
-  documentos   Documento[]
+  ativo                 Boolean        @default(true)
+  criadoEm              DateTime       @default(now())
+  pedidos               PedidoCompra[]
+  contasPagar           ContaPagar[]
+  documentos            Documento[]
+  notasFiscais          NotaFiscal[]
 }
 
 model Hospital {
@@ -120,6 +132,7 @@ model Hospital {
   pedidos            PedidoVenda[]
   orcamentos         Orcamento[]
   contasReceber      ContaReceber[]
+  notasFiscais       NotaFiscal[]
   tabelaPrecoId      String?
   tabelaPreco        TabelaPreco?            @relation(fields: [tabelaPrecoId], references: [id])
 }
@@ -207,6 +220,11 @@ model Produto {
   gtin              String? // GTIN / código de barras UDI-GS1
   ncm               String?
   unidade           String                      @default("UN")
+  // Dados fiscais da NF-e (docs/NFE.md): CEST só se o NCM estiver em regime de ST; origem da mercadoria (tabela A do CST:
+  // 0 nacional, 1 estrangeira importação direta, 2 estrangeira adquirida no mercado interno); unidade tributável (nulo = unidade).
+  cest              String?
+  origem            Int                         @default(0)
+  unidadeTributavel String?
   custoMedio        Decimal                     @default(0) @db.Decimal(14, 2)
   precoBase         Decimal                     @default(0) @db.Decimal(14, 2)
   estoqueMinimo     Int                         @default(0)
@@ -227,6 +245,7 @@ model Produto {
   consumos          CirurgiaConsumo[]
   inventarioItens   InventarioConsignacaoItem[]
   documentos        Documento[]
+  notaFiscalItens   NotaFiscalItem[]
 }
 
 // ───────────────────────── Qualidade / Lotes ─────────────────────────
@@ -372,19 +391,20 @@ enum StatusRemessa {
 
 // Vale / remessa de consignação para um hospital
 model Remessa {
-  id          Int           @id @default(autoincrement())
-  localId     String // local do hospital
-  local       LocalEstoque  @relation(fields: [localId], references: [id])
-  cirurgiaId  String?
-  cirurgia    Cirurgia?     @relation(fields: [cirurgiaId], references: [id])
-  kitId       String?
-  kit         Kit?          @relation(fields: [kitId], references: [id])
-  status      StatusRemessa @default(ABERTA)
-  observacao  String?
-  enviadaEm   DateTime?
-  conferidaEm DateTime?
-  criadoEm    DateTime      @default(now())
-  itens       RemessaItem[]
+  id           Int           @id @default(autoincrement())
+  localId      String // local do hospital
+  local        LocalEstoque  @relation(fields: [localId], references: [id])
+  cirurgiaId   String?
+  cirurgia     Cirurgia?     @relation(fields: [cirurgiaId], references: [id])
+  kitId        String?
+  kit          Kit?          @relation(fields: [kitId], references: [id])
+  status       StatusRemessa @default(ABERTA)
+  observacao   String?
+  enviadaEm    DateTime?
+  conferidaEm  DateTime?
+  criadoEm     DateTime      @default(now())
+  itens        RemessaItem[]
+  notasFiscais NotaFiscal[]
 
   @@index([cirurgiaId]) // remessas da cirurgia, _count da lista, cirurgias aguardando vale
 }
@@ -449,7 +469,10 @@ model Cirurgia {
   representanteId       String?
   representante         Representante?         @relation(fields: [representanteId], references: [id])
   paciente              String
+  // Cifrada na aplicação (AES-256-GCM, src/lib/cripto.ts, contexto "Cirurgia.carteirinha"); legado em claro até rodar scripts/lgpd-cifrar.ts.
   carteirinha           String?
+  // Índice cego (HMAC da carteirinha normalizada) para achar o titular por carteirinha sem guardá-la em claro (LGPD art. 18).
+  carteirinhaHash       String?
   sus                   Boolean                @default(false)
   status                StatusCirurgia         @default(AGENDADA)
   observacao            String?
@@ -462,6 +485,7 @@ model Cirurgia {
   autorizacoes          AutorizacaoConvenio[]
 
   @@index([dataHora]) // lista (dataHora desc), agenda, painel, comissões (ARQ-13)
+  @@index([carteirinhaHash])
 }
 
 // Material efetivamente utilizado na cirurgia (folha de consumo / pós-cirúrgico)
@@ -574,7 +598,7 @@ model PedidoVenda {
   representanteId String?
   representante   Representante?    @relation(fields: [representanteId], references: [id])
   status          StatusPedidoVenda @default(ABERTO)
-  numeroNf        String?
+  numeroNf        String? // única entre pedidos não cancelados: índice parcial PedidoVenda_numeroNf_ativo_key (só na migration)
   total           Decimal           @default(0) @db.Decimal(14, 2)
   custoTotal      Decimal           @default(0) @db.Decimal(14, 2)
   comissao        Decimal           @default(0) @db.Decimal(14, 2)
@@ -584,6 +608,7 @@ model PedidoVenda {
   centroCusto     CentroCusto?      @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
   itens           PedidoVendaItem[]
   contasReceber   ContaReceber[]
+  notasFiscais    NotaFiscal[]
 
   @@index([status, faturadoEm]) // painel, comissões, DRE e gestão: faturados no período
 }
@@ -632,6 +657,7 @@ model PedidoCompra {
   dataRegistroDi  DateTime?
   dataDesembaraco DateTime?
   despesas        PedidoCompraDespesa[]
+  notasFiscais    NotaFiscal[]
 }
 
 enum TipoCambio {
@@ -1318,4 +1344,164 @@ model FormularioEnviado {
   criadoEm  DateTime @default(now())
 
   @@index([criadoEm])
+}
+
+// ───────────────────────── Fiscal (NF-e) ─────────────────────────
+// Dono: módulo fiscal (src/app/(app)/fiscal). Desenho, CFOPs e pendências fiscais em docs/NFE.md.
+// A nota guarda uma FOTO dos dados (destinatário, itens, tributos) no momento da montagem: mudar o cadastro depois não
+// muda a nota. Uma nota ativa (não REJEITADA nem CANCELADA) por origem e tipo: índice único parcial NotaFiscal_origem_ativa_key
+// (só na migration; o Prisma não declara índice parcial).
+
+enum TipoNotaFiscal {
+  REMESSA_CONSIGNACAO // 5917/6917, saída: vale para o hospital
+  RETORNO_CONSIGNACAO // 1918/2918, entrada própria: devolução física do consignado
+  RETORNO_SIMBOLICO // 1919/2919, entrada própria: retorno simbólico do que foi vendido/consumido
+  VENDA_CONSIGNADO // 5114/6114, saída: venda do que estava consignado (referencia a NF de remessa)
+  VENDA // 5102/6102, saída: venda direta
+  IMPORTACAO // 3102, entrada própria: nacionalização (DI e adições)
+}
+
+enum StatusNotaFiscal {
+  RASCUNHO // montada, não enviada
+  ENVIADA // enviada ao emissor; aguardando a SEFAZ (consultar)
+  AUTORIZADA
+  REJEITADA // não vale; corrija a origem e monte outra
+  CANCELADA
+}
+
+enum TipoEventoNotaFiscal {
+  MONTAGEM
+  ENVIO
+  AUTORIZACAO
+  REJEICAO
+  CONSULTA
+  EFEITO // reflexo na origem (ex.: pedido de venda faturado com o número da NF)
+  CANCELAMENTO
+  CARTA_CORRECAO
+  ERRO
+}
+
+model NotaFiscal {
+  id                        Int                @id @default(autoincrement())
+  tipo                      TipoNotaFiscal
+  status                    StatusNotaFiscal   @default(RASCUNHO)
+  entrada                   Boolean // tpNF: true = 0 (entrada), false = 1 (saída)
+  naturezaOperacao          String
+  cfop                      String // CFOP predominante (o de cada item fica no item)
+  provedor                  String // SIMULADO ou o emissor contratado (FOCUS…)
+  ambiente                  String // SIMULADO, HOMOLOGACAO, PRODUCAO
+  referencia                String             @unique // chave da nota no emissor (idempotência: reenvio consulta a mesma)
+  numero                    Int?
+  serie                     Int?
+  chave                     String?            @unique
+  protocolo                 String?
+  // destinatário (foto)
+  destNome                  String
+  destDocumento             String? // CNPJ/CPF só dígitos; nulo para estrangeiro
+  destIe                    String?
+  destEndereco              String?
+  destBairro                String?
+  destCep                   String?
+  destMunicipio             String?
+  destUf                    String
+  destPais                  String?
+  hospitalId                String?
+  hospital                  Hospital?          @relation(fields: [hospitalId], references: [id], onDelete: Restrict)
+  fornecedorId              String?
+  fornecedor                Fornecedor?        @relation(fields: [fornecedorId], references: [id], onDelete: Restrict)
+  // origem (uma delas)
+  pedidoVendaId             Int?
+  pedidoVenda               PedidoVenda?       @relation(fields: [pedidoVendaId], references: [id], onDelete: Restrict)
+  remessaId                 Int?
+  remessa                   Remessa?           @relation(fields: [remessaId], references: [id], onDelete: Restrict)
+  pedidoCompraId            Int?
+  pedidoCompra              PedidoCompra?      @relation(fields: [pedidoCompraId], references: [id], onDelete: Restrict)
+  // totais (R$)
+  valorProdutos             Decimal            @db.Decimal(14, 2)
+  valorFrete                Decimal            @default(0) @db.Decimal(14, 2)
+  valorSeguro               Decimal            @default(0) @db.Decimal(14, 2)
+  valorOutros               Decimal            @default(0) @db.Decimal(14, 2)
+  valorII                   Decimal            @default(0) @db.Decimal(14, 2)
+  valorIpi                  Decimal            @default(0) @db.Decimal(14, 2)
+  valorIcms                 Decimal            @default(0) @db.Decimal(14, 2)
+  valorPis                  Decimal            @default(0) @db.Decimal(14, 2)
+  valorCofins               Decimal            @default(0) @db.Decimal(14, 2)
+  valorTotal                Decimal            @db.Decimal(14, 2)
+  chavesReferenciadas       String[]           @default([]) // NFref: chaves de 44 dígitos (remessa na venda/retorno do consignado)
+  informacoesComplementares String?
+  importacao                Json? // DI e adições (nDI, dDI, local e UF do desembaraço, via, AFRMM, intermediação, adição)
+  vencimento                DateTime? // venda: vencimento do título gerado ao autorizar (prazo do hospital)
+  xmlUrl                    String?
+  danfeUrl                  String?
+  mensagem                  String? // último retorno do emissor/SEFAZ (motivo da rejeição, por exemplo)
+  efeitoAplicadoEm          DateTime? // reflexo na origem aplicado (venda: pedido FATURADO + conta a receber)
+  efeitoPendente            String? // falhou ao aplicar o reflexo: motivo (a nota continua autorizada; "Aplicar na origem" refaz)
+  criadoPor                 String?
+  criadoEm                  DateTime           @default(now())
+  enviadaEm                 DateTime?
+  autorizadaEm              DateTime?
+  canceladaEm               DateTime?
+  itens                     NotaFiscalItem[]
+  eventos                   NotaFiscalEvento[]
+
+  @@index([status, criadoEm])
+  @@index([pedidoVendaId])
+  @@index([remessaId])
+  @@index([pedidoCompraId])
+}
+
+model NotaFiscalItem {
+  id             String     @id @default(cuid())
+  notaId         Int
+  nota           NotaFiscal @relation(fields: [notaId], references: [id], onDelete: Cascade)
+  numeroItem     Int // nItem (1..990)
+  produtoId      String
+  produto        Produto    @relation(fields: [produtoId], references: [id], onDelete: Restrict)
+  codigo         String
+  descricao      String
+  ncm            String
+  cest           String?
+  gtin           String?
+  cfop           String
+  unidade        String
+  quantidade     Int
+  valorUnitario  Decimal    @db.Decimal(16, 4)
+  valorTotal     Decimal    @db.Decimal(14, 2)
+  origem         Int
+  cstIcms        String
+  aliquotaIcms   Decimal    @default(0) @db.Decimal(5, 2)
+  baseIcms       Decimal    @default(0) @db.Decimal(14, 2)
+  valorIcms      Decimal    @default(0) @db.Decimal(14, 2)
+  cstIpi         String
+  aliquotaIpi    Decimal    @default(0) @db.Decimal(5, 2)
+  valorIpi       Decimal    @default(0) @db.Decimal(14, 2)
+  cstPis         String
+  aliquotaPis    Decimal    @default(0) @db.Decimal(5, 2)
+  valorPis       Decimal    @default(0) @db.Decimal(14, 2)
+  cstCofins      String
+  aliquotaCofins Decimal    @default(0) @db.Decimal(5, 2)
+  valorCofins    Decimal    @default(0) @db.Decimal(14, 2)
+  valorII        Decimal    @default(0) @db.Decimal(14, 2)
+  // rastro (grupo rastro da NF-e): lote, quantidade do lote, fabricação e validade
+  loteNumero     String?
+  loteFabricacao DateTime?
+  loteValidade   DateTime?
+  registroAnvisa String?
+
+  @@unique([notaId, numeroItem])
+}
+
+model NotaFiscalEvento {
+  id        String               @id @default(cuid())
+  notaId    Int
+  nota      NotaFiscal           @relation(fields: [notaId], references: [id], onDelete: Cascade)
+  tipo      TipoEventoNotaFiscal
+  sucesso   Boolean
+  sequencia Int? // carta de correção: nSeqEvento (1..20)
+  protocolo String?
+  texto     String? // justificativa do cancelamento, texto da carta de correção, mensagem do emissor
+  usuarioId String?
+  criadoEm  DateTime             @default(now())
+
+  @@index([notaId, criadoEm])
 }

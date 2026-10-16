@@ -1,6 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
+import { consumoLiquidoPorProduto } from "@/lib/estoque";
 import { nomeHospital } from "@/app/(app)/cadastros/_lib/publico";
 import { DIAS_CONSUMO, type EntradaGiro } from "./giro";
 import type { PedidoMargem } from "./margens";
@@ -46,7 +47,7 @@ export async function carregarEntradasGiro(agora: Date): Promise<EntradaGiro[]> 
     db.produto.findMany({ where: { ativo: true }, select: { id: true, codigo: true, descricao: true, estoqueMinimo: true, custoMedio: true } }),
     db.localEstoque.findMany({ select: { id: true, tipo: true } }),
     db.saldo.groupBy({ by: ["produtoId", "localId"], where: { quantidade: { gt: 0 } }, _sum: { quantidade: true } }),
-    db.movimento.groupBy({ by: ["produtoId"], where: { tipo: "CONSUMO", criadoEm: { gte: desde, lte: agora } }, _sum: { quantidade: true } }),
+    consumoLiquidoPorProduto({ desde, ate: agora }), // CONSUMO menos estornos (RETORNO de estorno de consumo)
     db.movimento.groupBy({ by: ["produtoId"], where: { tipo: "CONSUMO" }, _max: { criadoEm: true } }),
   ]);
   const tipoLocal = new Map(locais.map((l) => [l.id, l.tipo]));
@@ -58,7 +59,7 @@ export async function carregarEntradasGiro(agora: Date): Promise<EntradaGiro[]> 
     a[t] += s._sum.quantidade ?? 0;
     porProduto.set(s.produtoId, a);
   }
-  const cons = new Map(consumo.map((c) => [c.produtoId, c._sum.quantidade ?? 0]));
+  const cons = consumo;
   const ult = new Map(ultimo.map((c) => [c.produtoId, c._max.criadoEm]));
   return produtos.map((p) => {
     const s = porProduto.get(p.id);

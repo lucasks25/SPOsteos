@@ -3,6 +3,7 @@ import { money } from "@/lib/format";
 import type { Perfil } from "@/generated/prisma/client";
 import type { IconName } from "@/components/icons";
 import { hojeSP, hojeUTC } from "@/lib/datas";
+import { emParalelo } from "@/lib/paralelo";
 import { faixasAbertas, contarAprovacoesPendentes, type Faixas } from "@/app/(app)/financeiro/_lib/publico";
 import { contarCirurgiasSemAutorizacao, contarAFaturar, contarPedidosSemNf } from "@/app/(app)/comercial/_lib/publico";
 import { contarAlertasDocumentos, contarRecolhimentos, contarLotesQuarentena, contarLotesVencendo, contarRegistrosVencendo } from "@/app/(app)/qualidade/_lib/publico";
@@ -64,22 +65,22 @@ export async function carregarPendencias(perfil: Perfil): Promise<DadosPendencia
   const hojeFin = hojeUTC();
   const zero = Promise.resolve(0);
 
-  const [recFaixas, pagarFaixas, aFaturar, quarentena, lotesVencendo, abaixoMin, registros, remessas, aprovacoes, docs, recolh, semAutorizacao, semVale, pedidosSemNf] = await Promise.all([
-    financeiro ? faixasAbertas("receber", hojeFin) : Promise.resolve(null),
-    financeiro ? faixasAbertas("pagar", hojeFin) : Promise.resolve(null),
-    comercial ? contarAFaturar() : zero,
-    estoque ? contarLotesQuarentena() : zero,
-    estoque ? contarLotesVencendo(hoje) : zero,
-    estoque ? contarAbaixoDoMinimo(hoje) : zero,
-    estoque ? contarRegistrosVencendo(hoje) : zero,
-    estoque ? contarRemessasAConferir() : zero,
-    financeiro ? contarAprovacoesPendentes() : zero,
-    documentos ? contarAlertasDocumentos(hojeFin) : Promise.resolve(semDocumentos),
-    recolhimentos ? contarRecolhimentos(hojeFin) : Promise.resolve(semRecolhimentos),
-    autorizacoes ? contarCirurgiasSemAutorizacao(new Date()) : zero,
-    vales ? contarCirurgiasAguardandoVale(hoje) : zero,
-    comercial ? contarPedidosSemNf() : zero,
-  ]);
+  const [recFaixas, pagarFaixas, aFaturar, quarentena, lotesVencendo, abaixoMin, registros, remessas, aprovacoes, docs, recolh, semAutorizacao, semVale, pedidosSemNf] = await emParalelo([
+    () => (financeiro ? faixasAbertas("receber", hojeFin) : Promise.resolve(null)),
+    () => (financeiro ? faixasAbertas("pagar", hojeFin) : Promise.resolve(null)),
+    () => (comercial ? contarAFaturar() : zero),
+    () => (estoque ? contarLotesQuarentena() : zero),
+    () => (estoque ? contarLotesVencendo(hoje) : zero),
+    () => (estoque ? contarAbaixoDoMinimo(hojeFin) : zero), // validade é gravada 00:00Z: hojeUTC, para o lote que vence hoje contar
+    () => (estoque ? contarRegistrosVencendo(hoje) : zero),
+    () => (estoque ? contarRemessasAConferir() : zero),
+    () => (financeiro ? contarAprovacoesPendentes() : zero),
+    () => (documentos ? contarAlertasDocumentos(hojeFin) : Promise.resolve(semDocumentos)),
+    () => (recolhimentos ? contarRecolhimentos(hojeFin) : Promise.resolve(semRecolhimentos)),
+    () => (autorizacoes ? contarCirurgiasSemAutorizacao(new Date()) : zero),
+    () => (vales ? contarCirurgiasAguardandoVale(hoje) : zero),
+    () => (comercial ? contarPedidosSemNf() : zero),
+  ], 4); // 4 contagens por vez (cada faixasAbertas faz mais 6): o painel não ocupa o pool que as transações usam
 
   const p = pagarFaixas;
   return {

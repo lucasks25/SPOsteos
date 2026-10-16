@@ -12,9 +12,9 @@ const PERFIS = ["COMERCIAL"] as const; // ADMIN sempre passa
 
 const itemSchema = z.object({
   produtoId: z.string().min(1, "Selecione o produto"),
-  quantidadeSolicitada: z.coerce.number().int("Quantidade deve ser inteira").min(1, "Quantidade solicitada mínima 1"),
-  quantidadeAutorizada: z.coerce.number().int("Quantidade deve ser inteira").min(0, "Quantidade autorizada inválida"),
-  valorAutorizado: z.preprocess((v) => (v === "" || v === null || v === undefined ? null : v), z.coerce.number().min(0, "Valor inválido").nullable()),
+  quantidadeSolicitada: zf.int(1),
+  quantidadeAutorizada: zf.int(0),
+  valorAutorizado: z.preprocess((v) => (v === "" || v === null || v === undefined ? null : v), zf.money().nullable()),
 });
 
 const itensJson = () =>
@@ -28,7 +28,7 @@ const itensJson = () =>
         return z.NEVER;
       }
     })
-    .pipe(z.array(itemSchema));
+    .pipe(z.array(itemSchema).max(200, "Itens demais (máximo 200)"));
 
 const schema = z.object({
   numeroGuia: zf.optText(),

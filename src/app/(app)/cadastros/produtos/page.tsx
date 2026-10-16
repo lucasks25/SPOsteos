@@ -5,11 +5,12 @@ import { PERFIS_PRODUTO } from "../_lib/acoes";
 import { podeEditarCadastro } from "../_lib/somente-leitura";
 import { Badge, LinkButton, PageHeader, SearchBar, Table, Td, btn, KpiGrid, Stat } from "@/components/ui";
 import { date, diasAte, money, num } from "@/lib/format";
+import { soStrings } from "@/lib/search-params";
 
 export default async function ProdutosPage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await requireUser();
   const edita = podeEditarCadastro(user.perfil, PERFIS_PRODUTO);
-  const { q } = await searchParams;
+  const { q } = soStrings(await searchParams);
   const produtos = await db.produto.findMany({
     where: q
       ? { OR: [{ descricao: { contains: q, mode: "insensitive" } }, { codigo: { contains: q, mode: "insensitive" } }, { registroAnvisa: { contains: q } }, { gtin: { contains: q } }] }
@@ -22,14 +23,14 @@ export default async function ProdutosPage({ searchParams }: { searchParams: Pro
   const regVencendo = produtos.filter((p) => p.validadeRegistro && diasAte(p.validadeRegistro) <= 90).length;
   return (
     <>
-      <PageHeader title="Produtos" subtitle="Materiais, implantes e instrumentais com registro ANVISA; cada setor mantém o que lhe cabe e o preço base é do Comercial." actions={edita ? <LinkButton href="/cadastros/produtos/novo">Novo produto</LinkButton> : undefined} />
+      <PageHeader title="Produtos" subtitle="Materiais, implantes e instrumentais com registro ANVISA." actions={edita ? <LinkButton href="/cadastros/produtos/novo">Novo produto</LinkButton> : undefined} />
       <KpiGrid cols={3}>
-        <Stat icon="lista" label="Listados" value={produtos.length} />
-        <Stat icon="pacote" label="Abaixo do mínimo" value={abaixoMin} hint="produtos com estoque abaixo do mínimo" />
-        <Stat icon="calendario" label="Registro a vencer" value={regVencendo} hint="vencido ou vencendo em 90 dias" />
+        <Stat label="Listados" value={produtos.length} />
+        <Stat label="Abaixo do mínimo" value={abaixoMin} hint="produtos com estoque abaixo do mínimo" />
+        <Stat label="Registro a vencer" value={regVencendo} hint="vencido ou vencendo em 90 dias" />
       </KpiGrid>
       <SearchBar placeholder="Código, descrição, registro ANVISA ou GTIN" defaultValue={q} />
-      <Table titulo="Produtos" icone="pacote" contagem={produtos.length} head={["Produto", "Registro ANVISA", "Venc. registro", "Preço base", "Estoque", ""]} empty={produtos.length === 0} emptyText={q ? "Nenhum produto encontrado para essa busca." : "Nenhum produto encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/produtos/novo" variant="secondary" icon="mais">Cadastrar produto</LinkButton> : undefined}>
+      <Table titulo="Produtos" contagem={produtos.length} head={["Produto", "Registro ANVISA", "Venc. registro", "Preço base", "Estoque", ""]} empty={produtos.length === 0} emptyText={q ? "Nenhum produto encontrado para essa busca." : "Nenhum produto encontrado."} emptyAction={edita ? <LinkButton href="/cadastros/produtos/novo" variant="secondary" icon="mais">Cadastrar produto</LinkButton> : undefined}>
         {produtos.map((p) => {
           const estoque = p.saldos.reduce((s, x) => s + x.quantidade, 0);
           const dias = p.validadeRegistro ? diasAte(p.validadeRegistro) : null;

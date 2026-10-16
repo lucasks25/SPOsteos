@@ -37,6 +37,8 @@ export function dvBarras(semDv43: string): number {
 function conferirBarras(b: string) {
   if (!/^\d{44}$/.test(b)) throw new BoletoError("O código de barras deve ter 44 dígitos.");
   if (b[0] === "8") throw new BoletoError("Este é um código de conta de consumo ou tributo (começa com 8). Só boletos bancários são aceitos.");
+  // Anexo A, item 1: posição 4 = código da moeda; 9 = Real (o SISPAG paga em REA)
+  if (b[3] !== "9") throw new BoletoError("Boleto em moeda diferente de Real (código da moeda não é 9). Não é aceito.");
   const esperado = dvBarras(b.slice(0, 4) + b.slice(5));
   if (Number(b[4]) !== esperado) throw new BoletoError("Código de barras inválido (dígito verificador não confere).");
 }
@@ -70,7 +72,10 @@ export function lerBoleto(entrada: string): Boleto {
     throw new BoletoError("Informe a linha digitável (47 dígitos) ou o código de barras (44 dígitos).");
   }
   conferirBarras(barras);
-  return { codigoBarras: barras, banco: barras.slice(0, 3), valor: Number(barras.slice(9, 19)) / 100, fator: Number(barras.slice(5, 9)) };
+  // Anexo A, obs. (b): fator abaixo de 1000 não é vencimento; as posições 6-19 inteiras formam o valor do título
+  const fator = Number(barras.slice(5, 9));
+  if (fator < 1000) return { codigoBarras: barras, banco: barras.slice(0, 3), valor: Number(barras.slice(5, 19)) / 100, fator: 0 };
+  return { codigoBarras: barras, banco: barras.slice(0, 3), valor: Number(barras.slice(9, 19)) / 100, fator };
 }
 
 const DIA_MS = 86_400_000;

@@ -1,0 +1,59 @@
+# Banco de PRODUÇÃO (Postgres 17). Roteiro completo em docs/PRODUCAO-SEGURA.md.
+#
+#   mkdir -p secrets certs && chmod 700 secrets certs
+#   openssl rand -base64 32 | tr -d '\n' > secrets/pg_senha && chmod 600 secrets/pg_senha
+#   (certificado TLS do banco: ver docs/PRODUCAO-SEGURA.md §3; arquivos certs/server.crt e certs/server.key)
+#   OPME_DB_DIR=/srv/opme/pgdata docker compose -f docker-compose.prod.yml up -d
+#
+# Diferenças do docker-compose.yml de desenvolvimento: senha vem de arquivo (secret), nunca de variável ou do repositório;
+# a porta só escuta em 127.0.0.1 (o app roda na mesma máquina ou numa rede privada; NUNCA publique 5432 na internet);
+# TLS ligado (DATABASE_URL com sslmode=require); dados em diretório do host que deve estar em volume CIFRADO
+# (LUKS no Linux, volume EBS/disco cifrado na nuvem, FileVault no Mac).
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: opme-db-prod
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: opme
+      POSTGRES_DB: opme
+      POSTGRES_PASSWORD_FILE: /run/secrets/pg_senha
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256 --auth-local=scram-sha-256"
+    secrets:
+      - pg_senha
+    command:
+      - postgres
+      - -c
+      - ssl=on
+      - -c
+      - ssl_cert_file=/certs/server.crt
+      - -c
+      - ssl_key_file=/certs/server.key
+      - -c
+      - ssl_min_protocol_version=TLSv1.2
+      - -c
+      - password_encryption=scram-sha-256
+      - -c
+      - log_connections=on
+      - -c
+      - log_disconnections=on
+    ports:
+      - "127.0.0.1:5432:5432"
+    volumes:
+      - ${OPME_DB_DIR:?defina OPME_DB_DIR com o diretório (em disco cifrado) dos dados}:/var/lib/postgresql/data
+      - ./certs:/certs:ro
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U opme -d opme"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    logging:
+      driver: json-file
+      options:
+        max-size: "20m"
+        max-file: "5"
+secrets:
+  pg_senha:
+    file: ./secrets/pg_senha

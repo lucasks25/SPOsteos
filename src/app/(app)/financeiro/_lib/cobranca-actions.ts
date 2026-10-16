@@ -78,7 +78,7 @@ export async function processarRetornoCobranca(_: ActionState, fd: FormData): Pr
       "processar retorno de cobrança",
       "RemessaCobranca",
       [...remessas].join(","),
-      `registrados ${cont.registrados}, rejeitados ${cont.rejeitados}, liquidados ${cont.liquidados}, baixados ${cont.baixados}, vencimentos alterados ${cont.alterados}, instruções recusadas ${cont.instrucoesRejeitadas}, já conciliados pelo extrato ${cont.jaConciliados}, PAGAMENTO EM DUPLICIDADE ${cont.duplicados}, valor divergente ${cont.divergentes}, não reconhecidos ${cont.ignorados}, já processados ${cont.jaProcessados}; arquivo sha256 ${sha}`,
+      `registrados ${cont.registrados}, rejeitados ${cont.rejeitados}, liquidados ${cont.liquidados}, baixados ${cont.baixados}, vencimentos alterados ${cont.alterados}, instruções recusadas ${cont.instrucoesRejeitadas}, já conciliados pelo extrato ${cont.jaConciliados}, PAGAMENTO EM DUPLICIDADE ${cont.duplicados}, valor divergente ${cont.divergentes}, baixa com pagamento (10/59) ${cont.baixasComPagamento}, CHEQUE DEVOLVIDO ${cont.chequesDevolvidos}, não reconhecidos ${cont.ignorados}, já processados ${cont.jaProcessados}; arquivo sha256 ${sha}`,
     );
   } catch (e) {
     return { error: errorMessage(e) };
@@ -93,6 +93,8 @@ export async function processarRetornoCobranca(_: ActionState, fd: FormData): Pr
     cont.duplicados ? `${cont.duplicados} pagamento(s) em DUPLICIDADE (título já quitado: o hospital pagou duas vezes, providencie a devolução)` : "",
     cont.divergentes ? `${cont.divergentes} com valor diferente do saldo (confira o título)` : "",
     cont.instrucoesRejeitadas ? `${cont.instrucoesRejeitadas} pedido(s) de baixa ou alteração recusado(s) pelo banco (o boleto continua como estava; veja os motivos na remessa)` : "",
+    cont.chequesDevolvidos ? `${cont.chequesDevolvidos} CHEQUE(S) DEVOLVIDO(S) (ocorrência 69): o pagamento não ficou; estorne a baixa do título e cobre de novo` : "",
+    cont.baixasComPagamento ? `${cont.baixasComPagamento} boleto(s) baixado(s) pelo banco por pagamento fora do boleto (10/59, ex.: SISPAG): confira o crédito no extrato e baixe pela conciliação` : "",
     cont.ignorados ? `${cont.ignorados} registro(s) não reconhecido(s) ou sem efeito` : "",
   ].filter(Boolean);
   if (alertas.length) return { ok: true, aviso: `Retorno processado: ${resumo}. Atenção: ${alertas.join("; ")}.` };

@@ -5,6 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { alternarCentroCusto, alternarContaPlano, criarCentroCusto, criarContaPlano } from "../_lib/plano-actions";
 import { TIPOS_PLANO, rotuloTipo } from "../_lib/plano-regras";
+import { AbasNav } from "@/components/abas-nav";
 
 export default async function PlanoContasPage() {
   await requireUser(["FINANCEIRO"]);
@@ -21,6 +22,7 @@ export default async function PlanoContasPage() {
   return (
     <>
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
+      <AbasNav atual="/financeiro/plano-contas" />
       {uso > 0 && <Aviso tom="alerta" className="mb-3">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</Aviso>}
       <div className="grid items-start gap-4 xl:grid-cols-[minmax(0,1fr)_24rem]">
         <Table titulo="Plano de contas" contagem={ordenadas.length} head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">

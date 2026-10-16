@@ -13,3 +13,16 @@ export function problemaAuthSecret(secret: string | undefined): string | null {
 }
 
 export const DICA_AUTH_SECRET = "Gere um com: openssl rand -hex 32";
+
+/**
+ * Perfis que movem dinheiro ou dados bancários (e o admin, que dá acesso a tudo) precisam do 2º fator (TOTP).
+ * Obrigatório em produção; em desenvolvimento só com MFA_OBRIGATORIA=1 (para não travar quem testa com o seed).
+ * MFA_OBRIGATORIA=0 desliga em produção: só para emergência, e fica registrado na configuração do servidor.
+ */
+export const PERFIS_MFA_OBRIGATORIA: readonly string[] = ["ADMIN", "FINANCEIRO"];
+
+export function mfaObrigatoria(perfil: string, env: Record<string, string | undefined> = process.env): boolean {
+  if (!PERFIS_MFA_OBRIGATORIA.includes(perfil)) return false;
+  if (env.MFA_OBRIGATORIA === "1") return true;
+  return env.NODE_ENV === "production" && env.MFA_OBRIGATORIA !== "0";
+}

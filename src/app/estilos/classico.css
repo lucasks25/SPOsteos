@@ -1,0 +1,729 @@
+/*
+ * Visual "clássico" (protótipo, estilo software desktop de gestão OPME): janela com barra de título, barra de
+ * ferramentas, quadros de grupo, grade com linhas de grade, trilha de etapas, abas de pasta, botões com tecla de
+ * acesso e barra de status. Ligado por usuário no Painel (cookie `opme_visual`, atributo `data-visual="classico"` no
+ * <html>); desligado, nada aqui muda o visual padrão. Só tokens do tema: funciona no claro e no escuro.
+ * Regras fora de @layer de propósito: vencem as utilidades do Tailwind no menu lateral sem `!important`.
+ */
+
+/* ---------- Menu lateral em árvore (só com data-visual="classico") ---------- */
+:root[data-visual="classico"] .barra-lateral {
+  background: var(--c-slate-100);
+  border-right-color: var(--c-slate-300);
+}
+:root[data-visual="classico"] .menu-cabeca {
+  height: 3.25rem;
+  background: var(--surface);
+  border-bottom: 1px solid var(--c-slate-300);
+}
+:root[data-visual="classico"] .menu-nav {
+  padding: 0 0.375rem 0.5rem;
+}
+:root[data-visual="classico"] .menu-nav::before {
+  content: "Módulos";
+  display: block;
+  margin: 0 -0.375rem 0.375rem;
+  padding: 0.3rem 0.75rem;
+  border-bottom: 1px solid var(--c-slate-300);
+  background: var(--c-slate-200);
+  color: var(--c-slate-700);
+  font-size: 0.6875rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+:root[data-visual="classico"] .menu-nav > ul > li + li {
+  margin-top: 1px;
+}
+:root[data-visual="classico"] .menu-mod {
+  height: 1.875rem;
+  gap: 0.5rem;
+  padding-inline: 0.375rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--c-slate-800);
+  font-size: 0.8125rem;
+  font-weight: 600;
+}
+:root[data-visual="classico"] .menu-mod::before {
+  display: none;
+}
+:root[data-visual="classico"] .menu-mod svg {
+  width: 16px;
+  height: 16px;
+}
+:root[data-visual="classico"] .menu-mod:hover {
+  background: var(--c-teal-50);
+  border-color: var(--c-teal-200);
+}
+:root[data-visual="classico"] .menu-mod[data-on] {
+  color: var(--c-teal-800);
+  background: transparent;
+}
+:root[data-visual="classico"] .menu-mod[data-on] svg {
+  color: var(--c-teal-700);
+}
+/* item selecionado: faixa cheia na cor primária, como a seleção de uma árvore de desktop */
+:root[data-visual="classico"] .menu-mod[aria-current="page"],
+:root[data-visual="classico"] .menu-sub[aria-current="page"] {
+  background: var(--color-primary);
+  border-color: var(--color-primary-active);
+  color: var(--color-on-primary);
+}
+:root[data-visual="classico"] .menu-mod[aria-current="page"] svg {
+  color: var(--color-on-primary);
+}
+:root[data-visual="classico"] .menu-seta {
+  display: none;
+}
+.menu-caixa {
+  display: none;
+}
+:root[data-visual="classico"] .menu-caixa {
+  display: inline-flex;
+  order: -1;
+  width: 11px;
+  height: 11px;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid var(--c-slate-400);
+  background: var(--surface);
+  color: var(--c-slate-700);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+}
+:root[data-visual="classico"] .menu-arvore {
+  margin-left: 0.75rem;
+  padding-bottom: 0.25rem;
+  border-left: 1px dotted var(--c-slate-400);
+}
+:root[data-visual="classico"] .menu-arvore li {
+  position: relative;
+}
+:root[data-visual="classico"] .menu-arvore li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 50%;
+  width: 0.625rem;
+  border-top: 1px dotted var(--c-slate-400);
+}
+:root[data-visual="classico"] .menu-arvore .menu-sub {
+  margin-left: 0.75rem;
+}
+:root[data-visual="classico"] .menu-sub {
+  height: 1.5rem;
+  padding-inline: 0.375rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--c-slate-700);
+  font-size: 0.78125rem;
+}
+:root[data-visual="classico"] .menu-sub::before {
+  display: none;
+}
+:root[data-visual="classico"] .menu-sub:hover {
+  background: var(--c-teal-50);
+  border-color: var(--c-teal-200);
+  color: var(--c-slate-900);
+}
+:root[data-visual="classico"] .menu-grupo {
+  margin-left: 0.75rem;
+  padding-top: 0.5rem;
+  font-size: 0.6875rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+:root[data-visual="classico"] .menu-usuario {
+  border-top-color: var(--c-slate-300);
+  background: var(--c-slate-200);
+}
+:root[data-visual="classico"] .menu-usuario > button {
+  border: 1px solid var(--c-slate-300);
+  border-radius: 2px;
+  background: var(--surface);
+}
+:root[data-visual="classico"] .menu-recolher {
+  background: var(--c-slate-200);
+}
+@media (min-width: 1024px) {
+  :root[data-visual="classico"] .barra-lateral[data-recolhida="true"] .menu-nav::before {
+    display: none;
+  }
+}
+
+/* ---------- Janela do Painel clássico ---------- */
+.janela {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border: 1px solid var(--c-slate-300);
+  border-radius: 4px;
+  background: var(--c-slate-100);
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.08);
+  font-size: 0.8125rem;
+}
+.janela-titulo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  min-height: 2.25rem;
+  padding: 0.25rem 0.5rem 0.25rem 0.75rem;
+  border-bottom: 1px solid var(--c-slate-300);
+  background: var(--surface);
+}
+.janela-titulo h1 {
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+.janela-codigo {
+  color: var(--c-slate-500);
+  font-size: 0.75rem;
+}
+
+/* barra de ferramentas: ícone sobre o rótulo, separadores finos */
+.janela-barra {
+  display: flex;
+  align-items: stretch;
+  gap: 1px;
+  overflow-x: auto;
+  padding: 0.25rem 0.375rem;
+  border-bottom: 1px solid var(--c-slate-300);
+  background: var(--c-slate-50);
+  scrollbar-width: thin;
+}
+.ferramenta {
+  display: flex;
+  min-width: 4.25rem;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.125rem;
+  padding: 0.25rem 0.375rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--c-slate-700);
+  font-size: 0.6875rem;
+  white-space: nowrap;
+}
+.ferramenta svg {
+  color: var(--c-teal-700);
+}
+.ferramenta:hover {
+  border-color: var(--c-teal-200);
+  background: var(--c-teal-50);
+  color: var(--c-slate-900);
+}
+.ferramenta-sep {
+  width: 1px;
+  margin: 0.25rem 0.25rem;
+  background: var(--c-slate-300);
+}
+
+.janela-corpo {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  padding: 0.75rem;
+}
+
+/* cabeçalho de campos só leitura (rótulo + caixa rebaixada) */
+.campos-cabecalho {
+  display: grid;
+  grid-template-columns: max-content minmax(0, 1fr);
+  align-items: center;
+  gap: 0.375rem 0.625rem;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--c-slate-300);
+  border-radius: 2px;
+  background: var(--surface);
+}
+@media (min-width: 768px) {
+  .campos-cabecalho {
+    grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
+  }
+}
+.campos-cabecalho > dt {
+  color: var(--c-slate-700);
+}
+.caixa-ro {
+  min-height: 1.625rem;
+  overflow: hidden;
+  padding: 0.1875rem 0.5rem;
+  border: 1px solid var(--c-slate-300);
+  border-top-color: var(--c-slate-400);
+  background: var(--c-slate-50);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.06);
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.caixa-ro.destaque {
+  white-space: normal;
+  color: var(--c-teal-800);
+  font-weight: 700;
+}
+.caixa-ro.destaque[data-tom="danger"] {
+  color: var(--c-rose-700);
+}
+@media (min-width: 768px) {
+  .campos-cabecalho .linha-toda {
+    grid-column: 2 / -1;
+  }
+}
+
+/* quadro de grupo (fieldset + legend, como o "group box" do Windows) */
+.grupo {
+  min-width: 0;
+  padding: 0.25rem 0.625rem 0.625rem;
+  border: 1px solid var(--c-slate-300);
+  border-radius: 3px;
+  background: var(--surface);
+}
+.grupo > legend {
+  padding: 0 0.375rem;
+  color: var(--c-teal-800);
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+/* trilha de etapas: bolas com a quantidade, setas entre elas */
+.etapas {
+  display: flex;
+  align-items: flex-start;
+  overflow-x: auto;
+  padding: 0.25rem 0 0.125rem;
+  scrollbar-width: thin;
+}
+.etapas > li {
+  display: flex;
+  flex: 1 0 auto;
+  align-items: flex-start;
+}
+.etapa-seta {
+  flex: 1 0 1rem;
+  align-self: center;
+  margin-top: -1.125rem;
+  color: var(--c-teal-700);
+  text-align: center;
+}
+.etapa-seta svg {
+  display: inline-block;
+  stroke-width: 3;
+}
+.etapa {
+  display: flex;
+  width: 5.75rem;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+  border-radius: 4px;
+  padding: 0.25rem 0.125rem;
+  text-align: center;
+}
+.etapa:hover {
+  background: var(--c-slate-100);
+}
+.etapa-bola {
+  display: flex;
+  width: 2.375rem;
+  height: 2.375rem;
+  align-items: center;
+  justify-content: center;
+  border-radius: 9999px;
+  border: 1px solid var(--c-slate-400);
+  background: radial-gradient(circle at 35% 30%, var(--c-slate-50), var(--c-slate-300) 70%);
+  color: var(--c-slate-700);
+  font-size: 0.875rem;
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+  box-shadow: inset 0 -2px 3px rgb(0 0 0 / 0.12);
+}
+.etapa-bola[data-tom="info"] {
+  border-color: var(--c-teal-800);
+  background: radial-gradient(circle at 35% 30%, var(--c-teal-300), var(--c-teal-700) 70%);
+  color: #fff;
+}
+.etapa-bola[data-tom="warn"] {
+  border-color: var(--c-amber-700);
+  background: radial-gradient(circle at 35% 30%, var(--c-amber-200), var(--c-amber-500) 70%);
+  color: var(--c-amber-950);
+}
+.etapa-bola[data-tom="danger"] {
+  border-color: var(--c-rose-800);
+  background: radial-gradient(circle at 35% 30%, var(--c-rose-300), var(--c-rose-600) 70%);
+  color: #fff;
+}
+.etapa-rotulo {
+  color: var(--c-slate-700);
+  font-size: 0.6875rem;
+  line-height: 1.2;
+}
+.etapa:hover .etapa-rotulo {
+  color: var(--c-teal-700);
+  text-decoration: underline;
+}
+
+/* abas de pasta */
+.abas-pasta {
+  display: flex;
+  gap: 2px;
+  overflow-x: auto;
+  padding-left: 0.375rem;
+  scrollbar-width: none;
+}
+.aba-pasta {
+  position: relative;
+  top: 1px;
+  padding: 0.3125rem 0.75rem;
+  border: 1px solid var(--c-slate-300);
+  border-bottom: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--c-slate-200);
+  color: var(--c-slate-700);
+  white-space: nowrap;
+}
+.aba-pasta:hover {
+  background: var(--c-slate-50);
+}
+.aba-pasta[aria-selected="true"] {
+  z-index: 1;
+  padding-bottom: 0.375rem;
+  background: var(--surface);
+  color: var(--c-slate-900);
+  font-weight: 600;
+}
+.aba-painel {
+  min-width: 0;
+  border: 1px solid var(--c-slate-300);
+  border-radius: 0 3px 3px 3px;
+  background: var(--surface);
+}
+
+/* grade: linhas de grade, cabeçalho em relevo, linha de 26 px */
+.grade-rolagem {
+  overflow-x: auto;
+}
+.grade {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8125rem;
+}
+.grade th {
+  height: 1.625rem;
+  padding: 0 0.5rem;
+  border: 1px solid var(--c-slate-300);
+  background: linear-gradient(var(--surface), var(--c-slate-100));
+  color: var(--c-slate-700);
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-align: left;
+  white-space: nowrap;
+}
+.grade td {
+  height: 1.625rem;
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--c-slate-200);
+}
+.grade tbody tr:hover td {
+  background: var(--c-teal-50);
+}
+.grade .num {
+  font-variant-numeric: tabular-nums;
+  text-align: right;
+  white-space: nowrap;
+}
+.grade .grade-secao td {
+  background: var(--c-slate-50);
+  color: var(--c-teal-800);
+  font-weight: 700;
+}
+.grade a {
+  color: var(--c-teal-700);
+}
+.grade a:hover {
+  text-decoration: underline;
+}
+.grade [data-tom="danger"] {
+  color: var(--c-rose-700);
+  font-weight: 700;
+}
+.grade [data-tom="warn"] {
+  color: var(--c-amber-700);
+  font-weight: 700;
+}
+
+/* barra de botões: retângulos cinza em relevo, tecla de acesso sublinhada */
+.janela-botoes {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.375rem;
+  padding: 0.5rem 0.75rem;
+  border-top: 1px solid var(--c-slate-300);
+}
+.botao-classico {
+  display: inline-flex;
+  min-width: 7.5rem;
+  height: 1.875rem;
+  align-items: center;
+  justify-content: center;
+  padding: 0 0.75rem;
+  border: 1px solid var(--c-slate-400);
+  border-radius: 2px;
+  background: linear-gradient(var(--surface), var(--c-slate-200));
+  color: var(--c-slate-900);
+  white-space: nowrap;
+}
+.botao-classico:hover {
+  border-color: var(--c-teal-600);
+  background: linear-gradient(var(--surface), var(--c-teal-100));
+}
+.botao-classico:active {
+  background: var(--c-slate-200);
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.15);
+}
+.botao-classico u {
+  text-underline-offset: 2px;
+}
+
+/* barra de status: células rebaixadas */
+.barra-status {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  padding: 2px;
+  border-top: 1px solid var(--c-slate-300);
+  background: var(--c-slate-200);
+  color: var(--c-slate-700);
+  font-size: 0.6875rem;
+}
+.barra-status > span {
+  padding: 0.125rem 0.5rem;
+  border: 1px solid var(--c-slate-300);
+  border-top-color: var(--c-slate-400);
+  background: var(--c-slate-100);
+  white-space: nowrap;
+}
+.barra-status > .estica {
+  flex: 1;
+}
+
+@media print {
+  .janela {
+    border: 0;
+    box-shadow: none;
+  }
+  .janela-barra,
+  .janela-botoes {
+    display: none;
+  }
+}
+
+/* ---------- Plataforma inteira no visual clássico (componentes compartilhados de src/components/ui) ---------- */
+:root[data-visual="classico"] {
+  --bg: var(--c-slate-100);
+}
+
+/* cabeçalho de página como barra de título de janela */
+:root[data-visual="classico"] .page-head {
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--c-slate-300);
+  border-radius: 3px;
+  background: linear-gradient(var(--surface), var(--c-slate-50));
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+:root[data-visual="classico"] .page-head h1 {
+  font-size: 1.0625rem;
+}
+
+/* cartões, tabelas, filtros e faixa de indicadores: cantos quase retos, borda mais firme */
+:root[data-visual="classico"] :is(.cartao, .tabela, .filter-bar, .kpi-strip) {
+  border-color: var(--c-slate-300);
+  border-radius: 3px;
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.05);
+}
+:root[data-visual="classico"] .cartao > div:last-child {
+  border-radius: 0;
+}
+:root[data-visual="classico"] :is(.cartao-cabeca, .tabela-cabeca) {
+  min-height: 2.125rem;
+  padding-block: 0.25rem;
+  border-bottom-color: var(--c-slate-300);
+  background: linear-gradient(var(--surface), var(--c-slate-100));
+}
+:root[data-visual="classico"] :is(.cartao-cabeca, .tabela-cabeca) h2 {
+  color: var(--c-teal-800);
+  font-size: 0.8125rem;
+  font-weight: 700;
+}
+
+/* tabela como grade: cabeçalho em relevo, linhas de grade, linha de 28 px */
+:root[data-visual="classico"] .tabela th {
+  height: 1.75rem;
+  border-right: 1px solid var(--c-slate-300);
+  border-bottom-color: var(--c-slate-300);
+  background: linear-gradient(var(--surface), var(--c-slate-100));
+  color: var(--c-slate-700);
+}
+:root[data-visual="classico"] .tabela :is(th, td):last-child {
+  border-right: 0;
+}
+:root[data-visual="classico"] .tabela td {
+  border-right: 1px solid var(--c-slate-100);
+}
+:root[data-visual="classico"] .tabela tbody > tr {
+  height: 1.75rem;
+  border-bottom-color: var(--c-slate-200);
+}
+:root[data-visual="classico"] .tabela tbody > tr:hover {
+  background: var(--c-teal-50);
+}
+:root[data-visual="classico"] .tabela tfoot {
+  color: var(--c-teal-800);
+}
+
+/* indicadores: rótulo em caixa pequena, como cabeçalho de campo */
+:root[data-visual="classico"] .stat > div:first-child {
+  color: var(--c-slate-700);
+  font-size: 0.6875rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+/* botões em relevo */
+:root[data-visual="classico"] .btn {
+  border-radius: 2px;
+}
+:root[data-visual="classico"] .btn:not(.btn-primario, .btn-texto) {
+  border-color: var(--c-slate-400);
+  background: linear-gradient(var(--surface), var(--c-slate-200));
+}
+:root[data-visual="classico"] .btn:not(.btn-primario, .btn-texto):hover {
+  border-color: var(--c-teal-600);
+  background: linear-gradient(var(--surface), var(--c-teal-100));
+}
+:root[data-visual="classico"] .btn:not(.btn-texto):active {
+  box-shadow: inset 0 1px 2px rgb(0 0 0 / 0.2);
+}
+:root[data-visual="classico"] .btn-primario {
+  border: 1px solid var(--color-primary-active);
+  background-image: linear-gradient(rgb(255 255 255 / 0.14), rgb(255 255 255 / 0));
+}
+
+/* campos rebaixados */
+:root[data-visual="classico"] .campo {
+  border-color: var(--c-slate-400);
+  border-top-color: var(--c-slate-500);
+  border-radius: 2px;
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.07);
+}
+:root[data-visual="classico"] .campo:focus {
+  border-color: var(--c-teal-600);
+  box-shadow: inset 0 1px 1px rgb(0 0 0 / 0.07), 0 0 0 2px var(--c-teal-200);
+}
+
+/* etiquetas de situação com contorno */
+:root[data-visual="classico"] .etiqueta {
+  border: 1px solid color-mix(in srgb, currentColor 35%, transparent);
+  border-radius: 2px;
+}
+:root[data-visual="classico"] .aviso {
+  border-radius: 2px;
+}
+
+/* abas de pasta */
+:root[data-visual="classico"] .abas {
+  gap: 2px;
+  border-bottom-color: var(--c-slate-300);
+  padding-left: 0.375rem;
+}
+:root[data-visual="classico"] .abas > a {
+  height: 2rem;
+  margin-top: 0.25rem;
+  border: 1px solid var(--c-slate-300);
+  border-bottom-width: 0;
+  border-radius: 3px 3px 0 0;
+  background: var(--c-slate-200);
+  color: var(--c-slate-700);
+}
+:root[data-visual="classico"] .abas > a:hover {
+  background: var(--c-slate-50);
+}
+:root[data-visual="classico"] .abas > a[aria-current="page"] {
+  z-index: 1;
+  background: var(--surface);
+  color: var(--c-slate-900);
+  box-shadow: 0 1px 0 var(--surface);
+}
+
+/* seções de formulário com título de grupo */
+:root[data-visual="classico"] .form-secao h3 {
+  color: var(--c-teal-800);
+  font-weight: 700;
+}
+
+/* barra superior do modo lateral */
+:root[data-visual="classico"] .casca-barra {
+  border-bottom-color: var(--c-slate-300);
+  background: var(--surface);
+}
+
+/* ---------- Menu no topo: faixa de menus clara, como a barra de menus de um programa desktop ---------- */
+:root[data-visual="classico"] .topo-faixa1 {
+  border-bottom-color: var(--c-slate-300);
+}
+:root[data-visual="classico"] .topo-faixa2 {
+  border-bottom: 1px solid var(--c-slate-300);
+  background: linear-gradient(var(--c-slate-50), var(--c-slate-200));
+}
+:root[data-visual="classico"] [data-topo] {
+  margin-block: 0.25rem;
+  height: calc(100% - 0.5rem);
+  padding-inline: 0.75rem;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  color: var(--c-slate-800);
+  font-size: 0.8125rem;
+}
+:root[data-visual="classico"] [data-topo]::after {
+  display: none;
+}
+:root[data-visual="classico"] [data-topo] svg {
+  color: var(--c-teal-700);
+  opacity: 1;
+}
+:root[data-visual="classico"] [data-topo]:hover {
+  border-color: var(--c-teal-200);
+  background: var(--c-teal-50);
+  color: var(--c-slate-900);
+}
+:root[data-visual="classico"] [data-topo][data-on] {
+  border-color: var(--c-slate-300);
+  background: var(--surface);
+  color: var(--c-teal-800);
+  font-weight: 600;
+}
+:root[data-visual="classico"] :is([data-topo][aria-expanded="true"], [data-topo][aria-current="page"]) {
+  border-color: var(--color-primary-active);
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}
+:root[data-visual="classico"] :is([data-topo][aria-expanded="true"], [data-topo][aria-current="page"]) svg {
+  color: var(--color-on-primary);
+}
+/* menu suspenso: cantos retos e seleção cheia, como um menu do Windows */
+:root[data-visual="classico"] [data-painel] {
+  border: 1px solid var(--c-slate-400);
+  border-radius: 0;
+  box-shadow: 2px 3px 6px rgb(0 0 0 / 0.18);
+}
+:root[data-visual="classico"] [data-painel] a {
+  height: 1.75rem;
+  border-radius: 0;
+  font-size: 0.8125rem;
+}
+:root[data-visual="classico"] [data-painel] a:hover {
+  background: var(--color-primary);
+  color: var(--color-on-primary);
+}

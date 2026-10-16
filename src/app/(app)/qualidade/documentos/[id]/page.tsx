@@ -52,7 +52,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
     <>
       <PageHeader
         title={d.titulo}
-        subtitle={`${ROTULO_TIPO[d.tipo]} · ${ROTULO_ESCOPO[d.escopo]}`}
+        meta={[`${ROTULO_TIPO[d.tipo]} · ${ROTULO_ESCOPO[d.escopo]}`]}
         voltar={{ href: "/qualidade/documentos", label: "Documentos e licenças" }}
         actions={
           <>
@@ -70,7 +70,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
         }
       />
       <div className="space-y-4">
-        <Card title="Dados" icon="escudo">
+        <Card title="Dados">
           <Dl items={[
             ["Vale para", vinculo],
             ["Número", d.numero],
@@ -87,7 +87,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
           )}
         </Card>
 
-        <Card title="Arquivos" icon="documento" actions={<span className="text-xs text-slate-600">PDF, JPG ou PNG até {MAX_BYTES / 1024 / 1024} MB. O mais recente é o vigente.</span>}>
+        <Card title="Arquivos" actions={<span className="text-xs text-slate-600">PDF, JPG ou PNG até {MAX_BYTES / 1024 / 1024} MB. O mais recente é o vigente.</span>}>
           {d.arquivos.length === 0 ? (
             <p className="text-sm text-slate-600">Nenhum arquivo enviado.</p>
           ) : (
@@ -112,7 +112,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
           )}
         </Card>
 
-        <Card title="Histórico de versões" icon="lista">
+        <Card title="Histórico de versões">
           {anteriores.length === 0 && !d.substituidoPor ? (
             <p className="text-sm text-slate-600">Este documento ainda não foi renovado.</p>
           ) : (

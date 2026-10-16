@@ -59,10 +59,10 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         actions={pode && <LinkButton href={novoHref} icon="mais">Novo documento</LinkButton>}
       />
       <KpiGrid cols={4}>
-        <Stat icon="calendario" label="Vencidos" value={cont.VENCIDO} tone={cont.VENCIDO ? "danger" : "default"} hint="exigem renovação" />
-        <Stat icon="calendario" label="Vencem em 30 dias" value={cont.VENCE_EM_30} tone={cont.VENCE_EM_30 ? "warn" : "default"} hint="inclui os que vencem hoje" />
-        <Stat icon="documento" label="Vigentes" value={cont.VIGENTE + cont.VENCE_EM_90} hint={`${cont.VENCE_EM_90} vencem em 31 a 90 dias`} />
-        <Stat icon="documento" label="Sem vencimento" value={cont.SEM_VENCIMENTO} />
+        <Stat label="Vencidos" value={cont.VENCIDO} tone={cont.VENCIDO ? "danger" : "default"} hint="exigem renovação" />
+        <Stat label="Vencem em 30 dias" value={cont.VENCE_EM_30} tone={cont.VENCE_EM_30 ? "warn" : "default"} hint="inclui os que vencem hoje" />
+        <Stat label="Vigentes" value={cont.VIGENTE + cont.VENCE_EM_90} hint={`${cont.VENCE_EM_90} vencem em 31 a 90 dias`} />
+        <Stat label="Sem vencimento" value={cont.SEM_VENCIMENTO} />
       </KpiGrid>
       <FilterBar>
         {vinculo && <input type="hidden" name={vinculo.campo} value={vinculo.id} />}
@@ -101,7 +101,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
       </FilterBar>
       <Table
         titulo="Documentos"
-        icone="escudo"
+
         contagem={docs.length}
         head={["Documento", "Tipo", "Vale para", "Emissão", "Validade", "Situação", "Arquivos", ""]}
         empty={docs.length === 0}

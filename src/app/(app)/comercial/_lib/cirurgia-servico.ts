@@ -2,6 +2,13 @@ import "server-only";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { travarCirurgia } from "./trava-cirurgia";
+import { CTX_CARTEIRINHA, cifrar, indiceBusca } from "@/lib/cripto";
+
+/** Carteirinha cifrada + índice cego; vazio vira nulo nos dois. */
+export function carteirinhaParaGravar(valor: string | null | undefined) {
+  const v = valor?.trim();
+  return v ? { carteirinha: cifrar(v, CTX_CARTEIRINHA), carteirinhaHash: indiceBusca(v, CTX_CARTEIRINHA) } : { carteirinha: null, carteirinhaHash: null };
+}
 
 /** Troca de hospital recusada: a action converte em erro no campo `hospitalId`. */
 export class HospitalTravadoError extends ErroNegocio {}
@@ -23,7 +30,8 @@ export type DadosCirurgia = {
  * Cria (sem `id`) ou edita a cirurgia. Edição recusa FATURADA/CANCELADA e a troca de hospital quando já há
  * consumo ou remessa (o estoque consignado está no local do hospital original).
  */
-export async function salvarCirurgiaTx(tx: Tx, id: string | null, data: DadosCirurgia) {
+export async function salvarCirurgiaTx(tx: Tx, id: string | null, dados: DadosCirurgia) {
+  const data = { ...dados, ...carteirinhaParaGravar(dados.carteirinha) };
   if (!id) return { cirurgia: await tx.cirurgia.create({ data }), criada: true };
   await travarCirurgia(tx, id);
   const atual = await tx.cirurgia.findUnique({ where: { id }, include: { _count: { select: { consumos: true, remessas: true } } } });

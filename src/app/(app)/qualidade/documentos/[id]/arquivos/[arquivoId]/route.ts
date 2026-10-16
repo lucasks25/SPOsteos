@@ -1,5 +1,6 @@
 import { readFile } from "node:fs/promises";
 import { exigirUsuarioRota } from "@/lib/auth";
+import { limitarRota } from "@/lib/limite-rota";
 import { MIME_POR_EXT } from "@/lib/upload-seguro";
 import { PERFIS_VER_DOCUMENTOS } from "../../../../_lib/documentos";
 import { arquivoParaDownload } from "../../../../_lib/documentos-servico";
@@ -8,6 +9,8 @@ import { arquivoParaDownload } from "../../../../_lib/documentos-servico";
 export async function GET(_req: Request, ctx: { params: Promise<{ id: string; arquivoId: string }> }) {
   const sessao = await exigirUsuarioRota(PERFIS_VER_DOCUMENTOS);
   if (sessao instanceof Response) return sessao;
+  const excesso = limitarRota("download", sessao.id);
+  if (excesso) return excesso;
   const { id, arquivoId } = await ctx.params;
   const achado = await arquivoParaDownload(id, arquivoId);
   if (!achado) return new Response("Arquivo não encontrado", { status: 404 });

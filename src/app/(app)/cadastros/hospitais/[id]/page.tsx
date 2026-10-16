@@ -39,7 +39,7 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
       <PageHeader
         voltar={{ href: "/cadastros/hospitais", label: "Hospitais" }}
         title={hospital.nomeFantasia ?? hospital.razaoSocial}
-        subtitle={`${hospital.razaoSocial} · CNPJ ${hospital.cnpj}`}
+        meta={[`${hospital.razaoSocial} · CNPJ ${hospital.cnpj}`]}
         actions={
           edita ? (
             <>

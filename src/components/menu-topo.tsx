@@ -276,7 +276,7 @@ function ModulosTopo({ modulos, ativo }: { modulos: Modulo[]; ativo: Ativo }) {
           if (!ehMais && m.grupos.reduce((s, g) => s + g.items.length, 0) === 1) {
             return (
               <li key={m.nome} className="h-full">
-                <Link href={m.href} data-topo aria-current={ativo?.href === m.href ? "page" : undefined} className={classeModulo(doModulo, false)}>
+                <Link href={m.href} data-topo data-on={doModulo || undefined} aria-current={ativo?.href === m.href ? "page" : undefined} className={classeModulo(doModulo, false)}>
                   <ConteudoItem m={m} />
                 </Link>
               </li>
@@ -295,7 +295,7 @@ function ModulosTopo({ modulos, ativo }: { modulos: Modulo[]; ativo: Ativo }) {
                 if (e.relatedTarget && !e.currentTarget.contains(e.relatedTarget as Node)) setAberto((a) => (a === m.nome ? null : a));
               }}
             >
-              <button type="button" data-topo data-modulo={m.nome} aria-expanded={estaAberto} aria-controls={id} onClick={(e) => clicar(m.nome, e.timeStamp)} className={classeModulo(doModulo, estaAberto)}>
+              <button type="button" data-topo data-on={doModulo || undefined} data-modulo={m.nome} aria-expanded={estaAberto} aria-controls={id} onClick={(e) => clicar(m.nome, e.timeStamp)} className={classeModulo(doModulo, estaAberto)}>
                 {ehMais ? (
                   <>
                     Mais
@@ -434,8 +434,8 @@ export function MenuTopo({ modulos, ativo, groups, marca, nome, perfil, sair, po
 }) {
   const recuo = "mx-auto max-w-[1680px] px-6 min-[1440px]:px-8";
   return (
-    <header className="sticky top-0 z-30 hidden lg:block print:hidden">
-      <div className="border-b border-slate-200 bg-white">
+    <header className="topo-casca sticky top-0 z-30 hidden lg:block print:hidden">
+      <div className="topo-faixa1 border-b border-slate-200 bg-white">
         <div className={`${recuo} flex h-14 items-center gap-4`}>
           <Link href="/" aria-label="Início" className="shrink-0 rounded-md [&_img]:h-9">
             {marca}
@@ -453,7 +453,7 @@ export function MenuTopo({ modulos, ativo, groups, marca, nome, perfil, sair, po
           </div>
         </div>
       </div>
-      <div className="bg-sidebar">
+      <div className="topo-faixa2 bg-sidebar">
         <div className={`${recuo} relative h-11`}>
           <ModulosTopo modulos={modulos} ativo={ativo} />
         </div>

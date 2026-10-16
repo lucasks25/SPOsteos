@@ -6,6 +6,7 @@ import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { aprovarContasPagar } from "../_lib/aprovacao-actions";
 import { autoresConta, podeAprovarPropria, rotulosAutoria, versaoAprovacao } from "../_lib/aprovacao-servico";
+import { AbasNav } from "@/components/abas-nav";
 
 export default async function AprovacoesPage() {
   const user = await requireUser(["FINANCEIRO"]);
@@ -19,6 +20,7 @@ export default async function AprovacoesPage() {
   return (
     <>
       <PageHeader title="Aprovar contas a pagar" subtitle="Toda conta a pagar (lançada à mão ou gerada por compras) e toda conta que teve valor, vencimento, fornecedor ou boleto alterado espera a aprovação de outra pessoa do financeiro antes de entrar em remessa de pagamento. Quem criou ou alterou a conta não a aprova." />
+      <AbasNav atual="/financeiro/aprovacoes" />
       {pendentes.length === 0 ? (
         <Table head={["Vencimento", "Descrição", "Fornecedor", "Valor"]} empty emptyText="Nada aguardando aprovação. Aqui ficam as contas novas e as que tiveram dados de pagamento alterados." emptyAction={<LinkButton href="/financeiro/pagar" variant="secondary">Ver contas a pagar</LinkButton>}>
           {null}

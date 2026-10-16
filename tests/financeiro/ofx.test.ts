@@ -70,3 +70,14 @@ test("datas e valores", () => {
   assert.equal(parseValorOfx("1.234,56"), 1234.56);
   assert.equal(parseValorOfx("abc"), null);
 });
+
+test("OFX: entidades em NAME/MEMO e contas do arquivo (BANKACCTFROM)", () => {
+  const um = `<OFX><STMTRS><BANKACCTFROM><BANKID>0341<BRANCHID>0123<ACCTID>12345-6<ACCTTYPE>CHECKING</BANKACCTFROM><BANKTRANLIST>
+<STMTTRN><DTPOSTED>20261005<TRNAMT>-5.00<FITID>A1<MEMO>JOHNSON &amp; JOHNSON &#199;</STMTTRN></BANKTRANLIST></STMTRS></OFX>`;
+  const r = lerOfx(um);
+  assert.equal(r.linhas[0].descricao, "JOHNSON & JOHNSON Ç");
+  assert.deepEqual(r.contas, ["123456"]);
+  const dois = um + um.replace("12345-6", "99999-1");
+  assert.deepEqual(lerOfx(dois).contas, ["123456", "999991"]);
+  assert.deepEqual(lerOfx("<STMTTRN><DTPOSTED>20261005<TRNAMT>1<FITID>X</STMTTRN>").contas, []);
+});

@@ -35,7 +35,7 @@ export async function AutorizacaoCard({
   const hoje = inputDate(hojeUTC());
 
   return (
-    <Card title="Autorização do convênio" icon="escudo" actions={convenio ? <Badge color={convenio.exigeAutorizacao ? "teal" : "gray"}>{convenio.exigeAutorizacao ? "exige autorização" : "não exige autorização"}</Badge> : undefined}>
+    <Card title="Autorização do convênio" actions={convenio ? <Badge color={convenio.exigeAutorizacao ? "teal" : "gray"}>{convenio.exigeAutorizacao ? "exige autorização" : "não exige autorização"}</Badge> : undefined}>
       {!convenio ? (
         <p className="text-sm text-slate-600">Cirurgia sem convênio (particular ou SUS): não há autorização prévia a verificar.</p>
       ) : (

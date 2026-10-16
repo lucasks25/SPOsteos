@@ -4,7 +4,7 @@ import { LOCAIS, localDoHospital, movimentar } from "@/lib/estoque";
 import { toNumber } from "@/lib/format";
 import { inicioDoDiaUTC, type LinhaRemessa, type LoteDisp } from "./fefo";
 import { ErroNegocio } from "@/lib/erros";
-import { registrarConsumoCirurgiaTx, type ItemConsumo } from "@/app/(app)/comercial/_lib/publico";
+import { registrarConsumoCirurgiaTx, travarCirurgia, type ItemConsumo } from "@/app/(app)/comercial/_lib/publico";
 
 /**
  * Regras de negócio de remessas (vales de consignação).
@@ -149,6 +149,10 @@ async function trocarStatus(tx: Tx, id: number, de: "ABERTA" | "ENVIADA", data: 
 /** ABERTA → ENVIADA: movimenta DEPÓSITO → local do hospital para cada item. */
 export async function enviarRemessa(tx: Tx, id: number, usuario: string) {
   await trocarStatus(tx, id, "ABERTA", { status: "ENVIADA", enviadaEm: new Date() });
+  // Trava os lotes FOR SHARE antes de ler o status: um recolhimento (FOR UPDATE nos lotes) aberto ao mesmo tempo espera o
+  // envio terminar e fotografa o saldo já no hospital, ou bloqueia antes e o envio vê BLOQUEADO. Ordem Lote → Saldo.
+  const loteIds = [...new Set((await tx.remessaItem.findMany({ where: { remessaId: id }, select: { loteId: true } })).map((i) => i.loteId))];
+  await tx.$queryRaw`SELECT id FROM "Lote" WHERE id = ANY(${loteIds}::text[]) ORDER BY id FOR SHARE`;
   const remessa = await tx.remessa.findUniqueOrThrow({
     where: { id },
     include: { cirurgia: { select: { numero: true, status: true } }, itens: { include: { lote: { include: { produto: true } } } } },
@@ -184,11 +188,16 @@ export type RetornoItem = { itemId: string; devolvido: number; consumido: number
  * e marca a cirurgia como REALIZADA via API pública do comercial (só quando há consumo).
  */
 export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[], usuario: string) {
+  // Trava a cirurgia ANTES de qualquer movimentar: o consumo direto e o estorno travam Cirurgia → Saldo; travar o saldo
+  // aqui e só depois a cirurgia (em registrarConsumoCirurgiaTx) dava deadlock entre os dois.
+  const ref = await tx.remessa.findUnique({ where: { id }, select: { cirurgiaId: true } });
+  if (ref?.cirurgiaId) await travarCirurgia(tx, ref.cirurgiaId);
   await trocarStatus(tx, id, "ENVIADA", { status: "CONFERIDA", conferidaEm: new Date() });
   const remessa = await tx.remessa.findUniqueOrThrow({
     where: { id },
     include: { cirurgia: true, itens: { include: { produto: true } } },
   });
+  if (remessa.cirurgiaId && remessa.cirurgiaId !== ref?.cirurgiaId) await travarCirurgia(tx, remessa.cirurgiaId); // vínculo trocado no meio
   await exigirSemInventario(tx, remessa.localId);
   const porItem = new Map(retornos.map((r) => [r.itemId, r]));
   // Vale de cirurgia conferido com tudo zero fecha o vale sem consumo nem devolução e não tem volta (a tela vem com 0
@@ -209,6 +218,11 @@ export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[
     const { devolvido, consumido } = r;
     if (![devolvido, consumido].every((n) => Number.isInteger(n) && n >= 0)) {
       throw new RemessaError(`Quantidades inválidas para ${item.produto.descricao}.`);
+    }
+    if (consumido > 0 && !remessa.cirurgiaId) {
+      throw new RemessaError(
+        `${item.produto.descricao}: vale sem cirurgia não registra consumido (nunca seria faturado). Registre o consumo direto na cirurgia.`,
+      );
     }
     if (devolvido + consumido > item.quantidade) {
       throw new RemessaError(

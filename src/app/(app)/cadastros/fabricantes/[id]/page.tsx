@@ -21,7 +21,7 @@ export default async function EditarFabricantePage({ params }: { params: Promise
       <PageHeader
         voltar={{ href: "/cadastros/fabricantes", label: "Fabricantes" }}
         title={fabricante.nome}
-        subtitle={`${fabricante._count.produtos} produto(s) vinculado(s)`}
+        meta={[`${fabricante._count.produtos} produto(s) vinculado(s)`]}
         actions={
           edita && fabricante._count.produtos === 0 ? (
             <ActionButton action={excluirFabricante.bind(null, id)} variant="danger" confirm="Excluir este fabricante?">

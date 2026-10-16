@@ -69,18 +69,19 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
       "processar retorno SISPAG",
       "RemessaPagamento",
       [...remessas].join(","),
-      `pagos ${cont.pagos} (PAGAMENTO EM DUPLICIDADE, título já quitado antes: ${cont.jaBaixados}; remessa cancelada mas paga pelo banco: ${cont.canceladasPagas}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}, já conciliados pelo extrato antes do retorno ${cont.jaConciliados}; arquivo sha256 ${sha}`,
+      `pagos ${cont.pagos} (PAGAMENTO EM DUPLICIDADE, título já quitado antes: ${cont.jaBaixados}; remessa cancelada mas paga pelo banco: ${cont.canceladasPagas}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}, devolvidos depois de pagos ${cont.devolvidos}, já conciliados pelo extrato antes do retorno ${cont.jaConciliados}; arquivo sha256 ${sha}`,
     );
   } catch (e) {
     return { error: errorMessage(e) };
   }
   revalidar();
   for (const id of remessas) revalidatePath(`/financeiro/remessas/${id}`);
-  if (cont.jaBaixados > 0 || cont.canceladasPagas > 0 || cont.divergentes > 0) {
+  if (cont.jaBaixados > 0 || cont.canceladasPagas > 0 || cont.divergentes > 0 || cont.devolvidos > 0) {
     const partes = [
       cont.jaBaixados > 0 ? `${cont.jaBaixados} pagamento(s) em DUPLICIDADE (o título já estava quitado: peça a devolução ao fornecedor ou ao banco)` : "",
       cont.canceladasPagas > 0 ? `${cont.canceladasPagas} pagamento(s) de remessa cancelada que o banco pagou` : "",
       cont.divergentes > 0 ? `${cont.divergentes} com valor diferente do saldo (não baixados: concilie pelo extrato)` : "",
+      cont.devolvidos > 0 ? `${cont.devolvidos} pagamento(s) DEVOLVIDO(S) pelo banco do favorecido depois de pagos (estorne a baixa e confira o extrato)` : "",
     ].filter(Boolean);
     return { ok: true, aviso: `Retorno processado, mas atenção: ${partes.join("; ")}.` };
   }

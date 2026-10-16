@@ -7,6 +7,7 @@ import { revalidatePath } from "next/cache";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { argId } from "@/lib/auth-args";
+import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, type ActionState } from "@/lib/forms";
 import { lerArquivoDoForm } from "@/lib/upload-seguro";
 import { caminhoAnexo, ID_SEGURO, pastaUploads } from "../_lib/anexos";
@@ -38,9 +39,11 @@ export async function enviarAnexo(cirurgiaId: string, _: ActionState, fd: FormDa
 export async function excluirAnexo(anexoId: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser(["COMERCIAL", "ESTOQUE"]);
   anexoId = argId(anexoId);
-  const anexo = await db.anexo.findUnique({ where: { id: anexoId } });
+  const anexo = await db.anexo.findUnique({ where: { id: anexoId }, include: { cirurgia: { select: { status: true, numero: true } } } });
   if (!anexo) return { error: "Anexo não encontrado." };
   try {
+    // cirurgia faturada é documento fiscal/auditável: o comprovante (guia, relatório) não pode sumir depois do faturamento
+    if (anexo.cirurgia.status === "FATURADA") throw new ErroNegocio(`Cirurgia CIR-${anexo.cirurgia.numero} já faturada: os anexos não podem ser excluídos.`);
     await db.anexo.delete({ where: { id: anexoId } });
     const arquivo = caminhoAnexo(anexo.cirurgiaId, anexo.url);
     if (arquivo) await unlink(arquivo).catch(() => undefined);

@@ -1,6 +1,6 @@
 import "server-only";
 import type { TipoMovimento } from "@/generated/prisma/client";
-import type { Tx } from "@/lib/db";
+import { db, type Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 
 /**
@@ -122,4 +122,30 @@ export async function removerLocalDoHospital(tx: Tx, localId: string): Promise<b
   if (c._count.saldos + c._count.movOrigem + c._count.movDestino + c._count.remessas > 0) return false;
   await tx.localEstoque.delete({ where: { id: localId } });
   return true;
+}
+
+/** Soma por produto de CONSUMO menos os estornos de consumo (RETORNO sem origem, documento CIR-n, observação "estorno"). */
+export function descontarEstornos(consumo: Map<string, number>, estornos: Map<string, number>): Map<string, number> {
+  const r = new Map<string, number>();
+  for (const [id, q] of consumo) r.set(id, Math.max(0, q - (estornos.get(id) ?? 0)));
+  return r;
+}
+
+/**
+ * Consumo líquido por produto no período: CONSUMO menos o RETORNO gravado pelo estorno de consumo da cirurgia
+ * (comercial/_lib/consumo-servico.ts: tipo RETORNO, origemId nulo, documento CIR-n, observacao "estorno").
+ * Sem isso, estornar um consumo lançado por engano continuaria contando como saída.
+ */
+export async function consumoLiquidoPorProduto(periodo: { desde?: Date; ate?: Date }): Promise<Map<string, number>> {
+  const criadoEm = { ...(periodo.desde ? { gte: periodo.desde } : {}), ...(periodo.ate ? { lte: periodo.ate } : {}) };
+  const [consumo, estornos] = await Promise.all([
+    db.movimento.groupBy({ by: ["produtoId"], where: { tipo: "CONSUMO", criadoEm }, _sum: { quantidade: true } }),
+    db.movimento.groupBy({
+      by: ["produtoId"],
+      where: { tipo: "RETORNO", origemId: null, observacao: "estorno", documento: { startsWith: "CIR-" }, criadoEm },
+      _sum: { quantidade: true },
+    }),
+  ]);
+  const mapa = (rows: { produtoId: string; _sum: { quantidade: number | null } }[]) => new Map(rows.map((r) => [r.produtoId, r._sum.quantidade ?? 0]));
+  return descontarEstornos(mapa(consumo), mapa(estornos));
 }

@@ -26,7 +26,7 @@ export default async function EditarProcedimentoPage({ params }: { params: Promi
       <PageHeader
         voltar={{ href: "/cadastros/procedimentos", label: "Procedimentos" }}
         title={proc.descricao}
-        subtitle={`${proc.codigoTuss ? `TUSS ${proc.codigoTuss} · ` : ""}${proc._count.cirurgias} cirurgia(s)`}
+        meta={[`${proc.codigoTuss ? `TUSS ${proc.codigoTuss} · ` : ""}${proc._count.cirurgias} cirurgia(s)`]}
         actions={
           edita && proc._count.cirurgias === 0 ? (
             <ActionButton action={excluirProcedimento.bind(null, id)} variant="danger" confirm="Excluir este procedimento?">

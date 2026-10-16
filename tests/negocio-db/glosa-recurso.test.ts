@@ -143,7 +143,7 @@ test("relatório de glosas confere com SQL (valor, categorias, convênio e hospi
   medicoId = (await db.medico.create({ data: { nome: `${P} medico`, crm: uid(), ufCrm: "SP" } })).id;
   const prod = await mkProduto();
   const cir = await db.cirurgia.create({ data: { dataHora: new Date(), hospitalId, medicoId, convenioId, paciente: `${P} paciente`, status: "FATURADA" } });
-  const pv = await db.pedidoVenda.create({ data: { hospitalId, cirurgiaId: cir.id, status: "FATURADO", numeroNf: "1", faturadoEm: new Date(), total: 1000.1, itens: { create: [{ produtoId: prod.id, quantidade: 1, precoUnit: 1000.1 }] } } });
+  const pv = await db.pedidoVenda.create({ data: { hospitalId, cirurgiaId: cir.id, status: "FATURADO", numeroNf: `NF${uid()}`, faturadoEm: new Date(), total: 1000.1, itens: { create: [{ produtoId: prod.id, quantidade: 1, precoUnit: 1000.1 }] } } });
   const t1 = await titulo(1000.1, { pedidoId: pv.id });
   const avulso = await titulo(400); // sem pedido: "sem convênio"
   const g1 = await glosar(t1.id, 100.05, "SEM_AUTORIZACAO");

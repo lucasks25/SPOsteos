@@ -11,15 +11,15 @@ import { checarCnpj, UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_FORNECEDOR } from "../_lib/acoes";
 
 const schema = z.object({
-  razaoSocial: zf.text(),
-  nomeFantasia: zf.optText(),
-  cnpj: zf.text("CNPJ obrigatório"),
-  ie: zf.optText(),
+  razaoSocial: zf.nome(),
+  nomeFantasia: zf.optText(200),
+  cnpj: zf.text("CNPJ obrigatório", 40),
+  ie: zf.optText(40),
   email: z.email("E-mail inválido").optional().transform((v) => v ?? null),
-  telefone: zf.optText(),
-  cidade: zf.optText(),
+  telefone: zf.optText(40),
+  cidade: zf.optText(200),
   uf: z.enum(UFS, { error: "UF inválida" }).optional().transform((v) => v ?? null),
-  afe: zf.optText(),
+  afe: zf.optText(40),
   ativo: zf.bool(),
 });
 

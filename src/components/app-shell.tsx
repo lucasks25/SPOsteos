@@ -7,7 +7,7 @@ import { BuscaGlobal } from "@/components/busca-global";
 import { BotaoTema, MenuAjuda, Sino, botaoIcone, useAtalhosGlobais, type MenuId, type PosicaoMenu } from "@/components/topbar-menus";
 import { BarraLateral, NavLateral, UsuarioLateral, type Modulo } from "@/components/menu-lateral";
 import { MenuTopo } from "@/components/menu-topo";
-import type { NavGroup } from "@/components/nav";
+import { esconderAbas, type NavGroup } from "@/components/nav";
 import { definirPosicaoMenu } from "@/lib/tema-actions";
 
 function agrupar(groups: NavGroup[]): Modulo[] {
@@ -25,6 +25,12 @@ function itemAtivo(groups: NavGroup[], pathname: string) {
   for (const g of groups) for (const i of g.items) {
     const bate = i.href === "/" ? pathname === "/" : pathname === i.href || pathname.startsWith(i.href + "/");
     if (bate && (!melhor || i.href.length > melhor.href.length)) melhor = { href: i.href, modulo: g.modulo ?? g.label };
+  }
+  // tela que é aba de outro item (fora do menu): destaca o item pai
+  const noMenu = new Set(esconderAbas(groups).flatMap((g) => g.items.map((i) => i.href)));
+  if (melhor && !noMenu.has(melhor.href)) {
+    const pai = groups.flatMap((g) => g.items).find((i) => i.href === melhor!.href)?.abaDe;
+    if (pai) melhor = { href: pai, modulo: melhor.modulo };
   }
   return melhor;
 }
@@ -106,7 +112,7 @@ export function AppShell({ groups, nome, perfil, sair, marca, marcaClara, recolh
 }) {
   const pathname = usePathname();
   useAlinharColunas();
-  const modulos = useMemo(() => agrupar(groups), [groups]);
+  const modulos = useMemo(() => agrupar(esconderAbas(groups)), [groups]);
   const ativo = itemAtivo(groups, pathname);
   const router = useRouter();
   const [menu, setMenu] = useState<MenuId | null>(null);
@@ -178,7 +184,7 @@ export function AppShell({ groups, nome, perfil, sair, marca, marcaClara, recolh
         )}
         {/* barra do modo lateral; no modo topo é a barra do celular (abaixo de 1024 px) */}
         {(!topo || desktop !== true) && (
-          <header className={`sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md print:hidden ${topo ? "lg:hidden" : ""}`}>
+          <header className={`casca-barra sticky top-0 z-30 border-b border-slate-200 bg-white/90 backdrop-blur-md print:hidden ${topo ? "lg:hidden" : ""}`}>
             <div className="flex h-16 items-center gap-2 px-4 md:px-7">
               <button type="button" onClick={() => setGaveta(true)} aria-label="Abrir menu" aria-controls="menu-lateral" aria-expanded={gaveta} className={`${botaoIcone} -ml-2 lg:hidden`}>
                 <Icon name="menu" size={20} />

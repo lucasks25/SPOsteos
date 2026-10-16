@@ -7,12 +7,13 @@ import { Filtros } from "@/components/filtros";
 import { CLASSES, ORIGENS, PERFIS_OPERAR_RECOLHIMENTO, ROTULO_CLASSE, ROTULO_ORIGEM } from "../../_lib/recolhimento";
 import { abrirRecolhimentoAction } from "../actions";
 import { TokenFormulario } from "@/components/token-formulario";
+import { soStrings } from "@/lib/search-params";
 
 const inputCls = campo;
 
 export default async function NovoRecolhimentoPage({ searchParams }: { searchParams: Promise<{ q?: string; loteId?: string }> }) {
   await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const q = sp.q?.trim().slice(0, 80) || undefined;
   const lotes = q || sp.loteId
     ? await db.lote.findMany({
@@ -39,7 +40,7 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
       ) : (
         <Form action={abrirRecolhimentoAction} submitLabel="Abrir recolhimento e bloquear lotes" className="space-y-3">
           <TokenFormulario />
-          <Card title="Lotes afetados" icon="frasco">
+          <Card title="Lotes afetados">
             <ul className="divide-y divide-slate-200">
               {lotes.map((l) => (
                 <li key={l.id}>
@@ -56,7 +57,7 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
               ))}
             </ul>
           </Card>
-          <Card title="Dados da ação de campo" icon="alerta">
+          <Card title="Dados da ação de campo">
             <div className="space-y-4">
               <Grid cols={3}>
                 <Select label="Origem *" name="origem" required options={ORIGENS.map((o) => ({ value: o, label: ROTULO_ORIGEM[o] }))} />

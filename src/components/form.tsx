@@ -313,7 +313,7 @@ export function Grid({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 3
  */
 export function Secao({ titulo, descricao, children }: { titulo: string; descricao?: string; children: ReactNode }) {
   return (
-    <section className="space-y-3 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
+    <section className="form-secao space-y-3 border-t border-slate-200 pt-4 first:border-t-0 first:pt-0">
       <div>
         <h3 className="text-sm font-semibold text-slate-900">{titulo}</h3>
         {descricao && <p className="mt-0.5 text-xs text-slate-500">{descricao}</p>}

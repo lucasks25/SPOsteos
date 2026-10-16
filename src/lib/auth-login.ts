@@ -2,6 +2,9 @@ import "server-only";
 import bcrypt from "bcryptjs";
 import { db } from "@/lib/db";
 import { audit } from "@/lib/forms";
+import { problemaSenha, SENHA_MAX, SENHA_MIN } from "@/lib/auth-senha";
+
+export { SENHA_MAX, SENHA_MIN };
 
 export const MAX_FALHAS = 5;
 // por IP o limite é maior: o escritório inteiro sai pelo mesmo IP (NAT), e 5 erros de colegas bloqueavam todo mundo,
@@ -25,7 +28,24 @@ export function emailParaAuditoria(texto: string): string {
   return e.length <= 254 && FORMATO_EMAIL.test(e) ? e : "(não é um e-mail)";
 }
 
-export type ResultadoLogin = { ok: true; user: { id: string; sessaoVersao: number } } | { ok: false; erro: string };
+export type ResultadoLogin = { ok: true; user: { id: string; sessaoVersao: number; mfa: boolean } } | { ok: false; erro: string };
+
+/**
+ * Reserva uma tentativa na chave e diz se ainda cabe no limite da janela (contando a própria: numa rajada, a k-ésima
+ * reserva enxerga ao menos k linhas). Bloqueada, a reserva é apagada (não prolonga o bloqueio). Usada na troca de
+ * senha e no 2º fator; o login usa a mesma ideia com duas chaves (e-mail e IP).
+ */
+export async function reservarTentativa(chave: string, max = MAX_FALHAS): Promise<boolean> {
+  const reserva = await db.tentativaLogin.create({ data: { chave }, select: { id: true } });
+  const n = await db.tentativaLogin.count({ where: { chave, criadaEm: { gte: new Date(Date.now() - JANELA_MS) } } });
+  if (n > max) {
+    await db.tentativaLogin.delete({ where: { id: reserva.id } });
+    return false;
+  }
+  return true;
+}
+
+export const limparTentativas = (chave: string) => db.tentativaLogin.deleteMany({ where: { chave } });
 
 /** Confere e-mail e senha com limite de tentativas por e-mail (e por IP, quando há um confiável). Sem cookie nem redirect. */
 export async function autenticar(emailBruto: string, senhaBruta: string, ip: string | null): Promise<ResultadoLogin> {
@@ -53,34 +73,39 @@ export async function autenticar(emailBruto: string, senhaBruta: string, ip: str
   }
   await db.tentativaLogin.deleteMany({ where: { OR: [{ id: { in: ids } }, { chave: `email:${email}` }] } });
   await db.tentativaLogin.deleteMany({ where: { criadaEm: { lt: desde } } });
-  return { ok: true, user: { id: user.id, sessaoVersao: user.sessaoVersao } };
+  return { ok: true, user: { id: user.id, sessaoVersao: user.sessaoVersao, mfa: user.mfaAtivadoEm !== null } };
 }
-
-export const SENHA_MIN = 10;
-export const SENHA_MAX = 72; // limite real do bcrypt
 
 /**
  * Troca da própria senha: exige a senha atual (com o mesmo limite de tentativas, por usuário: sessão roubada não vira
- * força bruta da senha), recusa repetir a atual, grava bcrypt e sobe a sessaoVersao (derruba as outras sessões).
+ * força bruta da senha), aplica a política (src/lib/auth-senha.ts), recusa repetir a atual, grava bcrypt, tira a
+ * marca de senha provisória e sobe a sessaoVersao (derruba as outras sessões).
  * Devolve a nova versão para o chamador recriar o cookie deste aparelho.
  */
 export async function trocarSenha(userId: string, atual: string, nova: string): Promise<{ ok: true; sessaoVersao: number } | { ok: false; erro: string; campo?: "atual" | "nova" }> {
-  if (nova.length < SENHA_MIN || nova.length > SENHA_MAX) return { ok: false, erro: `A nova senha precisa ter de ${SENHA_MIN} a ${SENHA_MAX} caracteres.`, campo: "nova" };
+  const dono = await db.usuario.findUnique({ where: { id: userId }, select: { email: true, nome: true } });
+  const problema = problemaSenha(nova, dono ?? {});
+  if (problema) return { ok: false, erro: problema, campo: "nova" };
   if (nova === atual) return { ok: false, erro: "A nova senha tem de ser diferente da atual.", campo: "nova" };
   const chave = `senha:${userId}`;
-  const desde = new Date(Date.now() - JANELA_MS);
-  const reserva = await db.tentativaLogin.create({ data: { chave }, select: { id: true } });
-  if ((await db.tentativaLogin.count({ where: { chave, criadaEm: { gte: desde } } })) > MAX_FALHAS) {
-    await db.tentativaLogin.delete({ where: { id: reserva.id } });
-    return { ok: false, erro: MSG_BLOQUEADO };
-  }
+  if (!(await reservarTentativa(chave))) return { ok: false, erro: MSG_BLOQUEADO };
   const user = await db.usuario.findUnique({ where: { id: userId }, select: { senhaHash: true, ativo: true } });
   if (!user?.ativo || !(await bcrypt.compare(atual.slice(0, 200), user.senhaHash))) {
     await audit(userId, "trocar senha falhou", "Usuario", userId, "senha atual incorreta");
     return { ok: false, erro: "Senha atual incorreta.", campo: "atual" };
   }
-  const salvo = await db.usuario.update({ where: { id: userId }, data: { senhaHash: await bcrypt.hash(nova, 10), sessaoVersao: { increment: 1 } }, select: { sessaoVersao: true } });
-  await db.tentativaLogin.deleteMany({ where: { chave } });
+  const salvo = await db.usuario.update({
+    where: { id: userId },
+    data: { senhaHash: await bcrypt.hash(nova, 10), senhaExpirada: false, sessaoVersao: { increment: 1 } },
+    select: { sessaoVersao: true },
+  });
+  await limparTentativas(chave);
   await audit(userId, "trocar a própria senha", "Usuario", userId);
   return { ok: true, sessaoVersao: salvo.sessaoVersao };
+}
+
+/** Sobe a sessaoVersao (todas as sessões caem). Devolve a nova versão para o chamador recriar o cookie deste aparelho. */
+export async function encerrarSessoes(userId: string): Promise<number> {
+  const u = await db.usuario.update({ where: { id: userId }, data: { sessaoVersao: { increment: 1 } }, select: { sessaoVersao: true } });
+  return u.sessaoVersao;
 }

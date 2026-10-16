@@ -104,6 +104,7 @@ export async function riscoGlosaDaCirurgia(cirurgiaId: string, cliente: Pick<Tx,
   return verificarRiscoGlosa({
     aplicavel: c.status !== "CANCELADA" && !!c.convenio && c.convenio.exigeAutorizacao,
     dataCirurgia: c.dataHora,
+    statusCirurgia: c.status,
     autorizacoes: c.autorizacoes.map((a) => ({ status: a.status, validade: a.validade, itens: a.itens.map((i) => ({ produtoId: i.produtoId, quantidadeAutorizada: i.quantidadeAutorizada })) })),
     consumos: c.consumos.map((k) => ({ produtoId: k.produtoId, descricao: `${k.produto.codigo} — ${k.produto.descricao}`, quantidade: k.quantidade })),
     nomes,

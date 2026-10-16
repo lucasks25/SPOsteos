@@ -9,6 +9,7 @@ import { hojeUTC } from "@/lib/datas";
 import { PERFIS_QUALIDADE, somarDias } from "../_lib/perfis";
 import { marcarVencidos } from "./actions";
 import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
+import { soStrings } from "@/lib/search-params";
 
 const STATUS: StatusLote[] = ["QUARENTENA", "LIBERADO", "NAO_CONFORME", "BLOQUEADO", "VENCIDO"];
 
@@ -16,7 +17,7 @@ type SP = { q?: string; status?: string; dias?: string; vencidos?: string; comSa
 
 export default async function LotesPage({ searchParams }: { searchParams: Promise<SP> }) {
   await requireUser(PERFIS_QUALIDADE);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const hoje = hojeUTC();
   const status = STATUS.includes(sp.status as StatusLote) ? (sp.status as StatusLote) : undefined;
   const dias = sp.dias && /^\d+$/.test(sp.dias) ? Number(sp.dias) : undefined;
@@ -55,7 +56,7 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Lotes e validades"
-        subtitle="Para a Qualidade: acompanhe os lotes, a situação de qualidade de cada um e os vencimentos."
+        subtitle="Acompanhe os lotes, a situação de qualidade de cada um e os vencimentos."
         actions={
           vencidosLiberados > 0 ? (
             <ActionButton action={marcarVencidos} variant="danger" confirm={`Marcar ${vencidosLiberados} lote(s) liberado(s) vencido(s) como vencido(s)?`}>
@@ -65,10 +66,10 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
         }
       />
       <KpiGrid cols={4}>
-        <Stat icon="frasco" label="Lotes listados" value={num(lotes.length)} />
-        <Stat icon="alerta" label="Em quarentena" value={num(lotes.filter((l) => l.status === "QUARENTENA").length)} tone={lotes.some((l) => l.status === "QUARENTENA") ? "warn" : "default"} />
-        <Stat icon="calendario" label="Vencidos" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} hint={vencidosLiberados ? `${vencidosLiberados} ainda liberado(s)` : undefined} />
-        <Stat icon="calendario" label="Vencem em 90 dias" value={num(lotes.filter((l) => l.validade >= hoje && diasAte(l.validade) <= 90).length)} />
+        <Stat label="Lotes listados" value={num(lotes.length)} />
+        <Stat label="Em quarentena" value={num(lotes.filter((l) => l.status === "QUARENTENA").length)} tone={lotes.some((l) => l.status === "QUARENTENA") ? "warn" : "default"} />
+        <Stat label="Vencidos" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} hint={vencidosLiberados ? `${vencidosLiberados} ainda liberado(s)` : undefined} />
+        <Stat label="Vencem em 90 dias" value={num(lotes.filter((l) => l.validade >= hoje && diasAte(l.validade) <= 90).length)} />
       </KpiGrid>
       <Filtros limparHref="/qualidade/lotes">
         <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Lote, série, produto ou GTIN" className="w-64" />
@@ -81,7 +82,7 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
           <input type="checkbox" name="comSaldo" value="1" defaultChecked={!!sp.comSaldo} /> Somente com saldo
         </label>
       </Filtros>
-      <Table titulo="Lotes" icone="pacote" contagem={lotes.length} head={["Produto", "Lote / série", "Validade", "Status", "Saldo total", "Saldo por local", ""]} empty={lotes.length === 0} emptyText="Nenhum lote encontrado com esses filtros.">
+      <Table titulo="Lotes" contagem={lotes.length} head={["Produto", "Lote / série", "Validade", "Status", "Saldo total", "Saldo por local", ""]} empty={lotes.length === 0} emptyText="Nenhum lote encontrado com esses filtros.">
         {lotes.map((l) => {
           const total = l.saldos.reduce((s, x) => s + x.quantidade, 0);
           const d = diasAte(l.validade);

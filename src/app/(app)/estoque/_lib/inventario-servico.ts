@@ -129,7 +129,7 @@ export async function fecharInventario(tx: Tx, id: number, resolucoes: Resolucao
   exigirEditavel(inv.status);
   if (inv.status !== "CONTADO") throw new ErroNegocio("Conclua a contagem antes de fechar o inventário.");
   // trava os saldos do local: nenhuma remessa/consumo muda o saldo entre o cálculo e a correção
-  await tx.$queryRaw`SELECT id FROM "Saldo" WHERE "localId" = ${inv.localId} FOR UPDATE`;
+  await tx.$queryRaw`SELECT id FROM "Saldo" WHERE "localId" = ${inv.localId} ORDER BY id FOR UPDATE`; // ordem fixa: sem deadlock com outra trava em lote
   const { itens, resumo } = await revisarInventario(tx, id);
   if (resumo.naoContados > 0) throw new ErroNegocio(`Faltam ${resumo.naoContados} item(ns) sem contagem.`);
   const porItem = new Map(resolucoes.map((r) => [r.itemId, r]));

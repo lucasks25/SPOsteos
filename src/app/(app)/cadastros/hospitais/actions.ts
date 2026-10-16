@@ -13,20 +13,20 @@ import { checarCnpj, UFS } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_HOSPITAL } from "../_lib/acoes";
 
 const schema = z.object({
-  razaoSocial: zf.text(),
-  nomeFantasia: zf.optText(),
-  cnpj: zf.text("CNPJ obrigatório"),
-  ie: zf.optText(),
+  razaoSocial: zf.nome(),
+  nomeFantasia: zf.optText(200),
+  cnpj: zf.text("CNPJ obrigatório", 40),
+  ie: zf.optText(40),
   email: z.email("E-mail inválido").optional().transform((v) => v ?? null),
-  telefone: zf.optText(),
-  endereco: zf.optText(),
-  bairro: zf.optText(),
+  telefone: zf.optText(40),
+  endereco: zf.optText(200),
+  bairro: zf.optText(200),
   cep: z
     .string()
     .optional()
     .transform((v) => (v ? v.replace(/\D/g, "") : null))
     .refine((v) => v === null || v.length === 8, "CEP com 8 dígitos"),
-  cidade: zf.optText(),
+  cidade: zf.optText(200),
   uf: z.enum(UFS, { error: "UF inválida" }).optional().transform((v) => v ?? null),
   prazoPagamentoDias: zf.int(0).max(365, "Máximo 365 dias"),
   tabelaPrecoId: zf.optText(),

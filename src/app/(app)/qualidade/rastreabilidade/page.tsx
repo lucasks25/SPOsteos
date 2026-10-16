@@ -1,10 +1,12 @@
 import Link from "next/link";
+import { auditLeitura } from "@/lib/forms";
 import { requireUser } from "@/lib/auth";
 import { Aviso, Badge, btn, Card, Dl, EmptyState, PageHeader, SearchBar, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { PERFIS_QUALIDADE } from "../_lib/perfis";
 import { PrintButton } from "@/components/print-button";
 import { buscarLotes, type Rastreio } from "../_lib/rastreio";
+import { soStrings } from "@/lib/search-params";
 
 const PRINT_CSS = `@media print {
   aside, header { display: none !important; }
@@ -16,8 +18,12 @@ const PRINT_CSS = `@media print {
 
 export default async function RastreabilidadePage({ searchParams }: { searchParams: Promise<{ q?: string }> }) {
   const user = await requireUser(PERFIS_QUALIDADE);
-  const { q } = await searchParams;
+  const { q } = soStrings(await searchParams);
   const { lotes, truncado } = q ? await buscarLotes(q) : { lotes: [], truncado: false };
+  // lote -> paciente é dado de saúde: cada lote exibido com consumo em cirurgia fica na auditoria (docs/LGPD.md §5)
+  for (const r of lotes) {
+    if (r.lote.consumos.length > 0) await auditLeitura(user.id, "Lote", r.lote.id, `rastreabilidade: ${r.lote.consumos.length} uso(s) em cirurgia`);
+  }
 
   return (
     <>
@@ -36,12 +42,12 @@ export default async function RastreabilidadePage({ searchParams }: { searchPara
           Busca: “{q}” · Emitido em {dateTime(new Date())} por {user.nome}
         </p>
       </div>
-      {q && lotes.length === 0 && <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 shadow-sm"><EmptyState text={`Nenhum lote encontrado para “${q}”. Confira o número do lote, a série, o GTIN ou o código.`} icon="busca" /></div>}
+      {q && lotes.length === 0 && <div className="rounded-lg border border-slate-200 bg-white px-4 py-10"><EmptyState text={`Nenhum lote encontrado para “${q}”. Confira o número do lote, a série, o GTIN ou o código.`} icon="busca" /></div>}
       {truncado && <Aviso tom="alerta" className="mb-4">Muitos lotes encontrados — exibindo os 30 primeiros. Refine a busca.</Aviso>}
       {lotes.length > 1 && (
         <p className="mb-4 text-sm text-slate-600 print:hidden">{lotes.length} lotes encontrados.</p>
       )}
-      <div className="space-y-10">
+      <div className="space-y-8">
         {lotes.map((r) => (
           <LoteRastreio key={r.lote.id} r={r} verCompras={user.perfil === "ESTOQUE" || user.perfil === "ADMIN"} />
         ))}
@@ -57,8 +63,8 @@ function LoteRastreio({ r, verCompras }: { r: Rastreio; verCompras: boolean }) {
   const saldo = lote.saldos.reduce((s, x) => s + x.quantidade, 0);
   return (
     <section className="rastreio-lote">
-      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-4 border-b-2 border-teal-700 pb-2">
-        <h2 className="text-lg font-bold text-slate-900">
+      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-3 border-b border-slate-200 pb-2">
+        <h2 className="text-base font-semibold text-slate-900">
           Lote {lote.numero}
           {lote.serie && <span className="text-slate-500"> · Série {lote.serie}</span>} — {lote.produto.descricao}
         </h2>
@@ -66,7 +72,7 @@ function LoteRastreio({ r, verCompras }: { r: Rastreio; verCompras: boolean }) {
           Abrir lote
         </Link>
       </div>
-      <Card title="Identificação" icon="etiqueta">
+      <Card title="Identificação">
         <Dl
           items={[
             ["Produto", `${lote.produto.codigo} — ${lote.produto.descricao}`],

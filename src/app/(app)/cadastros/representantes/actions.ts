@@ -10,10 +10,10 @@ import { isCnpj, isCpf, onlyDigits } from "@/lib/documentos-br";
 import { PERFIS_COMERCIAL } from "../_lib/acoes";
 
 const schema = z.object({
-  nome: zf.text(),
-  cpfCnpj: zf.optText().refine((v) => !v || isCpf(v) || isCnpj(v), "CPF/CNPJ inválido").transform((v) => (v ? onlyDigits(v) : null)),
+  nome: zf.nome(),
+  cpfCnpj: zf.optText(40).refine((v) => !v || isCpf(v) || isCnpj(v), "CPF/CNPJ inválido").transform((v) => (v ? onlyDigits(v) : null)),
   email: z.email("E-mail inválido").optional().transform((v) => v ?? null),
-  telefone: zf.optText(),
+  telefone: zf.optText(40),
   comissaoPercent: z.coerce.number({ error: "Valor inválido" }).min(0, "Mínimo 0").max(100, "Máximo 100"),
   ativo: zf.bool(),
 });

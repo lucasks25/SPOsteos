@@ -3,9 +3,12 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { FilterBar, PageHeader, Table, Td, btn } from "@/components/ui";
 import { dateTime } from "@/lib/format";
+import { soStrings } from "@/lib/search-params";
 
 const POR_PAGINA = 50;
 /** "ContaPagar" -> "Conta Pagar": nome do cadastro legível no filtro e na coluna. */
+/** Detalhe legível: hash (sha256) e IDs longos (cuid) viram prefixo com reticências; o texto completo fica no title. */
+const legivel = (t: string) => t.replace(/\b[a-f0-9]{32,}\b/gi, (h) => `${h.slice(0, 8)}…`).replace(/\bc[a-z0-9]{24}\b/g, (id) => `${id.slice(0, 8)}…`);
 const rotuloEntidade = (e: string) => e.replace(/([a-z])([A-Z])/g, "$1 $2");
 
 export default async function AuditoriaPage({
@@ -14,8 +17,8 @@ export default async function AuditoriaPage({
   searchParams: Promise<{ entidade?: string; usuario?: string; page?: string }>;
 }) {
   await requireUser([]);
-  const sp = await searchParams;
-  const page = Math.max(1, Number(sp.page) || 1);
+  const sp = soStrings(await searchParams);
+  const page = Math.min(1000, Math.max(1, Math.trunc(Number(sp.page)) || 1)); // teto: página gigante na URL não pode virar skip/take enorme
   const where = {
     ...(sp.entidade ? { entidade: sp.entidade } : {}),
     ...(sp.usuario ? { usuarioId: sp.usuario } : {}),
@@ -60,15 +63,15 @@ export default async function AuditoriaPage({
         <button className={btn.secondary}>Filtrar</button>
         <Link href="/admin/auditoria" className={btn.ghost}>Limpar</Link>
       </FilterBar>
-      <Table titulo="Registros" icone="lista" contagem={total} head={["Data/hora", "Usuário", "Ação", "Entidade", "ID", "Detalhes"]} empty={logs.length === 0} emptyText="Nenhum registro de auditoria para esses filtros.">
+      <Table titulo="Registros" contagem={total} head={["Data/hora", "Usuário", "Ação", "Entidade", "ID", "Detalhes"]} empty={logs.length === 0} emptyText="Nenhum registro de auditoria para esses filtros.">
         {logs.map((l) => (
           <tr key={l.id}>
             <Td className="tnum">{dateTime(l.criadoEm)}</Td>
             <Td>{l.usuario?.nome ?? "sistema"}</Td>
             <Td className="font-medium">{l.acao}</Td>
             <Td>{rotuloEntidade(l.entidade)}</Td>
-            <Td className="max-w-40 truncate font-mono text-xs">{l.entidadeId ?? "—"}</Td>
-            <Td className="max-w-md truncate whitespace-normal text-xs text-slate-600">{l.detalhes ?? ""}</Td>
+            <Td className="max-w-32 truncate font-mono text-xs"><span title={l.entidadeId ?? undefined}>{l.entidadeId ?? "—"}</span></Td>
+            <Td className="max-w-md truncate text-xs text-slate-600"><span title={l.detalhes ?? undefined}>{l.detalhes ? legivel(l.detalhes) : ""}</span></Td>
           </tr>
         ))}
       </Table>

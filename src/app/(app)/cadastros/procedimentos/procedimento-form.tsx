@@ -6,9 +6,9 @@ export function ProcedimentoForm({ proc }: { proc?: Procedimento }) {
   return (
     <Form action={salvarProcedimento.bind(null, proc?.id ?? null)} submitLabel={proc ? "Salvar" : "Criar e incluir materiais"}>
       <Grid cols={3}>
-        <Field label="Código TUSS" name="codigoTuss" defaultValue={proc?.codigoTuss ?? ""} inputMode="numeric" />
-        <Field label="Descrição *" name="descricao" defaultValue={proc?.descricao} required className="sm:col-span-2" />
-        <Field label="Especialidade" name="especialidade" defaultValue={proc?.especialidade ?? ""} />
+        <Field label="Código TUSS" name="codigoTuss" defaultValue={proc?.codigoTuss ?? ""} inputMode="numeric" maxLength={30} />
+        <Field label="Descrição *" name="descricao" defaultValue={proc?.descricao} required maxLength={200} className="sm:col-span-2" />
+        <Field label="Especialidade" name="especialidade" defaultValue={proc?.especialidade ?? ""} maxLength={100} />
       </Grid>
     </Form>
   );

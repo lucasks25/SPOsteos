@@ -46,7 +46,8 @@ Pré-requisitos: Node 24+, Docker.
 ```bash
 cd ~/Desktop/IA\ Brazil/OPME
 docker compose up -d          # Postgres 17 na porta 5440 (container opme-db)
-npm install                   # roda prisma generate no postinstall
+npm install                   # .npmrc tem ignore-scripts=true (supply chain): rode em seguida
+npm run prisma:gerar          # gera o cliente Prisma (o postinstall não roda mais)
 npx prisma migrate dev        # aplica as migrations
 npm run db:seed               # dados de demonstração (idempotente)
 npm run dev -- -p 3100        # http://localhost:3100
@@ -223,8 +224,9 @@ Revisão de código e segurança, achados e o que foi ou não testado: **`docs/R
 - Adotado o que a própria Viman descreve no site: **arquivos CNAB** do banco do cliente (**Itaú**), sem mensalidade de API.
   - Extrato: **CNAB 240 Itaú** (manual "Extrato de Conta Corrente CNAB240 v5.0", fev/2011) e **OFX**.
   - Pagamentos: **SISPAG** (manual "SISPAG Layout de Arquivos CNAB v085", out/2020): crédito em conta Itaú, TED, boletos e **Pix por chave** (o SISPAG aceita Pix por arquivo).
-  - **Falta:** cobrança/emissão de boletos para hospitais (CNAB de cobrança). Só achamos o manual de 2017, hospedado em terceiro. Precisa do manual atual do Itaú.
-- Nenhum arquivo foi validado com o Itaú ainda. Ver `docs/REVISAO.md`, seção "Integração bancária".
+  - Cobrança aos hospitais: **CNAB 400 Itaú, carteira 109** (manual jan/2017), feita em 16/10 (`REVISAO.md` §16).
+- **Homologação (16/10/2026): ver `docs/HOMOLOGACAO-ITAU.md`** — situação por módulo, correções, processo oficial do Itaú, o que depende do titular da conta, e-mail de dúvidas para o analista e roteiro de teste. Resumo: SISPAG remessa/retorno, extrato CNAB 240, OFX e cobrança estão **funcionais com ressalvas**; nenhum arquivo passou ainda pelo Validador de Layout nem pelo ambiente de teste do Itaú, o que só o titular da conta pode fazer.
+- Manuais oficiais e índice: `docs/manuais/README.md`. Validador independente do SISPAG: `financeiro/_lib/cnab-validador.ts`; arquivos fictícios para o validador do banco: `docs/homologacao/arquivos/` (gerados por `scripts/gerar-arquivos-homologacao.ts`).
 
 ### Dados de teste no banco local
 Em 14/10 foram apagados os dados de teste do financeiro (conta bancária, lançamentos, extratos, remessas SISPAG, PC-1, PV-1, CIR-1, lote `LT-TESTE-01`) e os dados bancários dos fornecedores. **Restaram** `CIR-2` ("Paciente Teste E2E"), `PV-2` (NF 998877) e a conta a receber do PV-2, criados por outro teste de faturamento ponta a ponta que não é desta sessão.

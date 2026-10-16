@@ -31,7 +31,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
     <>
       <PageHeader
         title={`Inspeção do lote ${lote.numero}`}
-        subtitle={`${lote.produto.codigo} — ${lote.produto.descricao}`}
+        meta={[`${lote.produto.codigo} — ${lote.produto.descricao}`]}
         voltar={{ href: "/qualidade/quarentena", label: "Quarentena e inspeção" }}
         actions={
           <LinkButton href={`/qualidade/lotes/${lote.id}`} variant="secondary">
@@ -40,7 +40,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
         }
       />
       <div className="space-y-4">
-        <Card title="Dados do lote" icon="frasco">
+        <Card title="Dados do lote">
           <Dl
             items={[
               ["Status", <StatusBadge key="s" status={lote.status} />],
@@ -61,7 +61,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
           )}
         </Card>
 
-        <Card title="Registrar inspeção" icon="lista">
+        <Card title="Registrar inspeção">
           <Form action={inspecionarLote.bind(null, lote.id)} submitLabel="Registrar inspeção">
             <div className="flex flex-wrap gap-6">
               <Field label="Embalagem íntegra" name="embalagemOk" type="checkbox" defaultChecked />

@@ -19,12 +19,12 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   const melhor = d.meses.reduce((a, m) => (m.valor > a.valor ? m : a), d.meses[0]);
   return (
     <>
-      <PageHeader title="Vendas por mês" subtitle="Relatório de leitura: quanto foi faturado em cada um dos últimos 12 meses (data da nota fiscal), comparado ao mesmo mês do ano anterior." />
+      <PageHeader title="Vendas por mês" subtitle="Quanto foi faturado em cada um dos últimos 12 meses (data da nota fiscal), comparado ao mesmo mês do ano anterior." />
       <KpiGrid cols={4}>
-        <Stat label="Vendas nos 12 meses" value={money(d.total)} hint={`${num(d.pedidos)} pedido(s)`} icon="receber" />
-        <Stat label="12 meses anteriores" value={money(d.anterior)} icon="calendario" />
-        <Stat label="Variação" value={variacao(d.variacaoPct)} tone={d.variacaoPct !== null && d.variacaoPct < 0 ? "danger" : "default"} hint={d.variacaoPct === null ? "sem vendas no ano anterior" : undefined} icon="tendencia" />
-        <Stat label="Melhor mês" value={melhor && melhor.valor > 0 ? money(melhor.valor) : "—"} hint={melhor && melhor.valor > 0 ? rotulo(melhor.ano, melhor.mes) : undefined} icon="grafico" />
+        <Stat label="Vendas nos 12 meses" value={money(d.total)} hint={`${num(d.pedidos)} pedido(s)`} />
+        <Stat label="12 meses anteriores" value={money(d.anterior)} />
+        <Stat label="Variação" value={variacao(d.variacaoPct)} tone={d.variacaoPct !== null && d.variacaoPct < 0 ? "danger" : "default"} hint={d.variacaoPct === null ? "sem vendas no ano anterior" : undefined} />
+        <Stat label="Melhor mês" value={melhor && melhor.valor > 0 ? money(melhor.valor) : "—"} hint={melhor && melhor.valor > 0 ? rotulo(melhor.ano, melhor.mes) : undefined} />
       </KpiGrid>
       <Filtros limparHref="/gestao/vendas">
         <FiltroSelect label="Hospital" name="hospital" options={hospitais} defaultValue={d.hospitalId} />
@@ -32,7 +32,6 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
       <div className="space-y-3">
         <Card
           title="Vendas mensais"
-          icon="tendencia"
           actions={
             <span className="flex items-center gap-3 text-xs text-slate-600">
               <span className="flex items-center gap-1"><span className="inline-block h-2.5 w-2.5 rounded-sm bg-teal-700" />Mês</span>
@@ -55,7 +54,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
         </Card>
         <Table
           titulo="Mês a mês"
-          icone="calendario"
+
           contagem={d.meses.length}
           acoes={<BotaoCsv href="/gestao/vendas/exportar" params={{ hospital: d.hospitalId }} />}
           head={["Mês", <span key="p" className="block text-right">Pedidos</span>, <span key="v" className="block text-right">Vendas</span>, <span key="a" className="block text-right">Ano anterior</span>, <span key="d" className="block text-right">Diferença</span>, <span key="x" className="block text-right">Variação</span>]}

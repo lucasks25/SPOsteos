@@ -1,25 +1,47 @@
 /**
  * Leitor do extrato de conta corrente CNAB 240 do Itaú (retorno de conciliação bancária).
- * Referência: manual Itaú "Extrato de Conta Corrente — CNAB240 — Versão 5.0" (fev/2011).
+ * Referências (docs/manuais/): "Extrato de Conta Corrente — CNAB240 — Versão 5.0" (fev/2011) e a versão CNAB 08.5
+ * do Itaú BBA (set/2018). As posições lidas aqui são iguais nas duas. Diferenças da 08.5 que importam:
+ *  - segmento E ganhou 033-038 (código do histórico), 202-213 (ag./conta de origem) e 214-228 (emitente): não usados;
+ *  - trailer de lote: 089-142 viraram zeros (eram saldo bloqueado/limite): não usados;
+ *  - lote OPCIONAL "Aplic Aut Mais - CDB" (tipo de conta 0202, natureza APL) da mesma agência/conta: não é
+ *    movimento da conta corrente e NÃO pode ser importado como tal (`tipoConta` permite separar).
  * Função pura, sem acesso a banco. Valores: crédito > 0, débito < 0.
  *
  * Estrutura: header de arquivo (0) → lotes, um por conta [header de lote (1) com saldo inicial,
  * detalhes (3, segmento E), trailer de lote (5) com saldo final e totais] → trailer de arquivo (9).
+ * Conferências (nota 10): trailer de lote = nº de registros 1+3+5 do lote e totais D/C; trailer de arquivo =
+ * nº de lotes (tipo 1) e de registros 0+1+3+5+9. Qualquer diferença recusa o arquivo (layout errado ou arquivo cortado).
  */
 
 import { ErroNegocio } from "@/lib/erros";
 
-export type LinhaCnab = { fitid: string; data: Date; valor: number; descricao: string };
+export type LinhaCnab = {
+  fitid: string;
+  data: Date;
+  valor: number;
+  descricao: string;
+  categoria: string; // 170-172 (nota 8): 1xx débito, 2xx crédito
+  codigo: string; // 173-176 (nota 14): código de fluxo de caixa
+  aCompensar: boolean; // tipo de lançamento 2 (nota 13): recurso "a compensar"
+};
 
 export type LoteCnab = {
   agencia: string; // 4 dígitos
   conta: string; // 5 dígitos
   dac: string;
+  /** 033-036 do header de lote (nota 16): "" = conta de livre movimento, "0200" investimento, "0202" Aplic Aut Mais - CDB. */
+  tipoConta: string;
   saldoInicial: { data: Date | null; valor: number };
   saldoFinal: { data: Date | null; valor: number } | null;
   linhas: LinhaCnab[];
   futuros: number; // lançamentos tipo 5 (informativos, não importados)
+  /** saldo inicial + créditos − débitos (tipo 1, ou 1+2) = saldo final do trailer. false = conferir com o banco. */
+  saldoConfere: boolean;
 };
+
+/** Lote que não é da conta corrente (Aplic Aut Mais - CDB, v08.5): não entra na conciliação. */
+export const loteDeAplicacao = (l: Pick<LoteCnab, "tipoConta">) => l.tipoConta === "0202";
 
 export class CnabError extends ErroNegocio {}
 
@@ -59,13 +81,16 @@ export function pareceCnab240(texto: string): boolean {
 }
 
 export function lerCnab240Extrato(texto: string): LoteCnab[] {
-  const linhas = texto.split(/\r?\n/).filter((l) => l.trim() !== "");
+  // fim de arquivo DOS (0x1A) e BOM não são registros
+  const linhas = texto.replace(/^\uFEFF/, "").replace(/\x1A+\s*$/, "").split(/\r?\n/).filter((l) => l.trim() !== "");
   if (linhas.length < 2) throw new CnabError("Arquivo vazio ou incompleto.");
 
   const lotes: LoteCnab[] = [];
-  let atual: (LoteCnab & { soma1: { d: number; c: number }; soma2: { d: number; c: number }; usados: Map<string, number> }) | null = null;
+  type Aberto = Omit<LoteCnab, "saldoConfere"> & { soma1: { d: number; c: number }; soma2: { d: number; c: number }; usados: Map<string, number>; registros: number; codLote: string };
+  let atual: Aberto | null = null;
   let viuHeader = false;
   let viuTrailer = false;
+  let qtdRegistros = 0; // tipos 0, 1, 3, 5 e 9 (nota 10)
 
   linhas.forEach((bruta, i) => {
     const n = i + 1;
@@ -73,8 +98,15 @@ export function lerCnab240Extrato(texto: string): LoteCnab[] {
     const l = bruta.padEnd(TAM, " "); // alguns sistemas cortam os brancos finais
     if (campo(l, 1, 3) !== "341") throw new CnabError(`Linha ${n}: banco ${campo(l, 1, 3)} — este leitor é do layout do Itaú (341).`);
     const tipo = campo(l, 8, 8);
+    if (viuTrailer) throw new CnabError(`Linha ${n}: registro depois do trailer de arquivo.`);
+    qtdRegistros++;
+    if (atual && (tipo === "3" || tipo === "5")) {
+      atual.registros++;
+      if (campo(l, 4, 7) !== atual.codLote) throw new CnabError(`Linha ${n}: registro do lote ${campo(l, 4, 7)} dentro do lote ${atual.codLote}.`);
+    }
 
     if (tipo === "0") {
+      if (viuHeader) throw new CnabError(`Linha ${n}: segundo header de arquivo (arquivos concatenados?).`);
       if (campo(l, 143, 143) !== "2") throw new CnabError("O arquivo não é de retorno (código diferente de 2 no header).");
       viuHeader = true;
       return;
@@ -89,6 +121,7 @@ export function lerCnab240Extrato(texto: string): LoteCnab[] {
         agencia: campo(l, 54, 57),
         conta: campo(l, 66, 70),
         dac: campo(l, 72, 72).trim(),
+        tipoConta: campo(l, 33, 36).trim(),
         saldoInicial: { data: dataCnab(campo(l, 143, 150)), valor: comSinal(valorCnab(campo(l, 151, 168), where), campo(l, 169, 169), where) },
         saldoFinal: null,
         linhas: [],
@@ -96,6 +129,8 @@ export function lerCnab240Extrato(texto: string): LoteCnab[] {
         soma1: { d: 0, c: 0 },
         soma2: { d: 0, c: 0 },
         usados: new Map(),
+        registros: 1,
+        codLote: campo(l, 4, 7),
       };
       return;
     }
@@ -126,7 +161,7 @@ export function lerCnab240Extrato(texto: string): LoteCnab[] {
       const base = ["CNAB", atual.agencia, atual.conta, campo(l, 143, 150), dc, campo(l, 151, 168), codigo, historico, documento].join("|");
       const k = atual.usados.get(base) ?? 0;
       atual.usados.set(base, k + 1);
-      atual.linhas.push({ fitid: k === 0 ? base : `${base}#${k}`, data, valor, descricao });
+      atual.linhas.push({ fitid: k === 0 ? base : `${base}#${k}`, data, valor, descricao, categoria: campo(l, 170, 172), codigo, aCompensar: tipoLanc === "2" });
       return;
     }
 
@@ -143,14 +178,27 @@ export function lerCnab240Extrato(texto: string): LoteCnab[] {
           `Totais do lote da conta ${atual.agencia}/${atual.conta} não conferem com os lançamentos (banco: D ${totD / 100} C ${totC / 100}). O arquivo pode estar corrompido ou em outra versão de layout.`,
         );
       }
+      const qtd = Number(campo(l, 171, 176));
+      if (!/^\d{6}$/.test(campo(l, 171, 176)) || qtd !== atual.registros) {
+        throw new CnabError(`Trailer do lote da conta ${atual.agencia}/${atual.conta} informa ${campo(l, 171, 176).trim()} registros, mas o lote tem ${atual.registros} (nota 10). O arquivo pode estar cortado.`);
+      }
       atual.saldoFinal = { data: dataCnab(campo(l, 143, 150)), valor: comSinal(valorCnab(campo(l, 151, 168), where), campo(l, 169, 169), where) };
-      const { agencia, conta, dac, saldoInicial, saldoFinal, linhas: ls, futuros } = atual;
-      lotes.push({ agencia, conta, dac, saldoInicial, saldoFinal, linhas: ls, futuros });
+      const ini = cent(atual.saldoInicial.valor);
+      const fim = cent(atual.saldoFinal.valor);
+      const saldoConfere = ini + s1.c - s1.d === fim || ini + s12.c - s12.d === fim;
+      const { agencia, conta, dac, tipoConta, saldoInicial, saldoFinal, linhas: ls, futuros } = atual;
+      lotes.push({ agencia, conta, dac, tipoConta, saldoInicial, saldoFinal, linhas: ls, futuros, saldoConfere });
       atual = null;
       return;
     }
 
     if (tipo === "9") {
+      if (atual) throw new CnabError(`Linha ${n}: trailer de arquivo com lote aberto.`);
+      const qL = campo(l, 18, 23);
+      const qR = campo(l, 24, 29);
+      if (Number(qL) !== lotes.length || Number(qR) !== qtdRegistros || !/^\d{6}$/.test(qL) || !/^\d{6}$/.test(qR)) {
+        throw new CnabError(`Trailer do arquivo informa ${qL.trim()} lote(s) e ${qR.trim()} registros, mas o arquivo tem ${lotes.length} e ${qtdRegistros} (nota 10). O arquivo pode estar cortado.`);
+      }
       viuTrailer = true;
       return;
     }

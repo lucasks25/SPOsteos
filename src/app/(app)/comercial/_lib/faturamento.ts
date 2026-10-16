@@ -42,8 +42,9 @@ export async function faturarCirurgia(tx: Tx, cirurgiaId: string) {
     if (cirurgia.pedido.status !== "CANCELADO") {
       throw new FaturamentoError(`A cirurgia já possui o pedido de venda PV-${cirurgia.pedido.id}.`);
     }
-    // pedido cancelado anteriormente (sem títulos): libera o vínculo único para o novo pedido
-    await tx.pedidoVenda.delete({ where: { id: cirurgia.pedido.id } });
+    // pedido cancelado anteriormente: só desvincula (cirurgiaId é @unique opcional) para liberar o vínculo ao novo pedido,
+    // preservando o registro do cancelado (histórico, auditoria e eventuais títulos estornados)
+    await tx.pedidoVenda.update({ where: { id: cirurgia.pedido.id }, data: { cirurgiaId: null } });
   }
 
   // agrupa por produto + lote

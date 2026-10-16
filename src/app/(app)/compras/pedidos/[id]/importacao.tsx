@@ -56,7 +56,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
         <Stat label="Custo nacionalizado" value={calc ? money(reais(calc.totalCent)) : "—"} hint={fator ? `fator ${fator.toLocaleString("pt-BR", { maximumFractionDigits: 4 })} × mercadoria` : undefined} />
       </KpiGrid>
 
-      <Card title="Importação" icon="caminhao" actions={travado ? <Badge color="yellow">câmbio e despesas travados (já recebido)</Badge> : undefined}>
+      <Card title="Importação" actions={travado ? <Badge color="yellow">câmbio e despesas travados (já recebido)</Badge> : undefined}>
         <Form action={salvarImportacao.bind(null, pedido.id)} submitLabel={pedido.status === "CANCELADO" ? null : "Salvar dados da importação"}>
           <Grid cols={4}>
             {travado ? (
@@ -83,7 +83,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
       </Card>
 
       {editavel && (
-        <Card title={`Preços na moeda (${moeda}) e pesos`} icon="etiqueta">
+        <Card title={`Preços na moeda (${moeda}) e pesos`}>
           <Form action={salvarItensImportacao.bind(null, pedido.id)} submitLabel="Salvar preços e pesos">
             <div className="space-y-3">
               {pedido.itens.map((i) => (
@@ -102,7 +102,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
 
       <Table
         titulo="Despesas e tributos da importação"
-        icone="percentual"
+
         contagem={pedido.despesas.length}
         head={["Tipo", "Valor", "Custo", "Rateio", "Conta a pagar", ""]}
         empty={pedido.despesas.length === 0}
@@ -153,7 +153,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
 
       {editavel && (
         <div id="despesa">
-          <Card title={emEdicao ? `Editar despesa: ${ROTULO_DESPESA[emEdicao.tipo]}` : "Incluir despesa"} icon="mais" actions={emEdicao ? <Link href={`/compras/pedidos/${pedido.id}`} className={btn.small}>Cancelar edição</Link> : undefined}>
+          <Card title={emEdicao ? `Editar despesa: ${ROTULO_DESPESA[emEdicao.tipo]}` : "Incluir despesa"} actions={emEdicao ? <Link href={`/compras/pedidos/${pedido.id}`} className={btn.small}>Cancelar edição</Link> : undefined}>
             <Form key={emEdicao?.id ?? "nova"} action={salvarDespesa.bind(null, pedido.id, emEdicao?.id ?? null)} submitLabel={emEdicao ? "Salvar despesa" : "Incluir despesa"} redirectTo={emEdicao ? `/compras/pedidos/${pedido.id}` : undefined} resetOnSuccess={!emEdicao}>
               <TokenFormulario />
               <Grid cols={4}>
@@ -184,7 +184,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
 
       <Table
         titulo="Custo nacionalizado por item"
-        icone="etiqueta"
+
         contagem={pedido.itens.length}
         head={["Produto", "Qtd.", `Preço (${moeda})`, "Em reais (un.)", "Rateio (un.)", "Custo unit. final", "Preço base", "Margem s/ preço base"]}
         empty={!calc}

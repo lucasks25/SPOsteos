@@ -19,7 +19,7 @@ export default async function EditarMedicoPage({ params }: { params: Promise<{ i
       <PageHeader
         voltar={{ href: "/cadastros/medicos", label: "Médicos" }}
         title={medico.nome}
-        subtitle={`CRM ${medico.crm}/${medico.ufCrm} · ${medico._count.cirurgias} cirurgia(s)`}
+        meta={[`CRM ${medico.crm}/${medico.ufCrm} · ${medico._count.cirurgias} cirurgia(s)`]}
         actions={
           edita ? (
             <>

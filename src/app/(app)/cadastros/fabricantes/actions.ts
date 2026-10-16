@@ -11,9 +11,9 @@ import { checarCnpj } from "@/lib/documentos-br";
 import { deleteErrorMessage, PERFIS_SUPRIMENTOS } from "../_lib/acoes";
 
 const schema = z.object({
-  nome: zf.text(),
-  cnpj: zf.optText(),
-  pais: zf.optText(),
+  nome: zf.nome(),
+  cnpj: zf.optText(40),
+  pais: zf.optText(200),
 });
 
 export async function salvarFabricante(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {

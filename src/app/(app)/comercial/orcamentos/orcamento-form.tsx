@@ -11,7 +11,7 @@ export function OrcamentoForm({ orc, hospitais, convenios }: { orc?: Orcamento; 
       <Grid cols={2}>
         <Select label="Hospital *" name="hospitalId" options={hospitais} defaultValue={orc?.hospitalId ?? ""} required />
         <Select label="Convênio" name="convenioId" options={convenios} defaultValue={orc?.convenioId ?? ""} />
-        <Field label="Paciente" name="paciente" defaultValue={orc?.paciente ?? ""} />
+        <Field label="Paciente" name="paciente" defaultValue={orc?.paciente ?? ""} maxLength={200} />
         <Field label="Válido até" name="validade" type="date" defaultValue={inputDate(orc?.validade ?? validadePadrao)} />
       </Grid>
       <TextArea label="Observação" name="observacao" defaultValue={orc?.observacao ?? ""} maxLength={1000} />

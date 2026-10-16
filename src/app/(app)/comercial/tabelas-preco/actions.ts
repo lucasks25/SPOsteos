@@ -11,7 +11,7 @@ import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/form
 const PERFIS = ["COMERCIAL"] as const;
 
 const schema = z
-  .object({ nome: zf.text(), vigenciaInicio: zf.optDate(), vigenciaFim: zf.optDate() })
+  .object({ nome: zf.nome(), vigenciaInicio: zf.optDate(), vigenciaFim: zf.optDate() })
   .refine((d) => !d.vigenciaInicio || !d.vigenciaFim || d.vigenciaFim >= d.vigenciaInicio, { path: ["vigenciaFim"], message: "Fim antes do início" });
 
 export async function salvarTabela(id: string | null, _: ActionState, fd: FormData): Promise<ActionState> {

@@ -11,11 +11,11 @@ export default async function UsuariosPage() {
     <>
       <PageHeader title="Usuários" subtitle="Gerencie as contas de acesso ao sistema e seus perfis." actions={<LinkButton href="/admin/usuarios/novo">Novo usuário</LinkButton>} />
       <KpiGrid cols={3}>
-        <Stat icon="usuarios" label="Usuários" value={usuarios.length} />
-        <Stat icon="usuarios" label="Ativos" value={usuarios.filter((u) => u.ativo).length} />
-        <Stat icon="usuarios" label="Administradores" value={usuarios.filter((u) => u.perfil === "ADMIN").length} />
+        <Stat label="Usuários" value={usuarios.length} />
+        <Stat label="Ativos" value={usuarios.filter((u) => u.ativo).length} />
+        <Stat label="Administradores" value={usuarios.filter((u) => u.perfil === "ADMIN").length} />
       </KpiGrid>
-      <Table titulo="Contas de acesso" icone="usuarios" contagem={usuarios.length} head={["Usuário", "Perfil", "Situação", "Criado em", ""]} empty={usuarios.length === 0} emptyText="Nenhum usuário cadastrado." emptyAction={<LinkButton href="/admin/usuarios/novo" variant="secondary" icon="mais">Criar usuário</LinkButton>}>
+      <Table titulo="Contas de acesso" contagem={usuarios.length} head={["Usuário", "Perfil", "Situação", "Criado em", ""]} empty={usuarios.length === 0} emptyText="Nenhum usuário cadastrado." emptyAction={<LinkButton href="/admin/usuarios/novo" variant="secondary" icon="mais">Criar usuário</LinkButton>}>
         {usuarios.map((u) => (
           <tr key={u.id}>
             <Td>

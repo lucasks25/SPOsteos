@@ -50,7 +50,7 @@ export function DocumentoNovoForm({ fornecedores, fabricantes, produtos, candida
       <Grid cols={3}>
         <Field label="Título *" name="titulo" defaultValue={inicial.titulo} required maxLength={200} className="lg:col-span-2" placeholder="Ex.: AFE ANVISA da matriz" />
         <Field label="Número" name="numero" maxLength={80} />
-        <Field label="Órgão emissor" name="orgaoEmissor" defaultValue={inicial.orgaoEmissor} maxLength={120} placeholder="ANVISA, Vigilância Sanitária..." />
+        <Field label="Órgão emissor" name="orgaoEmissor" defaultValue={inicial.orgaoEmissor} maxLength={200} placeholder="ANVISA, Vigilância Sanitária..." />
         <Field label="Emissão" name="emissao" type="date" />
         <Field label="Validade" name="validade" type="date" hint="Deixe em branco se o documento não vence" />
       </Grid>
@@ -76,7 +76,7 @@ export function DocumentoEditarForm({ d }: { d: DadosEdicao }) {
       <Grid cols={3}>
         <Field label="Título *" name="titulo" defaultValue={d.titulo} required maxLength={200} className="lg:col-span-2" />
         <Field label="Número" name="numero" defaultValue={d.numero} maxLength={80} />
-        <Field label="Órgão emissor" name="orgaoEmissor" defaultValue={d.orgaoEmissor} maxLength={120} />
+        <Field label="Órgão emissor" name="orgaoEmissor" defaultValue={d.orgaoEmissor} maxLength={200} />
         <Field label="Emissão" name="emissao" type="date" defaultValue={d.emissao} />
         <Field label="Validade" name="validade" type="date" defaultValue={d.validade} hint="Em branco = sem vencimento" />
       </Grid>

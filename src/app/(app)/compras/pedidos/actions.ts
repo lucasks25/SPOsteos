@@ -19,12 +19,12 @@ const schemaPedido = z.object({
   fornecedorId: zf.text("Selecione o fornecedor"),
   previsao: zf.optDate(),
   importacao: zf.bool(),
-  invoice: zf.optText(),
-  numeroDi: zf.optText(),
+  invoice: zf.optText(80),
+  numeroDi: zf.optText(80),
   moeda: z.enum(MOEDAS).optional(),
   cambio: zf.optMoney(),
   incoterm: z.union([z.enum(INCOTERMS), z.literal("")]).optional().transform((v) => v || null),
-  observacao: zf.optText(),
+  observacao: zf.obs(),
   itens: itensJson(),
 }).superRefine((d, ctx) => {
   if (d.importacao && d.moeda && d.moeda !== "BRL" && !(d.cambio && d.cambio > 0)) ctx.addIssue({ code: "custom", path: ["cambio"], message: "Informe o câmbio (estimativa; pode ser ajustado até o primeiro recebimento)" });
@@ -63,7 +63,7 @@ const schemaRecebimento = z.object({
   lote: zf.text("Informe o lote"),
   validade: zf.date("Informe a validade"),
   fabricacao: zf.optDate(),
-  serie: zf.optText(),
+  serie: zf.optText(80),
 });
 
 /** Recebe uma quantidade de um item: lote em quarentena, entrada no kardex, custo médio e conta a pagar. */

@@ -35,12 +35,44 @@ export function BotaoTema() {
   );
 }
 
+const itemMenu = "flex w-full items-center gap-2.5 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700";
 const segmento = "h-7 rounded-[5px] text-xs font-semibold text-slate-700 hover:text-teal-700 aria-pressed:bg-white aria-pressed:text-teal-700 aria-pressed:shadow-sm";
 
 /**
- * Conteúdo do menu do usuário (rodapé do menu lateral ou avatar da barra no topo): aparência (tema e posição do menu),
- * trocar senha e sair. A posição do menu só aparece a partir de 1024 px: abaixo disso os dois modos são a mesma gaveta.
+ * Conteúdo do menu do usuário (rodapé do menu lateral ou avatar da barra no topo): configuração (tema, posição do menu,
+ * visual), administração (só ADMIN: usuários e log de auditoria), trocar senha, segurança e sair. A posição do menu só aparece a partir de 1024 px: abaixo disso os dois modos são a mesma gaveta.
  */
+/**
+ * Visual da plataforma: atual (padrão) ou clássico (protótipo estilo software desktop, estilos/classico.css), para o
+ * cliente comparar. Preferência de interface (não sensível), como o `opme_menu`: cookie gravado no navegador e lido no
+ * servidor pelo layout raiz (`data-visual` no <html>) e pelo Painel; a página recarrega para tudo nascer no modo certo.
+ */
+function SeletorVisual() {
+  const atual = document.documentElement.dataset.visual === "classico" ? "classico" : "atual";
+  return (
+    <div className="mt-3">
+      <div id="rotulo-visual" className="mb-1.5 text-xs text-slate-500">Visual</div>
+      <div role="group" aria-labelledby="rotulo-visual" className="grid grid-cols-2 gap-0.5 rounded-md border border-slate-200 bg-slate-100 p-0.5">
+        {([["atual", "Atual"], ["classico", "Clássico"]] as const).map(([v, r]) => (
+          <button
+            key={v}
+            type="button"
+            aria-pressed={atual === v}
+            onClick={() => {
+              if (atual === v) return;
+              document.cookie = v === "classico" ? "opme_visual=classico; path=/; max-age=31536000; samesite=lax" : "opme_visual=; path=/; max-age=0; samesite=lax";
+              window.location.reload();
+            }}
+            className={segmento}
+          >
+            {r}
+          </button>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 export function PainelUsuario({ nome, perfil, sair, posicao, mudarPosicao, fechar }: {
   nome: string;
   perfil: string;
@@ -56,7 +88,7 @@ export function PainelUsuario({ nome, perfil, sair, posicao, mudarPosicao, fecha
         <div className="text-xs capitalize text-slate-500">{perfil}</div>
       </div>
       <div className="border-b border-slate-200 px-4 py-3">
-        <div className="mb-2 text-xs font-semibold text-slate-600">Aparência</div>
+        <div className="mb-2 text-xs font-semibold text-slate-600">Configuração</div>
         <form action={definirTema}>
           <div role="group" aria-label="Tema" className="grid grid-cols-3 gap-0.5 rounded-md border border-slate-200 bg-slate-100 p-0.5">
             {[["claro", "Claro"], ["escuro", "Escuro"], ["auto", "Sistema"]].map(([v, r]) => (
@@ -85,10 +117,28 @@ export function PainelUsuario({ nome, perfil, sair, posicao, mudarPosicao, fecha
             ))}
           </div>
         </div>
+        <SeletorVisual />
       </div>
-      <Link href="/conta/senha" onClick={fechar} className="flex w-full items-center gap-2.5 border-b border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700">
+      {perfil.toUpperCase() === "ADMIN" && (
+        <div className="border-b border-slate-200 py-1">
+          <div className="px-4 pb-1 pt-2 text-xs font-semibold text-slate-600">Administração</div>
+          <Link href="/admin/usuarios" onClick={fechar} className={itemMenu}>
+            <Icon name="usuarios" size={16} />
+            Usuários
+          </Link>
+          <Link href="/admin/auditoria" onClick={fechar} className={itemMenu}>
+            <Icon name="lista" size={16} />
+            Log de auditoria
+          </Link>
+        </div>
+      )}
+      <Link href="/conta/senha" onClick={fechar} className="flex w-full items-center gap-2.5 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700">
         <Icon name="cadeado" size={16} />
         Trocar minha senha
+      </Link>
+      <Link href="/conta/seguranca" onClick={fechar} className="flex w-full items-center gap-2.5 border-b border-slate-200 px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-teal-700">
+        <Icon name="cadeado" size={16} />
+        Segurança (2º fator e sessões)
       </Link>
       <form action={sair}>
         <button className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-sm font-medium text-slate-700 hover:bg-slate-50 hover:text-rose-600">

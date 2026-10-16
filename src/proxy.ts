@@ -1,4 +1,5 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { nomeCookieSessao } from "@/lib/auth-cookie";
 
 /**
  * 1) Verificação otimista: sem cookie de sessão, manda para o login (a validação real é em requireUser()).
@@ -7,7 +8,7 @@ import { NextResponse, type NextRequest } from "next/server";
  */
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  if (pathname !== "/login" && !request.cookies.has("opme_session")) {
+  if (pathname !== "/login" && !request.cookies.has(nomeCookieSessao())) {
     return NextResponse.redirect(new URL("/login", request.url));
   }
 
@@ -17,7 +18,7 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'${dev ? " 'unsafe-eval'" : ""}`,
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' blob: data:",
+    "img-src 'self' data:", // data: só para a seta do <select> (src/app/estilos/base.css); blob: não é usado
     "font-src 'self'",
     "connect-src 'self'",
     "object-src 'none'",

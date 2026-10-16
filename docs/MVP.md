@@ -22,6 +22,7 @@ Fluxo ponta a ponta já testado: cirurgia → remessa de consignado → conferê
 ## Como instalar do zero (produção)
 
 1. Postgres 17 acessível. Crie `.env` a partir de `.env.example`: `DATABASE_URL` e `AUTH_SECRET` (`openssl rand -hex 32`; o sistema recusa segredo curto ou de exemplo).
+   Opcional: `DATABASE_POOL_MAX` (conexões do pool por processo, padrão 20; o pg sozinho usaria 10). Some os processos (`next start`, scripts) e mantenha abaixo do `max_connections` do Postgres (100 por padrão).
 2. `npm ci && npx prisma migrate deploy` (cria as tabelas e o plano de contas padrão).
 3. `ADMIN_EMAIL=... ADMIN_NOME="..." ADMIN_SENHA='12+ caracteres' npm run admin:criar` (cria os locais de estoque e o primeiro administrador). **Não use `db:seed` em produção**: ele cria usuários de demonstração e se recusa a rodar com `NODE_ENV=production`.
 4. `npm run build && npm start` atrás de HTTPS (proxy que sobrescreve `x-forwarded-for`). Anexos de cirurgia ficam em `storage/uploads/` (volume persistente com backup; fora de `public/`).

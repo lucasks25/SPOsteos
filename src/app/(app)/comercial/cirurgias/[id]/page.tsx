@@ -2,14 +2,18 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
+import { auditLeitura } from "@/lib/forms";
+import { CTX_CARTEIRINHA, decifrarParaExibir } from "@/lib/cripto";
 import { ActionButton, Field, Form, Select } from "@/components/form";
-import { Aviso, Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Celula } from "@/components/lista";
+import { Aviso, Badge, Card, Dl, LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { nomeHospital } from "@/app/(app)/cadastros/_lib/publico";
 import { hojeUTC } from "@/lib/datas";
 import { cancelarCirurgia, confirmarCirurgia, faturar, registrarConsumo, removerConsumo } from "../actions";
 import { enviarAnexo, excluirAnexo } from "../anexos-actions";
 import { riscoGlosaDaCirurgia } from "../../_lib/autorizacao-servico";
+import { tabelaForaDeVigencia } from "../../_lib/precos";
 import { textoAvisoFaturamento } from "../../_lib/autorizacao-view";
 import { AutorizacaoCard } from "./autorizacao-card";
 
@@ -31,8 +35,11 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
     },
   });
   if (!c) notFound();
+  // dado de saúde (paciente + carteirinha): toda abertura do detalhe fica na auditoria (docs/LGPD.md §5)
+  await auditLeitura(user.id, "Cirurgia", c.id, `CIR-${c.numero}`);
 
   const risco = await riscoGlosaDaCirurgia(c.id);
+  const tabelaVencida = c.status === "REALIZADA" && !c.pedido ? await tabelaForaDeVigencia(db, c.hospitalId, c.dataHora) : null;
   const pode = (perfis: string[]) => user.perfil === "ADMIN" || perfis.includes(user.perfil);
   const comercial = pode(["COMERCIAL"]);
   const editavel = c.status !== "FATURADA" && c.status !== "CANCELADA";
@@ -56,8 +63,9 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
     <>
       <PageHeader
         title={`Cirurgia CIR-${c.numero}`}
-        subtitle={`${c.paciente} — ${dateTime(c.dataHora)}`}
+        meta={[c.paciente, dateTime(c.dataHora), nomeHospital(c.hospital), c.pedido ? `Pedido PV-${c.pedido.id}${c.pedido.numeroNf ? ` · NF ${c.pedido.numeroNf}` : ""}` : null]}
         voltar={{ href: "/comercial/cirurgias", label: "Cirurgias" }}
+        status={<StatusBadge status={c.status} />}
         actions={
           <>
             {comercial && editavel && <LinkButton href={`/comercial/cirurgias/${c.id}/editar`} variant="secondary">Editar</LinkButton>}
@@ -74,22 +82,16 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
         }
       />
 
-      <KpiGrid>
-        <Stat icon="atividade" label="Situação" value={<StatusBadge status={c.status} />} hint={dateTime(c.dataHora)} />
-        <Stat icon="caminhao" label="Remessas / vales" value={c.remessas.length} hint={<span className={c.remessas.length === 0 && editavel ? "text-amber-700" : undefined}>{c.remessas.length ? `${c.remessas.filter((r) => r.status === "CONFERIDA").length} conferida(s)` : "nenhum vale gerado"}</span>} />
-        <Stat icon="frasco" label="Material consumido" value={`${num(c.consumos.reduce((n, k) => n + k.quantidade, 0))} un.`} hint={`${c.consumos.length} lote(s)`} />
-        <Stat icon="carrinho" label="Pedido de venda" value={<span className="text-base">{c.pedido ? `PV-${c.pedido.id}` : "—"}</span>} hint={c.pedido ? (c.pedido.numeroNf ? `NF ${c.pedido.numeroNf}` : c.pedido.status.toLowerCase()) : podeFaturar ? <span className="text-amber-700">pronta para faturar</span> : "ainda não faturada"} />
-      </KpiGrid>
 
       <div className="space-y-4">
-        <Card title="Dados da cirurgia" icon="atividade" actions={<StatusBadge status={c.status} />}>
+        <Card title="Dados da cirurgia">
           <Dl
             items={[
               ["Data/hora", dateTime(c.dataHora)],
               ["Hospital", nomeHospital(c.hospital)],
               ["Médico", `${c.medico.nome} — CRM ${c.medico.crm}/${c.medico.ufCrm}`],
               ["Paciente", <>{c.paciente} {c.sus && <Badge color="blue">SUS</Badge>}</>],
-              ["Carteirinha", c.carteirinha ?? "—"],
+              ["Carteirinha", decifrarParaExibir(c.carteirinha, CTX_CARTEIRINHA) ?? "—"],
               ["Convênio", c.convenio?.nome ?? "—"],
               ["Procedimento", c.procedimento ? `${c.procedimento.codigoTuss ? c.procedimento.codigoTuss + " — " : ""}${c.procedimento.descricao}` : "—"],
               ["Representante", c.representante?.nome ?? "—"],
@@ -106,6 +108,13 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           podeEditar={comercial && c.status !== "CANCELADA"}
         />
 
+        {tabelaVencida && (
+          <Aviso tom="alerta">
+            A tabela de preço do hospital (&quot;{tabelaVencida}&quot;) está fora de vigência na data da cirurgia: o faturamento usará o preço base dos produtos.
+            Ajuste a vigência em Comercial › Tabelas de preço antes de faturar, se não for isso que se espera.
+          </Aviso>
+        )}
+
         {vazioAguardandoVale && (
           <Aviso tom="alerta">
             Vale pendente: o Estoque gera o vale desta cirurgia.
@@ -115,34 +124,37 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
 
         <Table
           titulo="Remessas / vales de consignação"
-          icone="caminhao"
+
           contagem={c.remessas.length}
-          head={["Remessa", "Local", "Itens", "Situação", "Enviada em", "Ações"]}
+          head={["Remessa", "Local", "Itens", "Situação", "Enviada em"]}
           empty={c.remessas.length === 0}
           emptyText="Nenhuma remessa/vale gerado para esta cirurgia."
         >
           {c.remessas.map((r) => (
             <tr key={r.id}>
-              <Td>
-                <Link href={`/estoque/remessas/${r.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">REM-{r.id}</Link>
-                <div className="text-xs text-slate-500">criada em {dateTime(r.criadoEm)}</div>
-              </Td>
+              <Td><Celula href={`/estoque/remessas/${r.id}`} principal={<span className="font-mono text-xs font-semibold">REM-{r.id}</span>} sub={`criada em ${dateTime(r.criadoEm)}`} /></Td>
               <Td>{r.local.nome}</Td>
               <Td className="tnum text-right">{r._count.itens}</Td>
               <Td><StatusBadge status={r.status} /></Td>
               <Td>{r.enviadaEm ? dateTime(r.enviadaEm) : "—"}</Td>
-              <Td><LinkButton href={`/estoque/remessas/${r.id}`} variant="small">Abrir</LinkButton></Td>
             </tr>
           ))}
         </Table>
 
         <Table
           titulo="Consumo (material utilizado)"
-          icone="frasco"
+
           contagem={c.consumos.length}
           head={["Produto", "Lote", "Validade", "Qtd.", "Ações"]}
           empty={c.consumos.length === 0}
           emptyText="Nenhum material consumido registrado ainda."
+          rodape={
+            <tr>
+              <Td colSpan={3} className="text-right">Total</Td>
+              <Td className="tnum text-right">{num(c.consumos.reduce((n, k) => n + k.quantidade, 0))}</Td>
+              <Td>{null}</Td>
+            </tr>
+          }
         >
           {c.consumos.map((k) => (
             <tr key={k.id}>
@@ -165,7 +177,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
         </Table>
 
         {podeConsumir && (
-          <Card title="Registrar consumo direto" icon="mais">
+          <Card title="Registrar consumo direto">
             <div>
               <p className="mb-3 text-xs text-slate-600">
                 Baixa a partir do estoque consignado já existente no hospital (lotes liberados e dentro da validade). Para material enviado em vale, registre o retorno na remessa.
@@ -192,7 +204,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           </Card>
         )}
 
-        <Card title="Anexos" icon="documento" actions={<span className="text-xs text-slate-600">PDF, JPG ou PNG até 10 MB</span>}>
+        <Card title="Anexos" actions={<span className="text-xs text-slate-600">PDF, JPG ou PNG até 10 MB</span>}>
           {c.anexos.length === 0 ? (
             <p className="text-sm text-slate-600">Nenhum anexo.</p>
           ) : (
@@ -221,7 +233,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           )}
         </Card>
 
-        <Card title="Pedido de venda" icon="carrinho">
+        <Card title="Pedido de venda">
           {c.pedido ? (
             <div className="flex flex-wrap items-center gap-4 text-sm">
               <Link href={`/comercial/pedidos/${c.pedido.id}`} className="font-mono text-xs text-teal-700 hover:underline">PV-{c.pedido.id}</Link>

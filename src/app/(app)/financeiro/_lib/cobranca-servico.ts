@@ -3,7 +3,7 @@ import { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
 import { toNumber } from "@/lib/format";
-import { gerarRemessaCobranca, type EventoCobranca, type ItemRemessaCobranca, type RetornoCobranca } from "./cobranca";
+import { BAIXAS_COM_PAGAMENTO, gerarRemessaCobranca, type EventoCobranca, type ItemRemessaCobranca, type RetornoCobranca } from "./cobranca";
 import { diaBrasilia } from "@/lib/datas";
 import { contaEDac } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
@@ -25,8 +25,18 @@ export type ContagemCobranca = {
   instrucoesRejeitadas: number;
   /** liquidação de título que a conciliação já tinha baixado com o mesmo pagamento (não é duplicidade) */
   jaConciliados: number;
+  /** baixa 10 (por ter sido liquidado) sem liquidação processada, ou 59 (crédito via SISPAG): houve pagamento, baixar pela conciliação */
+  baixasComPagamento: number;
+  /** ocorrência 69: o cheque do pagamento voltou; a baixa do título precisa ser estornada à mão */
+  chequesDevolvidos: number;
 };
-export const contagemCobrancaVazia = (): ContagemCobranca => ({ registrados: 0, rejeitados: 0, liquidados: 0, baixados: 0, duplicados: 0, divergentes: 0, ignorados: 0, jaProcessados: 0, alterados: 0, instrucoesRejeitadas: 0, jaConciliados: 0 });
+export const contagemCobrancaVazia = (): ContagemCobranca => ({ registrados: 0, rejeitados: 0, liquidados: 0, baixados: 0, duplicados: 0, divergentes: 0, ignorados: 0, jaProcessados: 0, alterados: 0, instrucoesRejeitadas: 0, jaConciliados: 0, baixasComPagamento: 0, chequesDevolvidos: 0 });
+
+/** Juros de 1 dia (161-173) que a remessa registra: juros mensal da conta ÷ 30 sobre o valor do boleto. O boleto impresso usa o mesmo. */
+export const jurosDiaCentavos = (valorCentavos: number, jurosMensalPercent: number) => Math.round((valorCentavos * (jurosMensalPercent / 100)) / 30);
+
+/** Data do documento (nota 31 / anexo 1 item 8): a competência do título (dia da NF), nunca depois do dia da remessa. */
+export const emissaoDocumento = (competencia: Date, diaRemessa: Date) => (competencia < diaRemessa ? competencia : diaRemessa);
 
 /** Instrução (02 baixa ou 06 alteração) enviada e ainda sem resposta do banco. */
 const INSTRUCAO_PENDENTE = ["BAIXA_ENVIADA", "ALTERACAO_ENVIADA"];
@@ -100,10 +110,11 @@ export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: 
         ocorrencia: "01",
         nossoNumero: nn,
         seuNumero: t.pedido ? `PV${t.pedido.id}` : nn,
-        emissao: hoje,
+        // nota 31: data de emissão do documento que originou a cobrança (NF/duplicata), não a da remessa
+        emissao: emissaoDocumento(t.competencia, hoje),
         vencimento: t.vencimento,
         valorCentavos: cent(saldo),
-        jurosDiaCentavos: Math.round((cent(saldo) * (toNumber(conta.cobrancaJurosMensalPercent) / 100)) / 30),
+        jurosDiaCentavos: jurosDiaCentavos(cent(saldo), toNumber(conta.cobrancaJurosMensalPercent)),
         multa: toNumber(conta.cobrancaMultaPercent) > 0 ? { percentualCentesimos: Math.round(toNumber(conta.cobrancaMultaPercent) * 100) } : undefined,
         pagador: { nome: h.razaoSocial, documento: h.cnpj, logradouro: h.endereco!, bairro: h.bairro!, cep: h.cep!, cidade: h.cidade!, uf: h.uf! },
       });
@@ -215,8 +226,25 @@ export async function aplicarRetornoCobrancaTx(tx: Tx, ret: RetornoCobranca, con
         break;
       case "BAIXA":
         item = ultimo;
+        if (titulo.cobrancaStatus === "LIQUIDADO") {
+          // baixa que segue a liquidação (ex.: 10 "por ter sido liquidado"): o boleto já está resolvido
+          cont.baixados++;
+          break;
+        }
+        if (BAIXAS_COM_PAGAMENTO.includes(e.ocorrencia.codigo)) {
+          // a nota 17 diz que houve pagamento, mas o layout não traz liquidação 06: não baixa o título sozinho
+          await marcar("BAIXADO", item?.ocorrencia === "02" ? "BAIXADO" : undefined);
+          if (item) await tx.remessaCobrancaItem.update({ where: { id: item.id }, data: { motivos: [item.motivos, `B${e.ocorrencia.codigo}`].filter(Boolean).join(",") } });
+          cont.baixasComPagamento++;
+          break;
+        }
         await marcar("BAIXADO", item?.ocorrencia === "02" ? "BAIXADO" : undefined);
         cont.baixados++;
+        break;
+      case "CHEQUE_DEVOLVIDO":
+        // pagamento em cheque devolvido: o dinheiro não ficou; não estorna sozinho (pode haver reapresentação, tabela 9)
+        if (item) await tx.remessaCobrancaItem.update({ where: { id: item.id }, data: { motivos: [item.motivos, `CHQDEV${e.motivosRejeicao.map((m) => m.codigo).join("+") || ""}`].filter(Boolean).join(",") } });
+        cont.chequesDevolvidos++;
         break;
       case "ALTERACAO":
         if (e.ocorrencia.codigo === "14" && titulo.cobrancaStatus === "ALTERACAO_ENVIADA" && instrucao?.ocorrencia === "06" && instrucao.vencimento) {

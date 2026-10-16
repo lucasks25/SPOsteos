@@ -62,6 +62,8 @@ export function verificarRiscoGlosa(input: {
   autorizacoes: AutorizacaoEntrada[];
   consumos: ConsumoEntrada[];
   nomes?: NomesProdutos;
+  /** FATURADA e CANCELADA não emitem "sem autorização prévia": já não há o que regularizar antes de faturar. */
+  statusCirurgia?: string;
 }): ResultadoRisco {
   if (!input.aplicavel) return { aplicavel: false, achados: [], grave: false };
 
@@ -81,7 +83,7 @@ export function verificarRiscoGlosa(input: {
   const validas = efetivas.filter((a) => a.efetivo === "AUTORIZADA" || a.efetivo === "PARCIAL");
 
   if (efetivas.length === 0) {
-    achados.push({ codigo: "SEM_AUTORIZACAO", severidade: sevRisco, titulo: "Sem autorização prévia registrada", detalhe: "O convênio exige autorização. Sem a guia autorizada, o faturamento tende a ser glosado." });
+    if (input.statusCirurgia !== "FATURADA" && input.statusCirurgia !== "CANCELADA") achados.push({ codigo: "SEM_AUTORIZACAO", severidade: sevRisco, titulo: "Sem autorização prévia registrada", detalhe: "O convênio exige autorização. Sem a guia autorizada, o faturamento tende a ser glosado." });
   } else if (validas.length === 0) {
     const tem = (s: StatusAutorizacao) => efetivas.some((a) => a.efetivo === s);
     if (tem("NEGADA")) achados.push({ codigo: "AUTORIZACAO_NEGADA", severidade: sevRisco, titulo: "Autorização negada pelo convênio", detalhe: "Nenhuma guia autorizada. Recorra ao convênio ou solicite nova autorização." });

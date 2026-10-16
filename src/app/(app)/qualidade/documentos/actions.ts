@@ -11,12 +11,12 @@ import { ESCOPOS, PERFIS_EDITAR_DOCUMENTOS, TIPOS } from "../_lib/documentos";
 import { anexarArquivo, atualizarDocumento, criarDocumento, definirAtivo } from "../_lib/documentos-servico";
 
 const dados = {
-  titulo: zf.text("Informe o título"),
-  numero: zf.optText(),
-  orgaoEmissor: zf.optText(),
+  titulo: zf.nome("Informe o título"),
+  numero: zf.optText(100),
+  orgaoEmissor: zf.optText(200),
   emissao: zf.optDate(),
   validade: zf.optDate(),
-  observacao: zf.optText(),
+  observacao: zf.obs(),
 };
 
 const schemaNovo = z.object({

@@ -1,6 +1,8 @@
 import { exigirUsuarioRota } from "@/lib/auth";
+import { exportarCsv } from "@/lib/auth-exportacao";
+import { limitarRota } from "@/lib/limite-rota";
 import { margemDados } from "../../_lib/consultas";
-import { respostaCsv, pct } from "@/lib/csv";
+import { pct } from "@/lib/csv";
 import { PERFIS_GESTAO } from "../../_lib/visual";
 
 const CAB = ["Receita", "Custo", "Margem", "Margem %", "Comissão"];
@@ -8,6 +10,8 @@ const CAB = ["Receita", "Custo", "Margem", "Margem %", "Comissão"];
 export async function GET(req: Request) {
   const sessao = await exigirUsuarioRota([...PERFIS_GESTAO]);
   if (sessao instanceof Response) return sessao;
+  const excesso = limitarRota("exportacao", sessao.id);
+  if (excesso) return excesso;
   const sp = Object.fromEntries(new URL(req.url).searchParams);
   const d = await margemDados(sp);
   const quem = sp.por === "hospital" ? "hospital" : sp.por === "representante" ? "representante" : "produto";
@@ -23,5 +27,5 @@ export async function GET(req: Request) {
     pct(l.margemPct),
     l.comissao,
   ];
-  return respostaCsv(`margem_${quem}_${d.periodo.de}_${d.periodo.ate}.csv`, [cabecalho, ...linhas.map(lin), lin({ ...d.total, nome: "Total", sub: "" })]);
+  return exportarCsv(sessao, req, `margem_${quem}_${d.periodo.de}_${d.periodo.ate}.csv`, [cabecalho, ...linhas.map(lin), lin({ ...d.total, nome: "Total", sub: "" })]);
 }

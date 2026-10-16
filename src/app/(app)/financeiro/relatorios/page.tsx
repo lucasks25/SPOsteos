@@ -10,6 +10,7 @@ import { FAIXAS_AGING } from "../_lib/aging";
 import { carregarAging } from "../_lib/aging-dados";
 import { hojeUTC } from "@/lib/datas";
 import type { Tipo } from "../_lib/config";
+import { AbasNav } from "@/components/abas-nav";
 
 function Aging({ tipo, titulo, parceiro, dados }: { tipo: Tipo; titulo: string; parceiro: string; dados: Awaited<ReturnType<typeof carregarAging>> }) {
   return (
@@ -69,6 +70,7 @@ export default async function RelatoriosPage() {
         </CabecalhoImpresso>
       </div>
       <PageHeader title="Relatórios" subtitle="Saldo em aberto por faixa de atraso, contado a partir do vencimento. Ordenado pelo maior valor vencido." actions={<PrintButton />} />
+      <AbasNav atual="/financeiro/relatorios" />
       <KpiGrid cols={4}>
         <Stat label="A receber em aberto" value={money(receber.total)} hint={`${receber.linhas.length} hospital(is)`} />
         <Stat label="Vencido a receber" value={money(receber.totais.slice(1).reduce((s, v) => s + v, 0))} tone="danger" />

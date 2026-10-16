@@ -10,6 +10,7 @@ import { money } from "@/lib/format";
 import { addMeses, hojeUTC, inicioMes, mesAno } from "@/lib/datas";
 import { dreDoMes, dreTotal, mesesDe, type DreMes, type TipoPlano } from "../_lib/dre";
 import { carregarLinhasDre } from "../_lib/dre-dados";
+import { AbasNav } from "@/components/abas-nav";
 
 const NUM_MESES = 6;
 
@@ -68,6 +69,7 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
         </CabecalhoImpresso>
       </div>
       <PageHeader title="DRE gerencial" subtitle="Resultado por competência, não é o caixa: receita e despesa entram na data de competência do título." actions={<PrintButton />} />
+      <AbasNav atual="/financeiro/dre" />
       <FilterBar>
         <Field label="Último mês exibido" name="mes" type="month" defaultValue={ultimo} className="w-44" />
         <Select label="Centro de custo" name="centro" defaultValue={centroId ?? ""} options={centros.map((c) => ({ value: c.id, label: `${c.codigo} — ${c.nome}` }))} placeholder="Todos os centros de custo" className="w-64" />

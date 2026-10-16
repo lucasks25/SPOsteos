@@ -27,9 +27,9 @@ export function Card({
   id?: string;
 }) {
   return (
-    <section id={id} className={cx("min-w-0 rounded-xl border border-slate-200 bg-white print:break-inside-avoid print:border-slate-300", className)}>
+    <section id={id} className={cx("cartao min-w-0 rounded-xl border border-slate-200 bg-white print:break-inside-avoid print:border-slate-300", className)}>
       {(title || actions) && (
-        <div className="flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 px-4 py-1.5">
+        <div className="cartao-cabeca flex min-h-11 flex-wrap items-center justify-between gap-x-3 gap-y-1 border-b border-slate-200 px-4 py-1.5">
           {title && <h2 className="min-w-0 text-[0.9375rem] font-semibold leading-snug text-slate-900">{title}</h2>}
           {actions && <div className="ml-auto flex shrink-0 flex-wrap items-center gap-2">{actions}</div>}
         </div>
@@ -47,7 +47,7 @@ export function Card({
 export function Dl({ items, cols = 2 }: { items: [string, ReactNode][]; cols?: 1 | 2 | 3 }) {
   const grade = { 1: "", 2: "sm:grid-cols-2", 3: "sm:grid-cols-2 xl:grid-cols-3" }[cols];
   return (
-    <dl className={cx("grid grid-cols-1 gap-x-8 text-sm", grade)}>
+    <dl className={cx("dl-pares grid grid-cols-1 gap-x-8 text-sm", grade)}>
       {items.map(([k, v]) => (
         <div key={k} className="flex min-w-0 items-baseline gap-3 border-b border-slate-100 py-1.5">
           <dt className="w-36 shrink-0 text-slate-500">{k}</dt>

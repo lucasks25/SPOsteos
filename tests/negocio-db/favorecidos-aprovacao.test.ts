@@ -12,6 +12,7 @@ import { aprovarDadosPagamento, gravarDadosPagamento } from "@/app/(app)/finance
 import { hashDadosPagamento, situacaoAprovacao, travarFornecedores } from "@/app/(app)/financeiro/_lib/favorecidos-aprovacao";
 import { gerarRemessaTx } from "@/app/(app)/financeiro/_lib/sispag-servico";
 import { mkFornecedor, P } from "./_util";
+import { apagarAuditoriaTeste } from "./_auditoria";
 
 const hoje = hojeUTC();
 const dados = { bancoCodigo: "341", agencia: "4321", conta: "98765", contaDigito: "0", chavePix: null };
@@ -25,7 +26,7 @@ async function limpar() {
   await db.remessaPagamento.deleteMany({ where: { conta: { nome: { startsWith: P } } } });
   await db.contaPagar.deleteMany({ where: { descricao: { startsWith: P } } });
   await db.contaBancaria.deleteMany({ where: { nome: { startsWith: P } } });
-  await db.logAuditoria.deleteMany({ where: { entidade: "Fornecedor", detalhes: { startsWith: P } } });
+  await apagarAuditoriaTeste({ entidade: "Fornecedor", detalhes: { startsWith: P } });
   await db.fornecedor.deleteMany({ where: { razaoSocial: { startsWith: P } } });
 }
 

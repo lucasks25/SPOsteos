@@ -1,13 +1,14 @@
-import Link from "next/link";
-import { Badge, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
+import { Badge, LinkButton, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
+import { Celula } from "@/components/lista";
+import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { requireUser } from "@/lib/auth";
+import { Totais } from "../../_componentes/totais";
 import { db } from "@/lib/db";
 import { date, money, num as fmtNum, toNumber } from "@/lib/format";
 import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
 
 const STATUS = ["ABERTO", "PARCIAL", "RECEBIDO", "CANCELADO"] as const;
 type Status = (typeof STATUS)[number];
-const inputCls = "h-10 rounded-lg border border-field bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-500/20";
 
 export default async function PedidosCompraPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireUser(PERFIS_COMPRAS);
@@ -28,35 +29,20 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
   const emAberto = pedidos.filter((p) => p.status === "ABERTO" || p.status === "PARCIAL");
   return (
     <>
-      <PageHeader title="Pedidos de compra" subtitle="Para Compras: acompanhe compras nacionais e importações, do pedido ao recebimento." actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
-      <KpiGrid cols={4}>
-        <Stat label="Pedidos listados" value={fmtNum(pedidos.length)} icon="carrinho" />
-        <Stat label="Em aberto" value={fmtNum(emAberto.length)} tone={emAberto.length ? "warn" : "default"} hint="abertos ou parciais" icon="atividade" />
-        <Stat label="Valor em aberto" value={money(emAberto.reduce((a, p) => a + valorPedido(p), 0))} icon="pagar" />
-        <Stat label="Importações" value={fmtNum(pedidos.filter((p) => p.importacao).length)} icon="caminhao" />
-      </KpiGrid>
-      <FilterBar>
-        <label className="block">
-          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Busca</span>
-          <input name="q" defaultValue={q} placeholder="PC-12, fornecedor ou invoice" className={`${inputCls} w-64`} />
-        </label>
-        <label className="block">
-          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Status</span>
-          <select name="status" defaultValue={s ?? ""} className={inputCls}>
-            <option value="">Todos</option>
-            {STATUS.map((x) => (
-              <option key={x} value={x}>
-                {x.toLowerCase()}
-              </option>
-            ))}
-          </select>
-        </label>
-        <button className={btn.secondary}>Filtrar</button>
-        <Link href="/compras/pedidos" className={btn.ghost}>
-          Limpar
-        </Link>
-      </FilterBar>
-      <Table titulo="Pedidos" icone="carrinho" contagem={pedidos.length} head={["Pedido", "Fornecedor", "Criado", "Previsão", "Recebido / pedido", "Valor", "Status", ""]} empty={pedidos.length === 0} emptyText={q || s ? "Nenhum pedido encontrado com esses filtros." : "Nenhum pedido de compra registrado."} emptyAction={!q && !s ? <LinkButton href="/compras/pedidos/novo" variant="secondary" icon="mais">Criar o primeiro pedido</LinkButton> : undefined}>
+      <PageHeader title="Pedidos de compra" subtitle="Acompanhe compras nacionais e importações, do pedido ao recebimento." actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
+      <Totais
+        itens={[
+          { label: "Pedidos listados", valor: fmtNum(pedidos.length) },
+          { label: "Em aberto", valor: fmtNum(emAberto.length), tom: emAberto.length ? "warn" : "default" },
+          { label: "Valor em aberto", valor: money(emAberto.reduce((a, p) => a + valorPedido(p), 0)) },
+          { label: "Importações", valor: fmtNum(pedidos.filter((p) => p.importacao).length) },
+        ]}
+      />
+      <Filtros limparHref="/compras/pedidos">
+        <FiltroInput label="Busca" name="q" defaultValue={q} placeholder="PC-12, fornecedor ou invoice" className="w-full sm:w-64" />
+        <FiltroSelect label="Status" name="status" defaultValue={s} options={STATUS.map((x) => ({ value: x, label: x.toLowerCase() }))} />
+      </Filtros>
+      <Table titulo="Pedidos" contagem={pedidos.length} head={["Pedido", "Fornecedor", { label: "Criado", hideOnMobile: true }, { label: "Previsão", hideOnMobile: true }, { label: "Recebido / pedido", hideOnMobile: true }, "Valor", "Status"]} empty={pedidos.length === 0} emptyText={q || s ? "Nenhum pedido encontrado com esses filtros." : "Nenhum pedido de compra registrado."} emptyAction={!q && !s ? <LinkButton href="/compras/pedidos/novo" variant="secondary" icon="mais">Criar o primeiro pedido</LinkButton> : undefined}>
         {pedidos.map((p) => {
           const qtd = p.itens.reduce((a, i) => a + i.quantidade, 0);
           const rec = p.itens.reduce((a, i) => a + i.recebido, 0);
@@ -64,12 +50,12 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
           return (
             <tr key={p.id}>
               <Td>
-                <Link href={`/compras/pedidos/${p.id}`} className="font-semibold text-teal-700 hover:underline">
-                  {documentoPedido(p.id)}
-                </Link>{" "}
-                {p.importacao && <Badge color="purple">importação</Badge>}
+                <span className="inline-flex items-center gap-1.5">
+                  <Celula href={`/compras/pedidos/${p.id}`} principal={<span className="font-semibold">{documentoPedido(p.id)}</span>} />
+                  {p.importacao && <Badge color="purple">importação</Badge>}
+                </span>
               </Td>
-              <Td className="max-w-[16rem]">
+              <Td className="max-w-[16rem] max-sm:max-w-[9rem]">
                 <div className="truncate">{p.fornecedor.nomeFantasia || p.fornecedor.razaoSocial}</div>
                 {p.fornecedor.nomeFantasia && <div className="truncate text-xs text-slate-500" title={p.fornecedor.razaoSocial}>{p.fornecedor.razaoSocial}</div>}
               </Td>
@@ -81,9 +67,6 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
               <Td className="text-right">{money(valor)}</Td>
               <Td>
                 <StatusBadge status={p.status} />
-              </Td>
-              <Td>
-                <Link href={`/compras/pedidos/${p.id}`} className={btn.small}>Abrir</Link>
               </Td>
             </tr>
           );

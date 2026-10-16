@@ -7,7 +7,8 @@ services:
       POSTGRES_PASSWORD: opme
       POSTGRES_DB: opme
     ports:
-      - "5440:5432"
+      # só no próprio computador: sem o 127.0.0.1 o Docker publica a porta em TODAS as interfaces (rede do escritório/Wi-Fi)
+      - "127.0.0.1:5440:5432"
     volumes:
       - opme-data:/var/lib/postgresql/data
 volumes:

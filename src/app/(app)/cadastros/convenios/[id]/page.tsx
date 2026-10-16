@@ -20,7 +20,7 @@ export default async function EditarConvenioPage({ params }: { params: Promise<{
       <PageHeader
         voltar={{ href: "/cadastros/convenios", label: "Convênios" }}
         title={convenio.nome}
-        subtitle={convenio.registroAns ? `Registro ANS ${convenio.registroAns}` : undefined}
+        meta={[convenio.registroAns ? `Registro ANS ${convenio.registroAns}` : undefined]}
         actions={
           edita ? (
             <>

@@ -16,7 +16,7 @@ export type BadgeColor = keyof typeof badgeColors;
 /** Status em etiqueta pequena (20 px, raio 4 px): texto na cor semântica sobre o fundo claro da mesma cor (ERPNext "Overdue"/"Paid"). */
 export function Badge({ children, color = "gray", title }: { children: ReactNode; color?: BadgeColor; title?: string }) {
   return (
-    <span title={title} className={cx("inline-flex h-5 items-center whitespace-nowrap rounded-sm px-1.5 text-xs font-medium print:border print:border-current", badgeColors[color])}>
+    <span title={title} className={cx("etiqueta inline-flex h-5 items-center whitespace-nowrap rounded-sm px-1.5 text-xs font-medium print:border print:border-current", badgeColors[color])}>
       {children}
     </span>
   );
@@ -54,7 +54,7 @@ const tomAviso = {
 export function Aviso({ tom = "info", children, className }: { tom?: keyof typeof tomAviso; children: ReactNode; className?: string }) {
   const t = tomAviso[tom];
   return (
-    <div role={tom === "erro" ? "alert" : "status"} className={cx("flex items-start gap-2.5 rounded-md border border-l-[3px] border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800", t.borda, className)}>
+    <div role={tom === "erro" ? "alert" : "status"} className={cx("aviso flex items-start gap-2.5 rounded-md border border-l-[3px] border-slate-200 bg-white px-3.5 py-2.5 text-sm text-slate-800", t.borda, className)}>
       <Icon name={t.icone} size={16} className={cx("mt-0.5 shrink-0", t.cor)} aria-hidden="true" />
       <div className="min-w-0 flex-1">{children}</div>
     </div>

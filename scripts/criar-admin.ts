@@ -1,12 +1,14 @@
 /**
  * Prepara um banco novo (inclusive produção): cria os locais de estoque que o sistema exige e o primeiro administrador.
  * Uso:  ADMIN_EMAIL=voce@empresa.com ADMIN_NOME="Seu Nome" ADMIN_SENHA='uma-senha-longa' npm run admin:criar
- * A senha vem do ambiente para não ficar no histórico do shell se você a definir num arquivo; use 12+ caracteres.
+ * A senha vem do ambiente para não ficar no histórico do shell se você a definir num arquivo. Vale a política única
+ * de senha do sistema (src/lib/auth-senha.ts). O admin criado aqui ainda precisa ativar o 2º fator no primeiro acesso.
  */
 import "dotenv/config";
 import bcrypt from "bcryptjs";
 import { PrismaPg } from "@prisma/adapter-pg";
 import { PrismaClient } from "../src/generated/prisma/client";
+import { problemaSenha } from "../src/lib/auth-senha";
 
 const db = new PrismaClient({ adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL }) });
 
@@ -16,7 +18,8 @@ async function main() {
   const senha = process.env.ADMIN_SENHA ?? "";
   if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) throw new Error("Defina ADMIN_EMAIL com um e-mail válido.");
   if (nome.length < 3) throw new Error("Defina ADMIN_NOME.");
-  if (senha.length < 12 || senha.length > 72) throw new Error("ADMIN_SENHA precisa ter de 12 a 72 caracteres.");
+  const problema = problemaSenha(senha, { nome, email });
+  if (problema) throw new Error(`ADMIN_SENHA: ${problema}`);
 
   const locais = [
     { id: "local-deposito", nome: "Depósito central", tipo: "DEPOSITO" as const },

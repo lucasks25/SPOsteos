@@ -1,9 +1,10 @@
 import Link from "next/link";
+import { auditLeitura } from "@/lib/forms";
 import { CabecalhoImpresso } from "@/components/marca";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Card, Dl, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
 import { ActionButton, Field, Form } from "@/components/form";
 import { PrintButton } from "@/components/print-button";
 import { date, dateTime, diasAte } from "@/lib/format";
@@ -25,6 +26,8 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
     },
   });
   if (!r) notFound();
+  // a remessa mostra (e o vale impresso leva) o paciente da cirurgia: abertura auditada (docs/LGPD.md §5)
+  if (r.cirurgia) await auditLeitura(user.id, "Cirurgia", r.cirurgia.id, `CIR-${r.cirurgia.numero} via REM-${r.id}`);
   const h = r.local.hospital;
   const edita = podeEditar(user.perfil);
   const total = r.itens.reduce((s, i) => s + i.quantidade, 0);
@@ -34,8 +37,9 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
       <div className="print:hidden">
         <PageHeader
           title={`Remessa REM-${r.id}`}
-          subtitle={`${h?.nomeFantasia ?? h?.razaoSocial ?? r.local.nome} · criada em ${dateTime(r.criadoEm)}`}
+          meta={[`${h?.nomeFantasia ?? h?.razaoSocial ?? r.local.nome} · criada em ${dateTime(r.criadoEm)}${r.enviadaEm ? ` · enviada em ${dateTime(r.enviadaEm)}` : ""}`]}
           voltar={{ href: "/estoque/remessas", label: "Remessas" }}
+          status={<StatusBadge status={r.status} />}
           maisAcoes={
             edita && r.status === "ABERTA" && (
               <ActionButton action={cancelarRemessaAction} hidden={{ id: r.id }} variant="secondary" confirm="Cancelar esta remessa?">
@@ -45,7 +49,6 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
           }
           actions={
             <>
-              <StatusBadge status={r.status} />
               <PrintButton label="Imprimir vale" />
               {edita && r.status === "ABERTA" && (
                 <ActionButton action={enviarRemessaAction} hidden={{ id: r.id }} variant="primary" confirm="Confirmar o envio? O estoque sai do depósito para o consignado do hospital.">
@@ -55,12 +58,6 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
             </>
           }
         />
-        <KpiGrid>
-          <Stat label="Situação" value={<StatusBadge status={r.status} />} hint={r.enviadaEm ? `enviada em ${dateTime(r.enviadaEm)}` : "ainda não enviada"} />
-          <Stat icon="pacote" label="Unidades" value={total} hint={`${r.itens.length} item(ns)`} />
-          <Stat icon="atividade" label="Cirurgia" value={<span className="text-base">{r.cirurgia ? `CIR-${r.cirurgia.numero}` : "—"}</span>} hint={r.cirurgia?.paciente} />
-          <Stat icon="caixa" label="Kit / caixa" value={<span className="text-base">{r.kit?.codigo ?? "—"}</span>} hint={r.kit?.descricao} />
-        </KpiGrid>
       </div>
 
       {/* Cabeçalho do vale impresso */}
@@ -71,7 +68,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
       </div>
 
       <div className="space-y-3">
-        <Card title="Destino e cirurgia" icon="predio" className="print:border-black">
+        <Card title="Destino e cirurgia" className="print:border-black">
           <Dl
             items={[
               ["Hospital", h ? `${h.razaoSocial} (CNPJ ${h.cnpj})` : r.local.nome],
@@ -98,11 +95,17 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
 
         <Table
           titulo="Itens do vale"
-          icone="lista"
           contagem={r.itens.length}
-          head={["Produto", "Fabricante", "Reg. ANVISA", "GTIN", "Lote", "Validade", "Qtd.", ...(r.status === "CONFERIDA" ? ["Devolvido", "Consumido", "Fica no hospital"] : [])]}
+          head={["Produto", { label: "Fabricante", hideOnMobile: true }, { label: "Reg. ANVISA", hideOnMobile: true }, { label: "GTIN", hideOnMobile: true }, "Lote", "Validade", "Qtd.", ...(r.status === "CONFERIDA" ? ["Devolvido", "Consumido", "Fica no hospital"] : [])]}
           empty={r.itens.length === 0}
           emptyText="Esta remessa não tem itens."
+          rodape={
+            <tr>
+              <Td colSpan={6} className="text-right">Total</Td>
+              <Td className="tnum text-right">{total}</Td>
+              {r.status === "CONFERIDA" && <Td colSpan={3}>{null}</Td>}
+            </tr>
+          }
         >
           {r.itens.map((i) => {
             const dias = diasAte(i.lote.validade);
@@ -131,10 +134,12 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
         </Table>
 
         {edita && r.status === "ENVIADA" && (
-          <Card title="Conferir retorno" icon="ok" className="print:hidden">
+          <Card title="Conferir retorno" className="print:hidden">
             <p className="mb-4 text-sm text-slate-600">
-              Informe por item o que voltou ao depósito e o que foi consumido{r.cirurgia ? ` na cirurgia CIR-${r.cirurgia.numero}` : ""}. O que não for
-              informado continua consignado no hospital.
+              {r.cirurgia
+                ? `Informe por item o que voltou ao depósito e o que foi consumido na cirurgia CIR-${r.cirurgia.numero}.`
+                : "Informe por item o que voltou ao depósito. Vale sem cirurgia não registra consumo: lance o consumo direto na cirurgia."}{" "}
+              O que não for informado continua consignado no hospital.
             </p>
             <Form action={conferirRemessaAction.bind(null, r.id)} submitLabel="Concluir conferência">
               <div className="space-y-3">
@@ -147,7 +152,11 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
                       </div>
                     </div>
                     <Field label="Devolvido" name={`dev_${i.id}`} type="number" min="0" max={i.quantidade} defaultValue={0} />
-                    <Field label="Consumido" name={`con_${i.id}`} type="number" min="0" max={i.quantidade} defaultValue={0} />
+                    {r.cirurgia ? (
+                      <Field label="Consumido" name={`con_${i.id}`} type="number" min="0" max={i.quantidade} defaultValue={0} />
+                    ) : (
+                      <div />
+                    )}
                   </div>
                 ))}
               </div>

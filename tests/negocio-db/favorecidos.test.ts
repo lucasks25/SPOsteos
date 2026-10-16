@@ -6,10 +6,11 @@ import { db } from "@/lib/db";
 import { gravarDadosPagamento } from "@/app/(app)/financeiro/_lib/favorecidos-servico";
 import { schemaDadosPagamento } from "@/app/(app)/financeiro/_lib/favorecidos";
 import { limparTudo, mkFornecedor, P, uid } from "./_util";
+import { apagarAuditoriaTeste } from "./_auditoria";
 
 before(limparTudo);
 after(async () => {
-  await db.logAuditoria.deleteMany({ where: { entidade: "Fornecedor", detalhes: { startsWith: P } } });
+  await apagarAuditoriaTeste({ entidade: "Fornecedor", detalhes: { startsWith: P } });
   await limparTudo();
   await db.$disconnect();
 });

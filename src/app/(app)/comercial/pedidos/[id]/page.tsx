@@ -41,7 +41,8 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
       <PageHeader
         title={`PV-${pedido.id}`}
         voltar={{ href: "/comercial/pedidos", label: "Pedidos de venda" }}
-        subtitle={`${pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial} · pedido de venda gerado ao faturar a cirurgia. O Comercial registra a nota fiscal; o Financeiro cuida da cobrança.`}
+        meta={[pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial]}
+        subtitle="Gerado ao faturar a cirurgia. O Comercial registra a nota fiscal; o Financeiro cuida da cobrança."
         actions={
           <>
             <StatusBadge status={pedido.status} />
@@ -54,14 +55,14 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         }
       />
       <KpiGrid>
-        <Stat icon="receber" label="Total" value={money(total)} />
-        <Stat icon="pagar" label="Custo" value={money(custo)} />
-        <Stat icon="tendencia" label="Margem" value={money(margem)} hint={total > 0 ? `${((margem / total) * 100).toFixed(1)}%` : undefined} tone={margem < 0 ? "danger" : "default"} />
-        <Stat icon="percentual" label="Comissão" value={money(toNumber(pedido.comissao))} hint={pedido.representante?.nome} />
+        <Stat label="Total" value={money(total)} />
+        <Stat label="Custo" value={money(custo)} />
+        <Stat label="Margem" value={money(margem)} hint={total > 0 ? `${((margem / total) * 100).toFixed(1)}%` : undefined} tone={margem < 0 ? "danger" : "default"} />
+        <Stat label="Comissão" value={money(toNumber(pedido.comissao))} hint={pedido.representante?.nome} />
       </KpiGrid>
 
       <div className="space-y-4">
-        <Card title="Dados do pedido" icon="carrinho">
+        <Card title="Dados do pedido">
           <Dl
             items={[
               ["Hospital", <Link key="h" href={`/cadastros/hospitais/${pedido.hospital.id}`} className="text-teal-700 hover:underline">{pedido.hospital.razaoSocial}</Link>],
@@ -74,7 +75,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
           />
         </Card>
 
-        <Table titulo="Itens" icone="lista" contagem={pedido.itens.length} head={["Produto", "Lote", "Qtd.", "Preço unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
+        <Table titulo="Itens" contagem={pedido.itens.length} head={["Produto", "Lote", "Qtd.", "Preço unit.", "Subtotal"]} empty={pedido.itens.length === 0} emptyText="Este pedido não tem itens.">
           {pedido.itens.map((i) => (
             <tr key={i.id}>
               <Td>
@@ -90,7 +91,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         </Table>
 
         {pedido.status === "ABERTO" && (
-          <Card title="Registrar nota fiscal" icon="documento">
+          <Card title="Registrar nota fiscal">
             <p className="mb-3 text-sm text-slate-600">A emissão da NF-e ainda é feita fora do sistema. Informe o número para faturar e gerar a conta a receber.</p>
             {risco?.grave && (
               <div className="mb-3 space-y-2">
@@ -108,7 +109,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         )}
 
         {pedido.contasReceber.length > 0 && (
-          <Table titulo="Contas a receber" icone="receber" contagem={pedido.contasReceber.length} head={["Vencimento", "Valor", "Situação", "Ações"]}>
+          <Table titulo="Contas a receber" contagem={pedido.contasReceber.length} head={["Vencimento", "Valor", "Situação", "Ações"]}>
             {pedido.contasReceber.map((c) => (
               <tr key={c.id}>
                 <Td>{date(c.vencimento)}</Td>

@@ -7,12 +7,13 @@ import { FiltroSelect, Filtros } from "@/components/filtros";
 import { dateTime, money, num, toNumber } from "@/lib/format";
 import { PERFIS_VER_INVENTARIO, podeEditar } from "../_lib/perfis";
 import { docInventario, revisarInventario } from "../_lib/inventario-servico";
+import { soStrings } from "@/lib/search-params";
 
 const STATUS: StatusInventario[] = ["ABERTO", "CONTADO", "FECHADO", "CANCELADO"];
 
 export default async function InventariosPage({ searchParams }: { searchParams: Promise<{ status?: string; hospitalId?: string; cobrar?: string }> }) {
   const user = await requireUser(PERFIS_VER_INVENTARIO);
-  const sp = await searchParams;
+  const sp = soStrings(await searchParams);
   const status = STATUS.includes(sp.status as StatusInventario) ? (sp.status as StatusInventario) : undefined;
   const soCobrar = sp.cobrar === "1";
   const where: Prisma.InventarioConsignacaoWhereInput = {
@@ -47,13 +48,13 @@ export default async function InventariosPage({ searchParams }: { searchParams: 
     <>
       <PageHeader
         title="Inventário de consignado"
-        subtitle="Para o Estoque: contagem física do material nos hospitais comparada com o saldo do sistema."
+        subtitle="Contagem física do material nos hospitais comparada com o saldo do sistema."
         actions={podeEditar(user.perfil) && <LinkButton href="/estoque/inventario/novo" icon="mais">Novo inventário</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat icon="lista" label="Inventários em andamento" value={num(andamento.length)} hint="abertos ou contados, a fechar" tone={andamento.length ? "warn" : "default"} />
-        <Stat icon="alerta" label="Divergências em aberto" value={num(divAbertas)} hint="itens contados diferentes do saldo de hoje" tone={divAbertas ? "danger" : "default"} />
-        <Stat icon="pagar" label="Perdas no ano" value={money(perdasAno)} hint={`ao custo médio; a cobrar dos hospitais: ${money(cobrarAno)}`} tone={perdasAno ? "danger" : "default"} />
+        <Stat label="Inventários em andamento" value={num(andamento.length)} hint="abertos ou contados, a fechar" tone={andamento.length ? "warn" : "default"} />
+        <Stat label="Divergências em aberto" value={num(divAbertas)} hint="itens contados diferentes do saldo de hoje" tone={divAbertas ? "danger" : "default"} />
+        <Stat label="Perdas no ano" value={money(perdasAno)} hint={`ao custo médio; a cobrar dos hospitais: ${money(cobrarAno)}`} tone={perdasAno ? "danger" : "default"} />
       </KpiGrid>
       <Filtros limparHref="/estoque/inventario">
         <FiltroSelect label="Status" name="status" defaultValue={status} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.toLowerCase() }))} />
@@ -62,7 +63,7 @@ export default async function InventariosPage({ searchParams }: { searchParams: 
       </Filtros>
       <Table
         titulo="Inventários"
-        icone="lista"
+
         contagem={lista.length}
         head={["Nº", "Hospital", "Situação", "Criado", "Itens", "Contados", "Divergências", "Faltas (R$)", "A cobrar (R$)"]}
         empty={lista.length === 0}

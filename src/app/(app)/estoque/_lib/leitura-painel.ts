@@ -9,7 +9,7 @@ export async function contarRemessasAConferir(): Promise<number> {
   return db.remessa.count({ where: { status: "ENVIADA" } });
 }
 
-/** Produtos ativos com estoque mínimo cujo disponível liberado (depósito + hospital, lote liberado e dentro da validade) é menor que o mínimo. */
+/** `hoje` = meia-noite UTC do dia (hojeUTC), pois a validade é gravada 00:00Z. Produtos ativos com estoque mínimo cujo disponível liberado (depósito + hospital, lote liberado e dentro da validade) é menor que o mínimo. */
 export async function contarAbaixoDoMinimo(hoje: Date): Promise<number> {
   const [produtos, saldos] = await Promise.all([
     db.produto.findMany({ where: { ativo: true, estoqueMinimo: { gt: 0 } }, select: { id: true, estoqueMinimo: true } }),
