@@ -87,8 +87,8 @@ export function BuscaGlobal({ groups }: { groups: NavGroup[] }) {
   const ativa = linhas[sel];
 
   return (
-    <div className="relative w-full max-w-[520px]" role="search">
-      <Icon name="busca" size={15} className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-slate-500" />
+    <div className="relative w-full max-w-[560px]" role="search">
+      <Icon name="busca" size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-slate-500" />
       <input
         ref={ref}
         value={q}
@@ -123,11 +123,11 @@ export function BuscaGlobal({ groups }: { groups: NavGroup[] }) {
         aria-controls="busca-lista"
         aria-autocomplete="list"
         aria-activedescendant={mostrar && ativa ? ativa.id : undefined}
-        className="h-9 w-full rounded-full border border-slate-300 bg-slate-50 pl-9 pr-14 text-sm text-slate-900 placeholder:text-slate-500 hover:border-teal-400 focus:border-focus focus:bg-white focus:outline-none focus:ring-1 focus:ring-focus"
+        className="h-10 w-full rounded-full border border-slate-200 bg-slate-50 pl-10 pr-16 text-sm text-slate-900 placeholder:text-slate-500 transition-[border-color,box-shadow,background-color] hover:border-slate-300 focus:border-teal-600 focus:bg-white focus:outline-none focus:ring-4 focus:ring-teal-500/20"
       />
-      {!termo && <kbd className="pointer-events-none absolute right-2 top-1/2 hidden -translate-y-1/2 rounded border border-slate-300 bg-white px-1.5 text-[11px] leading-5 text-slate-500 sm:block">Ctrl K</kbd>}
+      {!termo && <kbd className="pointer-events-none absolute right-3 top-1/2 hidden -translate-y-1/2 rounded-md border border-slate-200 bg-white px-1.5 text-[11px] font-semibold leading-5 text-slate-500 sm:block">Ctrl K</kbd>}
       {mostrar && (
-        <ul id="busca-lista" role="listbox" aria-label="Resultados da busca" className="absolute left-0 right-0 top-10 z-50 max-h-[70vh] overflow-y-auto rounded-lg border border-slate-200 bg-white py-1 shadow-[var(--shadow-overlay)]">
+        <ul id="busca-lista" role="listbox" aria-label="Resultados da busca" className="absolute left-0 right-0 top-12 z-50 max-h-[70vh] overflow-y-auto rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
           {(["Telas", "Dados"] as const).map((secao) => {
             const itens = linhas.filter((l) => l.secao === secao);
             return (
@@ -146,8 +146,8 @@ export function BuscaGlobal({ groups }: { groups: NavGroup[] }) {
                     const idx = linhas.indexOf(l);
                     return (
                       <li key={l.id} id={l.id} role="option" aria-selected={idx === sel}>
-                        <button type="button" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onMouseEnter={() => setSel(idx)} onClick={() => ir(l.href)} className={`flex w-full items-center gap-2.5 px-3 py-1.5 text-left text-[13px] ${idx === sel ? "bg-teal-50 text-slate-900" : "text-slate-700 hover:bg-slate-50"}`}>
-                          <Icon name={l.icone} size={15} className="shrink-0 text-slate-500" />
+                        <button type="button" tabIndex={-1} onMouseDown={(e) => e.preventDefault()} onMouseEnter={() => setSel(idx)} onClick={() => ir(l.href)} className={`flex w-full items-center gap-2.5 rounded-lg px-2.5 py-2 text-left text-sm ${idx === sel ? "bg-teal-50 text-slate-900" : "text-slate-700 hover:bg-slate-50"}`}>
+                          <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-md ${idx === sel ? "bg-accent-soft text-on-accent-soft" : "bg-slate-100 text-slate-600"}`}><Icon name={l.icone} size={15} /></span>
                           <span className="min-w-0 flex-1 truncate font-medium">{l.titulo}</span>
                           <span className="ml-2 max-w-[45%] shrink-0 truncate text-xs text-slate-500">{l.direita}</span>
                         </button>

@@ -26,7 +26,7 @@ function logos(): Logos {
 
 export type VarianteMarca = "topo" | "login" | "impresso";
 
-const ALTURA: Record<VarianteMarca, string> = { topo: "h-6", login: "h-10", impresso: "h-12" };
+const ALTURA: Record<VarianteMarca, string> = { topo: "h-8", login: "h-10", impresso: "h-12" };
 
 export function Marca({ variante = "topo", sobreEscuro = false }: { variante?: VarianteMarca; sobreEscuro?: boolean }) {
   const { nome } = empresa();
@@ -52,15 +52,16 @@ export function Marca({ variante = "topo", sobreEscuro = false }: { variante?: V
     );
   }
 
-  const quadrado = variante === "topo" ? "h-6 w-6 text-[10px]" : variante === "login" ? "h-10 w-10 text-sm" : "h-11 w-11 text-sm";
-  const cor = sobreEscuro ? "bg-white/15 text-white ring-1 ring-white/20" : variante === "impresso" ? "bg-slate-900 text-white" : "bg-teal-700 text-white";
-  const texto = variante === "topo" ? "text-[13px] font-bold" : variante === "login" ? "text-lg font-semibold" : "text-lg font-bold";
+  const quadrado = variante === "topo" ? "h-9 w-9 rounded-xl text-[11px]" : variante === "login" ? "h-11 w-11 rounded-xl text-sm" : "h-11 w-11 rounded text-sm";
+  // sobre faixa escura (menu lateral, login): monograma menta com texto escuro; impresso: preto e branco
+  const cor = sobreEscuro ? "bg-sidebar-destaque text-sidebar" : variante === "impresso" ? "bg-slate-900 text-white print:bg-black" : "bg-primary text-on-primary";
+  const texto = variante === "topo" ? "text-[0.9375rem] font-extrabold" : variante === "login" ? "text-xl font-extrabold" : "text-lg font-bold";
   return (
-    <span className="inline-flex items-center gap-2">
-      <span className={`flex shrink-0 items-center justify-center rounded font-bold tracking-tight ${quadrado} ${cor}`} aria-hidden="true">
+    <span className="inline-flex min-w-0 items-center gap-2.5">
+      <span className={`flex shrink-0 items-center justify-center font-display font-extrabold tracking-tight ${quadrado} ${cor}`} aria-hidden="true">
         SPO
       </span>
-      <span className={`${texto} ${sobreEscuro ? "text-white" : "text-slate-900"}`}>{nome}</span>
+      <span className={`marca-nome truncate font-display tracking-tight ${texto} ${sobreEscuro ? "text-sidebar-fg-ativo" : "text-slate-900"}`}>{nome}</span>
     </span>
   );
 }

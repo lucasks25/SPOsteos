@@ -94,20 +94,20 @@ export function Form({
           onReset={() => (sujo.current = false)}
           className={cx("space-y-4", className)}>
           {state?.error && (
-            <div role="alert" className="flex items-start gap-2 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-sm text-rose-700">
-              <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-rose-600" />
+            <div role="alert" className="flex items-start gap-2.5 rounded-xl border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-800">
+              <Icon name="alerta" size={18} className="mt-px shrink-0 text-rose-600" />
               <span>{state.error}</span>
             </div>
           )}
           {state?.ok && state.aviso && (
-            <div role="status" className="flex items-start gap-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
-              <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-amber-600" />
+            <div role="status" className="flex items-start gap-2.5 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
+              <Icon name="alerta" size={18} className="mt-px shrink-0 text-amber-700" />
               <span>{state.aviso}</span>
             </div>
           )}
           {children}
           {submitLabel !== null && (
-            <div className="border-t border-slate-200 pt-4">
+            <div className="flex flex-wrap items-center gap-2 border-t border-slate-200 pt-4">
               <SubmitButton confirm={confirm}>{submitLabel}</SubmitButton>
             </div>
           )}
@@ -149,21 +149,21 @@ export function SubmitButton({ children, variant = "primary", confirm }: { child
   );
 }
 
-const inputCls = campo; // estilo Horizon definido em ui.tsx
+const inputCls = campo; // estilo definido em ui.tsx
 
 function Wrap({ label, name, children, className, hint }: { label: string; name: string; children: ReactNode; className?: string; hint?: string }) {
   const errors = useContext(ErrorsCtx);
   const obrigatorio = /\*\s*$/.test(label);
   return (
     <label className={cx("block", className)}>
-      <span className="mb-1 block text-sm text-slate-600">
+      <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">
         {obrigatorio ? label.replace(/\s*\*$/, "") : label}
         {obrigatorio && <span className="ml-0.5 text-rose-600" aria-hidden="true">*</span>}
       </span>
       {children}
-      {hint && !errors[name] && <span className="mt-1 block text-xs text-slate-500">{hint}</span>}
+      {hint && !errors[name] && <span className="mt-1.5 block text-xs text-slate-500">{hint}</span>}
       {errors[name] && (
-        <span role="alert" className="mt-1 block text-xs font-medium text-rose-600">
+        <span role="alert" className="mt-1.5 flex items-center gap-1 text-xs font-medium text-rose-600">
           {errors[name]}
         </span>
       )}
@@ -175,8 +175,8 @@ type InputProps = React.InputHTMLAttributes<HTMLInputElement> & { label: string;
 export function Field({ label, name, className, hint, ...rest }: InputProps) {
   if (rest.type === "checkbox") {
     return (
-      <label className={cx("flex items-center gap-2 text-sm text-slate-700", className)}>
-        <input name={name} {...rest} className="h-4 w-4 rounded-sm border-slate-300" />
+      <label className={cx("flex min-h-10 items-center gap-2.5 text-sm text-slate-800", className)}>
+        <input name={name} {...rest} className="h-[1.125rem] w-[1.125rem] rounded border-field" />
         {label}
       </label>
     );
@@ -201,14 +201,14 @@ function TextField({ label, name, className, hint, ...rest }: InputProps) {
         onInput?.(e);
       }}
       inputMode={resto.inputMode ?? (mask ? "numeric" : undefined)}
-      className={dinheiro ? cx(inputCls, "tnum pl-8 text-right") : inputCls}
+      className={dinheiro ? cx(inputCls, "tnum pl-9 text-right") : inputCls}
     />
   );
   return (
     <Wrap label={label} name={name} className={className} hint={hint}>
       {dinheiro ? (
         <span className="relative block">
-          <span className="pointer-events-none absolute inset-y-0 left-2.5 flex items-center text-slate-500" aria-hidden="true">
+          <span className="pointer-events-none absolute inset-y-0 left-3 flex items-center text-sm text-slate-500" aria-hidden="true">
             R$
           </span>
           {input}
@@ -264,7 +264,7 @@ type AreaProps = React.TextareaHTMLAttributes<HTMLTextAreaElement> & { label: st
 export function TextArea({ label, name, className, ...rest }: AreaProps) {
   return (
     <Wrap label={label} name={name} className={className}>
-      <textarea name={name} rows={3} aria-invalid={useContext(ErrorsCtx)[name] ? true : undefined} {...rest} className={cx(inputCls, "h-auto py-1.5")} />
+      <textarea name={name} rows={3} aria-invalid={useContext(ErrorsCtx)[name] ? true : undefined} {...rest} className={cx(inputCls, "h-auto py-2.5")} />
     </Wrap>
   );
 }

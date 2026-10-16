@@ -37,7 +37,7 @@ export function dismissToast(id: number) {
   emit();
 }
 
-/** Exibe um toast (MessageToast do Fiori) centralizado no rodapé da tela. Pode ser chamado de qualquer componente cliente. */
+/** Exibe um toast no canto inferior direito (centralizado no celular). Pode ser chamado de qualquer componente cliente. */
 export function toast(msg: string, kind: Kind = "ok") {
   if (typeof document === "undefined") return;
   ensureHost();
@@ -56,11 +56,13 @@ function ToastItem({ item }: { item: Item }) {
   }, [item.id]);
   const erro = item.kind === "erro";
   return (
-    <div className="pointer-events-auto flex w-[min(24rem,calc(100vw-2rem))] items-start gap-2 rounded-lg bg-white px-3 py-2.5 text-sm text-slate-900 shadow-[var(--shadow-overlay)]">
-      <Icon name={erro ? "alerta" : "ok"} size={16} className={erro ? "mt-0.5 shrink-0 text-rose-600" : "mt-0.5 shrink-0 text-emerald-600"} />
-      <span className="flex-1">{item.msg}</span>
-      <button type="button" onClick={() => dismissToast(item.id)} aria-label="Fechar aviso" className="-mr-1 rounded px-1 text-base leading-none text-slate-500 hover:text-slate-900">
-        ×
+    <div className="pointer-events-auto flex w-[min(24rem,calc(100vw-2rem))] items-center gap-3 rounded-xl border border-slate-200 bg-white py-2.5 pl-2.5 pr-2 text-sm text-slate-900 shadow-xl">
+      <span className={erro ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600" : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-on-accent-soft"} aria-hidden="true">
+        <Icon name={erro ? "alerta" : "ok"} size={16} />
+      </span>
+      <span className="flex-1 font-medium">{item.msg}</span>
+      <button type="button" onClick={() => dismissToast(item.id)} aria-label="Fechar aviso" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+        <Icon name="fechar" size={14} />
       </button>
     </div>
   );
@@ -69,7 +71,7 @@ function ToastItem({ item }: { item: Item }) {
 export function ToastHost() {
   const list = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
   return (
-    <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed bottom-6 left-1/2 z-[100] flex -translate-x-1/2 flex-col items-center gap-2">
+    <div aria-live="polite" aria-atomic="false" className="pointer-events-none fixed bottom-5 left-1/2 z-[100] flex -translate-x-1/2 flex-col items-center gap-2 sm:left-auto sm:right-5 sm:translate-x-0 sm:items-end">
       {list.map((i) => (
         <ToastItem key={i.id} item={i} />
       ))}

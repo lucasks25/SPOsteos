@@ -50,7 +50,7 @@ function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", chil
     <div ref={raiz} className="relative" onKeyDown={teclas}>
       {botao({ className: "" })}
       {aberto && (
-        <div id={`menu-${id}`} role="dialog" aria-label={rotulo} className={`absolute right-0 top-10 z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-lg bg-white shadow-[var(--shadow-overlay)] ${largura}`}>
+        <div id={`menu-${id}`} role="dialog" aria-label={rotulo} className={`absolute right-0 top-12 z-50 max-w-[calc(100vw-1.5rem)] overflow-hidden rounded-xl border border-slate-200 bg-white shadow-xl ${largura}`}>
           {children}
         </div>
       )}
@@ -58,7 +58,7 @@ function Suspenso({ id, aberto, setAberto, botao, rotulo, largura = "w-64", chil
   );
 }
 
-const botaoIcone = "relative flex h-8 w-8 items-center justify-center rounded-lg border border-transparent text-slate-700 hover:bg-slate-100 hover:text-slate-900";
+export const botaoIcone = "relative flex h-10 w-10 items-center justify-center rounded-full text-slate-600 transition-colors hover:bg-slate-100 hover:text-slate-900 aria-expanded:bg-teal-50 aria-expanded:text-teal-700";
 
 const ATALHOS_AJUDA: [string, string][] = [
   ["Ctrl K", "Buscar telas e dados"],
@@ -80,25 +80,22 @@ export function MenuAjuda({ aberto, setAberto }: { aberto: boolean; setAberto: (
       largura="w-72"
       botao={() => (
         <button type="button" data-gatilho onClick={() => setAberto(!aberto)} aria-haspopup="dialog" aria-expanded={aberto} aria-controls="menu-ajuda" aria-label="Ajuda e atalhos de teclado" className={botaoIcone}>
-          <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <circle cx="12" cy="12" r="10" />
-            <path d="M9.1 9a3 3 0 0 1 5.8 1c0 2-3 3-3 3M12 17h.01" />
-          </svg>
+          <Icon name="ajuda" size={19} />
         </button>
       )}
     >
-      <div className="border-b border-slate-200 px-3 py-2 text-sm font-bold text-slate-900">Atalhos de teclado</div>
-      <dl className="px-3 py-2">
+      <div className="border-b border-slate-200 px-4 py-3 font-display text-sm font-bold text-slate-900">Atalhos de teclado</div>
+      <dl className="px-4 py-2">
         {ATALHOS_AJUDA.map(([tecla, desc]) => (
           <div key={tecla} className="flex items-center justify-between gap-3 py-1 text-sm">
             <dt className="text-slate-700">{desc}</dt>
             <dd>
-              <kbd className="whitespace-nowrap rounded border border-slate-300 bg-slate-50 px-1.5 text-[11px] leading-5 text-slate-700">{tecla}</kbd>
+              <kbd className="whitespace-nowrap rounded-md border border-slate-200 bg-slate-50 px-1.5 text-[11px] font-semibold leading-5 text-slate-700">{tecla}</kbd>
             </dd>
           </div>
         ))}
       </dl>
-      <div className="border-t border-slate-200 px-3 py-2 text-xs text-slate-500">Os atalhos de uma tecla não funcionam enquanto você digita em um campo.</div>
+      <div className="border-t border-slate-200 bg-slate-50 px-4 py-2.5 text-xs text-slate-500">Os atalhos de uma tecla não funcionam enquanto você digita em um campo.</div>
     </Suspenso>
   );
 }
@@ -165,15 +162,13 @@ export function Sino({ aberto, setAberto }: { aberto: boolean; setAberto: (a: bo
       largura="w-80"
       botao={() => (
         <button type="button" data-gatilho onClick={() => setAberto(!aberto)} aria-haspopup="dialog" aria-expanded={aberto} aria-controls="menu-sino" aria-label={total ? `Pendências: ${total}` : "Pendências"} className={botaoIcone}>
-          <svg width={17} height={17} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.75} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-            <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9M13.7 21a2 2 0 0 1-3.4 0" />
-          </svg>
-          {total > 0 && <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white">{total > 9 ? "9+" : total}</span>}
+          <Icon name="sino" size={19} />
+          {total > 0 && <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white">{total > 9 ? "9+" : total}</span>}
         </button>
       )}
     >
-      <div className="flex items-center justify-between border-b border-slate-200 px-3 py-2">
-        <span className="text-sm font-bold text-slate-900">Pendências{total ? ` (${total})` : ""}</span>
+      <div className="flex items-center justify-between border-b border-slate-200 px-4 py-3">
+        <span className="font-display text-sm font-bold text-slate-900">Pendências{total ? ` (${total})` : ""}</span>
         <Link href="/" onClick={() => setAberto(false)} className="text-xs font-semibold text-teal-700 hover:underline">Ver no painel</Link>
       </div>
       {itens === null ? (
@@ -184,8 +179,8 @@ export function Sino({ aberto, setAberto }: { aberto: boolean; setAberto: (a: bo
         <ul className="max-h-[60vh] divide-y divide-slate-200 overflow-y-auto">
           {itens.map((i) => (
             <li key={i.key}>
-              <Link data-item href={i.href} onClick={() => setAberto(false)} className="flex items-center gap-3 px-3 py-2 hover:bg-slate-50 focus:bg-teal-50 focus:outline-none">
-                <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-lg ${i.tom === "danger" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-700"}`} aria-hidden="true">
+              <Link data-item href={i.href} onClick={() => setAberto(false)} className="flex items-center gap-3 px-4 py-2.5 hover:bg-slate-50 focus:bg-teal-50 focus:outline-none">
+                <span className={`flex h-8 w-8 shrink-0 items-center justify-center rounded-lg ${i.tom === "danger" ? "bg-rose-50 text-rose-600" : "bg-amber-50 text-amber-700"}`} aria-hidden="true">
                   <Icon name={i.icon} size={14} />
                 </span>
                 <span className="min-w-0 flex-1">
