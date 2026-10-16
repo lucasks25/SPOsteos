@@ -9,11 +9,12 @@ import { PrintButton } from "@/components/print-button";
 import { date, dateTime, diasAte } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../../_lib/perfis";
 import { cancelarRemessaAction, conferirRemessaAction, enviarRemessaAction } from "../actions";
+import { idInt } from "@/lib/ids";
 
 export default async function RemessaPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(PERFIS_VER);
-  const id = Number((await params).id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt((await params).id);
+  if (!id) notFound();
   const r = await db.remessa.findUnique({
     where: { id },
     include: {
@@ -34,28 +35,31 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
         <PageHeader
           title={`Remessa REM-${r.id}`}
           subtitle={`${h?.nomeFantasia ?? h?.razaoSocial ?? r.local.nome} · criada em ${dateTime(r.criadoEm)}`}
+          voltar={{ href: "/estoque/remessas", label: "Remessas" }}
+          maisAcoes={
+            edita && r.status === "ABERTA" && (
+              <ActionButton action={cancelarRemessaAction} hidden={{ id: r.id }} variant="secondary" confirm="Cancelar esta remessa?">
+                Cancelar
+              </ActionButton>
+            )
+          }
           actions={
             <>
               <StatusBadge status={r.status} />
               <PrintButton label="Imprimir vale" />
               {edita && r.status === "ABERTA" && (
-                <>
-                  <ActionButton action={enviarRemessaAction} hidden={{ id: r.id }} variant="primary" confirm="Confirmar o envio? O estoque sai do depósito para o consignado do hospital.">
-                    Enviar ao hospital
-                  </ActionButton>
-                  <ActionButton action={cancelarRemessaAction} hidden={{ id: r.id }} variant="secondary" confirm="Cancelar esta remessa?">
-                    Cancelar
-                  </ActionButton>
-                </>
+                <ActionButton action={enviarRemessaAction} hidden={{ id: r.id }} variant="primary" confirm="Confirmar o envio? O estoque sai do depósito para o consignado do hospital.">
+                  Enviar ao hospital
+                </ActionButton>
               )}
             </>
           }
         />
         <KpiGrid>
           <Stat label="Situação" value={<StatusBadge status={r.status} />} hint={r.enviadaEm ? `enviada em ${dateTime(r.enviadaEm)}` : "ainda não enviada"} />
-          <Stat label="Unidades" value={total} hint={`${r.itens.length} item(ns)`} />
-          <Stat label="Cirurgia" value={<span className="text-base">{r.cirurgia ? `CIR-${r.cirurgia.numero}` : "—"}</span>} hint={r.cirurgia?.paciente} />
-          <Stat label="Kit / caixa" value={<span className="text-base">{r.kit?.codigo ?? "—"}</span>} hint={r.kit?.descricao} />
+          <Stat icon="pacote" label="Unidades" value={total} hint={`${r.itens.length} item(ns)`} />
+          <Stat icon="atividade" label="Cirurgia" value={<span className="text-base">{r.cirurgia ? `CIR-${r.cirurgia.numero}` : "—"}</span>} hint={r.cirurgia?.paciente} />
+          <Stat icon="caixa" label="Kit / caixa" value={<span className="text-base">{r.kit?.codigo ?? "—"}</span>} hint={r.kit?.descricao} />
         </KpiGrid>
       </div>
 
@@ -106,7 +110,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
               <tr key={i.id}>
                 <Td className="whitespace-normal">
                   <div className="font-medium text-teal-700 print:text-black">{i.produto.descricao}</div>
-                  <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                  <div className="font-mono text-xs text-slate-500">{i.produto.codigo}</div>
                 </Td>
                 <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
                 <Td>{i.produto.registroAnvisa ?? "—"}</Td>
@@ -135,7 +139,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
             <Form action={conferirRemessaAction.bind(null, r.id)} submitLabel="Concluir conferência">
               <div className="space-y-3">
                 {r.itens.map((i) => (
-                  <div key={i.id} className="grid grid-cols-1 items-end gap-3 rounded border border-slate-200 p-3 sm:grid-cols-[1fr_8rem_8rem]">
+                  <div key={i.id} className="grid grid-cols-1 items-end gap-3 rounded-xl border border-slate-200 p-3 sm:grid-cols-[1fr_8rem_8rem]">
                     <div className="text-sm">
                       <div className="font-medium text-slate-800">{i.produto.descricao}</div>
                       <div className="text-xs text-slate-600">

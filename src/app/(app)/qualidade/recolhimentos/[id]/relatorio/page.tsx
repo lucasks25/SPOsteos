@@ -8,12 +8,13 @@ import { btn } from "@/components/ui";
 import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_VER_RECOLHIMENTO, ROTULO_CLASSE, ROTULO_ORIGEM, docRecolhimento, encerrado, podeVerPacientes, resumirRecolhimento } from "../../../_lib/recolhimento";
 import { situacaoAlvos } from "../../../_lib/recolhimento-servico";
+import { idInt } from "@/lib/ids";
 
 /** Relatório do recolhimento (final quando concluído, parcial enquanto aberto): impressão em preto e branco. */
 export default async function RelatorioRecolhimentoPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(PERFIS_VER_RECOLHIMENTO);
-  const id = Number((await params).id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt((await params).id);
+  if (!id) notFound();
   const sit = await situacaoAlvos(db, id).catch(() => null);
   if (!sit) notFound();
   const { rec, itens } = sit;

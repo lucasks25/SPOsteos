@@ -2,7 +2,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, cx } from "@/components/ui";
+import { Abas, Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, cx } from "@/components/ui";
 import { ActionButton, Field, Form, TextArea } from "@/components/form";
 import { date, dateTime, num } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
@@ -20,6 +20,7 @@ import {
 } from "../../_lib/recolhimento";
 import { pendenciasDoRecolhimento, situacaoAlvos } from "../../_lib/recolhimento-servico";
 import { atualizarFotoAction, cancelarAction, comunicarPacientesAction, concluirAction, justificarAction, notaAction, recolherAction } from "../actions";
+import { idInt } from "@/lib/ids";
 
 type SP = { aba?: string };
 const ABAS = [
@@ -31,8 +32,8 @@ const ABAS = [
 
 export default async function RecolhimentoPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<SP> }) {
   const user = await requireUser(PERFIS_VER_RECOLHIMENTO);
-  const id = Number((await params).id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt((await params).id);
+  if (!id) notFound();
   const situacao = await situacaoAlvos(db, id).catch(() => null);
   if (!situacao) notFound();
   const { rec, itens } = situacao;
@@ -69,24 +70,27 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
       <PageHeader
         title={`Recolhimento ${doc}`}
         subtitle={`${ROTULO_ORIGEM[rec.origem]} · classe ${rec.classe} · aberto em ${dateTime(rec.abertoEm)} por ${rec.abertoPor}`}
+        voltar={{ href: "/qualidade/recolhimentos", label: "Recolhimentos" }}
         actions={
           <>
             <StatusBadge status={rec.status} />
             <LinkButton href={`/qualidade/recolhimentos/${id}/relatorio`} variant="secondary" icon="impressora">{rec.status === "CONCLUIDO" ? "Relatório final" : "Relatório parcial"}</LinkButton>
-            {opera && ativo && (
-              <ActionButton action={atualizarFotoAction} hidden={{ id }} variant="secondary" confirm="Incluir na lista os locais com saldo e as cirurgias que surgiram depois da abertura?">
-                Atualizar locais e pacientes
-              </ActionButton>
-            )}
           </>
+        }
+        maisAcoes={
+          opera && ativo && (
+            <ActionButton action={atualizarFotoAction} hidden={{ id }} variant="secondary" confirm="Incluir na lista os locais com saldo e as cirurgias que surgiram depois da abertura?">
+              Atualizar locais e pacientes
+            </ActionButton>
+          )
         }
       />
       <KpiGrid cols={5}>
-        <Stat label="Situação" value={<StatusBadge status={rec.status} />} hint={rec.prazo ? `prazo ${date(rec.prazo)}${venc ? " (vencido)" : ""}` : "sem prazo definido"} tone={venc ? "danger" : "default"} />
-        <Stat label="Encontrado na abertura" value={num(r.encontrado)} hint={`${r.alvos} local(is) com saldo`} />
-        <Stat label="Recolhido" value={num(r.recolhido)} hint="movido para o não conforme" />
-        <Stat label="A recolher" value={num(r.aRecolher)} hint={`${r.alvosPendentes} local(is) pendente(s)`} tone={r.aRecolher && ativo ? "danger" : "default"} />
-        <Stat label="Pacientes a comunicar" value={verPac ? num(r.pacientesAComunicar) : "—"} hint={verPac ? `${r.pacientes} cirurgia(s) com o lote` : `${num(pacTotal ?? 0)} cirurgia(s); nomes só para Qualidade`} tone={verPac && r.pacientesAComunicar && ativo ? "warn" : "default"} />
+        <Stat icon="atividade" label="Situação" value={<StatusBadge status={rec.status} />} hint={rec.prazo ? `prazo ${date(rec.prazo)}${venc ? " (vencido)" : ""}` : "sem prazo definido"} tone={venc ? "danger" : "default"} />
+        <Stat icon="pacote" label="Encontrado na abertura" value={num(r.encontrado)} hint={`${r.alvos} local(is) com saldo`} />
+        <Stat icon="ok" label="Recolhido" value={num(r.recolhido)} hint="movido para o não conforme" />
+        <Stat icon="caminhao" label="A recolher" value={num(r.aRecolher)} hint={`${r.alvosPendentes} local(is) pendente(s)`} tone={r.aRecolher && ativo ? "danger" : "default"} />
+        <Stat icon="medico" label="Pacientes a comunicar" value={verPac ? num(r.pacientesAComunicar) : "—"} hint={verPac ? `${r.pacientes} cirurgia(s) com o lote` : `${num(pacTotal ?? 0)} cirurgia(s); nomes só para Qualidade`} tone={verPac && r.pacientesAComunicar && ativo ? "warn" : "default"} />
       </KpiGrid>
 
       <div className="space-y-3">
@@ -105,19 +109,13 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
           />
         </Card>
 
-        <nav className="flex gap-1 border-b border-slate-200" aria-label="Seções">
-          {ABAS.map(([k, label]) => (
-            <Link key={k} href={`/qualidade/recolhimentos/${id}?aba=${k}`} className={cx("-mb-px border-b-2 px-3 py-2 text-[13px] font-semibold", aba === k ? "border-teal-700 text-teal-700" : "border-transparent text-slate-600 hover:text-slate-900")}>
-              {label}
-            </Link>
-          ))}
-        </nav>
+        <Abas itens={ABAS.map(([k, label]) => ({ href: `/qualidade/recolhimentos/${id}?aba=${k}`, label, ativo: aba === k }))} className="!mb-0" />
 
         {aba === "lotes" && (
           <Table titulo="Lotes bloqueados" icone="frasco" contagem={lotes.length} head={["Produto", "Lote", "Validade", "Status do lote", "Antes do recolhimento", "Bloqueado por este"]}>
             {lotes.map((l) => (
               <tr key={l.id}>
-                <Td className="max-w-xs"><div className="truncate font-medium text-slate-900">{l.lote.produto.descricao}</div><div className="font-mono text-[11px] text-slate-500">{l.lote.produto.codigo} · reg. {l.lote.produto.registroAnvisa ?? "—"}</div></Td>
+                <Td className="max-w-xs"><div className="truncate font-medium text-slate-900">{l.lote.produto.descricao}</div><div className="font-mono text-xs text-slate-500">{l.lote.produto.codigo} · reg. {l.lote.produto.registroAnvisa ?? "—"}</div></Td>
                 <Td className="font-mono">{l.lote.numero}</Td>
                 <Td>{date(l.lote.validade)}</Td>
                 <Td><StatusBadge status={l.lote.status} /></Td>
@@ -142,18 +140,18 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
                 <tr key={i.id} className="align-top">
                   <Td>
                     <div className="font-medium text-slate-900">{nomeLocal(i)}</div>
-                    <div className="text-[11px] text-slate-500">{i.local.tipo === "HOSPITAL" ? "consignado no hospital" : i.local.tipo.toLowerCase()}</div>
+                    <div className="text-xs text-slate-500">{i.local.tipo === "HOSPITAL" ? "consignado no hospital" : i.local.tipo.toLowerCase()}</div>
                   </Td>
-                  <Td className="max-w-xs"><div className="truncate">{i.lote.produto.descricao}</div><div className="font-mono text-[11px] text-slate-500">lote {i.lote.numero}</div></Td>
+                  <Td className="max-w-xs"><div className="truncate">{i.lote.produto.descricao}</div><div className="font-mono text-xs text-slate-500">lote {i.lote.numero}</div></Td>
                   <Td className="tnum text-right">{num(i.saldoAbertura)}</Td>
                   <Td className="tnum text-right">{num(i.quantidadeRecolhida)}</Td>
                   <Td className={cx("tnum text-right", i.mudou && ativo && "font-semibold text-amber-700")}>
                     <span title={i.mudou ? "O saldo mudou desde a abertura" : undefined}>{num(i.saldoAtual)}</span>
-                    {i.mudou && ativo && <span className="ml-1 text-[11px] font-normal">(mudou)</span>}
+                    {i.mudou && ativo && <span className="ml-1 text-xs font-normal">(mudou)</span>}
                   </Td>
                   <Td>
                     <StatusBadge status={i.status} />
-                    {i.justificativa && <div className="mt-1 max-w-48 whitespace-normal text-[11px] text-slate-600">Justificado: {i.justificativa}</div>}
+                    {i.justificativa && <div className="mt-1 max-w-48 whitespace-normal text-xs text-slate-600">Justificado: {i.justificativa}</div>}
                   </Td>
                   <Td>{i.comunicadoEm ? dateTime(i.comunicadoEm) : "—"}</Td>
                   <Td className="whitespace-normal">
@@ -198,9 +196,9 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
               ) : (
                 <Form action={comunicarPacientesAction.bind(null, id)} submitLabel={ativo && opera ? "Marcar selecionados como comunicados" : null}>
                   <div className="overflow-x-auto">
-                    <table className="min-w-full text-[13px]">
+                    <table className="min-w-full text-sm">
                       <thead className="border-b border-slate-200 bg-slate-50">
-                        <tr>{["", "Cirurgia", "Data", "Paciente", "Hospital", "Médico", "Lote", "Qtd.", "Comunicado"].map((h) => <th key={h} className="whitespace-nowrap px-3 py-2 text-left text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">{h}</th>)}</tr>
+                        <tr>{["", "Cirurgia", "Data", "Paciente", "Hospital", "Médico", "Lote", "Qtd.", "Comunicado"].map((h) => <th key={h} className="whitespace-nowrap px-3 py-2 text-left text-xs font-semibold uppercase tracking-[0.04em] text-slate-500">{h}</th>)}</tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
                         {pacientes.map((p) => (
@@ -213,7 +211,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
                             <Td>{p.cirurgia.medico.nome}</Td>
                             <Td className="font-mono">{p.lote.numero}</Td>
                             <Td className="tnum text-right">{p.quantidade}</Td>
-                            <Td>{p.comunicadoEm ? <><div>{dateTime(p.comunicadoEm)}</div>{p.observacao && <div className="max-w-48 truncate text-[11px] text-slate-500">{p.observacao}</div>}</> : <Badge color="yellow">pendente</Badge>}</Td>
+                            <Td>{p.comunicadoEm ? <><div>{dateTime(p.comunicadoEm)}</div>{p.observacao && <div className="max-w-48 truncate text-xs text-slate-500">{p.observacao}</div>}</> : <Badge color="yellow">pendente</Badge>}</Td>
                           </tr>
                         ))}
                       </tbody>
@@ -253,7 +251,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
           <div className="grid gap-3 lg:grid-cols-2">
             <Card title="Concluir recolhimento" icon="ok">
               {pendencias.length > 0 && (
-                <ul className="mb-3 list-disc space-y-1 pl-5 text-[13px] text-rose-700">
+                <ul className="mb-3 list-disc space-y-1 pl-5 text-sm text-rose-700">
                   {pendencias.slice(0, 8).map((p) => <li key={p}>{p}</li>)}
                   {pendencias.length > 8 && <li>+{pendencias.length - 8} pendência(s)</li>}
                 </ul>
@@ -265,11 +263,11 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
             <Card title="Cancelar recolhimento" icon="alerta">
               {semRecolhido ? (
                 <Form action={cancelarAction.bind(null, id)} submitLabel="Cancelar e desbloquear lotes">
-                  <p className="text-[13px] text-slate-600">Só os lotes que este recolhimento bloqueou voltam ao status anterior.</p>
+                  <p className="text-sm text-slate-600">Só os lotes que este recolhimento bloqueou voltam ao status anterior.</p>
                   <TextArea label="Motivo do cancelamento *" name="motivo" required maxLength={500} />
                 </Form>
               ) : (
-                <p className="text-[13px] text-slate-600">Já houve recolhimento físico: não é possível cancelar. Conclua o recolhimento.</p>
+                <p className="text-sm text-slate-600">Já houve recolhimento físico: não é possível cancelar. Conclua o recolhimento.</p>
               )}
             </Card>
           </div>

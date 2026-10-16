@@ -8,6 +8,7 @@ import { date, inputDate, money, toNumber } from "@/lib/format";
 import { cancelarPedidoVenda, registrarNf } from "../actions";
 import { riscoGlosaDaCirurgia } from "../../_lib/autorizacao-servico";
 import { PainelAchados, textoAvisoFaturamento } from "../../_lib/autorizacao-view";
+import { idInt } from "@/lib/ids";
 
 const DIA = 86_400_000;
 
@@ -15,8 +16,8 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
   const user = await requireUser(["COMERCIAL", "FINANCEIRO"]);
   const verFinanceiro = user.perfil === "FINANCEIRO" || user.perfil === "ADMIN";
   const { id: idStr } = await params;
-  const id = Number(idStr);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt(idStr);
+  if (!id) notFound();
   const pedido = await db.pedidoVenda.findUnique({
     where: { id },
     include: {
@@ -39,6 +40,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
     <>
       <PageHeader
         title={`PV-${pedido.id}`}
+        voltar={{ href: "/comercial/pedidos", label: "Pedidos de venda" }}
         subtitle={`${pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial} · pedido de venda gerado ao faturar a cirurgia. O Comercial registra a nota fiscal; o Financeiro cuida da cobrança.`}
         actions={
           <>
@@ -52,13 +54,13 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
         }
       />
       <KpiGrid>
-        <Stat label="Total" value={money(total)} />
-        <Stat label="Custo" value={money(custo)} />
-        <Stat label="Margem" value={money(margem)} hint={total > 0 ? `${((margem / total) * 100).toFixed(1)}%` : undefined} tone={margem < 0 ? "danger" : "default"} />
-        <Stat label="Comissão" value={money(toNumber(pedido.comissao))} hint={pedido.representante?.nome} />
+        <Stat icon="receber" label="Total" value={money(total)} />
+        <Stat icon="pagar" label="Custo" value={money(custo)} />
+        <Stat icon="tendencia" label="Margem" value={money(margem)} hint={total > 0 ? `${((margem / total) * 100).toFixed(1)}%` : undefined} tone={margem < 0 ? "danger" : "default"} />
+        <Stat icon="percentual" label="Comissão" value={money(toNumber(pedido.comissao))} hint={pedido.representante?.nome} />
       </KpiGrid>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         <Card title="Dados do pedido" icon="carrinho">
           <Dl
             items={[
@@ -77,7 +79,7 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
             <tr key={i.id}>
               <Td>
                 <div className="font-medium">{i.produto.descricao}</div>
-                <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                <div className="font-mono text-xs text-slate-500">{i.produto.codigo}</div>
               </Td>
               <Td>{i.loteNumero ?? "—"}</Td>
               <Td className="tnum text-right">{i.quantidade}</Td>

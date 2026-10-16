@@ -8,14 +8,15 @@ import { date, inputDate, money, toNumber } from "@/lib/format";
 import { documentoPedido, PERFIS_COMPRAS } from "../../_lib/perfis";
 import { cancelarPedidoCompra, receberItem } from "../actions";
 import { SecaoImportacao } from "./importacao";
+import { idInt } from "@/lib/ids";
 
 export default async function PedidoCompraPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ despesa?: string }> }) {
   const user = await requireUser(PERFIS_COMPRAS);
   const verFinanceiro = user.perfil === "ADMIN";
   const { id: idStr } = await params;
   const { despesa } = await searchParams;
-  const id = Number(idStr);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt(idStr);
+  if (!id) notFound();
   const pedido = await db.pedidoCompra.findUnique({
     where: { id },
     include: {
@@ -34,6 +35,7 @@ export default async function PedidoCompraPage({ params, searchParams }: { param
   return (
     <>
       <PageHeader
+        voltar={{ href: "/compras/pedidos", label: "Pedidos de compra" }}
         title={doc}
         subtitle={`Pedido de compra — ${pedido.fornecedor.nomeFantasia || pedido.fornecedor.razaoSocial}`}
         actions={
@@ -48,14 +50,14 @@ export default async function PedidoCompraPage({ params, searchParams }: { param
         }
       />
       <KpiGrid>
-        <Stat label="Valor do pedido" value={money(total)} />
-        <Stat label="Recebido" value={money(recebido)} hint={pedido.importacao ? "valor da mercadoria; o estoque entra pelo custo nacionalizado" : "gera conta a pagar a cada recebimento"} />
-        <Stat label="Previsão" value={date(pedido.previsao)} />
-        <Stat label="Criado em" value={date(pedido.criadoEm)} />
+        <Stat label="Valor do pedido" value={money(total)} icon="pagar" />
+        <Stat label="Recebido" value={money(recebido)} hint={pedido.importacao ? "valor da mercadoria; o estoque entra pelo custo nacionalizado" : "gera conta a pagar a cada recebimento"} icon="pacote" />
+        <Stat label="Previsão" value={date(pedido.previsao)} icon="calendario" />
+        <Stat label="Criado em" value={date(pedido.criadoEm)} icon="calendario" />
       </KpiGrid>
 
       <div className="space-y-4">
-        <Card title="Dados">
+        <Card title="Dados" icon="documento">
           <Dl
             items={[
               ["Fornecedor", pedido.fornecedor.razaoSocial],
@@ -89,7 +91,7 @@ export default async function PedidoCompraPage({ params, searchParams }: { param
           pedido.itens
             .filter((i) => i.quantidade > i.recebido)
             .map((i) => (
-              <Card key={i.id} title={`Receber: ${i.produto.codigo} — ${i.produto.descricao} (pendente ${i.quantidade - i.recebido})`}>
+              <Card key={i.id} title={`Receber: ${i.produto.codigo} — ${i.produto.descricao} (pendente ${i.quantidade - i.recebido})`} icon="pacote">
                 <Form action={receberItem.bind(null, pedido.id, i.id)} submitLabel="Registrar recebimento" resetOnSuccess>
                   <Grid cols={4}>
                     <Field label="Quantidade *" name="quantidade" type="number" min={1} max={i.quantidade - i.recebido} defaultValue={i.quantidade - i.recebido} required />

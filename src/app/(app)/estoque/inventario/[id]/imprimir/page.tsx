@@ -6,12 +6,13 @@ import { PrintButton } from "@/components/print-button";
 import { date, dateTime } from "@/lib/format";
 import { PERFIS_VER } from "../../../_lib/perfis";
 import { docInventario } from "../../../_lib/inventario-servico";
+import { idInt } from "@/lib/ids";
 
 /** Folha de contagem: preto e branco, sem o saldo do sistema (contagem cega), com campos em branco. */
 export default async function FolhaContagemPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser(PERFIS_VER);
-  const id = Number((await params).id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt((await params).id);
+  if (!id) notFound();
   const inv = await db.inventarioConsignacao.findUnique({
     where: { id },
     include: {

@@ -10,11 +10,12 @@ import { date, dateTime, diasAte, money, toNumber } from "@/lib/format";
 import { opcoesConvenios, opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 import { OrcamentoForm } from "../orcamento-form";
 import { adicionarItemOrcamento, mudarStatusOrcamento, removerItemOrcamento } from "../actions";
+import { idInt } from "@/lib/ids";
 
 export default async function OrcamentoPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(["COMERCIAL", "FINANCEIRO"]);
-  const id = Number((await params).id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt((await params).id);
+  if (!id) notFound();
   const [o, produtos, hospitais, convenios] = await Promise.all([
     db.orcamento.findUnique({
       where: { id },
@@ -37,28 +38,31 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
       <div className="print:hidden">
         <PageHeader
           title={`Orçamento ORC-${o.id}`}
+          voltar={{ href: "/comercial/orcamentos", label: "Orçamentos" }}
           subtitle={`${o.hospital.nomeFantasia ?? o.hospital.razaoSocial} · criado em ${dateTime(o.criadoEm)}`}
           actions={
             <>
               <StatusBadge status={o.status} />
               <PrintButton />
               {edita && o.status === "RASCUNHO" && status("ENVIADO", "Marcar como enviado", "primary")}
-              {edita && o.status === "ENVIADO" && (
-                <>
-                  {status("APROVADO", "Aprovado", "primary")}
-                  {status("RECUSADO", "Recusado", "danger")}
-                  {status("RASCUNHO", "Voltar a rascunho")}
-                </>
-              )}
+              {edita && o.status === "ENVIADO" && status("APROVADO", "Aprovado", "primary")}
               {edita && o.status === "RECUSADO" && status("RASCUNHO", "Reabrir como rascunho")}
             </>
           }
+          maisAcoes={
+            edita && o.status === "ENVIADO" ? (
+              <>
+                {status("RECUSADO", "Recusado", "danger")}
+                {status("RASCUNHO", "Voltar a rascunho")}
+              </>
+            ) : undefined
+          }
         />
         <KpiGrid>
-          <Stat label="Total" value={money(total)} hint={`${o.itens.length} item(ns)`} />
-          <Stat label="Situação" value={<StatusBadge status={o.status} />} />
-          <Stat label="Validade" value={o.validade ? date(o.validade) : "—"} hint={o.validade && diasAte(o.validade) < 0 && o.status !== "APROVADO" ? <span className="text-rose-600">vencida</span> : undefined} />
-          <Stat label="Convênio" value={<span className="text-base">{o.convenio?.nome ?? "Particular"}</span>} hint={o.paciente ? `Paciente: ${o.paciente}` : undefined} />
+          <Stat icon="receber" label="Total" value={money(total)} hint={`${o.itens.length} item(ns)`} />
+          <Stat icon="documento" label="Situação" value={<StatusBadge status={o.status} />} />
+          <Stat icon="calendario" label="Validade" value={o.validade ? date(o.validade) : "—"} hint={o.validade && diasAte(o.validade) < 0 && o.status !== "APROVADO" ? <span className="text-rose-600">vencida</span> : undefined} />
+          <Stat icon="escudo" label="Convênio" value={<span className="text-base">{o.convenio?.nome ?? "Particular"}</span>} hint={o.paciente ? `Paciente: ${o.paciente}` : undefined} />
         </KpiGrid>
       </div>
       <div className="mb-4 hidden print:block">
@@ -67,7 +71,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
         <p className="text-sm">Emitido em {date(new Date())} · válido até {date(o.validade)}</p>
       </div>
 
-      <div className="space-y-6">
+      <div className="space-y-4">
         {edita && rascunho ? (
           <Card title="Dados do orçamento" icon="documento" className="print:hidden">
             <OrcamentoForm orc={o} hospitais={hospitais} convenios={convenios} />
@@ -102,7 +106,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
             <tr key={i.id}>
               <Td className="whitespace-normal">
                 <div className="font-medium text-teal-700 print:text-black">{i.produto.descricao}</div>
-                <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                <div className="font-mono text-xs text-slate-500">{i.produto.codigo}</div>
               </Td>
               <Td>{i.produto.fabricante?.nome ?? "—"}</Td>
               <Td>{i.produto.registroAnvisa ?? "—"}</Td>

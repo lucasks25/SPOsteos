@@ -7,6 +7,7 @@ import { date, diasAte, money, num, toNumber } from "@/lib/format";
 import { PERFIS_VER } from "../_lib/perfis";
 
 type SP = { local?: string; q?: string; status?: string };
+const STATUS_LOTE = ["QUARENTENA", "LIBERADO", "NAO_CONFORME", "BLOQUEADO", "VENCIDO"];
 
 export default async function SaldosPage({ searchParams }: { searchParams: Promise<SP> }) {
   const user = await requireUser(PERFIS_VER);
@@ -18,7 +19,7 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
       where: {
         quantidade: { gt: 0 },
         ...(sp.local ? { localId: sp.local } : {}),
-        ...(sp.status ? { lote: { status: sp.status as never } } : {}),
+        ...(STATUS_LOTE.includes(sp.status as never) ? { lote: { status: sp.status as never } } : {}), // status fora da lista é ignorado
         ...(sp.q
           ? { produto: { OR: [{ descricao: { contains: sp.q, mode: "insensitive" } }, { codigo: { contains: sp.q, mode: "insensitive" } }] } }
           : {}),
@@ -52,10 +53,10 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Saldos por local" subtitle="Consulta do Estoque, Comercial e Qualidade: o que há no depósito, em quarentena e consignado nos hospitais, por produto e lote." />
       <KpiGrid>
-        <Stat label="Unidades" value={num(saldos.reduce((n, s) => n + s.quantidade, 0))} hint={`${grupos.size} produto(s)`} />
-        <Stat label="Valor a custo médio" value={money(valorTotal)} />
-        <Stat label="Vencendo em 30 dias" value={num(vencendo)} hint={<span className={vencendo ? "text-amber-700" : undefined}>unidades</span>} tone={vencendo ? "warn" : "default"} />
-        <Stat label="Vencidos com saldo" value={num(vencidos)} hint={<span className={vencidos ? "text-rose-600" : undefined}>unidades</span>} tone={vencidos ? "danger" : "default"} />
+        <Stat icon="pacote" label="Unidades" value={num(saldos.reduce((n, s) => n + s.quantidade, 0))} hint={`${grupos.size} produto(s)`} />
+        <Stat icon="banco" label="Valor a custo médio" value={money(valorTotal)} />
+        <Stat icon="calendario" label="Vencendo em 30 dias" value={num(vencendo)} hint={<span className={vencendo ? "text-amber-700" : undefined}>unidades</span>} tone={vencendo ? "warn" : "default"} />
+        <Stat icon="frasco" label="Vencidos com saldo" value={num(vencidos)} hint={<span className={vencidos ? "text-rose-600" : undefined}>unidades</span>} tone={vencidos ? "danger" : "default"} />
       </KpiGrid>
 
       <Filtros limparHref="/estoque/saldos">
@@ -73,7 +74,7 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
       {!sp.local && porLocal.size > 0 && (
         <div className="mb-3 flex flex-wrap gap-2 text-xs">
           {[...porLocal.entries()].map(([id, l]) => (
-            <Link key={id} href={`/estoque/saldos?local=${id}`} className="rounded border border-slate-200 bg-white px-3 py-1.5 shadow-sm hover:border-teal-700">
+            <Link key={id} href={`/estoque/saldos?local=${id}`} className="rounded-xl border border-slate-200 bg-white px-3 py-1.5 shadow-sm hover:border-teal-700">
               <span className="font-medium text-slate-700">{l.nome}</span>
               <span className="tnum ml-2 text-slate-600">{num(l.qtd)} un · {money(l.valor)}</span>
             </Link>

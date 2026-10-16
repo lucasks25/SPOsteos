@@ -4,6 +4,7 @@ import { requireUser } from "@/lib/auth";
 import { Badge, KpiGrid, PageHeader, Stat, Table, Td, btn, type BadgeColor } from "@/components/ui";
 import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { dateTime, money, num } from "@/lib/format";
+import { addDias, inicioDiaBrasilia, parseDia } from "@/lib/datas";
 import { PERFIS_VER } from "../_lib/perfis";
 
 const POR_PAGINA = 100;
@@ -17,13 +18,14 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
   const verLote = ["ADMIN", "ESTOQUE", "QUALIDADE"].includes(user.perfil); // a tela do lote é da Qualidade
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
+  const de = parseDia(sp.de), ate = parseDia(sp.ate); // data inválida na URL é ignorada (antes derrubava a tela)
   const where = {
     ...(sp.produto ? { produtoId: sp.produto } : {}),
     ...(sp.lote ? { lote: { numero: { contains: sp.lote, mode: "insensitive" as const } } } : {}),
     ...(sp.local ? { OR: [{ origemId: sp.local }, { destinoId: sp.local }] } : {}),
     ...(sp.tipo && (TIPOS as readonly string[]).includes(sp.tipo) ? { tipo: sp.tipo as (typeof TIPOS)[number] } : {}),
-    ...(sp.de || sp.ate
-      ? { criadoEm: { ...(sp.de ? { gte: new Date(`${sp.de}T00:00:00-03:00`) } : {}), ...(sp.ate ? { lte: new Date(`${sp.ate}T23:59:59-03:00`) } : {}) } }
+    ...(de || ate
+      ? { criadoEm: { ...(de ? { gte: inicioDiaBrasilia(de) } : {}), ...(ate ? { lt: inicioDiaBrasilia(addDias(ate, 1)) } : {}) } }
       : {}),
   };
   const [produtos, locais, total, movs] = await Promise.all([
@@ -40,7 +42,7 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
   ]);
 
   // Saldo corrente: só faz sentido com produto + local e sem filtros que cortem movimentos.
-  const comSaldo = !!(sp.produto && sp.local && !sp.tipo && !sp.lote && !sp.de);
+  const comSaldo = !!(sp.produto && sp.local && !sp.tipo && !sp.lote && !de);
   let saldo = 0;
   if (comSaldo && page > 1) {
     const anteriores = await db.movimento.findMany({ where, orderBy: { criadoEm: "asc" }, take: (page - 1) * POR_PAGINA, select: { quantidade: true, origemId: true, destinoId: true } });
@@ -65,9 +67,9 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Kardex" subtitle="Histórico de entradas e saídas por lote, para consulta do Estoque, Comercial e Qualidade. Filtre por produto e local para ver o saldo corrente." />
       <KpiGrid cols={3}>
-        <Stat label="Movimentos no filtro" value={num(total)} hint={`página ${page} de ${paginas}`} />
-        <Stat label="Entradas na página" value={num(movs.filter((m) => m.tipo === "ENTRADA").reduce((n, m) => n + m.quantidade, 0))} hint={<span className="text-emerald-700">unidades</span>} />
-        <Stat label="Perdas e ajustes na página" value={num(movs.filter((m) => m.tipo === "PERDA" || m.tipo === "AJUSTE").length)} hint={<span className="text-amber-700">lançamento(s)</span>} />
+        <Stat icon="livro" label="Movimentos no filtro" value={num(total)} hint={`página ${page} de ${paginas}`} />
+        <Stat icon="pacote" label="Entradas na página" value={num(movs.filter((m) => m.tipo === "ENTRADA").reduce((n, m) => n + m.quantidade, 0))} hint={<span className="text-emerald-700">unidades</span>} />
+        <Stat icon="ajustes" label="Perdas e ajustes na página" value={num(movs.filter((m) => m.tipo === "PERDA" || m.tipo === "AJUSTE").length)} hint={<span className="text-amber-700">lançamento(s)</span>} />
       </KpiGrid>
       <Filtros limparHref="/estoque/kardex">
         <FiltroSelect label="Produto" name="produto" defaultValue={sp.produto} todos="Todos os produtos" options={produtos.map((p) => ({ value: p.id, label: `${p.codigo} — ${p.descricao}` }))} />
@@ -92,12 +94,12 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
             <tr key={m.id}>
               <Td>
                 <div>{dateTime(m.criadoEm)}</div>
-                <div className="text-[11px] text-slate-500">{m.usuario ?? "—"}</div>
+                <div className="text-xs text-slate-500">{m.usuario ?? "—"}</div>
               </Td>
               <Td><Badge color={COR[m.tipo]}>{m.tipo.toLowerCase()}</Badge></Td>
               <Td className="max-w-xs">
                 <div className="truncate font-medium">{m.produto.descricao}</div>
-                <div className="font-mono text-[11px] text-slate-500">{m.produto.codigo}</div>
+                <div className="font-mono text-xs text-slate-500">{m.produto.codigo}</div>
               </Td>
               <Td className="font-mono text-xs">
                 {verLote ? <Link href={`/qualidade/lotes/${m.loteId}`} className="text-teal-700 hover:underline">{m.lote.numero}</Link> : m.lote.numero}

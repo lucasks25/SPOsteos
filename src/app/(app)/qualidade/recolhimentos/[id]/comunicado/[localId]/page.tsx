@@ -10,13 +10,14 @@ import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_RECOLHER, ROTULO_CLASSE, ROTULO_ORIGEM, docRecolhimento, encerrado, podeOperarRecolhimento } from "../../../../_lib/recolhimento";
 import { situacaoAlvos } from "../../../../_lib/recolhimento-servico";
 import { comunicarHospitalAction } from "../../../actions";
+import { idInt } from "@/lib/ids";
 
 /** Comunicado de recolhimento para um hospital: impressão em preto e branco, com campo de assinatura do recebimento. */
 export default async function ComunicadoPage({ params }: { params: Promise<{ id: string; localId: string }> }) {
   const user = await requireUser(PERFIS_RECOLHER);
   const p = await params;
-  const id = Number(p.id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt(p.id);
+  if (!id) notFound();
   const sit = await situacaoAlvos(db, id).catch(() => null);
   if (!sit) notFound();
   const { rec } = sit;

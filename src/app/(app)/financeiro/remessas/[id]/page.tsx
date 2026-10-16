@@ -1,20 +1,21 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Field, Form } from "@/components/form";
-import { Badge, Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td, btn, type BadgeColor } from "@/components/ui";
+import { Aviso, Badge, Card, Dl, KpiGrid, PageHeader, Stat, StatusBadge, Table, Td, btn, type BadgeColor } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, dateTime, money, toNumber } from "@/lib/format";
 import { Celula } from "@/components/lista";
 import { cancelarRemessa } from "../../_lib/sispag-actions";
 import { descreverOcorrencias, FORMAS_SISPAG, type FormaSispag } from "../../_lib/sispag";
+import { idInt } from "@/lib/ids";
 
 const COR: Record<string, BadgeColor> = { ENVIADO: "gray", AGENDADO: "blue", PAGO: "green", REJEITADO: "red", CANCELADO: "gray" };
 
 export default async function RemessaPage({ params }: { params: Promise<{ id: string }> }) {
   await requireUser(["FINANCEIRO"]);
   const { id } = await params;
-  if (!/^\d+$/.test(id)) notFound();
+  if (!idInt(id)) notFound();
   const r = await db.remessaPagamento.findUnique({
     where: { id: Number(id) },
     include: {
@@ -31,6 +32,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
   return (
     <>
       <PageHeader
+        voltar={{ href: "/financeiro/remessas", label: "Remessas SISPAG" }}
         title={`Remessa SISPAG #${r.id}`}
         subtitle={`${r.conta.nome} — ${r.modo === "PIX" ? "Pix" : "TED / crédito em conta / boletos"}`}
         actions={
@@ -40,18 +42,18 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
         }
       />
       <KpiGrid>
-        <Stat label="Total" value={money(total)} hint={`${r.itens.length} pagamento(s)`} />
-        <Stat label="Pago" value={money(pagos.reduce((s, i) => s + toNumber(i.valor), 0))} hint={`${pagos.length} confirmado(s)`} />
-        <Stat label="Data do pagamento" value={date(r.dataPagto)} />
-        <Stat label="Retorno" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
+        <Stat icon="pagar" label="Total" value={money(total)} hint={`${r.itens.length} pagamento(s)`} />
+        <Stat icon="ok" label="Pago" value={money(pagos.reduce((s, i) => s + toNumber(i.valor), 0))} hint={`${pagos.length} confirmado(s)`} />
+        <Stat icon="calendario" label="Data do pagamento" value={date(r.dataPagto)} />
+        <Stat icon="documento" label="Retorno" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
       </KpiGrid>
       {r.canceladaEm && (
-        <p className="mb-4 rounded border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">
+        <Aviso tom="info" className="mb-4">
           Remessa cancelada em {dateTime(r.canceladaEm)}: {r.canceladaMotivo}. Não envie este arquivo ao banco; os títulos ficaram livres para outra remessa.
-        </p>
+        </Aviso>
       )}
       {alertas.length > 0 && (
-        <div className="mb-4 rounded border border-rose-300 bg-rose-50 px-3 py-2 text-sm text-rose-800">
+        <Aviso tom="erro" className="mb-4">
           <strong>Atenção, dinheiro envolvido:</strong>
           <ul className="mt-1 list-disc pl-5">
             {alertas.map((i) => (
@@ -60,7 +62,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
               </li>
             ))}
           </ul>
-        </div>
+        </Aviso>
       )}
       <div className="space-y-4">
         {podeCancelar && (

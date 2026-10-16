@@ -1,17 +1,17 @@
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, cx } from "@/components/ui";
+import { Aviso, Badge, Card, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, cx } from "@/components/ui";
 import { ActionButton, Field, Form, Grid, Select, SubmitButton } from "@/components/form";
 import { date, dateTime, money, num, toNumber } from "@/lib/format";
 import { PERFIS_VER_INVENTARIO, podeEditar } from "../../_lib/perfis";
 import { ROTULO_RESOLUCAO, type Resolucao } from "../../_lib/inventario";
 import { docInventario, revisarInventario } from "../../_lib/inventario-servico";
 import { cancelarInventarioAction, concluirContagemAction, fecharInventarioAction, incluirLoteAction, salvarContagemAction } from "../actions";
+import { idInt } from "@/lib/ids";
 
 const entrada =
-  "h-8 rounded border border-slate-300 bg-white px-2 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+  "h-8 rounded-lg border border-slate-300 bg-white px-2 text-sm text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
 
 type Revisao = Awaited<ReturnType<typeof revisarInventario>>;
 type Item = Revisao["itens"][number];
@@ -19,7 +19,7 @@ type Item = Revisao["itens"][number];
 const Produto = ({ i }: { i: Item }) => (
   <Td className="max-w-xs">
     <div className="truncate font-medium text-slate-900">{i.produto.descricao}</div>
-    <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo} · lote {i.lote.numero} · val. {date(i.lote.validade)}</div>
+    <div className="font-mono text-xs text-slate-500">{i.produto.codigo} · lote {i.lote.numero} · val. {date(i.lote.validade)}</div>
   </Td>
 );
 const Dif = ({ i }: { i: Item }) =>
@@ -29,14 +29,14 @@ const Dif = ({ i }: { i: Item }) =>
 const SaldoAtual = ({ i }: { i: Item }) => (
   <span className={cx(i.calc.saldoMudou && "font-semibold text-amber-700")} title={i.calc.saldoMudou ? `Era ${i.saldoSistema} na foto` : undefined}>
     {num(i.saldoAtual)}
-    {i.calc.saldoMudou && <span className="ml-1 text-[11px] font-normal">(foto {num(i.saldoSistema)})</span>}
+    {i.calc.saldoMudou && <span className="ml-1 text-xs font-normal">(foto {num(i.saldoSistema)})</span>}
   </span>
 );
 
 export default async function InventarioPage({ params }: { params: Promise<{ id: string }> }) {
   const user = await requireUser(PERFIS_VER_INVENTARIO);
-  const id = Number((await params).id);
-  if (!Number.isInteger(id)) notFound();
+  const id = idInt((await params).id);
+  if (!id) notFound();
   const rev = await revisarInventario(db, id).catch(() => null);
   if (!rev) notFound();
   const { inv, itens, resumo, foraDaFoto } = rev;
@@ -54,6 +54,7 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
     <>
       <PageHeader
         title={`Inventário ${doc}`}
+        voltar={{ href: "/estoque/inventario", label: "Inventário" }}
         subtitle={`${nomeHosp} · criado em ${dateTime(inv.criadoEm)} por ${inv.criadoPor}`}
         actions={
           <>
@@ -64,32 +65,34 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
                 Concluir contagem
               </ActionButton>
             )}
-            {edita && (
-              <ActionButton action={cancelarInventarioAction} hidden={{ id: inv.id }} variant="secondary" confirm="Cancelar este inventário? Nenhum ajuste de estoque será feito.">
-                Cancelar
-              </ActionButton>
-            )}
           </>
+        }
+        maisAcoes={
+          edita && (
+            <ActionButton action={cancelarInventarioAction} hidden={{ id: inv.id }} variant="secondary" confirm="Cancelar este inventário? Nenhum ajuste de estoque será feito.">
+              Cancelar
+            </ActionButton>
+          )
         }
       />
       <KpiGrid>
-        <Stat label="Itens contados" value={`${num(resumo.contados)} / ${num(resumo.itens)}`} hint={inv.contadoEm ? `contagem concluída em ${dateTime(inv.contadoEm)}` : "contagem em andamento"} tone={resumo.naoContados && andamento ? "warn" : "default"} />
-        <Stat label="Divergências" value={num(resumo.divergentes)} hint={`${num(resumo.unidadesFalta)} un. a menos · ${num(resumo.unidadesSobra)} un. a mais`} tone={resumo.divergentes ? "danger" : "default"} />
-        <Stat label="Perdas (faltas ao custo)" value={money(resumo.valorFalta)} hint={`sobras: ${money(resumo.valorSobra)}`} tone={resumo.valorFalta ? "danger" : "default"} />
+        <Stat icon="lista" label="Itens contados" value={`${num(resumo.contados)} / ${num(resumo.itens)}`} hint={inv.contadoEm ? `contagem concluída em ${dateTime(inv.contadoEm)}` : "contagem em andamento"} tone={resumo.naoContados && andamento ? "warn" : "default"} />
+        <Stat icon="alerta" label="Divergências" value={num(resumo.divergentes)} hint={`${num(resumo.unidadesFalta)} un. a menos · ${num(resumo.unidadesSobra)} un. a mais`} tone={resumo.divergentes ? "danger" : "default"} />
+        <Stat icon="pagar" label="Perdas (faltas ao custo)" value={money(resumo.valorFalta)} hint={`sobras: ${money(resumo.valorSobra)}`} tone={resumo.valorFalta ? "danger" : "default"} />
         <Stat label={inv.status === "FECHADO" ? "A cobrar do hospital" : "Situação"} value={inv.status === "FECHADO" ? money(totalCobrar) : <StatusBadge status={inv.status} />} hint={inv.status === "FECHADO" ? `fechado em ${dateTime(inv.fechadoEm)} por ${inv.fechadoPor}` : inv.status === "CANCELADO" ? `cancelado em ${dateTime(inv.canceladoEm)}` : "ainda não fechado"} />
       </KpiGrid>
 
       {andamento && resumo.saldoMudou > 0 && (
-        <div role="status" className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
+        <Aviso tom="alerta" className="mb-4">
           O saldo do sistema mudou depois da foto em {resumo.saldoMudou} item(ns) (remessa, retorno ou consumo). A divergência abaixo é calculada contra o saldo de hoje; a coluna mostra o valor da foto entre parênteses.
-        </div>
+        </Aviso>
       )}
       {andamento && foraDaFoto > 0 && (
-        <div role="status" className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-[13px] text-amber-800">
+        <Aviso tom="alerta" className="mb-4">
           Há {foraDaFoto} lote(s) com saldo no hospital que não estavam na foto (entraram depois). Eles não fazem parte deste inventário.
-        </div>
+        </Aviso>
       )}
-      {inv.observacao && <p className="mb-3 text-[13px] text-slate-600">Observação: {inv.observacao}</p>}
+      {inv.observacao && <p className="mb-3 text-sm text-slate-600">Observação: {inv.observacao}</p>}
 
       <div className="space-y-3">
         {edita ? (
@@ -128,7 +131,7 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
                   {i.resolucao ? (
                     <>
                       <Badge color={i.resolucao === "AJUSTE" ? "yellow" : i.resolucao === "COBRAR_HOSPITAL" ? "red" : "gray"}>{ROTULO_RESOLUCAO[i.resolucao as Resolucao]}</Badge>
-                      {i.justificativa && <div className="truncate text-[11px] text-slate-500" title={i.justificativa}>{i.justificativa}</div>}
+                      {i.justificativa && <div className="truncate text-xs text-slate-500" title={i.justificativa}>{i.justificativa}</div>}
                     </>
                   ) : "—"}
                 </Td>
@@ -187,7 +190,6 @@ export default async function InventarioPage({ params }: { params: Promise<{ id:
           </Form>
         )}
         {inv.status === "ABERTO" && edita && <p className="text-xs text-slate-600">Salve a contagem antes de concluir. Concluída a contagem, a revisão e o fechamento aparecem aqui.</p>}
-        <Link href="/estoque/inventario" className="inline-block text-[13px] text-teal-700 hover:underline">Voltar à lista</Link>
       </div>
     </>
   );

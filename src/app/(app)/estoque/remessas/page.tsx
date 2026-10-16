@@ -7,6 +7,7 @@ import { FiltroInput, FiltroSelect, Filtros } from "@/components/filtros";
 import { date, dateTime, num } from "@/lib/format";
 import { PERFIS_VER, podeEditar } from "../_lib/perfis";
 import { cirurgiasAguardandoVale } from "../_lib/cirurgias-aguardando";
+import { idInt } from "@/lib/ids";
 
 const STATUS: StatusRemessa[] = ["ABERTA", "ENVIADA", "CONFERIDA", "CANCELADA"];
 
@@ -23,7 +24,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
     ...(sp.q
       ? {
           OR: [
-            ...(Number.isInteger(numero) && numero > 0 ? [{ id: numero }] : []),
+            ...(idInt(numero) ? [{ id: numero }] : []),
             { cirurgia: { paciente: { contains: sp.q, mode: "insensitive" as const } } },
           ],
         }
@@ -57,10 +58,10 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
         actions={podeEditar(user.perfil) && <LinkButton href="/estoque/remessas/nova" icon="mais">Nova remessa</LinkButton>}
       />
       <KpiGrid>
-        <Stat label="Na lista" value={num(remessas.length)} hint={`${num(unid(remessas))} unidade(s)`} />
-        <Stat label="Abertas (a enviar)" value={num(qtd("ABERTA"))} hint={<span className={qtd("ABERTA") ? "text-amber-700" : undefined}>separadas, sem envio</span>} tone={qtd("ABERTA") ? "warn" : "default"} />
-        <Stat label="Enviadas (a conferir)" value={num(qtd("ENVIADA"))} hint={<span className="text-sky-700">{num(unid(remessas.filter((r) => r.status === "ENVIADA")))} un. nos hospitais</span>} />
-        <Stat label="Conferidas" value={num(qtd("CONFERIDA"))} hint={<span className="text-emerald-700">retorno concluído</span>} />
+        <Stat icon="caminhao" label="Na lista" value={num(remessas.length)} hint={`${num(unid(remessas))} unidade(s)`} />
+        <Stat icon="pacote" label="Abertas (a enviar)" value={num(qtd("ABERTA"))} hint={<span className={qtd("ABERTA") ? "text-amber-700" : undefined}>separadas, sem envio</span>} tone={qtd("ABERTA") ? "warn" : "default"} />
+        <Stat icon="caminhao" label="Enviadas (a conferir)" value={num(qtd("ENVIADA"))} hint={<span className="text-sky-700">{num(unid(remessas.filter((r) => r.status === "ENVIADA")))} un. nos hospitais</span>} />
+        <Stat icon="ok" label="Conferidas" value={num(qtd("CONFERIDA"))} hint={<span className="text-emerald-700">retorno concluído</span>} />
       </KpiGrid>
       <Filtros limparHref="/estoque/remessas">
         <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Nº da remessa ou paciente" className="w-60" />
@@ -111,7 +112,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
           <tr key={r.id}>
             <Td>
               <Link href={`/estoque/remessas/${r.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">REM-{r.id}</Link>
-              <div className="text-[11px] text-slate-500">{date(r.criadoEm)}</div>
+              <div className="text-xs text-slate-500">{date(r.criadoEm)}</div>
             </Td>
             <Td className="max-w-[16rem] truncate font-medium">{r.local.hospital?.nomeFantasia ?? r.local.hospital?.razaoSocial ?? r.local.nome}</Td>
             <Td>

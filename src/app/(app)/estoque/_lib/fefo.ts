@@ -2,6 +2,8 @@
  * Funções puras de FEFO (first expire, first out) — sem dependências de servidor,
  * para serem usadas tanto no editor (client) quanto nas regras de negócio.
  */
+import { diaBrasilia } from "@/lib/datas";
+
 export type LoteDisp = {
   loteId: string;
   produtoId: string;
@@ -12,9 +14,12 @@ export type LoteDisp = {
 
 export type LinhaRemessa = { produtoId: string; loteId: string; quantidade: number };
 
-/** 00:00 UTC do dia (validades são gravadas como data, em UTC). */
+/**
+ * 00:00 UTC do dia corrente **em Brasília** (validades são gravadas como data, em UTC).
+ * Antes usava o dia UTC: das 21h à meia-noite um lote que vence hoje já era tratado como vencido.
+ */
 export function inicioDoDiaUTC(d = new Date()) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
+  return diaBrasilia(d);
 }
 
 export function ordenarFefo<T extends { validade: string | Date; numero: string }>(lotes: T[]) {
