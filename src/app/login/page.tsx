@@ -15,7 +15,7 @@ export default async function LoginPage() {
   await connection();
   return (
     <div className="grid min-h-screen bg-slate-50 lg:grid-cols-[1.05fr_1fr]">
-      <aside className="relative hidden flex-col justify-between overflow-hidden bg-sidebar p-12 text-sidebar-fg lg:flex">
+      <aside className="relative hidden flex-col justify-between gap-10 overflow-hidden bg-sidebar p-12 text-sidebar-fg lg:flex">
         {/* brilho menta discreto no canto: a única decoração da faixa */}
         <div className="pointer-events-none absolute -right-32 -top-32 h-96 w-96 rounded-full bg-sidebar-destaque/10 blur-3xl" aria-hidden="true" />
         <Marca variante="login" sobreEscuro />
