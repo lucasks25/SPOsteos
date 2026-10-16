@@ -48,7 +48,7 @@ Demonstração local: `docker compose up -d`, `npx prisma migrate deploy`, `npm 
 - Anexos com dado de paciente: definir política de retenção/LGPD e armazenamento privado (Supabase Storage em bucket privado na hospedagem).
 
 ## Qualidade
-- 53 testes unitários (`npm test`) e 59 testes de integração contra o banco (`npm run test:db`), todos passando; `tsc` e `next build` limpos; lint sem erros.
+- 141 testes unitários (`npm test`) e 167 testes de integração contra o banco (`npm run test:db`), todos passando; `tsc` e `next build` limpos; lint sem erros.
 - Revisões e correções documentadas: `docs/REVISAO.md` (segurança, bancário, financeiro, bugs de estoque).
 - Varredura de todas as telas do menu com os 6 perfis: sem erros.
 
@@ -59,3 +59,8 @@ Existem `CIR-2` (paciente de teste), `PV-2` e a conta a receber do PV-2 de um te
 O visual segue `Vionex_Design_Systems.html` (versão 2): azul institucional `#0B5CAB`, cinza neutro, fonte do sistema, texto de 13 px, cantos de 4 px, controles de 32 px, linhas de tabela de 36 px. Navegação em barra superior de três faixas (logo, busca de telas com Ctrl+K e usuário; módulos; telas do módulo). Modo claro, escuro ou do sistema (menu do usuário; cookie `opme_tema`).
 
 Como funciona: `src/app/globals.css` remapeia as escalas do Tailwind (`teal` = marca, `slate` = neutros, `emerald/rose/amber/sky` = ok/crítico/atenção/info, `white` = superfície) para os tokens do Vionex, claro e escuro. Os componentes e as páginas usam só essas escalas (nunca hex). Blocos padrão em `src/components/ui.tsx`: `PageHeader`, `Card`, `Table/Td`, `Stat/KpiGrid`, `FilterBar`, `SectionTitle`, `Badge/StatusBadge`, `EmptyState`, `Dl`, `btn.*`. Regra: número em célula `text-right` (um script alinha o cabeçalho da coluna).
+
+## Organização do código e regras de módulo
+Cada módulo (comercial, estoque, qualidade, compras, financeiro, gestão, cadastros, admin) é dono dos seus dados e das suas telas, e as ações de criar ficam na página do próprio módulo: o painel principal e o sino são só leitura e navegação, e não existe menu global de criação. Detalhes, regras e decisões em `docs/ARQUITETURA.md`. O verificador `npm run arquitetura` roda no `npm test` e falha se alguém criar dependência cruzada indevida.
+
+Qualidade hoje: 141 testes unitários e 167 testes de integração contra o banco, `tsc` limpo, lint sem erros, build de produção compilando e todas as telas abrindo sem erro nos 6 perfis.

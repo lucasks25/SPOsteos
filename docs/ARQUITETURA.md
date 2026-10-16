@@ -340,3 +340,19 @@ Cada item: **arquivos**, **mudança**, **validação**, **risco**, **onda**. Val
 | 4 | ARQ-11 (um executor por módulo), ARQ-12, ARQ-13 | por pasta |
 
 Ao fim da onda 3, `scripts/arquitetura-excecoes.ts` deve estar vazio. A partir daí, qualquer importação cruzada nova quebra o `npm test`.
+
+
+## Estado de execução do backlog (16/10/2026)
+
+Todas as ondas foram executadas. `npm run arquitetura`: **0 violações, 0 exceções**; passa a ser a catraca: qualquer violação nova falha o `npm test`.
+
+| Onda | Itens | Resultado |
+|---|---|---|
+| 1 | ARQ-01, 02, 03 | Kernel compartilhado em `src/lib` e `src/components` (datas de Brasília, Filtros/lista/CSV, documentos brasileiros e Pix). Ciclo entre módulos eliminado. |
+| 2 | ARQ-06/08/09, ARQ-07, UI-03/04, UI-01/ARQ-04 | Financeiro dono dos títulos (API pública `financeiro/_lib/publico.ts`, fechamento de mês valendo para compras e NF); custo médio com trava (`FOR NO KEY UPDATE`, porque `FOR UPDATE` dava deadlock com as chaves estrangeiras); consumo de cirurgia unificado; documentos só na Qualidade; hospital sem painéis de outros módulos; menu global "+ Novo" removido. |
+| 3 | ARQ-05/UI-02/UI-07, UI-05, UI-06, ARQ-10 | Painel só leitura e navegação (`_painel/`, sem botão de criar); tela de Favorecidos no financeiro como única escrita nos dados de pagamento; "Gerar vale" no Estoque; opções de selects via `cadastros/_lib/publico.ts`. |
+| 4 | ARQ-11, ARQ-12, ARQ-13 | Transações das actions extraídas para serviços testáveis nos 4 módulos; 10 índices medidos com EXPLAIN (os rejeitados e o porquê estão na seção ARQ-13); `anexos.ts` renomeado para `anexos-actions.ts`; cópia duplicada do botão de imprimir removida. |
+
+**Pendências conhecidas (decisão adiada, não bloqueante):** consultas duplicadas de listas de hospitais/produtos fora dos cadastros (leitura é permitida pela regra; unificar é opcional); `count(*)` e `DISTINCT entidade` na página de auditoria (resolver na aplicação quando a tabela crescer); índice `Movimento(tipo, criadoEm)` quando Movimento passar de ~1M linhas; `pg_trgm` para a busca global se passar de ~100 ms; `cent`/`r2` repetidos em 3-4 arquivos do financeiro.
+
+**Como manter:** módulo novo = uma pasta dona dos seus dados e telas; leitura de outro módulo é livre, escrita só por `_lib/publico.ts` do dono; kernel só quando dois módulos precisam; transação com regra de estoque ou dinheiro vive em `_lib/*-servico.ts` recebendo `tx`, com teste em `tests/negocio-db`.
