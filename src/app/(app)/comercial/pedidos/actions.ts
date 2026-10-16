@@ -7,7 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { money, toNumber } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { registrarNfTx } from "../_lib/nf";
-import { ErroNegocio } from "@/lib/erros";
+import { cancelarPedidoVendaTx } from "../_lib/pedido-servico";
 
 const PERFIS = ["COMERCIAL", "FINANCEIRO"] as const;
 
@@ -40,13 +40,8 @@ export async function registrarNf(pedidoId: number, _: ActionState, fd: FormData
 export async function cancelarPedidoVenda(pedidoId: number): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
   try {
-    await db.$transaction(async (tx) => {
-      const r = await tx.pedidoVenda.updateMany({ where: { id: pedidoId, status: "ABERTO" }, data: { status: "CANCELADO" } });
-      if (r.count === 0) throw new ErroNegocio("Só é possível cancelar pedidos em aberto (sem NF).");
-      const p = await tx.pedidoVenda.findUniqueOrThrow({ where: { id: pedidoId }, select: { cirurgiaId: true, total: true } });
-      if (p.cirurgiaId) await tx.cirurgia.updateMany({ where: { id: p.cirurgiaId, status: "FATURADA" }, data: { status: "REALIZADA" } });
-      await audit(user.id, "cancelar", "PedidoVenda", pedidoId, money(toNumber(p.total)));
-    });
+    const p = await db.$transaction((tx) => cancelarPedidoVendaTx(tx, pedidoId));
+    await audit(user.id, "cancelar", "PedidoVenda", pedidoId, money(toNumber(p.total)));
   } catch (e) {
     return { error: errorMessage(e) };
   }

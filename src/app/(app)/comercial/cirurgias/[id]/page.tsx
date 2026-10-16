@@ -8,7 +8,7 @@ import { date, dateTime, money, num } from "@/lib/format";
 import { nomeHospital } from "@/app/(app)/cadastros/_lib/publico";
 import { hojeUTC } from "@/lib/datas";
 import { cancelarCirurgia, confirmarCirurgia, faturar, registrarConsumo, removerConsumo } from "../actions";
-import { enviarAnexo, excluirAnexo } from "../anexos";
+import { enviarAnexo, excluirAnexo } from "../anexos-actions";
 import { riscoGlosaDaCirurgia } from "../../_lib/autorizacao-servico";
 import { textoAvisoFaturamento } from "../../_lib/autorizacao-view";
 import { AutorizacaoCard } from "./autorizacao-card";

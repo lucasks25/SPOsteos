@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { ErroNegocio } from "@/lib/erros";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
+import { mudarStatusOrcamentoTx, type StatusOrcamento } from "../_lib/orcamento-servico";
 import { precosDoHospital } from "../_lib/precos";
 
 const PERFIS = ["COMERCIAL"] as const;
@@ -81,20 +82,10 @@ export async function removerItemOrcamento(itemId: string): Promise<ActionState>
   return { ok: true };
 }
 
-const TRANSICOES: Record<string, string[]> = {
-  RASCUNHO: ["ENVIADO"],
-  ENVIADO: ["APROVADO", "RECUSADO", "RASCUNHO"],
-  APROVADO: [],
-  RECUSADO: ["RASCUNHO"],
-};
-
-export async function mudarStatusOrcamento(id: number, status: "RASCUNHO" | "ENVIADO" | "APROVADO" | "RECUSADO"): Promise<ActionState> {
+export async function mudarStatusOrcamento(id: number, status: StatusOrcamento): Promise<ActionState> {
   const user = await requireUser([...PERFIS]);
   try {
-    const o = await db.orcamento.findUniqueOrThrow({ where: { id }, include: { _count: { select: { itens: true } } } });
-    if (!TRANSICOES[o.status]?.includes(status)) throw new ErroNegocio(`Não é possível passar de ${o.status} para ${status}.`);
-    if (status === "ENVIADO" && o._count.itens === 0) throw new ErroNegocio("Inclua ao menos um item antes de enviar.");
-    await db.orcamento.update({ where: { id }, data: { status } });
+    await db.$transaction((tx) => mudarStatusOrcamentoTx(tx, id, status));
     await audit(user.id, `status ${status}`, "Orcamento", id);
   } catch (e) {
     return { error: errorMessage(e) };

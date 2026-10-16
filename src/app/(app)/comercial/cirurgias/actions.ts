@@ -8,6 +8,7 @@ import { requireUser } from "@/lib/auth";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { parseDataHoraSP } from "@/lib/datas";
 import { faturarCirurgia } from "../_lib/faturamento";
+import { HospitalTravadoError, cancelarCirurgiaTx, confirmarCirurgiaTx, salvarCirurgiaTx } from "../_lib/cirurgia-servico";
 import { registrarConsumoDiretoTx, removerConsumoTx } from "../_lib/consumo-servico";
 
 const EDITAM = ["COMERCIAL"] as const;
@@ -44,25 +45,13 @@ export async function salvarCirurgia(id: string | null, _: ActionState, fd: Form
   const user = await requireUser([...EDITAM]);
   const parsed = parseForm(schema, fd);
   if (!parsed.success) return parsed.state;
-  const data = parsed.data;
   let savedId: string;
   try {
-    if (id) {
-      const atual = await db.cirurgia.findUnique({ where: { id }, include: { _count: { select: { consumos: true, remessas: true } } } });
-      if (!atual) return { error: "Cirurgia não encontrada." };
-      if (atual.status === "FATURADA" || atual.status === "CANCELADA") return { error: `Cirurgia ${atual.status.toLowerCase()} não pode ser editada.` };
-      if (atual.hospitalId !== data.hospitalId && (atual._count.consumos > 0 || atual._count.remessas > 0)) {
-        return { fieldErrors: { hospitalId: "Não é possível trocar o hospital: há remessas ou consumo vinculados." }, error: "Verifique os campos destacados." };
-      }
-      const saved = await db.cirurgia.update({ where: { id }, data });
-      savedId = saved.id;
-      await audit(user.id, "editar", "Cirurgia", saved.id, `CIR-${saved.numero}`);
-    } else {
-      const saved = await db.cirurgia.create({ data });
-      savedId = saved.id;
-      await audit(user.id, "criar", "Cirurgia", saved.id, `CIR-${saved.numero}`);
-    }
+    const { cirurgia, criada } = await db.$transaction((tx) => salvarCirurgiaTx(tx, id, parsed.data));
+    savedId = cirurgia.id;
+    await audit(user.id, criada ? "criar" : "editar", "Cirurgia", cirurgia.id, `CIR-${cirurgia.numero}`);
   } catch (e) {
+    if (e instanceof HospitalTravadoError) return { fieldErrors: { hospitalId: e.message }, error: "Verifique os campos destacados." };
     return { error: errorMessage(e) };
   }
   revalidar(savedId);
@@ -71,24 +60,24 @@ export async function salvarCirurgia(id: string | null, _: ActionState, fd: Form
 
 export async function confirmarCirurgia(id: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser([...EDITAM]);
-  const c = await db.cirurgia.findUnique({ where: { id } });
-  if (!c) return { error: "Cirurgia não encontrada." };
-  if (c.status !== "AGENDADA") return { error: "Apenas cirurgias agendadas podem ser confirmadas." };
-  await db.cirurgia.update({ where: { id }, data: { status: "CONFIRMADA" } });
-  await audit(user.id, "confirmar", "Cirurgia", id, `CIR-${c.numero}`);
+  try {
+    const c = await db.$transaction((tx) => confirmarCirurgiaTx(tx, id));
+    await audit(user.id, "confirmar", "Cirurgia", id, `CIR-${c.numero}`);
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
   revalidar(id);
   return { ok: true };
 }
 
 export async function cancelarCirurgia(id: string, _: ActionState): Promise<ActionState> {
   const user = await requireUser([...EDITAM]);
-  const c = await db.cirurgia.findUnique({ where: { id }, include: { _count: { select: { consumos: true } }, pedido: true } });
-  if (!c) return { error: "Cirurgia não encontrada." };
-  if (c.status === "FATURADA" || c.status === "CANCELADA") return { error: `Cirurgia já está ${c.status.toLowerCase()}.` };
-  if (c._count.consumos > 0) return { error: "Há consumo registrado. Remova o consumo antes de cancelar." };
-  if (c.pedido && c.pedido.status !== "CANCELADO") return { error: "Há pedido de venda vinculado." };
-  await db.cirurgia.update({ where: { id }, data: { status: "CANCELADA" } });
-  await audit(user.id, "cancelar", "Cirurgia", id, `CIR-${c.numero}`);
+  try {
+    const c = await db.$transaction((tx) => cancelarCirurgiaTx(tx, id));
+    await audit(user.id, "cancelar", "Cirurgia", id, `CIR-${c.numero}`);
+  } catch (e) {
+    return { error: errorMessage(e) };
+  }
   revalidar(id);
   return { ok: true };
 }
