@@ -64,7 +64,7 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
       <div>
         <div className="mb-2 flex flex-wrap items-end gap-2">
           <label className="block min-w-64 flex-1">
-            <span className="mb-1 block text-xs text-slate-700">Adicionar produto</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Adicionar produto</span>
             <select value={addProduto} onChange={(e) => setAddProduto(e.target.value)} className={inputCls}>
               <option value="">Selecione...</option>
               {produtos.map((p) => (
@@ -75,7 +75,7 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
             </select>
           </label>
           <label className="block w-24">
-            <span className="mb-1 block text-xs text-slate-700">Qtd.</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Qtd.</span>
             <input type="number" min={1} value={addQtd} onChange={(e) => setAddQtd(Number(e.target.value))} className={`${inputCls} text-right`} />
           </label>
           <button type="button" onClick={adicionar} className={btn.secondary}>

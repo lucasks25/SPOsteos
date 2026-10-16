@@ -67,25 +67,25 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
       <FilterBar>
         {vinculo && <input type="hidden" name={vinculo.campo} value={vinculo.id} />}
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-600">Busca</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Busca</span>
           <input name="q" defaultValue={f.q} placeholder="Título, número, órgão ou vínculo" className={`${inputCls} w-64`} />
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-600">Escopo</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Escopo</span>
           <select name="escopo" defaultValue={f.escopo ?? ""} className={inputCls}>
             <option value="">Todos</option>
             {ESCOPOS.map((e) => <option key={e} value={e}>{ROTULO_ESCOPO[e]}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-600">Tipo</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Tipo</span>
           <select name="tipo" defaultValue={f.tipo ?? ""} className={inputCls}>
             <option value="">Todos</option>
             {TIPOS.map((t) => <option key={t} value={t}>{ROTULO_TIPO[t]}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-600">Situação</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Situação</span>
           <select name="situacao" defaultValue={f.situacao ?? ""} className={inputCls}>
             <option value="">Todas</option>
             <option value={FILTRO_ATENCAO}>Vencidos ou a vencer em 30 dias</option>
@@ -96,7 +96,7 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
           <input type="checkbox" name="inativos" value="1" defaultChecked={f.inativos} className="h-4 w-4 rounded-sm border-slate-300" />
           Incluir inativos e substituídos
         </label>
-        <button className={btn.primary}>Filtrar</button>
+        <button className={btn.secondary}>Filtrar</button>
         <Link href="/qualidade/documentos" className={btn.ghost}>Limpar</Link>
       </FilterBar>
       <Table

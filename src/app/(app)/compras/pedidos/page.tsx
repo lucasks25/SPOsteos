@@ -37,11 +37,11 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
       </KpiGrid>
       <FilterBar>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Busca</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Busca</span>
           <input name="q" defaultValue={q} placeholder="PC-12, fornecedor ou invoice" className={`${inputCls} w-64`} />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Status</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Status</span>
           <select name="status" defaultValue={s ?? ""} className={inputCls}>
             <option value="">Todos</option>
             {STATUS.map((x) => (
@@ -69,9 +69,9 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
                 </Link>{" "}
                 {p.importacao && <Badge color="purple">importação</Badge>}
               </Td>
-              <Td className="max-w-[16rem] truncate">
-                <div>{p.fornecedor.nomeFantasia || p.fornecedor.razaoSocial}</div>
-                {p.fornecedor.nomeFantasia && <div className="text-xs text-slate-500">{p.fornecedor.razaoSocial}</div>}
+              <Td className="max-w-[16rem]">
+                <div className="truncate">{p.fornecedor.nomeFantasia || p.fornecedor.razaoSocial}</div>
+                {p.fornecedor.nomeFantasia && <div className="truncate text-xs text-slate-500" title={p.fornecedor.razaoSocial}>{p.fornecedor.razaoSocial}</div>}
               </Td>
               <Td>{date(p.criadoEm)}</Td>
               <Td>{date(p.previsao)}</Td>

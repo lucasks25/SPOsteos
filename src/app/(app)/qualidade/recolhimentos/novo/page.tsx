@@ -29,7 +29,7 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
       <PageHeader voltar={{ href: "/qualidade/recolhimentos", label: "Recolhimentos" }} title="Novo recolhimento" subtitle="Ao abrir, os lotes escolhidos ficam bloqueados (não saem em remessa nem são consumidos) e o sistema fotografa onde há saldo e quais cirurgias usaram o lote." />
       <Filtros limparHref="/qualidade/recolhimentos/novo">
         <label className="block">
-          <span className="mb-1 block text-sm text-slate-600">Buscar lote, série, produto ou código</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Buscar lote, série, produto ou código</span>
           <input name="q" defaultValue={q} placeholder="Ex.: número do lote" className={`${inputCls} w-72`} />
         </label>
       </Filtros>

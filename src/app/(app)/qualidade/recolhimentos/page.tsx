@@ -65,7 +65,7 @@ export default async function RecolhimentosPage({ searchParams }: { searchParams
         head={["Nº", "Situação", "Origem", "Produto / lotes", "Motivo", "Prazo", "A recolher", ...(verPac ? ["Pacientes a comunicar"] : [])]}
         empty={lista.length === 0}
         emptyText="Nenhum recolhimento encontrado."
-        emptyAction={podeOperarRecolhimento(user.perfil) ? <LinkButton href="/qualidade/recolhimentos/novo" icon="mais">Novo recolhimento</LinkButton> : undefined}
+        emptyAction={podeOperarRecolhimento(user.perfil) ? <LinkButton href="/qualidade/recolhimentos/novo" icon="mais" variant="secondary">Novo recolhimento</LinkButton> : undefined}
       >
         {lista.map((r) => {
           const res = resumos.get(r.id)!;

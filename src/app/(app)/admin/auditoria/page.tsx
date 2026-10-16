@@ -40,7 +40,7 @@ export default async function AuditoriaPage({
       <PageHeader title="Log de auditoria" subtitle={`Quem fez o quê e quando no sistema, para conferência do administrador: ${total} registro(s).`} />
       <FilterBar>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Entidade</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Entidade</span>
           <select name="entidade" defaultValue={sp.entidade ?? ""} className={sel}>
           <option value="">Todas as entidades</option>
           {entidades.map((e) => (
@@ -49,7 +49,7 @@ export default async function AuditoriaPage({
         </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Usuário</span>
+          <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Usuário</span>
           <select name="usuario" defaultValue={sp.usuario ?? ""} className={sel}>
           <option value="">Todos os usuários</option>
           {usuarios.map((u) => (
