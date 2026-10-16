@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { CabecalhoImpresso } from "@/components/marca";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { PrintButton } from "@/components/print-button";
@@ -26,6 +27,7 @@ export default async function FolhaContagemPage({ params }: { params: Promise<{ 
       <div className="mb-3 print:hidden">
         <PrintButton label="Imprimir folha" />
       </div>
+      <CabecalhoImpresso />
       <h1 className="text-xl font-bold">Folha de contagem de consignado — {docInventario(inv.id)}</h1>
       <p className="mt-1 text-sm">
         Hospital: <strong>{inv.hospital.razaoSocial}</strong> (CNPJ {inv.hospital.cnpj}) · Emitida em {dateTime(new Date())}

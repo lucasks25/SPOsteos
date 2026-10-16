@@ -12,7 +12,8 @@ const COR: BadgeColor[] = ["red", "red", "yellow", "yellow", "gray"];
 const LOCAL: Record<string, string> = { DEPOSITO: "Depósito", HOSPITAL: "Consignado", QUARENTENA: "Quarentena" };
 
 export default async function VencimentosPage({ searchParams }: { searchParams: Promise<SP> }) {
-  await requireUser([...PERFIS_GESTAO]);
+  const user = await requireUser([...PERFIS_GESTAO]);
+  const verLotes = user.perfil === "ESTOQUE" || user.perfil === "ADMIN"; // a tela de lotes é da Qualidade (e do Estoque)
   const sp = await searchParams;
   const d = await vencimentosDados();
   const f = typeof sp.faixa === "string" && /^[0-4]$/.test(sp.faixa) ? Number(sp.faixa) : null;
@@ -23,7 +24,7 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
   const qate = (n: number) => q.slice(1, n + 1).reduce((s, x) => s + x, 0);
   return (
     <>
-      <PageHeader title="Vencimentos de lotes" subtitle="Saldo em estoque (depósito, consignado e quarentena) de lotes que vencem em até 180 dias. Valor em risco = saldo × custo médio do produto. Não conforme fica de fora." />
+      <PageHeader title="Vencimentos de lotes" subtitle="Relatório de leitura: lotes que vencem em até 180 dias, no depósito, consignados nos hospitais e em quarentena. Valor em risco = saldo × custo médio do produto. Não conforme fica de fora." />
       <KpiGrid cols={5}>
         <Stat label="Já vencido" value={money(v[0])} tone={v[0] > 0 ? "danger" : "default"} hint={`${num(q[0])} un.`} />
         <Stat label="Vence em 30 dias" value={money(ate(1))} tone={ate(1) > 0 ? "warn" : "default"} hint={`${num(qate(1))} un.`} />
@@ -39,7 +40,7 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
           titulo="Lotes por validade"
           icone="frasco"
           contagem={linhas.length}
-          acoes={<span className="flex items-center gap-2"><Link href="/qualidade/lotes" className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50">Ver lotes</Link><BotaoCsv href="/gestao/vencimentos/exportar" params={{}} /></span>}
+          acoes={<span className="flex items-center gap-2">{verLotes && <Link href="/qualidade/lotes" className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50">Ver na Qualidade</Link>}<BotaoCsv href="/gestao/vencimentos/exportar" params={{}} /></span>}
           head={["Produto", "Lote", "Validade", <span key="d" className="block text-right">Dias</span>, "Local", <span key="q" className="block text-right">Quantidade</span>, <span key="v" className="block text-right">Valor em risco</span>, "Faixa"]}
           empty={linhas.length === 0}
           emptyText="Nenhum lote com saldo vence nos próximos 180 dias."

@@ -206,7 +206,7 @@ export default async function RecolhimentoPage({ params, searchParams }: { param
                         {pacientes.map((p) => (
                           <tr key={p.id}>
                             <Td>{ativo && opera && !p.comunicadoEm ? <input type="checkbox" name={`p_${p.id}`} aria-label={`Selecionar ${p.cirurgia.paciente}`} className="h-4 w-4 rounded-sm border-slate-300" /> : null}</Td>
-                            <Td><Link href={`/comercial/cirurgias/${p.cirurgiaId}`} className="font-mono text-teal-700 hover:underline">CIR-{p.cirurgia.numero}</Link></Td>
+                            <Td>{user.perfil === "QUALIDADE" ? <span className="font-mono">CIR-{p.cirurgia.numero}</span> : <Link href={`/comercial/cirurgias/${p.cirurgiaId}`} className="font-mono text-teal-700 hover:underline" title="Ver no Comercial">CIR-{p.cirurgia.numero}</Link>}</Td>
                             <Td>{date(p.cirurgia.dataHora)}</Td>
                             <Td className="font-medium text-slate-900">{p.cirurgia.paciente}</Td>
                             <Td>{p.cirurgia.hospital.nomeFantasia ?? p.cirurgia.hospital.razaoSocial}</Td>

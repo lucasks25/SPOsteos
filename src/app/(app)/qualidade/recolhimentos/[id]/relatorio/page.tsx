@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CabecalhoImpresso } from "@/components/marca";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -43,6 +44,7 @@ export default async function RelatorioRecolhimentoPage({ params }: { params: Pr
         <PrintButton label="Imprimir relatório" />
       </div>
       <article className="space-y-4 border border-slate-300 bg-white p-6 text-[13px] print:border-0 print:p-0">
+        <CabecalhoImpresso />
         <header className="border-b-2 border-black pb-2">
           <h1 className="text-lg font-bold uppercase">Relatório {final ? "final" : "parcial"} de recolhimento — {docRecolhimento(id)}</h1>
           <p>Emitido em {dateTime(new Date())}{!final && ` · situação: ${rec.status.replaceAll("_", " ").toLowerCase()} (relatório sem validade final)`}</p>

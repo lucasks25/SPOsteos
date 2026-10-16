@@ -29,7 +29,7 @@ export default async function OrcamentosPage({ searchParams }: { searchParams: P
   const vencendo = orcs.filter((o) => o.status === "ENVIADO" && o.validade && diasAte(o.validade) >= 0 && diasAte(o.validade) <= 7);
     return (
     <>
-      <PageHeader title="Orçamentos" subtitle="Propostas de materiais para hospitais e convênios." actions={<LinkButton href="/comercial/orcamentos/novo" icon="mais">Novo orçamento</LinkButton>} />
+      <PageHeader title="Orçamentos" subtitle="Propostas de materiais para hospitais e convênios, preparadas pelo Comercial." actions={<LinkButton href="/comercial/orcamentos/novo" icon="mais">Novo orçamento</LinkButton>} />
       <KpiGrid>
         <Stat label="Na lista" value={money(orcs.reduce((a, o) => a + total(o), 0))} hint={`${orcs.length} orçamento(s)`} />
         <Stat label="Enviados (aguardando)" value={money(soma("ENVIADO"))} hint={<span className="text-sky-700">{qtd("ENVIADO")} proposta(s)</span>} />

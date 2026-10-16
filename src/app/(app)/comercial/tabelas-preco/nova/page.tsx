@@ -6,7 +6,7 @@ export default async function NovaTabelaPage() {
   await requireUser(["COMERCIAL"]);
   return (
     <>
-      <PageHeader title="Nova tabela de preço" subtitle="Depois de criar, inclua os preços por produto" />
+      <PageHeader title="Nova tabela de preço" subtitle="O Comercial define o nome e os hospitais; depois de criar, inclua os preços por produto." />
       <Card>
         <TabelaForm />
       </Card>

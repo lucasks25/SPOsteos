@@ -8,14 +8,14 @@ import { CRITERIOS_RATEIO, INCOTERMS, MOEDAS, reais, ROTULO_CRITERIO, ROTULO_DES
 import { cambioDo, custoDoPedido } from "../../_lib/importacao-servico";
 import { removerDespesa, salvarDespesa, salvarImportacao, salvarItensImportacao } from "../importacao-actions";
 
-type Props = { pedidoId: number; editarDespesaId?: string };
+type Props = { pedidoId: number; editarDespesaId?: string; verFinanceiro?: boolean };
 
 const fmtMoeda = (moeda: string, v: number, casas = 2) =>
   moeda === "BRL" ? money(v) : `${moeda} ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: casas })}`;
 const fmtUnit = (v: number) => v.toLocaleString("pt-BR", { style: "currency", currency: "BRL", minimumFractionDigits: 2, maximumFractionDigits: 4 });
 
 /** Seção de importação do detalhe do pedido: dados, preços na moeda, despesas e custo nacionalizado por item. */
-export async function SecaoImportacao({ pedidoId, editarDespesaId }: Props) {
+export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro = false }: Props) {
   const [pedido, fornecedores] = await Promise.all([
     db.pedidoCompra.findUniqueOrThrow({
       where: { id: pedidoId },
@@ -121,9 +121,15 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId }: Props) {
             </Td>
             <Td>
               {d.contaPagar ? (
-                <Link href={`/financeiro/pagar/${d.contaPagar.id}`} className="inline-flex items-center gap-2 text-teal-700 hover:underline">
-                  {date(d.contaPagar.vencimento)} <StatusBadge status={d.contaPagar.status} />
-                </Link>
+                verFinanceiro ? (
+                  <Link href={`/financeiro/pagar/${d.contaPagar.id}`} className="inline-flex items-center gap-2 text-teal-700 hover:underline" title="Ver no Financeiro">
+                    {date(d.contaPagar.vencimento)} <StatusBadge status={d.contaPagar.status} />
+                  </Link>
+                ) : (
+                  <span className="inline-flex items-center gap-2">
+                    {date(d.contaPagar.vencimento)} <StatusBadge status={d.contaPagar.status} />
+                  </span>
+                )
               ) : (
                 <span className="text-slate-500">—</span>
               )}

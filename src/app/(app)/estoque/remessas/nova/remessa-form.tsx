@@ -143,7 +143,7 @@ export function RemessaForm({
             <span className="mb-1 block text-xs text-slate-700">Qtd.</span>
             <input aria-label="Quantidade a adicionar" type="number" min={1} value={addQtd} onChange={(e) => setAddQtd(Number(e.target.value))} className={inputCls} />
           </label>
-          <button type="button" onClick={adicionar} className={btn.secondary}>Adicionar produto (lote por FEFO)</button>
+          <button type="button" onClick={adicionar} className={btn.secondary}>Adicionar produto (lote que vence primeiro)</button>
         </div>
 
         <div className="overflow-x-auto rounded border border-slate-200 bg-white">

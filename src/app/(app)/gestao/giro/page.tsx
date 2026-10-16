@@ -40,7 +40,7 @@ export default async function GiroPage({ searchParams }: { searchParams: Promise
     <>
       <PageHeader
         title="Giro e cobertura de estoque"
-        subtitle={`Disponível = depósito + consignado. Consumo dos últimos ${DIAS_CONSUMO} dias (movimentos de consumo em cirurgia). Cobertura = disponível ÷ consumo por dia. Giro anual = consumo anualizado ÷ disponível.`}
+        subtitle={`Relatório de leitura: por quantos dias o estoque dura. Disponível = depósito + consignado. Consumo dos últimos ${DIAS_CONSUMO} dias em cirurgia. Cobertura = disponível ÷ consumo por dia. Giro anual = consumo anualizado ÷ disponível.`}
       />
       <KpiGrid cols={5}>
         <Stat label="Produtos acompanhados" value={num(d.todas)} hint={`valor em estoque ${money(d.valorTotal)}`} />

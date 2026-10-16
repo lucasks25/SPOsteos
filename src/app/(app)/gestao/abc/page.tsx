@@ -15,7 +15,7 @@ export default async function AbcPage({ searchParams }: { searchParams: Promise<
   const parte = (v: number) => (abc.total > 0 ? fmtPct((v / abc.total) * 100) : "—");
   return (
     <>
-      <PageHeader title="Curva ABC de produtos" subtitle="Receita faturada por produto no período (pedidos de venda faturados, data da NF). A = até 80% da receita acumulada, B = até 95%, C = o resto." />
+      <PageHeader title="Curva ABC de produtos" subtitle="Relatório de leitura para todos os setores: quais produtos geram a receita. Considera os pedidos faturados no período (data da nota fiscal). Classe A = até 80% da receita acumulada, B = até 95%, C = o restante." />
       <KpiGrid cols={5}>
         <Stat label="Receita faturada" value={money(abc.total)} hint={`${d.pedidos} pedido(s) faturado(s)`} />
         <Stat label="Produtos vendidos" value={num(abc.linhas.length)} />

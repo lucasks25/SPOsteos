@@ -46,7 +46,7 @@ export default async function RecolhimentosPage({ searchParams }: { searchParams
     <>
       <PageHeader
         title="Recolhimento de lote / tecnovigilância"
-        subtitle="Ação de campo: bloqueio do lote, material nos locais e hospitais, pacientes afetados, comunicados e relatório final."
+        subtitle="Para a Qualidade (o Estoque recolhe o material): bloqueio do lote, material nos locais e hospitais, pacientes afetados, comunicados e relatório final."
         actions={podeOperarRecolhimento(user.perfil) && <LinkButton href="/qualidade/recolhimentos/novo" icon="mais">Novo recolhimento</LinkButton>}
       />
       <KpiGrid cols={4}>

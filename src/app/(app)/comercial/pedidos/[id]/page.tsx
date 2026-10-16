@@ -12,7 +12,8 @@ import { PainelAchados, textoAvisoFaturamento } from "../../_lib/autorizacao-vie
 const DIA = 86_400_000;
 
 export default async function PedidoVendaPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser(["COMERCIAL", "FINANCEIRO"]);
+  const user = await requireUser(["COMERCIAL", "FINANCEIRO"]);
+  const verFinanceiro = user.perfil === "FINANCEIRO" || user.perfil === "ADMIN";
   const { id: idStr } = await params;
   const id = Number(idStr);
   if (!Number.isInteger(id)) notFound();
@@ -38,12 +39,12 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
     <>
       <PageHeader
         title={`PV-${pedido.id}`}
-        subtitle={`${pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial} · pedido de venda gerado a partir de cirurgia realizada`}
+        subtitle={`${pedido.hospital.nomeFantasia || pedido.hospital.razaoSocial} · pedido de venda gerado ao faturar a cirurgia. O Comercial registra a nota fiscal; o Financeiro cuida da cobrança.`}
         actions={
           <>
             <StatusBadge status={pedido.status} />
             {pedido.status === "ABERTO" && (
-              <ActionButton action={cancelarPedidoVenda.bind(null, pedido.id)} variant="danger" confirm="Cancelar este pedido? A cirurgia volta para REALIZADA.">
+              <ActionButton action={cancelarPedidoVenda.bind(null, pedido.id)} variant="danger" confirm="Cancelar este pedido? A cirurgia volta para “realizada” e pode ser faturada de novo.">
                 Cancelar pedido
               </ActionButton>
             )}
@@ -114,9 +115,13 @@ export default async function PedidoVendaPage({ params }: { params: Promise<{ id
                   <StatusBadge status={c.status} />
                 </Td>
                 <Td>
-                  <Link href={`/financeiro/receber/${c.id}`} className={btn.small}>
-                    Abrir
-                  </Link>
+                  {verFinanceiro ? (
+                    <Link href={`/financeiro/receber/${c.id}`} className={btn.small}>
+                      Ver no Financeiro
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-slate-500">cobrança no Financeiro</span>
+                  )}
                 </Td>
               </tr>
             ))}

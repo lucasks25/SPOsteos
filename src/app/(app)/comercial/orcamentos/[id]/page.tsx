@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import { CabecalhoImpresso } from "@/components/marca";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { Card, Dl, KpiGrid, Stat, cx, PageHeader, StatusBadge, Table, Td } from "@/components/ui";
@@ -61,6 +62,7 @@ export default async function OrcamentoPage({ params }: { params: Promise<{ id: 
         </KpiGrid>
       </div>
       <div className="mb-4 hidden print:block">
+        <CabecalhoImpresso />
         <h1 className="text-xl font-bold">Orçamento ORC-{o.id}</h1>
         <p className="text-sm">Emitido em {date(new Date())} · válido até {date(o.validade)}</p>
       </div>

@@ -10,7 +10,8 @@ import { cancelarPedidoCompra, receberItem } from "../actions";
 import { SecaoImportacao } from "./importacao";
 
 export default async function PedidoCompraPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ despesa?: string }> }) {
-  await requireUser(PERFIS_COMPRAS);
+  const user = await requireUser(PERFIS_COMPRAS);
+  const verFinanceiro = user.perfil === "ADMIN";
   const { id: idStr } = await params;
   const { despesa } = await searchParams;
   const id = Number(idStr);
@@ -64,7 +65,7 @@ export default async function PedidoCompraPage({ params, searchParams }: { param
           />
         </Card>
 
-        {pedido.importacao && <SecaoImportacao pedidoId={pedido.id} editarDespesaId={despesa} />}
+        {pedido.importacao && <SecaoImportacao pedidoId={pedido.id} editarDespesaId={despesa} verFinanceiro={verFinanceiro} />}
 
         <div>
           <SectionTitle>Itens</SectionTitle>
@@ -113,9 +114,13 @@ export default async function PedidoCompraPage({ params, searchParams }: { param
                     <StatusBadge status={c.status} />
                   </Td>
                   <Td>
-                    <Link href={`/financeiro/pagar/${c.id}`} className={btn.small}>
-                      Abrir
-                    </Link>
+                    {verFinanceiro ? (
+                      <Link href={`/financeiro/pagar/${c.id}`} className={btn.small}>
+                        Ver no Financeiro
+                      </Link>
+                    ) : (
+                      <span className="text-xs text-slate-500">pagamento no Financeiro</span>
+                    )}
                   </Td>
                 </tr>
               ))}

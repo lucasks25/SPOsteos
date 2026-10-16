@@ -20,7 +20,7 @@ export default async function AjustesPage() {
   ]);
   return (
     <>
-      <PageHeader title="Ajustes e perdas" subtitle="Correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex." />
+      <PageHeader title="Ajustes e perdas" subtitle="Para o Estoque: correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex (histórico de movimentações)." />
       <KpiGrid cols={3}>
         <Stat label="Lançamentos recentes" value={num(ultimos.length)} hint="últimos 50" />
         <Stat label="Perdas" value={num(ultimos.filter((m) => m.tipo === "PERDA").length)} hint={<span className="text-rose-600">{money(ultimos.filter((m) => m.tipo === "PERDA").reduce((v, m) => v + Number(m.custoUnit) * m.quantidade, 0))}</span>} />

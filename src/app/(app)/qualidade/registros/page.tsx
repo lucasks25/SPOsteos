@@ -44,7 +44,7 @@ export default async function RegistrosPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <PageHeader title="Registros ANVISA" subtitle="Acompanhe a validade dos registros e notificações dos produtos na ANVISA." />
+      <PageHeader title="Registros ANVISA" subtitle="Para a Qualidade: acompanhe a validade dos registros e notificações dos produtos na ANVISA. A correção é feita no cadastro do produto." />
       <KpiGrid cols={5}>
         <Stat label="Vencidos" value={cont("vencido")} tone={cont("vencido") ? "danger" : "default"} />
         <Stat label="Até 90 dias" value={cont("90")} tone={cont("90") ? "warn" : "default"} />
@@ -86,7 +86,7 @@ export default async function RegistrosPage({ searchParams }: { searchParams: Pr
                 {s === "sem_registro" && <Badge color="yellow">sem registro</Badge>}
               </Td>
               <Td>
-                <Link href={`/cadastros/produtos/${p.id}`} className={btn.small}>Editar</Link>
+                <Link href={`/cadastros/produtos/${p.id}`} className={btn.small}>Abrir no cadastro</Link>
               </Td>
             </tr>
           );

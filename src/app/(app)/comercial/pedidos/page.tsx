@@ -28,7 +28,7 @@ export default async function PedidosVendaPage({ searchParams }: { searchParams:
   const aFaturar = soma(abertos);
   return (
     <>
-      <PageHeader title="Pedidos de venda" subtitle="Gerados ao faturar uma cirurgia realizada" />
+      <PageHeader title="Pedidos de venda" subtitle="Gerados ao faturar uma cirurgia realizada. O Comercial registra a nota fiscal; a cobrança fica no Financeiro." />
       <KpiGrid>
         <Stat label="Na lista" value={money(soma(pedidos))} hint={`${pedidos.length} pedido(s)`} />
         <Stat label="Abertos (sem NF)" value={money(aFaturar)} hint={<span className={aFaturar > 0 ? "text-amber-700" : undefined}>{abertos.length} pedido(s) a faturar</span>} tone={aFaturar > 0 ? "warn" : "default"} />

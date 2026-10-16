@@ -19,7 +19,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
   const melhor = d.meses.reduce((a, m) => (m.valor > a.valor ? m : a), d.meses[0]);
   return (
     <>
-      <PageHeader title="Vendas por mês" subtitle="Pedidos de venda faturados nos últimos 12 meses (data da NF, horário de Brasília), comparados ao mesmo mês do ano anterior." />
+      <PageHeader title="Vendas por mês" subtitle="Relatório de leitura: quanto foi faturado em cada um dos últimos 12 meses (data da nota fiscal), comparado ao mesmo mês do ano anterior." />
       <KpiGrid cols={4}>
         <Stat label="Vendas nos 12 meses" value={money(d.total)} hint={`${num(d.pedidos)} pedido(s)`} />
         <Stat label="12 meses anteriores" value={money(d.anterior)} />

@@ -43,14 +43,14 @@ export default async function RastreabilidadePage({ searchParams }: { searchPara
       )}
       <div className="space-y-10">
         {lotes.map((r) => (
-          <LoteRastreio key={r.lote.id} r={r} />
+          <LoteRastreio key={r.lote.id} r={r} verCompras={user.perfil === "ESTOQUE" || user.perfil === "ADMIN"} />
         ))}
       </div>
     </>
   );
 }
 
-function LoteRastreio({ r }: { r: Rastreio }) {
+function LoteRastreio({ r, verCompras }: { r: Rastreio; verCompras: boolean }) {
   const { lote, entradas } = r;
   const totalEntrada = entradas.reduce((s, e) => s + e.movimento.quantidade, 0);
   const totalConsumido = lote.consumos.reduce((s, c) => s + c.quantidade, 0);
@@ -89,7 +89,7 @@ function LoteRastreio({ r }: { r: Rastreio }) {
             <tr key={m.id}>
               <Td>{dateTime(m.criadoEm)}</Td>
               <Td>
-                {p ? (
+                {p && verCompras ? (
                   <Link href={`/compras/pedidos/${p.id}`} className="text-teal-700 hover:underline print:text-slate-800 print:no-underline">{m.documento}</Link>
                 ) : (
                   m.documento ?? "—"

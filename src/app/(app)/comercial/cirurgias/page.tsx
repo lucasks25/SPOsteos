@@ -46,7 +46,7 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader
         title="Cirurgias"
-        subtitle="Acompanhe o agendamento, o consumo de material e o faturamento de cada procedimento."
+        subtitle="Para o Comercial: acompanhe o agendamento, o consumo de material e o faturamento de cada procedimento."
         actions={
           <>
             <LinkButton href="/comercial/agenda" variant="secondary" icon="calendario">Agenda semanal</LinkButton>

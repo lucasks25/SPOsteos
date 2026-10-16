@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CabecalhoImpresso } from "@/components/marca";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -60,6 +61,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
 
       {/* Cabeçalho do vale impresso */}
       <div className="mb-4 hidden print:block">
+        <CabecalhoImpresso />
         <h1 className="text-xl font-bold">Vale de remessa em consignação — REM-{r.id}</h1>
         <p className="text-sm">Emitido em {dateTime(new Date())}</p>
       </div>
@@ -73,7 +75,7 @@ export default async function RemessaPage({ params }: { params: Promise<{ id: st
               ["Kit / caixa", r.kit ? `${r.kit.codigo} — ${r.kit.descricao}` : "—"],
               [
                 "Cirurgia",
-                r.cirurgia ? (
+                r.cirurgia && user.perfil === "QUALIDADE" ? `CIR-${r.cirurgia.numero} · ${dateTime(r.cirurgia.dataHora)}` : r.cirurgia ? (
                   <Link href={`/comercial/cirurgias/${r.cirurgia.id}`} className="text-teal-700 hover:underline print:text-black print:no-underline">
                     CIR-{r.cirurgia.numero} · {dateTime(r.cirurgia.dataHora)}
                   </Link>

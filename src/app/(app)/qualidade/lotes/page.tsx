@@ -55,10 +55,10 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
     <>
       <PageHeader
         title="Lotes e validades"
-        subtitle="Acompanhe lotes, status de qualidade e vencimentos."
+        subtitle="Para a Qualidade: acompanhe os lotes, a situação de qualidade de cada um e os vencimentos."
         actions={
           vencidosLiberados > 0 ? (
-            <ActionButton action={marcarVencidos} variant="danger" confirm={`Marcar ${vencidosLiberados} lote(s) liberado(s) vencido(s) como VENCIDO?`}>
+            <ActionButton action={marcarVencidos} variant="danger" confirm={`Marcar ${vencidosLiberados} lote(s) liberado(s) vencido(s) como vencido(s)?`}>
               Marcar {vencidosLiberados} vencido(s)
             </ActionButton>
           ) : undefined

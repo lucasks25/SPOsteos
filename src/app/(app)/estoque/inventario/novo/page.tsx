@@ -10,7 +10,7 @@ export default async function NovoInventarioPage() {
   const hospitais = await db.hospital.findMany({ where: { ativo: true }, select: { id: true, razaoSocial: true, nomeFantasia: true }, orderBy: { razaoSocial: "asc" } });
   return (
     <>
-      <PageHeader title="Novo inventário de consignado" subtitle="Tira uma foto do saldo atual do hospital. Os movimentos feitos depois da foto são avisados no fechamento." />
+      <PageHeader title="Novo inventário de consignado" subtitle="Registra o saldo atual do hospital para você contar o material. Os movimentos feitos depois da foto são avisados no fechamento." />
       <Card title="Hospital" icon="predio">
         <Form action={criarInventarioAction} submitLabel="Criar inventário">
           <Select label="Hospital *" name="hospitalId" required options={hospitais.map((h) => ({ value: h.id, label: h.nomeFantasia ?? h.razaoSocial }))} />

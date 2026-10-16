@@ -9,7 +9,8 @@ import { PERFIS_VER } from "../_lib/perfis";
 type SP = { local?: string; q?: string; status?: string };
 
 export default async function SaldosPage({ searchParams }: { searchParams: Promise<SP> }) {
-  await requireUser(PERFIS_VER);
+  const user = await requireUser(PERFIS_VER);
+  const verLote = ["ADMIN", "ESTOQUE", "QUALIDADE"].includes(user.perfil); // a tela do lote é da Qualidade
   const sp = await searchParams;
   const [locais, saldos] = await Promise.all([
     db.localEstoque.findMany({ orderBy: [{ tipo: "asc" }, { nome: "asc" }] }),
@@ -49,7 +50,7 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader title="Saldos por local" subtitle="Estoque próprio, em quarentena e consignado nos hospitais, por produto e lote." />
+      <PageHeader title="Saldos por local" subtitle="Consulta do Estoque, Comercial e Qualidade: o que há no depósito, em quarentena e consignado nos hospitais, por produto e lote." />
       <KpiGrid>
         <Stat label="Unidades" value={num(saldos.reduce((n, s) => n + s.quantidade, 0))} hint={`${grupos.size} produto(s)`} />
         <Stat label="Valor a custo médio" value={money(valorTotal)} />
@@ -98,7 +99,7 @@ export default async function SaldosPage({ searchParams }: { searchParams: Promi
                   )}
                 </Td>
                 <Td className="font-mono text-xs">
-                  <Link href={`/qualidade/lotes/${s.loteId}`} className="text-teal-700 hover:underline">{s.lote.numero}</Link>
+                  {verLote ? <Link href={`/qualidade/lotes/${s.loteId}`} className="text-teal-700 hover:underline">{s.lote.numero}</Link> : s.lote.numero}
                 </Td>
                 <Td>
                   {date(s.lote.validade)} {dias < 0 ? <Badge color="red">vencido</Badge> : dias <= 30 ? <Badge color="yellow">{dias}d</Badge> : null}

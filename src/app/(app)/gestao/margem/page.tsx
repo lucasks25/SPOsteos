@@ -63,7 +63,7 @@ export default async function MargemPage({ searchParams }: { searchParams: Promi
   const t = d.total;
   return (
     <>
-      <PageHeader title="Margem de contribuição" subtitle="Pedidos faturados no período (data da NF). Custo = custo médio congelado em cada item na hora do faturamento. Clique no título de uma coluna para ordenar." />
+      <PageHeader title="Margem de contribuição" subtitle="Relatório de leitura: quanto sobra em cada venda. Considera os pedidos faturados no período (data da nota fiscal); o custo é o custo médio do produto no momento do faturamento. Clique no título de uma coluna para ordenar." />
       <KpiGrid cols={5}>
         <Stat label="Receita" value={money(t.receita)} hint={`${num(t.pedidos)} pedido(s)`} />
         <Stat label="Custo" value={money(t.custo)} />

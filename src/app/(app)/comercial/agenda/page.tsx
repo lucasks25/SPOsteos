@@ -51,7 +51,7 @@ export default async function AgendaPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader
         title="Agenda cirúrgica"
-        subtitle={`Semana de ${fmt(dias[0])} a ${fmt(dias[6])} — navegue pelas semanas ou filtre por hospital e representante`}
+        subtitle={`Semana de ${fmt(dias[0])} a ${fmt(dias[6])} — o Comercial acompanha as cirurgias agendadas; navegue pelas semanas ou filtre por hospital e representante`}
         actions={
           <>
             <Link href={qs(somaDias(seg, -7))} className={btn.secondary}><Icon name="direita" size={16} className="rotate-180" aria-hidden="true" />Anterior</Link>

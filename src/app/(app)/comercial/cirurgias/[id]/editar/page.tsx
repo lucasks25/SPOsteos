@@ -15,7 +15,7 @@ export default async function EditarCirurgiaPage({ params }: { params: Promise<{
     <>
       <PageHeader
         title={`Editar cirurgia CIR-${cirurgia.numero}`}
-        subtitle={cirurgia.paciente}
+        subtitle={`Comercial: corrija os dados do agendamento de ${cirurgia.paciente}.`}
         actions={<LinkButton href={`/comercial/cirurgias/${id}`} variant="secondary">Voltar</LinkButton>}
       />
       <Card>

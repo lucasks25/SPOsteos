@@ -38,7 +38,7 @@ export default async function QuarentenaPage({ searchParams }: { searchParams: P
 
   return (
     <>
-      <PageHeader title="Quarentena e inspeção" subtitle="Lotes recebidos que aguardam inspeção de qualidade." />
+      <PageHeader title="Quarentena e inspeção" subtitle="Para a Qualidade: lotes recebidos que aguardam inspeção antes de serem liberados para uso." />
       <KpiGrid cols={3}>
         <Stat label="Lotes aguardando" value={num(lotes.length)} tone={lotes.length ? "warn" : "default"} />
         <Stat label="Unidades em quarentena" value={num(lotes.reduce((s, l) => s + l.saldos.reduce((a, x) => a + x.quantidade, 0), 0))} />

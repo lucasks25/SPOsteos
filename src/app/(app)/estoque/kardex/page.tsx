@@ -13,7 +13,8 @@ const COR: Record<string, BadgeColor> = { ENTRADA: "green", REMESSA: "blue", RET
 type SP = { produto?: string; lote?: string; local?: string; tipo?: string; de?: string; ate?: string; page?: string };
 
 export default async function KardexPage({ searchParams }: { searchParams: Promise<SP> }) {
-  await requireUser(PERFIS_VER);
+  const user = await requireUser(PERFIS_VER);
+  const verLote = ["ADMIN", "ESTOQUE", "QUALIDADE"].includes(user.perfil); // a tela do lote é da Qualidade
   const sp = await searchParams;
   const page = Math.max(1, Number(sp.page) || 1);
   const where = {
@@ -62,7 +63,7 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader title="Kardex" subtitle="Histórico de movimentações por lote. Filtre por produto e local para ver o saldo corrente." />
+      <PageHeader title="Kardex" subtitle="Histórico de entradas e saídas por lote, para consulta do Estoque, Comercial e Qualidade. Filtre por produto e local para ver o saldo corrente." />
       <KpiGrid cols={3}>
         <Stat label="Movimentos no filtro" value={num(total)} hint={`página ${page} de ${paginas}`} />
         <Stat label="Entradas na página" value={num(movs.filter((m) => m.tipo === "ENTRADA").reduce((n, m) => n + m.quantidade, 0))} hint={<span className="text-emerald-700">unidades</span>} />
@@ -99,7 +100,7 @@ export default async function KardexPage({ searchParams }: { searchParams: Promi
                 <div className="font-mono text-[11px] text-slate-500">{m.produto.codigo}</div>
               </Td>
               <Td className="font-mono text-xs">
-                <Link href={`/qualidade/lotes/${m.loteId}`} className="text-teal-700 hover:underline">{m.lote.numero}</Link>
+                {verLote ? <Link href={`/qualidade/lotes/${m.loteId}`} className="text-teal-700 hover:underline">{m.lote.numero}</Link> : m.lote.numero}
               </Td>
               <Td>
                 <div>{m.origem?.nome ?? "—"}</div>

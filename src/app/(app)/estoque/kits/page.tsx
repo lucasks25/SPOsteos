@@ -12,7 +12,7 @@ export default async function KitsPage() {
     <>
       <PageHeader
         title="Caixas e kits"
-        subtitle="Conjuntos padrão de implantes e instrumentais enviados aos hospitais."
+        subtitle="Conjuntos padrão de implantes e instrumentais que o Estoque monta e envia aos hospitais."
         actions={podeEditar(user.perfil) && <LinkButton href="/estoque/kits/novo" icon="mais">Novo kit</LinkButton>}
       />
       <KpiGrid cols={3}>

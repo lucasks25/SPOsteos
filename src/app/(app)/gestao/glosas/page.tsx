@@ -38,7 +38,7 @@ export default async function GlosasPage({ searchParams }: { searchParams: Promi
 
   return (
     <>
-      <PageHeader title="Glosas por convênio e motivo" subtitle="Valor glosado bruto das glosas lançadas no período (inclui as revertidas depois; o líquido aparece à parte) sobre o faturado no mesmo período (data da NF). Como a glosa costuma chegar semanas depois da nota, o percentual de períodos curtos é aproximado." />
+      <PageHeader title="Glosas por convênio e motivo" subtitle="Relatório de leitura para Comercial e Financeiro: quanto os convênios glosaram (recusaram) e por qual motivo. Valor glosado bruto das glosas lançadas no período (inclui as revertidas depois; o líquido aparece à parte) sobre o faturado no mesmo período (data da NF). Como a glosa costuma chegar semanas depois da nota, o percentual de períodos curtos é aproximado." />
       <KpiGrid cols={4}>
         <Stat label="Valor glosado" value={money(d.glosado)} tone={d.glosado > 0 ? "warn" : "default"} hint={`${num(d.qtd)} glosa(s) · líquido ${money(d.liquido)}`} />
         <Stat label="% do faturado" value={fmtPct(d.pct)} hint={`faturado ${money(d.faturado)} (${num(d.pedidos)} pedido(s))`} />

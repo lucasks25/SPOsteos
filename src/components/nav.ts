@@ -20,13 +20,14 @@ export const NAV: NavGroup[] = [
   },
   {
     label: "Estoque",
-    perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"],
+    // o Financeiro só consulta o inventário consignado (valor a cobrar); o resto é do Estoque, com leitura para Comercial e Qualidade
+    perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE", "FINANCEIRO"],
     items: [
-      { href: "/estoque/saldos", label: "Saldos por local" },
-      { href: "/estoque/remessas", label: "Remessas / vales" },
-      { href: "/estoque/kits", label: "Caixas e kits" },
-      { href: "/estoque/kardex", label: "Kardex" },
-      { href: "/estoque/ajustes", label: "Ajustes e perdas" },
+      { href: "/estoque/saldos", label: "Saldos por local", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
+      { href: "/estoque/remessas", label: "Remessas / vales", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
+      { href: "/estoque/kits", label: "Caixas e kits", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
+      { href: "/estoque/kardex", label: "Kardex (histórico de movimentos)", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
+      { href: "/estoque/ajustes", label: "Ajustes e perdas", perfis: ["ESTOQUE", "COMERCIAL", "QUALIDADE"] },
       { href: "/estoque/inventario", label: "Inventário consignado" },
     ],
   },
@@ -34,7 +35,7 @@ export const NAV: NavGroup[] = [
     label: "Qualidade",
     perfis: ["QUALIDADE", "ESTOQUE"],
     items: [
-      { href: "/qualidade/quarentena", label: "Quarentena / inspeção" },
+      { href: "/qualidade/quarentena", label: "Quarentena e inspeção" },
       { href: "/qualidade/lotes", label: "Lotes e validades" },
       { href: "/qualidade/rastreabilidade", label: "Rastreabilidade" },
       { href: "/qualidade/registros", label: "Registros ANVISA" },

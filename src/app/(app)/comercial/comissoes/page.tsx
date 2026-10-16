@@ -84,7 +84,7 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
 
   return (
     <>
-      <PageHeader title="Comissões e margem" subtitle="Pedidos de venda faturados no período (data da NF)" />
+      <PageHeader title="Comissões e margem" subtitle="Para o Comercial e o Financeiro: quanto foi vendido, o custo, a margem e a comissão dos representantes, com base nos pedidos faturados no período (data da nota fiscal)." />
       <KpiGrid>
         <Stat label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
         <Stat label="Custo" value={money(tot.custo)} />

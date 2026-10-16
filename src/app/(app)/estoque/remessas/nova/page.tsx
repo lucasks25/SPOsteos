@@ -46,7 +46,7 @@ export default async function NovaRemessaPage({ searchParams }: { searchParams: 
     <>
       <PageHeader
         title="Nova remessa"
-        subtitle="Separação de materiais em consignação. Os lotes são sugeridos por FEFO (vence primeiro, sai primeiro)."
+        subtitle="Separação de materiais em consignação. Os lotes são sugeridos pela validade: o que vence primeiro sai primeiro."
       />
       <Card title="Separação de materiais" icon="caminhao">
         <RemessaForm

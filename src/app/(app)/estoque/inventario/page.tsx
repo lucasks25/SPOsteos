@@ -47,7 +47,7 @@ export default async function InventariosPage({ searchParams }: { searchParams: 
     <>
       <PageHeader
         title="Inventário de consignado"
-        subtitle="Contagem física do material nos hospitais × saldo do sistema"
+        subtitle="Para o Estoque: contagem física do material nos hospitais comparada com o saldo do sistema."
         actions={podeEditar(user.perfil) && <LinkButton href="/estoque/inventario/novo" icon="mais">Novo inventário</LinkButton>}
       />
       <KpiGrid cols={3}>

@@ -59,7 +59,7 @@ export default async function SugestaoPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Sugestão de compra"
-        subtitle={`Quanto comprar de cada produto: mínimo + consumo médio mensal (últimos ${DIAS_CONSUMO} dias) − disponível − pendente em pedidos.`}
+        subtitle={`Para Compras: quanto comprar de cada produto = estoque mínimo + consumo médio mensal (últimos ${DIAS_CONSUMO} dias) − o que já está disponível − o que já foi pedido.`}
         actions={comSugestao.length > 0 && <LinkButton href={urlPedido(comSugestao)}>Gerar pedido com todas as sugestões</LinkButton>}
       />
       <KpiGrid cols={3}>

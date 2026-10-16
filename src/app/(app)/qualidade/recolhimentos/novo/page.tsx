@@ -26,7 +26,7 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
 
   return (
     <>
-      <PageHeader title="Novo recolhimento" subtitle="Ao abrir, os lotes escolhidos ficam BLOQUEADOS (fora de remessa e de novo consumo) e o sistema fotografa onde há saldo e quais cirurgias usaram o lote." />
+      <PageHeader title="Novo recolhimento" subtitle="Ao abrir, os lotes escolhidos ficam bloqueados (não saem em remessa nem são consumidos) e o sistema fotografa onde há saldo e quais cirurgias usaram o lote." />
       <Filtros limparHref="/qualidade/recolhimentos/novo">
         <label className="block">
           <span className="mb-1 block text-xs text-slate-700">Buscar lote, série, produto ou código</span>

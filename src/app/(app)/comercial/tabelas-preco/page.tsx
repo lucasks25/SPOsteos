@@ -12,7 +12,7 @@ export default async function TabelasPage() {
   const semHospital = tabelas.filter((t) => t._count.hospitais === 0).length;
   return (
     <>
-      <PageHeader title="Tabelas de preço" subtitle="Preço de venda por hospital. Sem item na tabela, vale o preço base do produto." actions={<LinkButton href="/comercial/tabelas-preco/nova" icon="mais">Nova tabela</LinkButton>} />
+      <PageHeader title="Tabelas de preço" subtitle="Preço de venda por hospital, mantido pelo Comercial. Sem item na tabela, vale o preço base do produto." actions={<LinkButton href="/comercial/tabelas-preco/nova" icon="mais">Nova tabela</LinkButton>} />
       <KpiGrid cols={3}>
         <Stat label="Tabelas" value={num(tabelas.length)} />
         <Stat label="Vigentes" value={num(vigentes)} hint={<span className="text-emerald-700">em uso hoje</span>} />

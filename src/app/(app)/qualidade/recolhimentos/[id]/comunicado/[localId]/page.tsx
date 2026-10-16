@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { CabecalhoImpresso } from "@/components/marca";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
@@ -49,6 +50,7 @@ export default async function ComunicadoPage({ params }: { params: Promise<{ id:
       </div>
 
       <article className="space-y-4 border border-slate-300 bg-white p-6 text-[13px] print:border-0 print:p-0">
+        <CabecalhoImpresso />
         <header className="border-b-2 border-black pb-2">
           <h1 className="text-lg font-bold uppercase">Comunicado de recolhimento de produto</h1>
           <p>Documento {doc} · emitido em {dateTime(new Date())}</p>

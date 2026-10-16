@@ -28,7 +28,7 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
   const emAberto = pedidos.filter((p) => p.status === "ABERTO" || p.status === "PARCIAL");
   return (
     <>
-      <PageHeader title="Pedidos de compra" subtitle="Acompanhe compras nacionais e importações, do pedido ao recebimento." actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
+      <PageHeader title="Pedidos de compra" subtitle="Para Compras: acompanhe compras nacionais e importações, do pedido ao recebimento." actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
       <KpiGrid cols={4}>
         <Stat label="Pedidos listados" value={fmtNum(pedidos.length)} />
         <Stat label="Em aberto" value={fmtNum(emAberto.length)} tone={emAberto.length ? "warn" : "default"} hint="abertos ou parciais" />

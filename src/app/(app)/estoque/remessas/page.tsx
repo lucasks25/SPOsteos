@@ -13,6 +13,7 @@ const STATUS: StatusRemessa[] = ["ABERTA", "ENVIADA", "CONFERIDA", "CANCELADA"];
 export default async function RemessasPage({ searchParams }: { searchParams: Promise<{ status?: string; hospitalId?: string; q?: string; de?: string; ate?: string }> }) {
   const user = await requireUser(PERFIS_VER);
   const sp = await searchParams;
+  const verCirurgia = user.perfil !== "QUALIDADE"; // a cirurgia (dados de paciente) é do Comercial
   const status = STATUS.includes(sp.status as StatusRemessa) ? (sp.status as StatusRemessa) : undefined;
   const numero = sp.q ? Number(sp.q.replace(/\D/g, "")) : NaN;
 
@@ -52,7 +53,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
     <>
       <PageHeader
         title="Remessas / vales de consignação"
-        subtitle="Materiais enviados aos hospitais para cirurgias"
+        subtitle="Para o Estoque: materiais separados e enviados aos hospitais para cirurgias, e a conferência do que voltou."
         actions={podeEditar(user.perfil) && <LinkButton href="/estoque/remessas/nova" icon="mais">Nova remessa</LinkButton>}
       />
       <KpiGrid>
@@ -79,7 +80,7 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
         {aguardando.map((c) => (
           <tr key={c.id}>
             <Td>
-              <Link href={`/comercial/cirurgias/${c.id}`} className="font-medium text-teal-700 hover:underline">CIR-{c.numero}</Link>
+              {verCirurgia ? <Link href={`/comercial/cirurgias/${c.id}`} className="font-medium text-teal-700 hover:underline">CIR-{c.numero}</Link> : <span className="font-medium">CIR-{c.numero}</span>}
               <div className="text-xs text-slate-500">{c.paciente}</div>
             </Td>
             <Td>{dateTime(c.dataHora)}</Td>
