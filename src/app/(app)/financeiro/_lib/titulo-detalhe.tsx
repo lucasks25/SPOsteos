@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/form";
@@ -5,6 +6,7 @@ import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, Sta
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
+import { linhaDigitavel } from "./boleto";
 import { cancelarTitulo, estornarBaixaAction, estornarGlosaAction, recursoGlosaAction } from "./actions";
 import { ROTULO_CATEGORIA_GLOSA } from "./glosa-categorias";
 import { hojeUTC } from "@/lib/datas";
@@ -88,6 +90,17 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 ),
               ],
               ["Criado em", date(titulo.criadoEm)],
+              ...(tipo === "pagar" && titulo.codigoBarras
+                ? ([
+                    [
+                      "Boleto (linha digitável)",
+                      <span key="b" className="break-all font-mono text-[12px]">
+                        {linhaDigitavel(titulo.codigoBarras)}
+                        <span className="block text-[11px] text-slate-500">código de barras {titulo.codigoBarras} · valor no boleto {Number(titulo.codigoBarras.slice(9, 19)) ? money(Number(titulo.codigoBarras.slice(9, 19)) / 100) : "não informado"}</span>
+                      </span>,
+                    ],
+                  ] as [string, ReactNode][])
+                : []),
             ]}
           />
         </Card>

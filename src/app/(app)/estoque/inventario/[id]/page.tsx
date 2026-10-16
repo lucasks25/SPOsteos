@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { Badge, Card, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, cx } from "@/components/ui";
 import { ActionButton, Field, Form, Grid, Select, SubmitButton } from "@/components/form";
 import { date, dateTime, money, num, toNumber } from "@/lib/format";
-import { PERFIS_VER, podeEditar } from "../../_lib/perfis";
+import { PERFIS_VER_INVENTARIO, podeEditar } from "../../_lib/perfis";
 import { ROTULO_RESOLUCAO, type Resolucao } from "../../_lib/inventario";
 import { docInventario, revisarInventario } from "../../_lib/inventario-servico";
 import { cancelarInventarioAction, concluirContagemAction, fecharInventarioAction, incluirLoteAction, salvarContagemAction } from "../actions";
@@ -34,7 +34,7 @@ const SaldoAtual = ({ i }: { i: Item }) => (
 );
 
 export default async function InventarioPage({ params }: { params: Promise<{ id: string }> }) {
-  const user = await requireUser(PERFIS_VER);
+  const user = await requireUser(PERFIS_VER_INVENTARIO);
   const id = Number((await params).id);
   if (!Number.isInteger(id)) notFound();
   const rev = await revisarInventario(db, id).catch(() => null);

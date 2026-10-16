@@ -46,7 +46,7 @@ export function TituloForm({
             name="codigoBarras"
             defaultValue={t?.codigoBarras ? linhaDigitavel(t.codigoBarras) : ""}
             className="sm:col-span-3"
-            hint="Opcional. Com boleto, o SISPAG paga pelo código de barras; sem boleto, por TED/Pix para a conta do fornecedor."
+            hint="Opcional. Com boleto, o SISPAG paga pelo código de barras; sem boleto, por TED/Pix para a conta do fornecedor. O valor e o vencimento do boleto têm de ser os do título."
           />
         )}
       </Grid>
@@ -57,7 +57,7 @@ export function TituloForm({
 /** Baixa do título: valor (padrão = saldo), data (padrão = hoje), conta e forma. Aceita pagamento parcial. */
 export function BaixaForm({ tipo, titulo, hoje, contas }: { tipo: Tipo; titulo: TituloRow; hoje: Date; contas: { value: string; label: string }[] }) {
   return (
-    <Form action={baixarTitulo.bind(null, tipo, titulo.id)} submitLabel={TIPOS[tipo].baixaLabel}>
+    <Form action={baixarTitulo.bind(null, tipo, titulo.id)} submitLabel={TIPOS[tipo].baixaLabel} resetOnSuccess>
       <Grid cols={4}>
         <Field
           label={`Valor ${TIPOS[tipo].pagoLabel.toLowerCase()} (R$) *`}
