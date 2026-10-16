@@ -239,7 +239,7 @@ As rotas já estão no menu (`src/components/nav.ts`). Uma rota sem arquivo dá 
 Para cada cadastro: lista com busca, novo, editar, e ativar/inativar quando houver o campo `ativo`. Preferir inativar a excluir. Só excluir quando não houver relações; erros de FK devem virar mensagem amigável.
 1. **fabricantes**: nome, CNPJ, país.
 2. **fornecedores**: razão social, fantasia, CNPJ (validar dígitos; validador em `cadastros/_lib/documentos.ts`), IE, contato, cidade/UF, AFE ANVISA.
-3. **hospitais**: todos os campos + prazoPagamentoDias + tabela de preço. Ao criar, também cria o local consignado (`localDoHospital` dentro de uma transação). O detalhe mostra o estoque consignado (agrupado por produto, com lotes e validade), as últimas 10 cirurgias e o total em aberto a receber.
+3. **hospitais**: todos os campos + prazoPagamentoDias + tabela de preço. Ao criar, também cria o local consignado (`localDoHospital` dentro de uma transação). O detalhe é só o cadastro (cada módulo é dono das suas telas): mostra links só leitura, conforme o perfil, para as cirurgias (`/comercial/cirurgias?hospital=`), o estoque consignado (`/estoque/saldos?local=`) e as contas a receber (`/financeiro/receber?hospital=`) do hospital. Fornecedor, fabricante e produto trazem apenas o link "Ver documentos" (`/qualidade/documentos?fornecedorId|fabricanteId|produtoId=`); documentos são criados e editados só na Qualidade.
 4. **medicos**: nome, CRM+UF (único), especialidade, contato.
 5. **convenios**: nome, registro ANS, CNPJ.
 6. **procedimentos**: TUSS, descrição, especialidade + lista editável de materiais padrão (ProcedimentoItem).

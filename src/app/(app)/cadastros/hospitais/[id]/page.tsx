@@ -1,17 +1,17 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, KpiGrid, PageHeader, SectionTitle, Stat } from "@/components/ui";
+import { Badge, Card, PageHeader } from "@/components/ui";
 import { ActionButton } from "@/components/form";
-import { money, num, toNumber } from "@/lib/format";
+import { podeIrParaCirurgias, podeIrParaReceber, podeIrParaSaldos } from "../../_lib/permissoes";
 import { HospitalForm } from "../hospital-form";
 import { alternarAtivoHospital, excluirHospital } from "../actions";
-import { carregarConsignado, EstoqueConsignado, UltimasCirurgias } from "./paineis";
 
 export default async function HospitalPage({ params }: { params: Promise<{ id: string }> }) {
-  await requireUser();
+  const user = await requireUser();
   const { id } = await params;
-  const [hospital, tabelas, saldos, receber, vencidas] = await Promise.all([
+  const [hospital, tabelas, saldos] = await Promise.all([
     db.hospital.findUnique({
       where: { id },
       include: {
@@ -20,15 +20,16 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
       },
     }),
     db.tabelaPreco.findMany({ select: { id: true, nome: true }, orderBy: { nome: "asc" } }),
-    carregarConsignado(id),
-    db.contaReceber.aggregate({ where: { hospitalId: id, status: "ABERTO" }, _sum: { valor: true, valorBaixado: true }, _count: true }),
-    db.contaReceber.aggregate({ where: { hospitalId: id, status: "ABERTO", vencimento: { lt: new Date() } }, _sum: { valor: true, valorBaixado: true }, _count: true }),
+    db.saldo.count({ where: { local: { hospitalId: id }, quantidade: { gt: 0 } } }),
   ]);
   if (!hospital) notFound();
-  const totalConsignado = saldos.reduce((s, x) => s + x.quantidade, 0);
-  const produtosConsignados = new Set(saldos.map((s) => s.produtoId)).size;
   const c = hospital._count;
-  const podeExcluir = c.cirurgias + c.pedidos + c.orcamentos + c.contasReceber === 0 && saldos.length === 0;
+  const podeExcluir = c.cirurgias + c.pedidos + c.orcamentos + c.contasReceber === 0 && saldos === 0;
+  const links = [
+    podeIrParaCirurgias(user.perfil) && { href: `/comercial/cirurgias?hospital=${id}`, label: "Cirurgias deste hospital" },
+    hospital.local && podeIrParaSaldos(user.perfil) && { href: `/estoque/saldos?local=${hospital.local.id}`, label: "Estoque consignado" },
+    podeIrParaReceber(user.perfil) && { href: `/financeiro/receber?hospital=${id}`, label: "Contas a receber" },
+  ].filter((l): l is { href: string; label: string } => !!l);
 
   return (
     <>
@@ -47,35 +48,15 @@ export default async function HospitalPage({ params }: { params: Promise<{ id: s
           </>
         }
       />
-
-      <KpiGrid>
-        <Stat label="Itens consignados" value={num(totalConsignado)} hint={`${produtosConsignados} produto(s)`} />
-        <Stat label="Cirurgias" value={num(c.cirurgias)} />
-        <Stat label="A receber (aberto)" value={money(toNumber(receber._sum.valor) - toNumber(receber._sum.valorBaixado))} hint={`${receber._count} título(s)`} />
-        <Stat
-          label="Vencido"
-          value={money(toNumber(vencidas._sum.valor) - toNumber(vencidas._sum.valorBaixado))}
-          hint={`${vencidas._count} título(s)`}
-          tone={vencidas._count > 0 ? "danger" : "default"}
-        />
-      </KpiGrid>
-
-      <div className="grid gap-4 lg:grid-cols-3">
-        <div className="space-y-4 lg:col-span-2">
-          <Card title="Dados cadastrais">
-            <HospitalForm key={String(hospital.ativo)} hospital={hospital} tabelas={tabelas} />
-          </Card>
-          <section>
-            <SectionTitle>
-              Estoque consignado {hospital.local && <span className="font-normal text-slate-600">— {hospital.local.nome}</span>}
-            </SectionTitle>
-            <EstoqueConsignado saldos={saldos} />
-          </section>
-        </div>
-        <div>
-          <UltimasCirurgias hospitalId={id} />
-        </div>
-      </div>
+      <Card title="Dados cadastrais">
+        <HospitalForm key={String(hospital.ativo)} hospital={hospital} tabelas={tabelas} />
+      </Card>
+      {links.length > 0 && (
+        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-[13px] text-slate-600">
+          Ver em outros módulos:
+          {links.map((l) => <Link key={l.href} href={l.href} className="text-teal-700 hover:underline">{l.label}</Link>)}
+        </p>
+      )}
     </>
   );
 }
