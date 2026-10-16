@@ -1,5 +1,5 @@
 import { ActionButton } from "@/components/form";
-import { Badge, Card, StatusBadge } from "@/components/ui";
+import { Badge, Card, StatusBadge, Td } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
@@ -68,28 +68,31 @@ export async function AutorizacaoCard({
                 </div>
                 {g.observacao && <p className="border-b border-slate-100 px-3 py-1.5 text-xs text-slate-600">{g.observacao}</p>}
                 {g.itens.length > 0 ? (
-                  <table className="min-w-full text-sm">
-                    <thead className="border-b border-slate-200 text-xs font-bold uppercase tracking-[.04em] text-slate-600">
-                      <tr>
-                        <th scope="col" className="px-3 py-1.5 text-left">Produto</th>
-                        <th scope="col" className="px-3 py-1.5 text-right">Solicitado</th>
-                        <th scope="col" className="px-3 py-1.5 text-right">Autorizado</th>
-                        <th scope="col" className="px-3 py-1.5 text-right">Valor autorizado</th>
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-slate-100">
-                      {g.itens.map((i) => (
-                        <tr key={i.id}>
-                          <td className="px-3 py-1.5">
-                            {i.produto.descricao} <span className="font-mono text-xs text-slate-500">{i.produto.codigo}</span>
-                          </td>
-                          <td className="tnum px-3 py-1.5 text-right">{i.quantidadeSolicitada}</td>
-                          <td className="tnum px-3 py-1.5 text-right font-semibold">{i.quantidadeAutorizada}</td>
-                          <td className="tnum px-3 py-1.5 text-right">{i.valorAutorizado ? money(toNumber(i.valorAutorizado)) : "—"}</td>
+                  <div className="tabela-rolagem">
+                    {/* mesmo padrão visual do Table (ui.tsx), sem o cartão: já está dentro da caixa da guia */}
+                    <table className="min-w-full text-sm">
+                      <thead>
+                        <tr>
+                          <th scope="col" className="h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500 first:pl-4 last:pr-4 text-left">Produto</th>
+                          <th scope="col" className="h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500 first:pl-4 last:pr-4 text-right">Solicitado</th>
+                          <th scope="col" className="h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500 first:pl-4 last:pr-4 text-right">Autorizado</th>
+                          <th scope="col" className="h-10 whitespace-nowrap border-b border-slate-200 bg-slate-50 px-3 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500 first:pl-4 last:pr-4 text-right">Valor autorizado</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
+                      </thead>
+                      <tbody className="divide-y divide-slate-100 [&>tr]:h-10">
+                        {g.itens.map((i) => (
+                          <tr key={i.id}>
+                            <Td className="whitespace-normal">
+                              {i.produto.descricao} <span className="font-mono text-xs text-slate-500">{i.produto.codigo}</span>
+                            </Td>
+                            <Td className="tnum text-right">{i.quantidadeSolicitada}</Td>
+                            <Td className="tnum text-right font-semibold">{i.quantidadeAutorizada}</Td>
+                            <Td className="tnum text-right">{i.valorAutorizado ? money(toNumber(i.valorAutorizado)) : "—"}</Td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
                 ) : (
                   <p className="px-3 py-2 text-xs text-slate-600">Guia sem itens.</p>
                 )}

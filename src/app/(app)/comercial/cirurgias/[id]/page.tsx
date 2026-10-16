@@ -214,7 +214,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
           )}
           {pode(["COMERCIAL", "ESTOQUE"]) && (
             <div className="mt-4 border-t border-slate-200 pt-4">
-              <Form action={enviarAnexo.bind(null, c.id)} submitLabel="Enviar anexo" resetOnSuccess>
+              <Form action={enviarAnexo.bind(null, c.id)} submitLabel="Enviar anexo" submitVariant="secondary" resetOnSuccess>
                 <Field label="Arquivo" name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" required />
               </Form>
             </div>

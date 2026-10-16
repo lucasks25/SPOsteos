@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
-import { btn } from "@/components/ui";
+import { Table, Td, btn } from "@/components/ui";
 import { salvarAutorizacao } from "../autorizacao-actions";
 
 export type ProdutoOpt = { id: string; codigo: string; descricao: string };
@@ -88,7 +88,7 @@ export function AutorizacaoForm({
       <div>
         <div className="mb-2 flex flex-wrap items-end gap-2">
           <label className="block min-w-64 flex-1">
-            <span className="mb-1 block text-xs text-slate-700">Adicionar item à guia</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Adicionar item à guia</span>
             <select value={addProduto} onChange={(e) => setAddProduto(e.target.value)} className={inputCls}>
               <option value="">Selecione...</option>
               {produtos.filter((p) => !rows.some((r) => r.produtoId === p.id)).map((p) => (
@@ -99,55 +99,43 @@ export function AutorizacaoForm({
             </select>
           </label>
           <label className="block w-24">
-            <span className="mb-1 block text-xs text-slate-700">Solicitado</span>
+            <span className="mb-1.5 block text-[0.8125rem] font-medium text-slate-700">Solicitado</span>
             <input type="number" min={1} value={addQtd} onChange={(e) => setAddQtd(Number(e.target.value))} className={`${inputCls} text-right`} />
           </label>
           <button type="button" onClick={adicionar} className={btn.secondary}>
             Adicionar
           </button>
         </div>
-        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
-          <table className="min-w-full text-sm">
-            <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-[.04em] text-slate-600">
-              <tr>
-                <th scope="col" className="px-3 py-2 text-left">Produto</th>
-                <th scope="col" className="w-28 px-3 py-2 text-right">Solicitado</th>
-                <th scope="col" className="w-28 px-3 py-2 text-right">Autorizado</th>
-                <th scope="col" className="w-36 px-3 py-2 text-right">Valor autorizado (R$)</th>
-                <th scope="col" className="w-20"><span className="sr-only">Ações</span></th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-200 [&>tr]:h-9">
-              {rows.length === 0 && (
-                <tr>
-                  <td colSpan={5} className="px-3 py-6 text-center text-slate-500">Nenhum item na guia. Inclua os materiais solicitados ao convênio.</td>
-                </tr>
-              )}
+        <Table
+          titulo="Itens da guia"
+          contagem={rows.length}
+          head={["Produto", "Solicitado", "Autorizado", "Valor autorizado (R$)", <span key="a" className="sr-only">Ações</span>]}
+          empty={rows.length === 0}
+          emptyText="Nenhum item na guia. Inclua os materiais solicitados ao convênio."
+        >
               {rows.map((r) => {
                 const p = mapa.get(r.produtoId);
                 return (
                   <tr key={r.key}>
-                    <td className="px-3 py-1.5">{p ? `${p.codigo} — ${p.descricao}` : r.produtoId}</td>
-                    <td className="px-3 py-1.5">
+                    <Td className="whitespace-normal">{p ? `${p.codigo} — ${p.descricao}` : r.produtoId}</Td>
+                    <Td className="w-28 text-right">
                       <input type="number" min={1} aria-label={`Quantidade solicitada de ${p?.descricao ?? "item"}`} value={r.quantidadeSolicitada} onChange={(e) => atualizar(r.key, { quantidadeSolicitada: Number(e.target.value) })} className={`${inputCls} text-right`} />
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <input type="number" min={0} disabled={status === "SOLICITADA" || status === "NEGADA"} aria-label={`Quantidade autorizada de ${p?.descricao ?? "item"}`} value={status === "SOLICITADA" || status === "NEGADA" ? 0 : r.quantidadeAutorizada} onChange={(e) => atualizar(r.key, { quantidadeAutorizada: Number(e.target.value) })} className={`${inputCls} text-right disabled:bg-slate-50 disabled:text-slate-500`} />
-                    </td>
-                    <td className="px-3 py-1.5">
-                      <input type="number" min={0} step="0.01" disabled={status === "SOLICITADA" || status === "NEGADA"} aria-label={`Valor autorizado de ${p?.descricao ?? "item"}`} value={r.valorAutorizado ?? ""} onChange={(e) => atualizar(r.key, { valorAutorizado: e.target.value === "" ? null : Number(e.target.value) })} className={`${inputCls} text-right disabled:bg-slate-50`} />
-                    </td>
-                    <td className="px-3 py-1.5 text-right">
+                    </Td>
+                    <Td className="w-28 text-right">
+                      <input type="number" min={0} disabled={status === "SOLICITADA" || status === "NEGADA"} aria-label={`Quantidade autorizada de ${p?.descricao ?? "item"}`} value={status === "SOLICITADA" || status === "NEGADA" ? 0 : r.quantidadeAutorizada} onChange={(e) => atualizar(r.key, { quantidadeAutorizada: Number(e.target.value) })} className={`${inputCls} text-right`} />
+                    </Td>
+                    <Td className="w-36 text-right">
+                      <input type="number" min={0} step="0.01" disabled={status === "SOLICITADA" || status === "NEGADA"} aria-label={`Valor autorizado de ${p?.descricao ?? "item"}`} value={r.valorAutorizado ?? ""} onChange={(e) => atualizar(r.key, { valorAutorizado: e.target.value === "" ? null : Number(e.target.value) })} className={`${inputCls} text-right`} />
+                    </Td>
+                    <Td className="text-right">
                       <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className="inline-flex h-7 items-center rounded px-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">
                         Remover
                       </button>
-                    </td>
+                    </Td>
                   </tr>
                 );
               })}
-            </tbody>
-          </table>
-        </div>
+        </Table>
       </div>
     </Form>
   );
