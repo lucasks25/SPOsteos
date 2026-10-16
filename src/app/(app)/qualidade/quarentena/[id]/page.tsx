@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { LOCAIS } from "@/lib/estoque";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
-import { Badge, Card, Dl, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
+import { Aviso, Badge, Card, Dl, LinkButton, PageHeader, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, num } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
 import { PERFIS_QUALIDADE } from "../../_lib/perfis";
@@ -32,6 +32,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
       <PageHeader
         title={`Inspeção do lote ${lote.numero}`}
         subtitle={`${lote.produto.codigo} — ${lote.produto.descricao}`}
+        voltar={{ href: "/qualidade/quarentena", label: "Quarentena e inspeção" }}
         actions={
           <LinkButton href={`/qualidade/lotes/${lote.id}`} variant="secondary">
             Ver detalhes do lote
@@ -39,7 +40,7 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
         }
       />
       <div className="space-y-4">
-        <Card title="Dados do lote">
+        <Card title="Dados do lote" icon="frasco">
           <Dl
             items={[
               ["Status", <StatusBadge key="s" status={lote.status} />],
@@ -54,13 +55,13 @@ export default async function InspecaoPage({ params }: { params: Promise<{ id: s
             ]}
           />
           {!podeLiberar && (
-            <div className="mt-4 rounded border border-rose-200 bg-rose-50 px-3 py-2 text-[13px] text-rose-700">
+            <Aviso tom="erro" className="mt-4">
               Este lote não pode ser liberado: {vencido ? "lote vencido" : "registro ANVISA do produto vencido"}. Registre como não conforme ou bloqueado.
-            </div>
+            </Aviso>
           )}
         </Card>
 
-        <Card title="Registrar inspeção">
+        <Card title="Registrar inspeção" icon="lista">
           <Form action={inspecionarLote.bind(null, lote.id)} submitLabel="Registrar inspeção">
             <div className="flex flex-wrap gap-6">
               <Field label="Embalagem íntegra" name="embalagemOk" type="checkbox" defaultChecked />

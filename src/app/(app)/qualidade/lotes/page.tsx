@@ -65,19 +65,19 @@ export default async function LotesPage({ searchParams }: { searchParams: Promis
         }
       />
       <KpiGrid cols={4}>
-        <Stat label="Lotes listados" value={num(lotes.length)} />
-        <Stat label="Em quarentena" value={num(lotes.filter((l) => l.status === "QUARENTENA").length)} tone={lotes.some((l) => l.status === "QUARENTENA") ? "warn" : "default"} />
-        <Stat label="Vencidos" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} hint={vencidosLiberados ? `${vencidosLiberados} ainda liberado(s)` : undefined} />
-        <Stat label="Vencem em 90 dias" value={num(lotes.filter((l) => l.validade >= hoje && diasAte(l.validade) <= 90).length)} />
+        <Stat icon="frasco" label="Lotes listados" value={num(lotes.length)} />
+        <Stat icon="alerta" label="Em quarentena" value={num(lotes.filter((l) => l.status === "QUARENTENA").length)} tone={lotes.some((l) => l.status === "QUARENTENA") ? "warn" : "default"} />
+        <Stat icon="calendario" label="Vencidos" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} hint={vencidosLiberados ? `${vencidosLiberados} ainda liberado(s)` : undefined} />
+        <Stat icon="calendario" label="Vencem em 90 dias" value={num(lotes.filter((l) => l.validade >= hoje && diasAte(l.validade) <= 90).length)} />
       </KpiGrid>
       <Filtros limparHref="/qualidade/lotes">
         <FiltroInput label="Busca" name="q" defaultValue={sp.q} placeholder="Lote, série, produto ou GTIN" className="w-64" />
         <FiltroSelect label="Status" name="status" defaultValue={status ?? ""} todos="Todos os status" options={STATUS.map((s) => ({ value: s, label: s.replaceAll("_", " ").toLowerCase() }))} />
         <FiltroInput label="Vence em até (dias)" name="dias" type="number" defaultValue={sp.dias} className="w-28" />
-        <label className="flex h-8 items-center gap-1.5 text-[13px] text-slate-700">
+        <label className="flex h-8 items-center gap-1.5 text-sm text-slate-700">
           <input type="checkbox" name="vencidos" value="1" defaultChecked={!!sp.vencidos} /> Vencidos
         </label>
-        <label className="flex h-8 items-center gap-1.5 text-[13px] text-slate-700">
+        <label className="flex h-8 items-center gap-1.5 text-sm text-slate-700">
           <input type="checkbox" name="comSaldo" value="1" defaultChecked={!!sp.comSaldo} /> Somente com saldo
         </label>
       </Filtros>

@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
+import { Aviso } from "@/components/ui";
 import { ESCOPOS, mesmoAlvo, ROTULO_ESCOPO, ROTULO_TIPO, TIPOS, type EscopoDoc, type TipoDoc } from "../_lib/documentos";
 import { criarDocumentoAction, editarDocumentoAction } from "./actions";
 
@@ -54,12 +55,12 @@ export function DocumentoNovoForm({ fornecedores, fabricantes, produtos, candida
         <Field label="Validade" name="validade" type="date" hint="Deixe em branco se o documento não vence" />
       </Grid>
       {iguais.length > 0 && (
-        <div className="rounded border border-amber-200 bg-amber-50 p-3">
-          <p className="mb-2 text-[13px] text-amber-800">
+        <Aviso tom="alerta">
+          <p className="mb-2">
             Já existe(m) {iguais.length} documento(s) vigente(s) do mesmo tipo e vínculo. Se este é a renovação, escolha qual ele substitui: o anterior fica no histórico, marcado como substituído.
           </p>
           <Select key={iguais.map((c) => c.id).join(",")} label="Substitui o documento" name="substituiId" defaultValue={padrao} placeholder="Não substituir (manter os dois)" options={iguais.map((c) => ({ value: c.id, label: c.rotulo }))} />
-        </div>
+        </Aviso>
       )}
       <TextArea label="Observação" name="observacao" maxLength={1000} />
       <Field label="Arquivo (opcional)" name="arquivo" type="file" accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png" hint="PDF, JPG ou PNG até 10 MB. Novas versões podem ser enviadas depois, no detalhe." />

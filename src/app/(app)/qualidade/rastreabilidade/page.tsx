@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { requireUser } from "@/lib/auth";
-import { Badge, btn, Card, Dl, EmptyState, PageHeader, SearchBar, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
+import { Aviso, Badge, btn, Card, Dl, EmptyState, PageHeader, SearchBar, SectionTitle, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { PERFIS_QUALIDADE } from "../_lib/perfis";
 import { PrintButton } from "@/components/print-button";
@@ -36,10 +36,10 @@ export default async function RastreabilidadePage({ searchParams }: { searchPara
           Busca: “{q}” · Emitido em {dateTime(new Date())} por {user.nome}
         </p>
       </div>
-      {q && lotes.length === 0 && <div className="rounded border border-slate-200 bg-white px-4 py-12 shadow-sm"><EmptyState text={`Nenhum lote encontrado para “${q}”. Confira o número do lote, a série, o GTIN ou o código.`} icon="busca" /></div>}
-      {truncado && <p className="mb-4 text-[13px] text-amber-700">Muitos lotes encontrados — exibindo os 30 primeiros. Refine a busca.</p>}
+      {q && lotes.length === 0 && <div className="rounded-xl border border-slate-200 bg-white px-4 py-12 shadow-sm"><EmptyState text={`Nenhum lote encontrado para “${q}”. Confira o número do lote, a série, o GTIN ou o código.`} icon="busca" /></div>}
+      {truncado && <Aviso tom="alerta" className="mb-4">Muitos lotes encontrados — exibindo os 30 primeiros. Refine a busca.</Aviso>}
       {lotes.length > 1 && (
-        <p className="mb-4 text-[13px] text-slate-600 print:hidden">{lotes.length} lotes encontrados.</p>
+        <p className="mb-4 text-sm text-slate-600 print:hidden">{lotes.length} lotes encontrados.</p>
       )}
       <div className="space-y-10">
         {lotes.map((r) => (
@@ -66,7 +66,7 @@ function LoteRastreio({ r, verCompras }: { r: Rastreio; verCompras: boolean }) {
           Abrir lote
         </Link>
       </div>
-      <Card title="Identificação">
+      <Card title="Identificação" icon="etiqueta">
         <Dl
           items={[
             ["Produto", `${lote.produto.codigo} — ${lote.produto.descricao}`],

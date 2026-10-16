@@ -53,17 +53,20 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
       <PageHeader
         title={d.titulo}
         subtitle={`${ROTULO_TIPO[d.tipo]} · ${ROTULO_ESCOPO[d.escopo]}`}
+        voltar={{ href: "/qualidade/documentos", label: "Documentos e licenças" }}
         actions={
           <>
             {d.substituidoPorId ? <Badge>substituído</Badge> : !d.ativo ? <Badge>inativo</Badge> : <SituacaoBadge validade={d.validade} hoje={hoje} />}
             {pode && vigenteNoCadastro && <LinkButton href={`/qualidade/documentos/novo?renovar=${d.id}`} icon="mais">Renovar</LinkButton>}
             {pode && <LinkButton href={`/qualidade/documentos/${d.id}/editar`} variant="secondary">Editar</LinkButton>}
-            {pode && !d.substituidoPorId && (
-              <ActionButton action={alternarAtivoDocumentoAction.bind(null, d.id, !d.ativo)} confirm={d.ativo ? "Inativar este documento? Ele deixa de gerar alertas, mas o histórico fica guardado." : undefined}>
-                {d.ativo ? "Inativar" : "Reativar"}
-              </ActionButton>
-            )}
           </>
+        }
+        maisAcoes={
+          pode && !d.substituidoPorId && (
+            <ActionButton action={alternarAtivoDocumentoAction.bind(null, d.id, !d.ativo)} confirm={d.ativo ? "Inativar este documento? Ele deixa de gerar alertas, mas o histórico fica guardado." : undefined}>
+              {d.ativo ? "Inativar" : "Reativar"}
+            </ActionButton>
+          )
         }
       />
       <div className="space-y-4">
@@ -78,7 +81,7 @@ export default async function DocumentoPage({ params }: { params: Promise<{ id: 
             ["Observação", d.observacao],
           ]} />
           {d.substituidoPor && (
-            <p className="mt-3 text-[13px] text-slate-700">
+            <p className="mt-3 text-sm text-slate-700">
               Substituído em {date(d.substituidoEm)} por <Link href={`/qualidade/documentos/${d.substituidoPor.id}`} className="text-teal-700 hover:underline">{d.substituidoPor.titulo}{d.substituidoPor.numero ? ` (nº ${d.substituidoPor.numero})` : ""}</Link>.
             </p>
           )}

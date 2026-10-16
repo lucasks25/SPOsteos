@@ -1,13 +1,13 @@
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Badge, Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
+import { Badge, campo, Card, EmptyState, PageHeader, StatusBadge } from "@/components/ui";
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { date, num } from "@/lib/format";
 import { Filtros } from "@/components/filtros";
 import { CLASSES, ORIGENS, PERFIS_OPERAR_RECOLHIMENTO, ROTULO_CLASSE, ROTULO_ORIGEM } from "../../_lib/recolhimento";
 import { abrirRecolhimentoAction } from "../actions";
 
-const inputCls = "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+const inputCls = campo;
 
 export default async function NovoRecolhimentoPage({ searchParams }: { searchParams: Promise<{ q?: string; loteId?: string }> }) {
   await requireUser(PERFIS_OPERAR_RECOLHIMENTO);
@@ -26,10 +26,10 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
 
   return (
     <>
-      <PageHeader title="Novo recolhimento" subtitle="Ao abrir, os lotes escolhidos ficam bloqueados (não saem em remessa nem são consumidos) e o sistema fotografa onde há saldo e quais cirurgias usaram o lote." />
+      <PageHeader voltar={{ href: "/qualidade/recolhimentos", label: "Recolhimentos" }} title="Novo recolhimento" subtitle="Ao abrir, os lotes escolhidos ficam bloqueados (não saem em remessa nem são consumidos) e o sistema fotografa onde há saldo e quais cirurgias usaram o lote." />
       <Filtros limparHref="/qualidade/recolhimentos/novo">
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Buscar lote, série, produto ou código</span>
+          <span className="mb-1 block text-sm text-slate-600">Buscar lote, série, produto ou código</span>
           <input name="q" defaultValue={q} placeholder="Ex.: número do lote" className={`${inputCls} w-72`} />
         </label>
       </Filtros>
@@ -41,11 +41,11 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
             <ul className="divide-y divide-slate-200">
               {lotes.map((l) => (
                 <li key={l.id}>
-                  <label className="flex cursor-pointer items-center gap-3 py-2 text-[13px]">
+                  <label className="flex cursor-pointer items-center gap-3 py-2 text-sm">
                     <input type="checkbox" name="loteId" value={l.id} defaultChecked={l.id === sp.loteId} className="h-4 w-4 rounded-sm border-slate-300" />
                     <span className="min-w-0 flex-1">
                       <span className="block truncate font-medium text-slate-900">{l.produto.descricao}</span>
-                      <span className="block font-mono text-[11px] text-slate-500">{l.produto.codigo} · lote {l.numero} · val. {date(l.validade)}</span>
+                      <span className="block font-mono text-xs text-slate-500">{l.produto.codigo} · lote {l.numero} · val. {date(l.validade)}</span>
                     </span>
                     <StatusBadge status={l.status} />
                     <span className="tnum w-24 text-right">{num(l.saldos.reduce((v, s) => v + s.quantidade, 0))} un.</span>

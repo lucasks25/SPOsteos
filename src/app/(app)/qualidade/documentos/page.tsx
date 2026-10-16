@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { date } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
-import { Badge, btn, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
+import { Badge, btn, campo, FilterBar, KpiGrid, LinkButton, PageHeader, Stat, Table, Td } from "@/components/ui";
 import {
   ESCOPOS, FILTRO_ATENCAO, PERFIS_VER_DOCUMENTOS, podeEditarDocumentos, ROTULO_ESCOPO, ROTULO_SITUACAO, ROTULO_TIPO, SITUACOES, TIPOS,
   type EscopoDoc, type SituacaoDoc,
@@ -11,7 +11,7 @@ import {
 import { contarPorSituacao, whereLista, type FiltroLista } from "../_lib/documentos-servico";
 import { SituacaoBadge } from "../_lib/situacao-badge";
 
-const inputCls = "h-8 rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+const inputCls = campo;
 type SP = Record<string, string | string[] | undefined>;
 const um = (v: string | string[] | undefined) => (typeof v === "string" ? v : undefined);
 
@@ -59,44 +59,44 @@ export default async function DocumentosPage({ searchParams }: { searchParams: P
         actions={pode && <LinkButton href={novoHref} icon="mais">Novo documento</LinkButton>}
       />
       <KpiGrid cols={4}>
-        <Stat label="Vencidos" value={cont.VENCIDO} tone={cont.VENCIDO ? "danger" : "default"} hint="exigem renovação" />
-        <Stat label="Vencem em 30 dias" value={cont.VENCE_EM_30} tone={cont.VENCE_EM_30 ? "warn" : "default"} hint="inclui os que vencem hoje" />
-        <Stat label="Vigentes" value={cont.VIGENTE + cont.VENCE_EM_90} hint={`${cont.VENCE_EM_90} vencem em 31 a 90 dias`} />
-        <Stat label="Sem vencimento" value={cont.SEM_VENCIMENTO} />
+        <Stat icon="calendario" label="Vencidos" value={cont.VENCIDO} tone={cont.VENCIDO ? "danger" : "default"} hint="exigem renovação" />
+        <Stat icon="calendario" label="Vencem em 30 dias" value={cont.VENCE_EM_30} tone={cont.VENCE_EM_30 ? "warn" : "default"} hint="inclui os que vencem hoje" />
+        <Stat icon="documento" label="Vigentes" value={cont.VIGENTE + cont.VENCE_EM_90} hint={`${cont.VENCE_EM_90} vencem em 31 a 90 dias`} />
+        <Stat icon="documento" label="Sem vencimento" value={cont.SEM_VENCIMENTO} />
       </KpiGrid>
       <FilterBar>
         {vinculo && <input type="hidden" name={vinculo.campo} value={vinculo.id} />}
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Busca</span>
+          <span className="mb-1 block text-sm text-slate-600">Busca</span>
           <input name="q" defaultValue={f.q} placeholder="Título, número, órgão ou vínculo" className={`${inputCls} w-64`} />
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Escopo</span>
+          <span className="mb-1 block text-sm text-slate-600">Escopo</span>
           <select name="escopo" defaultValue={f.escopo ?? ""} className={inputCls}>
             <option value="">Todos</option>
             {ESCOPOS.map((e) => <option key={e} value={e}>{ROTULO_ESCOPO[e]}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Tipo</span>
+          <span className="mb-1 block text-sm text-slate-600">Tipo</span>
           <select name="tipo" defaultValue={f.tipo ?? ""} className={inputCls}>
             <option value="">Todos</option>
             {TIPOS.map((t) => <option key={t} value={t}>{ROTULO_TIPO[t]}</option>)}
           </select>
         </label>
         <label className="block">
-          <span className="mb-1 block text-xs text-slate-700">Situação</span>
+          <span className="mb-1 block text-sm text-slate-600">Situação</span>
           <select name="situacao" defaultValue={f.situacao ?? ""} className={inputCls}>
             <option value="">Todas</option>
             <option value={FILTRO_ATENCAO}>Vencidos ou a vencer em 30 dias</option>
             {SITUACOES.map((s) => <option key={s} value={s}>{ROTULO_SITUACAO[s]}</option>)}
           </select>
         </label>
-        <label className="flex h-8 items-center gap-2 text-[13px] text-slate-700">
+        <label className="flex h-8 items-center gap-2 text-sm text-slate-700">
           <input type="checkbox" name="inativos" value="1" defaultChecked={f.inativos} className="h-4 w-4 rounded-sm border-slate-300" />
           Incluir inativos e substituídos
         </label>
-        <button className={btn.secondary}>Filtrar</button>
+        <button className={btn.primary}>Filtrar</button>
         <Link href="/qualidade/documentos" className={btn.ghost}>Limpar</Link>
       </FilterBar>
       <Table

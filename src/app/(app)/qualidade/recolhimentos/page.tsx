@@ -50,10 +50,10 @@ export default async function RecolhimentosPage({ searchParams }: { searchParams
         actions={podeOperarRecolhimento(user.perfil) && <LinkButton href="/qualidade/recolhimentos/novo" icon="mais">Novo recolhimento</LinkButton>}
       />
       <KpiGrid cols={4}>
-        <Stat label="Recolhimentos abertos" value={num(ativos.length)} hint="em aberto ou em andamento" tone={ativos.length ? "warn" : "default"} />
-        <Stat label="Vencidos no prazo" value={num(vencidos)} hint="prazo anterior a hoje" tone={vencidos ? "danger" : "default"} />
-        <Stat label="Unidades a recolher" value={num(aRecolherTotal)} hint="saldo ainda nos locais" tone={aRecolherTotal ? "danger" : "default"} />
-        <Stat label="Pacientes a comunicar" value={pacientesAComunicar === null ? "—" : num(pacientesAComunicar)} hint={pacientesAComunicar === null ? "visível só para Qualidade e Admin" : "cirurgias que usaram o lote"} tone={pacientesAComunicar ? "warn" : "default"} />
+        <Stat icon="alerta" label="Recolhimentos abertos" value={num(ativos.length)} hint="em aberto ou em andamento" tone={ativos.length ? "warn" : "default"} />
+        <Stat icon="calendario" label="Vencidos no prazo" value={num(vencidos)} hint="prazo anterior a hoje" tone={vencidos ? "danger" : "default"} />
+        <Stat icon="pacote" label="Unidades a recolher" value={num(aRecolherTotal)} hint="saldo ainda nos locais" tone={aRecolherTotal ? "danger" : "default"} />
+        <Stat icon="medico" label="Pacientes a comunicar" value={pacientesAComunicar === null ? "—" : num(pacientesAComunicar)} hint={pacientesAComunicar === null ? "visível só para Qualidade e Admin" : "cirurgias que usaram o lote"} tone={pacientesAComunicar ? "warn" : "default"} />
       </KpiGrid>
       <Filtros limparHref="/qualidade/recolhimentos">
         <FiltroSelect label="Situação" name="status" defaultValue={status} todos="Todas" options={STATUS.map((s) => ({ value: s, label: s.replaceAll("_", " ").toLowerCase() }))} />
@@ -77,11 +77,11 @@ export default async function RecolhimentosPage({ searchParams }: { searchParams
               <Td><StatusBadge status={r.status} /></Td>
               <Td>
                 <div>{ROTULO_ORIGEM[r.origem]}</div>
-                <div className="text-[11px] text-slate-500">classe {r.classe}{r.referencia ? ` · ${r.referencia}` : ""}</div>
+                <div className="text-xs text-slate-500">classe {r.classe}{r.referencia ? ` · ${r.referencia}` : ""}</div>
               </Td>
               <Td className="max-w-xs">
                 <div className="truncate font-medium text-slate-900">{produtos[0]}{produtos.length > 1 ? ` (+${produtos.length - 1})` : ""}</div>
-                <div className="truncate font-mono text-[11px] text-slate-500">lote {r.lotes.map((l) => l.lote.numero).join(", ")}</div>
+                <div className="truncate font-mono text-xs text-slate-500">lote {r.lotes.map((l) => l.lote.numero).join(", ")}</div>
               </Td>
               <Td className="max-w-xs truncate">{r.motivo}</Td>
               <Td>{r.prazo ? (venc ? <Badge color="red">{date(r.prazo)} · vencido</Badge> : date(r.prazo)) : "—"}</Td>

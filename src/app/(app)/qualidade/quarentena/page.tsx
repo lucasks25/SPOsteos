@@ -40,9 +40,9 @@ export default async function QuarentenaPage({ searchParams }: { searchParams: P
     <>
       <PageHeader title="Quarentena e inspeção" subtitle="Para a Qualidade: lotes recebidos que aguardam inspeção antes de serem liberados para uso." />
       <KpiGrid cols={3}>
-        <Stat label="Lotes aguardando" value={num(lotes.length)} tone={lotes.length ? "warn" : "default"} />
-        <Stat label="Unidades em quarentena" value={num(lotes.reduce((s, l) => s + l.saldos.reduce((a, x) => a + x.quantidade, 0), 0))} />
-        <Stat label="Com validade vencida" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} />
+        <Stat icon="frasco" label="Lotes aguardando" value={num(lotes.length)} tone={lotes.length ? "warn" : "default"} />
+        <Stat icon="pacote" label="Unidades em quarentena" value={num(lotes.reduce((s, l) => s + l.saldos.reduce((a, x) => a + x.quantidade, 0), 0))} />
+        <Stat icon="calendario" label="Com validade vencida" value={num(lotes.filter((l) => l.validade < hoje).length)} tone={lotes.some((l) => l.validade < hoje) ? "danger" : "default"} />
       </KpiGrid>
       <SearchBar placeholder="Lote, código ou descrição do produto" defaultValue={q} />
       <Table titulo="Aguardando inspeção" icone="frasco" contagem={lotes.length} head={["Produto", "Lote", "Validade", "Registro ANVISA", "Status", "Qtd. em quarentena", "Recebido em", ""]} empty={lotes.length === 0} emptyText={q ? "Nenhum lote em quarentena corresponde à busca." : "Nenhum lote aguardando inspeção."}>
