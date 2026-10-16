@@ -1,76 +1,80 @@
 /*
  * Regras de layout que as classes utilitárias não expressam bem (docs/DESIGN-SYSTEM.md, seções 6 e 7):
- * área de conteúdo, faixa de indicadores (KpiGrid), tabela com cabeçalho fixo e impressão.
+ * área de conteúdo, faixa de indicadores (KpiGrid), tabela com cabeçalho fixo e linha clicável, filtros em barra ou
+ * painel lateral, colunas que somem no celular e impressão.
  */
 
 @layer components {
   /* Área de conteúdo: recuo responsivo e largura máxima confortável em telas muito largas */
   .conteudo {
     --pad-x: 1rem;
-    padding: 1.25rem var(--pad-x) 2.5rem;
+    padding: 1rem var(--pad-x) 2rem;
     margin-inline: auto;
     max-width: 1680px;
   }
   @media (min-width: 768px) {
     .conteudo {
-      --pad-x: 1.75rem;
-      padding-top: 1.5rem;
+      --pad-x: 1.5rem;
+      padding-top: 1.25rem;
     }
   }
   @media (min-width: 1440px) {
     .conteudo {
-      --pad-x: 2.25rem;
+      --pad-x: 2rem;
     }
   }
 
   /*
-   * Indicadores (KpiGrid): grade de cartões brancos. O Stat traz o próprio cartão; qualquer outro filho
-   * (Indicador do painel, link sem Stat) recebe o mesmo cartão aqui. Células vazias de preenchimento somem.
+   * Faixa de indicadores (KpiGrid): UM contorno e fios finos entre as células (padrão dos resumos do Odoo/ERPNext),
+   * em vez de cartões soltos. Cada célula desenha só a borda esquerda e a de cima; a grade desloca 1 px para cima e para
+   * a esquerda e o contorno corta essas bordas na primeira coluna e na primeira linha. Sem células de enchimento.
    */
   .kpi-strip {
-    display: grid;
-    gap: 0.75rem;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    margin-bottom: 1.25rem;
-  }
-  @media (min-width: 1024px) {
-    .kpi-strip[data-cols="3"] {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-    .kpi-strip[data-cols="4"] {
-      grid-template-columns: repeat(4, minmax(0, 1fr));
-    }
-    .kpi-strip[data-cols="5"] {
-      grid-template-columns: repeat(3, minmax(0, 1fr));
-    }
-  }
-  @media (min-width: 1536px) {
-    .kpi-strip[data-cols="5"] {
-      grid-template-columns: repeat(5, minmax(0, 1fr));
-    }
-  }
-  .kpi-strip > :empty {
-    display: none;
-  }
-  .kpi-strip > :not(.stat):not(:empty):not(:has(> .stat)) {
+    margin-bottom: 1rem;
+    overflow: hidden;
     border: 1px solid var(--c-slate-200);
     border-radius: var(--radius-xl);
     background: var(--surface);
-    box-shadow: var(--shadow-card);
-    padding: 0.875rem 1rem;
   }
-  .kpi-strip > a {
+  .kpi-grade {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin: -1px 0 0 -1px;
+  }
+  .kpi-grade > * {
+    min-width: 0;
+    padding: 0.625rem 1rem 0.75rem;
+    border-top: 1px solid var(--c-slate-200);
+    border-left: 1px solid var(--c-slate-200);
+  }
+  .kpi-grade > :empty {
+    display: none;
+  }
+  .kpi-grade > a {
     display: block;
-    border-radius: var(--radius-xl);
-    transition:
-      box-shadow 150ms,
-      border-color 150ms,
-      transform 150ms;
+    color: inherit;
+    transition: background-color 120ms;
   }
-  .kpi-strip > a:not(:has(> .stat)):hover,
-  .kpi-strip > a:hover > .stat {
-    border-color: var(--c-teal-300);
-    box-shadow: var(--shadow-raised);
+  .kpi-grade > a:hover {
+    background: var(--c-slate-50);
+  }
+  /* Stat dentro de um link (páginas antigas): o link já é a célula */
+  .kpi-grade > a > .stat {
+    padding: 0;
+  }
+  @media (min-width: 1024px) {
+    .kpi-grade[data-cols="3"],
+    .kpi-grade[data-cols="5"] {
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+    }
+    .kpi-grade[data-cols="4"] {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+  }
+  @media (min-width: 1280px) {
+    .kpi-grade[data-cols="5"] {
+      grid-template-columns: repeat(5, minmax(0, 1fr));
+    }
   }
 
   /* Tabela: no desktop a área rola por dentro para o cabeçalho ficar visível; no celular rola só na horizontal */
@@ -79,23 +83,30 @@
   }
   @media (min-width: 1024px) {
     .tabela-rolagem {
-      max-height: calc(100dvh - 10rem);
+      max-height: calc(100dvh - 9rem);
     }
   }
-  /* caixas de seleção soltas na barra de filtros alinham com os campos de 40 px */
-  .filter-bar form > label:has(> input[type="checkbox"]) {
-    min-height: 2.5rem;
+
+  /* Linha inteira clicável: o link da PRIMEIRA coluna (Celula href / .link-linha) estica sobre a <tr>;
+     os outros controles da linha ficam por cima (z-index) e continuam clicáveis */
+  tbody > tr:has(> :first-child .link-linha) {
+    position: relative;
+    cursor: pointer;
   }
-  /* no celular os campos do filtro crescem para preencher a linha (dois por linha quando cabem) */
-  @media (max-width: 639px) {
-    .filter-bar form > label {
-      flex: 1 1 9rem;
-    }
+  tbody > tr > :first-child .link-linha::after {
+    content: "";
+    position: absolute;
+    inset: 0;
   }
+  tbody > tr:has(> :first-child .link-linha) :is(a, button, input, select, label, summary):not(:first-child .link-linha) {
+    position: relative;
+    z-index: 1;
+  }
+
   .tabela-rolagem thead th {
     position: sticky;
     top: 0;
-    z-index: 1;
+    z-index: 2;
   }
 }
 
@@ -116,6 +127,105 @@
 .tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(11).text-right) > thead th:nth-child(11),
 .tabela-rolagem > table:has(> tbody > tr:first-child > td:nth-child(12).text-right) > thead th:nth-child(12) {
   text-align: right;
+}
+
+/*
+ * Fora da @layer de propósito: estas regras precisam vencer as utilitárias (block, min-w-36, text-[0.8125rem]) que as
+ * páginas põem nos rótulos e campos dos filtros.
+ *
+ * Filtros em barra (FilterBar layout="barra", padrão): uma linha compacta; os 4 primeiros campos ficam à vista e
+ * os demais em "Mais filtros" (caixa sem nome, não vai na URL). Botões sempre por último.
+ */
+.filtro-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.625rem;
+  padding: 0.625rem 0.75rem;
+}
+.filtro-form > label > span:first-child {
+  margin-bottom: 0.25rem;
+  font-size: var(--text-xs);
+  line-height: 1rem;
+  font-weight: 500;
+  color: var(--c-slate-600);
+}
+.filtro-form > label:has(> input[type="checkbox"]) {
+  min-height: 2rem;
+}
+.filtro-form > :is(button, a) {
+  order: 3;
+}
+.filtro-mais {
+  order: 2;
+  display: none;
+}
+.filter-bar[data-layout="barra"] .filtro-form:has(> label:nth-of-type(5)) > .filtro-mais {
+  display: block;
+}
+.filter-bar[data-layout="barra"] .filtro-form:not(:has(> .filtro-mais input:checked)) > label:nth-of-type(n + 5) {
+  display: none;
+}
+/* no celular os campos crescem para preencher a linha (dois por linha quando cabem) */
+@media (max-width: 639px) {
+  .filtro-form > label {
+    flex: 1 1 9rem;
+  }
+}
+
+/* Filtros em painel lateral (Bling), só a partir de 1280 px; abaixo disso a mesma barra de cima */
+.lista-com-filtros {
+  display: grid;
+  gap: 1rem;
+  align-items: start;
+}
+.lista-com-filtros > .lista-filtros > .filter-bar {
+  margin-bottom: 0;
+}
+@media (min-width: 1280px) {
+  .lista-com-filtros {
+    grid-template-columns: 15rem minmax(0, 1fr);
+  }
+  .lista-com-filtros > .lista-filtros {
+    position: sticky;
+    top: 5rem;
+  }
+  .filter-bar[data-layout="lateral"] .filtro-titulo {
+    display: flex;
+  }
+  .filter-bar[data-layout="lateral"] .filtro-form {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.75rem;
+    padding: 0.75rem;
+  }
+  .filter-bar[data-layout="lateral"] .filtro-form > label :is(select, input:not([type="checkbox"])) {
+    min-width: 0;
+    max-width: none;
+    width: 100%;
+  }
+  .filter-bar[data-layout="lateral"] .filtro-form > :is(button, a) {
+    width: 100%;
+  }
+}
+
+/* Table head={{ hideOnMobile }}: a coluna inteira (th e td) some abaixo de 768 px */
+@media (max-width: 767px) {
+  .tabela-rolagem > table[data-ocultar~="1"] > :is(thead, tbody, tfoot) > tr > :nth-child(1),
+  .tabela-rolagem > table[data-ocultar~="2"] > :is(thead, tbody, tfoot) > tr > :nth-child(2),
+  .tabela-rolagem > table[data-ocultar~="3"] > :is(thead, tbody, tfoot) > tr > :nth-child(3),
+  .tabela-rolagem > table[data-ocultar~="4"] > :is(thead, tbody, tfoot) > tr > :nth-child(4),
+  .tabela-rolagem > table[data-ocultar~="5"] > :is(thead, tbody, tfoot) > tr > :nth-child(5),
+  .tabela-rolagem > table[data-ocultar~="6"] > :is(thead, tbody, tfoot) > tr > :nth-child(6),
+  .tabela-rolagem > table[data-ocultar~="7"] > :is(thead, tbody, tfoot) > tr > :nth-child(7),
+  .tabela-rolagem > table[data-ocultar~="8"] > :is(thead, tbody, tfoot) > tr > :nth-child(8),
+  .tabela-rolagem > table[data-ocultar~="9"] > :is(thead, tbody, tfoot) > tr > :nth-child(9),
+  .tabela-rolagem > table[data-ocultar~="10"] > :is(thead, tbody, tfoot) > tr > :nth-child(10),
+  .tabela-rolagem > table[data-ocultar~="11"] > :is(thead, tbody, tfoot) > tr > :nth-child(11),
+  .tabela-rolagem > table[data-ocultar~="12"] > :is(thead, tbody, tfoot) > tr > :nth-child(12)
+  {
+    display: none;
+  }
 }
 
 /* Barra lateral: 16rem; recolhida (só no desktop) vira trilho de ícones de 4.5rem, sem rótulos */
@@ -150,8 +260,8 @@
   .tabela-rolagem thead th {
     position: static;
   }
-  .kpi-strip > * {
-    box-shadow: none !important;
+  .kpi-strip {
+    break-inside: avoid;
   }
 }
 

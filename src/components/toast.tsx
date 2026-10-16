@@ -56,12 +56,10 @@ function ToastItem({ item }: { item: Item }) {
   }, [item.id]);
   const erro = item.kind === "erro";
   return (
-    <div className="pointer-events-auto flex w-[min(24rem,calc(100vw-2rem))] items-center gap-3 rounded-xl border border-slate-200 bg-white py-2.5 pl-2.5 pr-2 text-sm text-slate-900 shadow-xl">
-      <span className={erro ? "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-rose-50 text-rose-600" : "flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-accent-soft text-on-accent-soft"} aria-hidden="true">
-        <Icon name={erro ? "alerta" : "ok"} size={16} />
-      </span>
+    <div className={`pointer-events-auto flex w-[min(24rem,calc(100vw-2rem))] items-center gap-2.5 rounded-lg border border-l-[3px] border-slate-200 bg-white py-2 pl-3 pr-1.5 text-sm text-slate-900 shadow-xl ${erro ? "border-l-rose-600" : "border-l-emerald-600"}`}>
+      <Icon name={erro ? "alerta" : "ok"} size={16} className={erro ? "shrink-0 text-rose-700" : "shrink-0 text-emerald-700"} aria-hidden="true" />
       <span className="flex-1 font-medium">{item.msg}</span>
-      <button type="button" onClick={() => dismissToast(item.id)} aria-label="Fechar aviso" className="flex h-8 w-8 items-center justify-center rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-900">
+      <button type="button" onClick={() => dismissToast(item.id)} aria-label="Fechar aviso" className="flex h-7 w-7 items-center justify-center rounded-md text-slate-500 hover:bg-slate-100 hover:text-slate-900">
         <Icon name="fechar" size={14} />
       </button>
     </div>
