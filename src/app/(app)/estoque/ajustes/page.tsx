@@ -22,9 +22,9 @@ export default async function AjustesPage() {
     <>
       <PageHeader title="Ajustes e perdas" subtitle="Para o Estoque: correções de inventário e baixas por perda, avaria ou extravio. Todo lançamento fica registrado no kardex (histórico de movimentações)." />
       <KpiGrid cols={3}>
-        <Stat label="Lançamentos recentes" value={num(ultimos.length)} hint="últimos 50" />
-        <Stat label="Perdas" value={num(ultimos.filter((m) => m.tipo === "PERDA").length)} hint={<span className="text-rose-600">{money(ultimos.filter((m) => m.tipo === "PERDA").reduce((v, m) => v + Number(m.custoUnit) * m.quantidade, 0))}</span>} />
-        <Stat label="Ajustes" value={num(ultimos.filter((m) => m.tipo === "AJUSTE").length)} hint="entradas e saídas de inventário" />
+        <Stat icon="lista" label="Lançamentos recentes" value={num(ultimos.length)} hint="últimos 50" />
+        <Stat icon="alerta" label="Perdas" value={num(ultimos.filter((m) => m.tipo === "PERDA").length)} hint={<span className="text-rose-600">{money(ultimos.filter((m) => m.tipo === "PERDA").reduce((v, m) => v + Number(m.custoUnit) * m.quantidade, 0))}</span>} />
+        <Stat icon="ajustes" label="Ajustes" value={num(ultimos.filter((m) => m.tipo === "AJUSTE").length)} hint="entradas e saídas de inventário" />
       </KpiGrid>
       <div className="space-y-3">
         {podeEditar(user.perfil) && (
@@ -62,12 +62,12 @@ export default async function AjustesPage() {
               <tr key={m.id}>
                 <Td>
                   <div>{dateTime(m.criadoEm)}</div>
-                  <div className="text-[11px] text-slate-500">{m.usuario ?? "—"}</div>
+                  <div className="text-xs text-slate-500">{m.usuario ?? "—"}</div>
                 </Td>
                 <Td>{m.tipo === "PERDA" ? <Badge color="red">perda</Badge> : <Badge color="yellow">ajuste {entrada ? "+" : "−"}</Badge>}</Td>
                 <Td className="max-w-xs">
                   <div className="truncate font-medium text-teal-700">{m.produto.descricao}</div>
-                  <div className="font-mono text-[11px] text-slate-500">{m.produto.codigo} · lote {m.lote.numero}</div>
+                  <div className="font-mono text-xs text-slate-500">{m.produto.codigo} · lote {m.lote.numero}</div>
                 </Td>
                 <Td>{(entrada ? m.destino : m.origem)?.nome ?? "—"}</Td>
                 <Td className="tnum text-right font-semibold">{entrada ? "+" : "−"}{num(m.quantidade)}</Td>
