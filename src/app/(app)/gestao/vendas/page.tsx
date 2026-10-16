@@ -21,10 +21,10 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Vendas por mês" subtitle="Relatório de leitura: quanto foi faturado em cada um dos últimos 12 meses (data da nota fiscal), comparado ao mesmo mês do ano anterior." />
       <KpiGrid cols={4}>
-        <Stat label="Vendas nos 12 meses" value={money(d.total)} hint={`${num(d.pedidos)} pedido(s)`} />
-        <Stat label="12 meses anteriores" value={money(d.anterior)} />
-        <Stat label="Variação" value={variacao(d.variacaoPct)} tone={d.variacaoPct !== null && d.variacaoPct < 0 ? "danger" : "default"} hint={d.variacaoPct === null ? "sem vendas no ano anterior" : undefined} />
-        <Stat label="Melhor mês" value={melhor && melhor.valor > 0 ? money(melhor.valor) : "—"} hint={melhor && melhor.valor > 0 ? rotulo(melhor.ano, melhor.mes) : undefined} />
+        <Stat label="Vendas nos 12 meses" value={money(d.total)} hint={`${num(d.pedidos)} pedido(s)`} icon="receber" />
+        <Stat label="12 meses anteriores" value={money(d.anterior)} icon="calendario" />
+        <Stat label="Variação" value={variacao(d.variacaoPct)} tone={d.variacaoPct !== null && d.variacaoPct < 0 ? "danger" : "default"} hint={d.variacaoPct === null ? "sem vendas no ano anterior" : undefined} icon="tendencia" />
+        <Stat label="Melhor mês" value={melhor && melhor.valor > 0 ? money(melhor.valor) : "—"} hint={melhor && melhor.valor > 0 ? rotulo(melhor.ano, melhor.mes) : undefined} icon="grafico" />
       </KpiGrid>
       <Filtros limparHref="/gestao/vendas">
         <FiltroSelect label="Hospital" name="hospital" options={hospitais} defaultValue={d.hospitalId} />
@@ -47,7 +47,7 @@ export default async function VendasPage({ searchParams }: { searchParams: Promi
                   <div className="w-1/2 max-w-5 rounded-t-sm bg-slate-300" style={{ height: altura(m.anterior) }} />
                   <div className="w-1/2 max-w-5 rounded-t-sm bg-teal-700" style={{ height: altura(m.valor) }} />
                 </div>
-                <span className="tnum whitespace-nowrap text-[10px] text-slate-600">{rotulo(m.ano, m.mes)}</span>
+                <span className="tnum whitespace-nowrap text-xs text-slate-600">{rotulo(m.ano, m.mes)}</span>
               </div>
             ))}
           </div>

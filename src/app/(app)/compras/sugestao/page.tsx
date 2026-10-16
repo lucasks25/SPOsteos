@@ -63,9 +63,9 @@ export default async function SugestaoPage({ searchParams }: { searchParams: Pro
         actions={comSugestao.length > 0 && <LinkButton href={urlPedido(comSugestao)}>Gerar pedido com todas as sugestões</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat label="Produtos a comprar" value={num(comSugestao.length)} tone={comSugestao.length ? "warn" : "default"} />
-        <Stat label="Unidades sugeridas" value={num(comSugestao.reduce((s, l) => s + l.sugestao, 0))} />
-        <Stat label="Valor estimado (custo médio)" value={money(comSugestao.reduce((s, l) => s + l.valor, 0))} />
+        <Stat label="Produtos a comprar" value={num(comSugestao.length)} tone={comSugestao.length ? "warn" : "default"} icon="carrinho" />
+        <Stat label="Unidades sugeridas" value={num(comSugestao.reduce((s, l) => s + l.sugestao, 0))} icon="pacote" />
+        <Stat label="Valor estimado (custo médio)" value={money(comSugestao.reduce((s, l) => s + l.valor, 0))} icon="pagar" />
       </KpiGrid>
       <div className="mb-3 flex justify-end">
         {todos ? (

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Celula } from "@/components/lista";
-import { Badge, KpiGrid, PageHeader, Stat, Table, Td, type BadgeColor } from "@/components/ui";
+import { Badge, btn, KpiGrid, PageHeader, Stat, Table, Td, type BadgeColor } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { date, money, num } from "@/lib/format";
 import { Filtros, FiltroSelect } from "@/components/filtros";
@@ -26,11 +26,11 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
     <>
       <PageHeader title="Vencimentos de lotes" subtitle="Relatório de leitura: lotes que vencem em até 180 dias, no depósito, consignados nos hospitais e em quarentena. Valor em risco = saldo × custo médio do produto. Não conforme fica de fora." />
       <KpiGrid cols={5}>
-        <Stat label="Já vencido" value={money(v[0])} tone={v[0] > 0 ? "danger" : "default"} hint={`${num(q[0])} un.`} />
-        <Stat label="Vence em 30 dias" value={money(ate(1))} tone={ate(1) > 0 ? "warn" : "default"} hint={`${num(qate(1))} un.`} />
-        <Stat label="Vence em 60 dias" value={money(ate(2))} hint={`${num(qate(2))} un. (acumulado)`} />
-        <Stat label="Vence em 90 dias" value={money(ate(3))} hint={`${num(qate(3))} un. (acumulado)`} />
-        <Stat label="Vence em 180 dias" value={money(ate(4))} hint={`${num(qate(4))} un. (acumulado)`} />
+        <Stat label="Já vencido" value={money(v[0])} tone={v[0] > 0 ? "danger" : "default"} hint={`${num(q[0])} un.`} icon="calendario" />
+        <Stat label="Vence em 30 dias" value={money(ate(1))} tone={ate(1) > 0 ? "warn" : "default"} hint={`${num(qate(1))} un.`} icon="calendario" />
+        <Stat label="Vence em 60 dias" value={money(ate(2))} hint={`${num(qate(2))} un. (acumulado)`} icon="calendario" />
+        <Stat label="Vence em 90 dias" value={money(ate(3))} hint={`${num(qate(3))} un. (acumulado)`} icon="calendario" />
+        <Stat label="Vence em 180 dias" value={money(ate(4))} hint={`${num(qate(4))} un. (acumulado)`} icon="calendario" />
       </KpiGrid>
       <Filtros limparHref="/gestao/vencimentos">
         <FiltroSelect label="Faixa" name="faixa" options={FAIXAS_VENCIMENTO.map((n, i) => ({ value: String(i), label: n }))} defaultValue={f === null ? undefined : String(f)} />
@@ -40,7 +40,7 @@ export default async function VencimentosPage({ searchParams }: { searchParams: 
           titulo="Lotes por validade"
           icone="frasco"
           contagem={linhas.length}
-          acoes={<span className="flex items-center gap-2">{verLotes && <Link href="/qualidade/lotes" className="rounded border border-slate-300 px-2 py-1 text-xs font-semibold text-slate-800 hover:bg-slate-50">Ver na Qualidade</Link>}<BotaoCsv href="/gestao/vencimentos/exportar" params={{}} /></span>}
+          acoes={<span className="flex items-center gap-2">{verLotes && <Link href="/qualidade/lotes" className={btn.small}>Ver na Qualidade</Link>}<BotaoCsv href="/gestao/vencimentos/exportar" params={{}} /></span>}
           head={["Produto", "Lote", "Validade", <span key="d" className="block text-right">Dias</span>, "Local", <span key="q" className="block text-right">Quantidade</span>, <span key="v" className="block text-right">Valor em risco</span>, "Faixa"]}
           empty={linhas.length === 0}
           emptyText="Nenhum lote com saldo vence nos próximos 180 dias."

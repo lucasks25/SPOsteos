@@ -43,11 +43,11 @@ export default async function GiroPage({ searchParams }: { searchParams: Promise
         subtitle={`Relatório de leitura: por quantos dias o estoque dura. Disponível = depósito + consignado. Consumo dos últimos ${DIAS_CONSUMO} dias em cirurgia. Cobertura = disponível ÷ consumo por dia. Giro anual = consumo anualizado ÷ disponível.`}
       />
       <KpiGrid cols={5}>
-        <Stat label="Produtos acompanhados" value={num(d.todas)} hint={`valor em estoque ${money(d.valorTotal)}`} />
-        <Stat label="Ruptura" value={num(d.ruptura.length)} tone={d.ruptura.length ? "danger" : "default"} hint={`cobertura < ${d.prazo} dias, abaixo do mínimo ou sem estoque`} />
-        <Stat label="Excesso" value={num(d.excesso.length)} tone={d.excesso.length ? "warn" : "default"} hint={`cobertura > ${DIAS_EXCESSO} dias`} />
-        <Stat label="Sem movimento" value={num(d.semMovimento.length)} tone={d.semMovimento.length ? "warn" : "default"} hint={`sem consumo há ${DIAS_SEM_MOVIMENTO}+ dias`} />
-        <Stat label="Parado (excesso + sem mov.)" value={money(d.valorExcesso)} hint="valor ao custo médio" />
+        <Stat label="Produtos acompanhados" value={num(d.todas)} hint={`valor em estoque ${money(d.valorTotal)}`} icon="pacote" />
+        <Stat label="Ruptura" value={num(d.ruptura.length)} tone={d.ruptura.length ? "danger" : "default"} hint={`cobertura < ${d.prazo} dias, abaixo do mínimo ou sem estoque`} icon="alerta" />
+        <Stat label="Excesso" value={num(d.excesso.length)} tone={d.excesso.length ? "warn" : "default"} hint={`cobertura > ${DIAS_EXCESSO} dias`} icon="camadas" />
+        <Stat label="Sem movimento" value={num(d.semMovimento.length)} tone={d.semMovimento.length ? "warn" : "default"} hint={`sem consumo há ${DIAS_SEM_MOVIMENTO}+ dias`} icon="calendario" />
+        <Stat label="Parado (excesso + sem mov.)" value={money(d.valorExcesso)} hint="valor ao custo médio" icon="pagar" />
       </KpiGrid>
       <Filtros limparHref="/gestao/giro">
         <FiltroSelect label="Situação" name="situacao" options={(Object.keys(ROTULO_SITUACAO) as SituacaoGiro[]).map((s) => ({ value: s, label: ROTULO_SITUACAO[s] }))} defaultValue={d.situacao} />

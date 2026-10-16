@@ -7,7 +7,7 @@ import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
 
 const STATUS = ["ABERTO", "PARCIAL", "RECEBIDO", "CANCELADO"] as const;
 type Status = (typeof STATUS)[number];
-const inputCls = "h-8 rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+const inputCls = "h-10 rounded-lg border border-field bg-white px-3 text-sm text-slate-900 placeholder:text-slate-500 hover:border-slate-400 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-500/20";
 
 export default async function PedidosCompraPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   await requireUser(PERFIS_COMPRAS);
@@ -30,10 +30,10 @@ export default async function PedidosCompraPage({ searchParams }: { searchParams
     <>
       <PageHeader title="Pedidos de compra" subtitle="Para Compras: acompanhe compras nacionais e importações, do pedido ao recebimento." actions={<LinkButton href="/compras/pedidos/novo">Novo pedido</LinkButton>} />
       <KpiGrid cols={4}>
-        <Stat label="Pedidos listados" value={fmtNum(pedidos.length)} />
-        <Stat label="Em aberto" value={fmtNum(emAberto.length)} tone={emAberto.length ? "warn" : "default"} hint="abertos ou parciais" />
-        <Stat label="Valor em aberto" value={money(emAberto.reduce((a, p) => a + valorPedido(p), 0))} />
-        <Stat label="Importações" value={fmtNum(pedidos.filter((p) => p.importacao).length)} />
+        <Stat label="Pedidos listados" value={fmtNum(pedidos.length)} icon="carrinho" />
+        <Stat label="Em aberto" value={fmtNum(emAberto.length)} tone={emAberto.length ? "warn" : "default"} hint="abertos ou parciais" icon="atividade" />
+        <Stat label="Valor em aberto" value={money(emAberto.reduce((a, p) => a + valorPedido(p), 0))} icon="pagar" />
+        <Stat label="Importações" value={fmtNum(pedidos.filter((p) => p.importacao).length)} icon="caminhao" />
       </KpiGrid>
       <FilterBar>
         <label className="block">

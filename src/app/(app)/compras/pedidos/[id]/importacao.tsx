@@ -87,7 +87,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
             <div className="space-y-3">
               {pedido.itens.map((i) => (
                 <Grid key={i.id} cols={3}>
-                  <div className="self-end pb-2 text-[13px] text-slate-800">
+                  <div className="self-end pb-2 text-sm text-slate-800">
                     {i.produto.codigo} — {i.produto.descricao} <span className="text-slate-500">({i.quantidade} un.)</span>
                   </div>
                   <Field label={`Preço unitário (${moeda}) *`} name={`pm_${i.id}`} type="number" min={0} step="0.0001" defaultValue={i.precoMoeda?.toString() ?? ""} required />

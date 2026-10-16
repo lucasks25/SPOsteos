@@ -12,7 +12,7 @@ type Row = { key: string; produtoId: string; quantidade: number; custoUnit: numb
 
 let seq = 0;
 const inputCls =
-  "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+  "h-10 w-full rounded-lg border border-field bg-white px-3 text-sm text-slate-900 hover:border-slate-500 focus:border-teal-600 focus:outline-none focus:ring-4 focus:ring-teal-500/20";
 
 export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, itensIniciais }: {
   fornecedores: { value: string; label: string }[];
@@ -82,9 +82,9 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
             Adicionar
           </button>
         </div>
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white shadow-sm">
-          <table className="min-w-full text-[13px]">
-            <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white shadow-sm">
+          <table className="min-w-full text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs font-semibold uppercase tracking-[0.04em] text-slate-500">
               <tr>
                 <th scope="col" className="px-3 py-2 text-left">Produto</th>
                 <th scope="col" className="w-28 px-3 py-2 text-right">Qtd.</th>
@@ -93,7 +93,7 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
                 <th scope="col" className="w-20"><span className="sr-only">Ações</span></th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-200 [&>tr]:h-9">
+            <tbody className="divide-y divide-slate-200 [&>tr]:h-10">
               {rows.length === 0 && (
                 <tr>
                   <td colSpan={5} className="px-3 py-8 text-center text-slate-500">
@@ -114,7 +114,7 @@ export function PedidoCompraForm({ fornecedores, produtos, fornecedorInicial, it
                     </td>
                     <td className="px-3 py-1.5 text-right tnum">{moedaItens === "BRL" ? money(r.quantidade * r.custoUnit) : `${moedaItens} ${(r.quantidade * r.custoUnit).toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`}</td>
                     <td className="px-3 py-1.5 text-right">
-                      <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className="inline-flex h-7 items-center rounded px-2 text-xs font-semibold text-rose-600 hover:bg-rose-50">
+                      <button type="button" onClick={() => setRows(rows.filter((x) => x.key !== r.key))} className="inline-flex h-8 items-center rounded-full px-3 text-xs font-semibold text-rose-600 hover:bg-rose-50">
                         Remover
                       </button>
                     </td>

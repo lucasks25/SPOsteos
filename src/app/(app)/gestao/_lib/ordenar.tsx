@@ -32,7 +32,7 @@ export function ThOrdenavel({
       className={`inline-flex items-center gap-1 hover:text-teal-700 ${ativa ? "text-teal-700" : ""} ${numerico ? "w-full justify-end" : ""}`}
     >
       {children}
-      <span aria-hidden="true" className="text-[10px]">{ativa ? (atual.dir === "asc" ? "▲" : "▼") : "↕"}</span>
+      <span aria-hidden="true" className="text-xs">{ativa ? (atual.dir === "asc" ? "▲" : "▼") : "↕"}</span>
     </Link>
   );
 }

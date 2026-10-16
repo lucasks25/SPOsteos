@@ -65,11 +65,11 @@ export default async function MargemPage({ searchParams }: { searchParams: Promi
     <>
       <PageHeader title="Margem de contribuição" subtitle="Relatório de leitura: quanto sobra em cada venda. Considera os pedidos faturados no período (data da nota fiscal); o custo é o custo médio do produto no momento do faturamento. Clique no título de uma coluna para ordenar." />
       <KpiGrid cols={5}>
-        <Stat label="Receita" value={money(t.receita)} hint={`${num(t.pedidos)} pedido(s)`} />
-        <Stat label="Custo" value={money(t.custo)} />
-        <Stat label="Margem" value={money(t.margem)} tone={t.margem < 0 ? "danger" : "default"} />
-        <Stat label="Margem %" value={fmtPct(t.margemPct)} tone={t.margem < 0 ? "danger" : "default"} />
-        <Stat label="Comissões" value={money(t.comissao)} hint={t.receita > 0 ? `${fmtPct((t.comissao / t.receita) * 100)} da receita` : undefined} />
+        <Stat label="Receita" value={money(t.receita)} hint={`${num(t.pedidos)} pedido(s)`} icon="receber" />
+        <Stat label="Custo" value={money(t.custo)} icon="pagar" />
+        <Stat label="Margem" value={money(t.margem)} tone={t.margem < 0 ? "danger" : "default"} icon="percentual" />
+        <Stat label="Margem %" value={fmtPct(t.margemPct)} tone={t.margem < 0 ? "danger" : "default"} icon="percentual" />
+        <Stat label="Comissões" value={money(t.comissao)} hint={t.receita > 0 ? `${fmtPct((t.comissao / t.receita) * 100)} da receita` : undefined} icon="etiqueta" />
       </KpiGrid>
       <Filtros limparHref="/gestao/margem">
         <FiltroInput label="De" name="de" type="date" defaultValue={d.periodo.de} />
