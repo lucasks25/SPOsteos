@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
-import { Card, LinkButton, PageHeader } from "@/components/ui";
+import { Card, PageHeader } from "@/components/ui";
 import { opcoesCirurgia } from "@/app/(app)/cadastros/_lib/publico";
 import { CirurgiaForm } from "../../cirurgia-form";
 
@@ -16,7 +16,7 @@ export default async function EditarCirurgiaPage({ params }: { params: Promise<{
       <PageHeader
         title={`Editar cirurgia CIR-${cirurgia.numero}`}
         subtitle={`Comercial: corrija os dados do agendamento de ${cirurgia.paciente}.`}
-        actions={<LinkButton href={`/comercial/cirurgias/${id}`} variant="secondary">Voltar</LinkButton>}
+        voltar={{ href: `/comercial/cirurgias/${id}`, label: `Cirurgia CIR-${cirurgia.numero}` }}
       />
       <Card>
         {bloqueada ? (

@@ -31,10 +31,10 @@ export default async function OrcamentosPage({ searchParams }: { searchParams: P
     <>
       <PageHeader title="Orçamentos" subtitle="Propostas de materiais para hospitais e convênios, preparadas pelo Comercial." actions={<LinkButton href="/comercial/orcamentos/novo" icon="mais">Novo orçamento</LinkButton>} />
       <KpiGrid>
-        <Stat label="Na lista" value={money(orcs.reduce((a, o) => a + total(o), 0))} hint={`${orcs.length} orçamento(s)`} />
-        <Stat label="Enviados (aguardando)" value={money(soma("ENVIADO"))} hint={<span className="text-sky-700">{qtd("ENVIADO")} proposta(s)</span>} />
-        <Stat label="Aprovados" value={money(soma("APROVADO"))} hint={<span className="text-emerald-700">{qtd("APROVADO")} proposta(s)</span>} />
-        <Stat label="Vencem em 7 dias" value={vencendo.length} hint={<span className={vencendo.length ? "text-amber-700" : undefined}>{money(vencendo.reduce((a, o) => a + total(o), 0))}</span>} tone={vencendo.length ? "warn" : "default"} />
+        <Stat icon="documento" label="Na lista" value={money(orcs.reduce((a, o) => a + total(o), 0))} hint={`${orcs.length} orçamento(s)`} />
+        <Stat icon="documento" label="Enviados (aguardando)" value={money(soma("ENVIADO"))} hint={<span className="text-sky-700">{qtd("ENVIADO")} proposta(s)</span>} />
+        <Stat icon="ok" label="Aprovados" value={money(soma("APROVADO"))} hint={<span className="text-emerald-700">{qtd("APROVADO")} proposta(s)</span>} />
+        <Stat icon="calendario" label="Vencem em 7 dias" value={vencendo.length} hint={<span className={vencendo.length ? "text-amber-700" : undefined}>{money(vencendo.reduce((a, o) => a + total(o), 0))}</span>} tone={vencendo.length ? "warn" : "default"} />
       </KpiGrid>
       <Filtros limparHref="/comercial/orcamentos">
         <FiltroSelect label="Status" name="status" options={STATUS.map((s) => ({ value: s, label: s.toLowerCase() }))} defaultValue={sp.status} />
@@ -56,7 +56,7 @@ export default async function OrcamentosPage({ searchParams }: { searchParams: P
             <tr key={o.id}>
               <Td>
                 <Link href={`/comercial/orcamentos/${o.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">ORC-{o.id}</Link>
-                <div className="text-[11px] text-slate-500">{date(o.criadoEm)}</div>
+                <div className="text-xs text-slate-500">{date(o.criadoEm)}</div>
               </Td>
               <Td>
                 <div className="font-medium text-teal-700">{nomeHospital(o.hospital)}</div>

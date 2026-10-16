@@ -86,17 +86,17 @@ export default async function ComissoesPage({ searchParams }: { searchParams: Pr
     <>
       <PageHeader title="Comissões e margem" subtitle="Para o Comercial e o Financeiro: quanto foi vendido, o custo, a margem e a comissão dos representantes, com base nos pedidos faturados no período (data da nota fiscal)." />
       <KpiGrid>
-        <Stat label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
-        <Stat label="Custo" value={money(tot.custo)} />
-        <Stat label="Margem de contribuição" value={money(margem)} hint={<span className={margem < 0 ? "text-rose-600" : "text-emerald-700"}>{pct(margem, tot.total)}</span>} tone={margem < 0 ? "danger" : "default"} />
-        <Stat label="Comissões" value={money(tot.comissao)} />
+        <Stat icon="receber" label="Vendido" value={money(tot.total)} hint={`${pedidos.length} pedido(s)`} />
+        <Stat icon="pagar" label="Custo" value={money(tot.custo)} />
+        <Stat icon="tendencia" label="Margem de contribuição" value={money(margem)} hint={<span className={margem < 0 ? "text-rose-600" : "text-emerald-700"}>{pct(margem, tot.total)}</span>} tone={margem < 0 ? "danger" : "default"} />
+        <Stat icon="percentual" label="Comissões" value={money(tot.comissao)} />
       </KpiGrid>
       <Filtros limparHref="/comercial/comissoes">
         <FiltroInput label="De" name="de" type="date" defaultValue={de} />
         <FiltroInput label="Até" name="ate" type="date" defaultValue={ate} />
         <FiltroSelect label="Representante" name="representante" options={representantes} defaultValue={sp.representante} />
       </Filtros>
-      <div className="space-y-3">
+      <div className="space-y-4">
         {tabela(porRep, "Por representante", "Representante", "usuarios")}
         {tabela(porHospital, "Vendas por hospital", "Hospital", "predio")}
         <Table

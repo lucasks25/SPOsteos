@@ -26,24 +26,27 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
     <>
       <PageHeader
         title={t.nome}
+        voltar={{ href: "/comercial/tabelas-preco", label: "Tabelas de preço" }}
         subtitle={`${t.itens.length} produto(s) · hospitais: ${t.hospitais.map((h) => h.nomeFantasia ?? h.razaoSocial).join(", ") || "nenhum"}`}
         actions={
           edita && (
             <>
               <ActionButton action={incluirTodos.bind(null, id)}>Incluir todos pelo preço base</ActionButton>
-              {t.hospitais.length === 0 && (
-                <ActionButton action={excluirTabela.bind(null, id)} variant="danger" confirm="Excluir esta tabela?">Excluir</ActionButton>
-              )}
             </>
           )
         }
+        maisAcoes={
+          edita && t.hospitais.length === 0 ? (
+            <ActionButton action={excluirTabela.bind(null, id)} variant="danger" confirm="Excluir esta tabela?">Excluir</ActionButton>
+          ) : undefined
+        }
       />
       <KpiGrid cols={3}>
-        <Stat label="Produtos com preço" value={t.itens.length} />
-        <Stat label="Hospitais vinculados" value={t.hospitais.length} />
-        <Stat label="Vigência" value={<span className="text-base">{t.vigenciaInicio || t.vigenciaFim ? `${date(t.vigenciaInicio)} a ${date(t.vigenciaFim)}` : "sem prazo"}</span>} hint={tabelaVigente(t) ? <span className="text-emerald-700">vigente</span> : <span className="text-amber-700">fora de vigência</span>} />
+        <Stat icon="etiqueta" label="Produtos com preço" value={t.itens.length} />
+        <Stat icon="predio" label="Hospitais vinculados" value={t.hospitais.length} />
+        <Stat icon="calendario" label="Vigência" value={<span className="text-base">{t.vigenciaInicio || t.vigenciaFim ? `${date(t.vigenciaInicio)} a ${date(t.vigenciaFim)}` : "sem prazo"}</span>} hint={tabelaVigente(t) ? <span className="text-emerald-700">vigente</span> : <span className="text-amber-700">fora de vigência</span>} />
       </KpiGrid>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {edita && (
           <Card title="Dados da tabela" icon="etiqueta">
             <TabelaForm tabela={t} />
@@ -64,7 +67,7 @@ export default async function TabelaPage({ params }: { params: Promise<{ id: str
               <tr key={i.id}>
                 <Td className="max-w-sm">
                   <Link href={`/cadastros/produtos/${i.produtoId}`} className="block truncate font-medium text-teal-700 hover:underline">{i.produto.descricao}</Link>
-                  <div className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</div>
+                  <div className="font-mono text-xs text-slate-500">{i.produto.codigo}</div>
                 </Td>
                 <Td className="tnum text-right">{money(custo)}</Td>
                 <Td className="tnum text-right">{money(i.produto.precoBase)}</Td>

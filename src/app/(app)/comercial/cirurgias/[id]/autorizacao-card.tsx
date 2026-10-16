@@ -49,8 +49,8 @@ export async function AutorizacaoCard({
           {guias.map((g) => {
             const efetivo = statusEfetivo(g, dataHora);
             return (
-              <div key={g.id} className="rounded border border-slate-200">
-                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-[13px]">
+              <div key={g.id} className="rounded-xl border border-slate-200">
+                <div className="flex flex-wrap items-center justify-between gap-2 border-b border-slate-200 bg-slate-50 px-3 py-2 text-sm">
                   <div className="flex flex-wrap items-center gap-x-4 gap-y-1">
                     <span className="font-semibold">Guia {g.numeroGuia ?? "sem número"}</span>
                     <StatusBadge status={efetivo} />
@@ -68,8 +68,8 @@ export async function AutorizacaoCard({
                 </div>
                 {g.observacao && <p className="border-b border-slate-100 px-3 py-1.5 text-xs text-slate-600">{g.observacao}</p>}
                 {g.itens.length > 0 ? (
-                  <table className="min-w-full text-[13px]">
-                    <thead className="border-b border-slate-200 text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">
+                  <table className="min-w-full text-sm">
+                    <thead className="border-b border-slate-200 text-xs font-bold uppercase tracking-[.04em] text-slate-600">
                       <tr>
                         <th scope="col" className="px-3 py-1.5 text-left">Produto</th>
                         <th scope="col" className="px-3 py-1.5 text-right">Solicitado</th>
@@ -81,7 +81,7 @@ export async function AutorizacaoCard({
                       {g.itens.map((i) => (
                         <tr key={i.id}>
                           <td className="px-3 py-1.5">
-                            {i.produto.descricao} <span className="font-mono text-[11px] text-slate-500">{i.produto.codigo}</span>
+                            {i.produto.descricao} <span className="font-mono text-xs text-slate-500">{i.produto.codigo}</span>
                           </td>
                           <td className="tnum px-3 py-1.5 text-right">{i.quantidadeSolicitada}</td>
                           <td className="tnum px-3 py-1.5 text-right font-semibold">{i.quantidadeAutorizada}</td>
@@ -95,7 +95,7 @@ export async function AutorizacaoCard({
                 )}
                 {podeEditar && (
                   <details className="border-t border-slate-200 px-3 py-2">
-                    <summary className="cursor-pointer text-[13px] font-medium text-teal-700">Editar guia</summary>
+                    <summary className="cursor-pointer text-sm font-medium text-teal-700">Editar guia</summary>
                     <div className="pt-3">
                       <AutorizacaoForm
                         cirurgiaId={cirurgiaId}
@@ -122,8 +122,8 @@ export async function AutorizacaoCard({
           })}
 
           {podeEditar && (
-            <details className="rounded border border-slate-200 px-3 py-2" open={guias.length === 0 && convenio.exigeAutorizacao}>
-              <summary className="cursor-pointer text-[13px] font-medium text-teal-700">Registrar guia / autorização</summary>
+            <details className="rounded-xl border border-slate-200 px-3 py-2" open={guias.length === 0 && convenio.exigeAutorizacao}>
+              <summary className="cursor-pointer text-sm font-medium text-teal-700">Registrar guia / autorização</summary>
               <p className="my-2 text-xs text-slate-600">Os itens vêm pré-preenchidos com os materiais do procedimento (ou do consumo, se não houver). Ajuste o que foi pedido ao convênio.</p>
               <AutorizacaoForm cirurgiaId={cirurgiaId} produtos={produtos} sugestao={sugestao} hoje={hoje} />
             </details>

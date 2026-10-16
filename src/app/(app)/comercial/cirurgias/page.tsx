@@ -55,10 +55,10 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
         }
       />
       <KpiGrid>
-        <Stat label="Na lista" value={num(cirurgias.length)} hint={cirurgias.length === 300 ? "limite de 300 atingido" : "cirurgia(s)"} />
-        <Stat label="Agendadas / confirmadas" value={num(n("AGENDADA") + n("CONFIRMADA"))} hint={<span className="text-sky-700">{n("CONFIRMADA")} confirmada(s)</span>} />
-        <Stat label="Realizadas, a faturar" value={num(n("REALIZADA"))} hint={<span className={n("REALIZADA") ? "text-amber-700" : undefined}>aguardam faturamento</span>} tone={n("REALIZADA") ? "warn" : "default"} />
-        <Stat label="Faturadas" value={num(n("FATURADA"))} hint={<span className="text-emerald-700">com pedido de venda</span>} />
+        <Stat icon="lista" label="Na lista" value={num(cirurgias.length)} hint={cirurgias.length === 300 ? "limite de 300 atingido" : "cirurgia(s)"} />
+        <Stat icon="calendario" label="Agendadas / confirmadas" value={num(n("AGENDADA") + n("CONFIRMADA"))} hint={<span className="text-sky-700">{n("CONFIRMADA")} confirmada(s)</span>} />
+        <Stat icon="atividade" label="Realizadas, a faturar" value={num(n("REALIZADA"))} hint={<span className={n("REALIZADA") ? "text-amber-700" : undefined}>aguardam faturamento</span>} tone={n("REALIZADA") ? "warn" : "default"} />
+        <Stat icon="documento" label="Faturadas" value={num(n("FATURADA"))} hint={<span className="text-emerald-700">com pedido de venda</span>} />
       </KpiGrid>
       <Filtros limparHref="/comercial/cirurgias">
         <FiltroInput label="Paciente" name="q" defaultValue={sp.q} placeholder="Nome do paciente" />
@@ -81,7 +81,7 @@ export default async function CirurgiasPage({ searchParams }: { searchParams: Pr
           <tr key={c.id}>
             <Td>
               <Link href={`/comercial/cirurgias/${c.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">CIR-{c.numero}</Link>
-              <div className="text-[11px] text-slate-500">{dateTime(c.dataHora)}</div>
+              <div className="text-xs text-slate-500">{dateTime(c.dataHora)}</div>
             </Td>
             <Td className="max-w-[16rem]">
               <div className="truncate font-medium text-teal-700">{c.paciente} {c.sus && <Badge color="blue">SUS</Badge>}</div>

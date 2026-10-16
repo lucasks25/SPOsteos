@@ -3,7 +3,7 @@ import { notFound } from "next/navigation";
 import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { ActionButton, Field, Form, Select } from "@/components/form";
-import { Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Aviso, Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
 import { nomeHospital } from "@/app/(app)/cadastros/_lib/publico";
 import { hojeUTC } from "@/lib/datas";
@@ -57,29 +57,31 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
       <PageHeader
         title={`Cirurgia CIR-${c.numero}`}
         subtitle={`${c.paciente} — ${dateTime(c.dataHora)}`}
+        voltar={{ href: "/comercial/cirurgias", label: "Cirurgias" }}
         actions={
           <>
-            <LinkButton href="/comercial/cirurgias" variant="secondary">Voltar</LinkButton>
             {comercial && editavel && <LinkButton href={`/comercial/cirurgias/${c.id}/editar`} variant="secondary">Editar</LinkButton>}
             {comercial && c.status === "AGENDADA" && <ActionButton action={confirmarCirurgia.bind(null, c.id)} variant="primary">Confirmar</ActionButton>}
-            {comercial && editavel && c.consumos.length === 0 && (
-              <ActionButton action={cancelarCirurgia.bind(null, c.id)} variant="danger" confirm="Cancelar esta cirurgia?">Cancelar cirurgia</ActionButton>
-            )}
             {podeFaturar && (
               <ActionButton action={faturar.bind(null, c.id)} variant="primary" confirm={risco.grave ? textoAvisoFaturamento(risco.achados, "gerar o pedido de venda") : "Gerar o pedido de venda a partir do consumo?"}>Faturar</ActionButton>
             )}
           </>
         }
+        maisAcoes={
+          comercial && editavel && c.consumos.length === 0 ? (
+            <ActionButton action={cancelarCirurgia.bind(null, c.id)} variant="danger" confirm="Cancelar esta cirurgia?">Cancelar cirurgia</ActionButton>
+          ) : undefined
+        }
       />
 
       <KpiGrid>
-        <Stat label="Situação" value={<StatusBadge status={c.status} />} hint={dateTime(c.dataHora)} />
-        <Stat label="Remessas / vales" value={c.remessas.length} hint={<span className={c.remessas.length === 0 && editavel ? "text-amber-700" : undefined}>{c.remessas.length ? `${c.remessas.filter((r) => r.status === "CONFERIDA").length} conferida(s)` : "nenhum vale gerado"}</span>} />
-        <Stat label="Material consumido" value={`${num(c.consumos.reduce((n, k) => n + k.quantidade, 0))} un.`} hint={`${c.consumos.length} lote(s)`} />
-        <Stat label="Pedido de venda" value={<span className="text-base">{c.pedido ? `PV-${c.pedido.id}` : "—"}</span>} hint={c.pedido ? (c.pedido.numeroNf ? `NF ${c.pedido.numeroNf}` : c.pedido.status.toLowerCase()) : podeFaturar ? <span className="text-amber-700">pronta para faturar</span> : "ainda não faturada"} />
+        <Stat icon="atividade" label="Situação" value={<StatusBadge status={c.status} />} hint={dateTime(c.dataHora)} />
+        <Stat icon="caminhao" label="Remessas / vales" value={c.remessas.length} hint={<span className={c.remessas.length === 0 && editavel ? "text-amber-700" : undefined}>{c.remessas.length ? `${c.remessas.filter((r) => r.status === "CONFERIDA").length} conferida(s)` : "nenhum vale gerado"}</span>} />
+        <Stat icon="frasco" label="Material consumido" value={`${num(c.consumos.reduce((n, k) => n + k.quantidade, 0))} un.`} hint={`${c.consumos.length} lote(s)`} />
+        <Stat icon="carrinho" label="Pedido de venda" value={<span className="text-base">{c.pedido ? `PV-${c.pedido.id}` : "—"}</span>} hint={c.pedido ? (c.pedido.numeroNf ? `NF ${c.pedido.numeroNf}` : c.pedido.status.toLowerCase()) : podeFaturar ? <span className="text-amber-700">pronta para faturar</span> : "ainda não faturada"} />
       </KpiGrid>
 
-      <div className="space-y-3">
+      <div className="space-y-4">
         <Card title="Dados da cirurgia" icon="atividade" actions={<StatusBadge status={c.status} />}>
           <Dl
             items={[
@@ -105,10 +107,10 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
         />
 
         {vazioAguardandoVale && (
-          <div className="rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+          <Aviso tom="alerta">
             Vale pendente: o Estoque gera o vale desta cirurgia.
             {verEstoque && <> <Link href="/estoque/remessas" className="font-medium underline">Ver cirurgias aguardando vale no Estoque</Link></>}
-          </div>
+          </Aviso>
         )}
 
         <Table
@@ -123,7 +125,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
             <tr key={r.id}>
               <Td>
                 <Link href={`/estoque/remessas/${r.id}`} className="font-mono text-xs font-semibold text-teal-700 hover:underline">REM-{r.id}</Link>
-                <div className="text-[11px] text-slate-500">criada em {dateTime(r.criadoEm)}</div>
+                <div className="text-xs text-slate-500">criada em {dateTime(r.criadoEm)}</div>
               </Td>
               <Td>{r.local.nome}</Td>
               <Td className="tnum text-right">{r._count.itens}</Td>
@@ -146,7 +148,7 @@ export default async function CirurgiaPage({ params }: { params: Promise<{ id: s
             <tr key={k.id}>
               <Td>
                 <div className="font-medium">{k.produto.descricao}</div>
-                <div className="font-mono text-[11px] text-slate-500">{k.produto.codigo}</div>
+                <div className="font-mono text-xs text-slate-500">{k.produto.codigo}</div>
               </Td>
               <Td>{k.lote.numero}{k.lote.serie ? ` / série ${k.lote.serie}` : ""}</Td>
               <Td>{date(k.lote.validade)}</Td>

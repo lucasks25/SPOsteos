@@ -22,7 +22,7 @@ export type GuiaInicial = {
 type Row = ItemGuia & { key: string };
 let seq = 0;
 const inputCls =
-  "h-8 w-full rounded border border-slate-300 bg-white px-2.5 text-[13px] text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
+  "h-8 w-full rounded-xl border border-slate-300 bg-white px-2.5 text-sm text-slate-900 hover:border-slate-400 focus:border-teal-700 focus:outline-none focus:ring-2 focus:ring-teal-700/25";
 
 const STATUS = [
   { value: "SOLICITADA", label: "Solicitada (aguardando o convênio)" },
@@ -106,9 +106,9 @@ export function AutorizacaoForm({
             Adicionar
           </button>
         </div>
-        <div className="overflow-x-auto rounded border border-slate-200 bg-white">
-          <table className="min-w-full text-[13px]">
-            <thead className="border-b border-slate-200 bg-slate-50 text-[11px] font-bold uppercase tracking-[.04em] text-slate-600">
+        <div className="overflow-x-auto rounded-xl border border-slate-200 bg-white">
+          <table className="min-w-full text-sm">
+            <thead className="border-b border-slate-200 bg-slate-50 text-xs font-bold uppercase tracking-[.04em] text-slate-600">
               <tr>
                 <th scope="col" className="px-3 py-2 text-left">Produto</th>
                 <th scope="col" className="w-28 px-3 py-2 text-right">Solicitado</th>

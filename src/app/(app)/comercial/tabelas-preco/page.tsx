@@ -14,9 +14,9 @@ export default async function TabelasPage() {
     <>
       <PageHeader title="Tabelas de preço" subtitle="Preço de venda por hospital, mantido pelo Comercial. Sem item na tabela, vale o preço base do produto." actions={<LinkButton href="/comercial/tabelas-preco/nova" icon="mais">Nova tabela</LinkButton>} />
       <KpiGrid cols={3}>
-        <Stat label="Tabelas" value={num(tabelas.length)} />
-        <Stat label="Vigentes" value={num(vigentes)} hint={<span className="text-emerald-700">em uso hoje</span>} />
-        <Stat label="Sem hospital vinculado" value={num(semHospital)} hint={<span className={semHospital ? "text-amber-700" : undefined}>{semHospital ? "podem ser excluídas" : "todas em uso"}</span>} tone={semHospital ? "warn" : "default"} />
+        <Stat icon="etiqueta" label="Tabelas" value={num(tabelas.length)} />
+        <Stat icon="calendario" label="Vigentes" value={num(vigentes)} hint={<span className="text-emerald-700">em uso hoje</span>} />
+        <Stat icon="predio" label="Sem hospital vinculado" value={num(semHospital)} hint={<span className={semHospital ? "text-amber-700" : undefined}>{semHospital ? "podem ser excluídas" : "todas em uso"}</span>} tone={semHospital ? "warn" : "default"} />
       </KpiGrid>
       <Table titulo="Tabelas de preço" icone="etiqueta" contagem={tabelas.length} head={["Tabela", "Vigência", "Situação", "Produtos", "Hospitais", "Ações"]} empty={tabelas.length === 0} emptyText="Nenhuma tabela de preço cadastrada. Sem tabela, vale o preço base do produto." emptyAction={<LinkButton href="/comercial/tabelas-preco/nova" variant="secondary">Nova tabela</LinkButton>}>
         {tabelas.map((t) => (
