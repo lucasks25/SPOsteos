@@ -9,6 +9,12 @@ import { gerarContaReceberTx } from "@/app/(app)/financeiro/_lib/publico";
 export async function registrarNfTx(tx: Tx, pedidoId: number, numeroNf: string, vencimento: Date, agora = new Date()) {
   const pedido = await tx.pedidoVenda.findUnique({ where: { id: pedidoId }, include: { hospital: { select: { razaoSocial: true, nomeFantasia: true } } } });
   if (!pedido) throw new ErroNegocio("Pedido não encontrado.");
+  numeroNf = numeroNf.trim();
+  if (!numeroNf) throw new ErroNegocio("Informe o número da NF.");
+  if (vencimento.getTime() < diaBrasilia(agora).getTime()) throw new ErroNegocio("O vencimento não pode ser anterior à data da NF (hoje).");
+  // mesma NF em dois pedidos = venda contada duas vezes no DRE e duas cobranças ao hospital
+  const outra = await tx.pedidoVenda.findFirst({ where: { numeroNf, id: { not: pedidoId }, status: { not: "CANCELADO" } }, select: { id: true } });
+  if (outra) throw new ErroNegocio(`A NF ${numeroNf} já está registrada no pedido PV-${outra.id}. Confira o número da nota.`);
   const r = await tx.pedidoVenda.updateMany({ where: { id: pedidoId, status: "ABERTO" }, data: { status: "FATURADO", numeroNf, faturadoEm: agora } });
   if (r.count === 0) throw new ErroNegocio("Só é possível registrar NF em pedidos abertos.");
   const total = toNumber(pedido.total);

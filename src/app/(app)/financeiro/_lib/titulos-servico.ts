@@ -46,7 +46,17 @@ export async function salvarContaReceberTx(tx: Tx, id: string | null, data: Dado
   if (id) await travar(tx, "receber", id);
   await garantirMesAberto(tx, [data.competencia, id ? await competenciaDo(tx, "receber", id) : null], "criar ou alterar título nessa competência");
   if (!id) return (await tx.contaReceber.create({ data })).id;
-  const atual = await tx.contaReceber.findUnique({ where: { id }, select: { valor: true, vencimento: true, hospitalId: true, cobrancaStatus: true } });
+  const atual = await tx.contaReceber.findUnique({ where: { id }, select: { valor: true, vencimento: true, hospitalId: true, cobrancaStatus: true, competencia: true, pedido: { select: { id: true, status: true } } } });
+  if (atual?.pedido?.status === "FATURADO") {
+    // Título de NF: valor, competência e hospital são os da nota (receita do DRE = vendas do pedido; o CMV fica na data da NF).
+    const mudouNf = cent(toNumber(atual.valor)) !== cent(data.valor) || atual.competencia?.getTime() !== data.competencia?.getTime() || atual.hospitalId !== data.hospitalId;
+    if (mudouNf) {
+      throw new ErroNegocio(
+        `Este título veio da NF do pedido PV-${atual.pedido.id}: valor, competência e hospital seguem a nota e não podem mudar aqui (o DRE ficaria diferente das vendas). ` +
+          "Diferença de valor recebido se resolve na baixa (desconto, juros) ou como glosa; vencimento, descrição e classificação podem ser alterados.",
+      );
+    }
+  }
   if (atual?.cobrancaStatus && BOLETO_NO_BANCO.includes(atual.cobrancaStatus)) {
     const mudou = cent(toNumber(atual.valor)) !== cent(data.valor) || atual.vencimento.getTime() !== data.vencimento.getTime() || atual.hospitalId !== data.hospitalId;
     if (mudou) {

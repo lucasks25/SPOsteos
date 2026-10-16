@@ -29,7 +29,7 @@ const consumosDe = (cirurgiaId: string) => db.cirurgiaConsumo.findMany({ where: 
 
 /** Estoca, cria e envia um vale de 5 unidades para a cirurgia (que ainda está no status informado ao criar). */
 async function valeEnviado(cirurgiaId: string) {
-  const p = await mkProduto({ custoMedio: 10 });
+  const p = await mkProduto({ custoMedio: 10, precoBase: 25 });
   const l = await mkLote(p.id);
   await db.$transaction((t) => movimentar(t, { tipo: "ENTRADA", produtoId: p.id, loteId: l.id, quantidade: 10, destinoId: LOCAIS.DEPOSITO, custoUnit: 10 }));
   const r = await db.$transaction((t) => criarRemessa(t, { hospitalId, cirurgiaId, itens: [{ produtoId: p.id, loteId: l.id, quantidade: 5 }] }));
@@ -138,4 +138,27 @@ test("remover consumo de cirurgia faturada/cancelada é recusado", async () => {
   const [c] = await consumosDe(cir.id);
   await db.cirurgia.update({ where: { id: cir.id }, data: { status: "FATURADA" } });
   await assert.rejects(db.$transaction((t) => removerConsumoTx(t, c.id, "teste")), /consumo não pode ser removido/);
+});
+
+// Varredura funcional (REVISAO §20): faturar e registrar consumo AO MESMO TEMPO. Sem trava na cirurgia, o faturamento
+// lia o consumo antigo e o novo consumo baixava o estoque mas ficava fora do pedido (e não podia mais ser estornado).
+test("concorrência: faturar × consumo direto em paralelo — o consumo entra no pedido ou é recusado, nunca fica de fora", async () => {
+  const { faturarCirurgia } = await import("@/app/(app)/comercial/_lib/faturamento");
+  for (let rodada = 0; rodada < 3; rodada++) {
+    const cir = await cirurgia("CONFIRMADA");
+    const v = await valeEnviado(cir.id);
+    await conferir(v, 1); // REALIZADA com 1 consumido; 4 continuam consignadas
+    const [fat, cons] = await Promise.allSettled([
+      db.$transaction((t) => faturarCirurgia(t, cir.id)),
+      db.$transaction((t) => registrarConsumoDiretoTx(t, { cirurgiaId: cir.id, loteId: v.l.id, quantidade: 2, usuario: "teste" })),
+    ]);
+    assert.equal(fat.status, "fulfilled", String((fat as PromiseRejectedResult).reason));
+    const consumido = (await consumosDe(cir.id)).reduce((s, c) => s + c.quantidade, 0);
+    const pedido = await db.pedidoVenda.findUniqueOrThrow({ where: { cirurgiaId: cir.id }, include: { itens: true } });
+    const noPedido = pedido.itens.reduce((s, i) => s + i.quantidade, 0);
+    assert.equal(noPedido, consumido, "todo consumo registrado tem de estar no pedido");
+    if (cons.status === "rejected") assert.match(String(cons.reason), /faturada/);
+    assert.equal(await saldoDe(v.l.id, localHosp), 5 - consumido);
+    await conferirKardex(v.l.id);
+  }
 });

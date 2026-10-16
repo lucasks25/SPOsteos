@@ -131,3 +131,42 @@ test("vigência da tabela por dia de Brasília: 21h20 de 15/10 (00h20 UTC de 16/
   assert.equal(tabelaVigente({ vigenciaInicio: null, vigenciaFim: d("2026-10-15") }, ref), true); // vale até o fim de hoje
   assert.equal(tabelaVigente({ vigenciaInicio: null, vigenciaFim: d("2026-10-14") }, ref), false);
 });
+
+// Varredura funcional (REVISAO §20): item sem preço não pode ir para o pedido (sairia de graça na NF, com CMV e sem receita).
+test("faturar recusa produto sem preço (tabela e preço base zerados) e diz o que cadastrar", async () => {
+  const { faturarCirurgia } = await import("@/app/(app)/comercial/_lib/faturamento");
+  const h = await mkHospital();
+  const med = await db.medico.create({ data: { nome: `${P} med`, crm: uid(), ufCrm: "SP" } });
+  const semPreco = await mkProduto({ custoMedio: 10 });
+  const l = await mkLote(semPreco.id);
+  const cir = await db.cirurgia.create({ data: { dataHora: new Date(), hospitalId: h.id, medicoId: med.id, paciente: `${P} pac`, status: "REALIZADA" } });
+  await db.cirurgiaConsumo.create({ data: { cirurgiaId: cir.id, produtoId: semPreco.id, loteId: l.id, quantidade: 1 } });
+  await assert.rejects(db.$transaction((t) => faturarCirurgia(t, cir.id)), new RegExp(`Sem preço de venda para: ${semPreco.codigo}.*Tabelas de preço`));
+  assert.equal((await db.cirurgia.findUniqueOrThrow({ where: { id: cir.id } })).status, "REALIZADA");
+  assert.equal(await db.pedidoVenda.count({ where: { cirurgiaId: cir.id } }), 0);
+});
+
+// Varredura funcional (REVISAO §20): NF repetida em outro pedido, vencimento antes da NF e edição do título da NF.
+test("registrar NF recusa número já usado em outro pedido e vencimento anterior à NF", async () => {
+  const numero = `${P}NF${uid()}`;
+  const a = await faturar((await cenario()).cir.id);
+  const b = await faturar((await cenario()).cir.id);
+  await db.$transaction((tx) => registrarNfTx(tx, a.id, numero, dia(30)));
+  await assert.rejects(db.$transaction((tx) => registrarNfTx(tx, b.id, ` ${numero} `, dia(30))), new RegExp(`já está registrada no pedido PV-${a.id}`));
+  await assert.rejects(db.$transaction((tx) => registrarNfTx(tx, b.id, `${numero}-2`, dia(-1))), /anterior à data da NF/);
+  assert.equal((await db.pedidoVenda.findUniqueOrThrow({ where: { id: b.id } })).status, "ABERTO");
+});
+
+test("título da NF: valor, competência e hospital não mudam pela edição (DRE = vendas); vencimento e descrição mudam", async () => {
+  const { salvarContaReceberTx } = await import("@/app/(app)/financeiro/_lib/titulos-servico");
+  const pv = await faturar((await cenario()).cir.id);
+  const cr = await db.$transaction((tx) => registrarNfTx(tx, pv.id, `${P}NF${uid()}`, dia(30)));
+  const base = { descricao: cr.descricao, hospitalId: cr.hospitalId, planoContaId: cr.planoContaId!, centroCustoId: cr.centroCustoId, competencia: cr.competencia!, valor: num(cr.valor), vencimento: cr.vencimento };
+  const salvar = (d: Partial<typeof base>) => db.$transaction((tx) => salvarContaReceberTx(tx, cr.id, { ...base, ...d }));
+  await assert.rejects(salvar({ valor: num(cr.valor) - 100 }), /veio da NF do pedido PV-/);
+  await assert.rejects(salvar({ competencia: dia(-40) }), /veio da NF/);
+  await salvar({ vencimento: dia(45), descricao: `${cr.descricao} (renegociado)` });
+  const depois = await db.contaReceber.findUniqueOrThrow({ where: { id: cr.id } });
+  assert.equal(num(depois.valor), num(cr.valor));
+  assert.equal(depois.vencimento.getTime(), dia(45).getTime());
+});

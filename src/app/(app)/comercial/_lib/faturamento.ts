@@ -3,6 +3,7 @@ import type { Tx } from "@/lib/db";
 import { toNumber } from "@/lib/format";
 import { precosDoHospital } from "./precos";
 import { ErroNegocio } from "@/lib/erros";
+import { travarCirurgia } from "./trava-cirurgia";
 
 export class FaturamentoError extends ErroNegocio {}
 
@@ -15,6 +16,7 @@ const r2 = (v: number) => Math.round(v * 100) / 100;
  * Deve ser chamada dentro de uma transação. Retorna o pedido criado.
  */
 export async function faturarCirurgia(tx: Tx, cirurgiaId: string) {
+  await travarCirurgia(tx, cirurgiaId);
   const cirurgia = await tx.cirurgia.findUnique({
     where: { id: cirurgiaId },
     include: {
@@ -54,6 +56,14 @@ export async function faturarCirurgia(tx: Tx, cirurgiaId: string) {
   }
   const itens = [...grupos.values()];
   const precos = await precosDoHospital(tx, cirurgia.hospitalId, itens.map((i) => i.produtoId), cirurgia.dataHora);
+  // Item sem preço (tabela com 0 ou produto sem preço base) sairia de graça na NF, com CMV e sem receita.
+  const semPreco = itens.filter((i) => !((precos.get(i.produtoId)?.preco ?? 0) > 0)).map((i) => i.produtoId);
+  if (semPreco.length) {
+    const prods = await tx.produto.findMany({ where: { id: { in: semPreco } }, select: { codigo: true } });
+    throw new FaturamentoError(
+      `Sem preço de venda para: ${prods.map((p) => p.codigo).join(", ")}. Cadastre o preço na tabela do hospital (Comercial › Tabelas de preço) ou o preço base do produto e fature de novo.`,
+    );
+  }
 
   let total = 0;
   let custoTotal = 0;

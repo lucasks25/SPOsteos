@@ -63,7 +63,8 @@ export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: 
     const saldo = r2(toNumber(t.valor) - toNumber(t.valorBaixado));
     const falta = t.hospital ? faltaNoPagador(t.hospital) : ["hospital"];
     if (t.status !== "ABERTO") erros.push(`${t.descricao}: não está em aberto`);
-    else if (t.cobrancaStatus && t.cobrancaStatus !== "REJEITADO") erros.push(`${t.descricao}: já tem cobrança (${t.cobrancaStatus.toLowerCase()})`);
+    // boleto rejeitado, baixado pelo banco (decurso de prazo) ou liquidado e depois estornado: título em aberto pode ganhar boleto novo
+    else if (t.cobrancaStatus && !["REJEITADO", "BAIXADO", "LIQUIDADO"].includes(t.cobrancaStatus)) erros.push(`${t.descricao}: já tem cobrança (${t.cobrancaStatus.toLowerCase()})`);
     else if (saldo <= 0) erros.push(`${t.descricao}: sem saldo`);
     else if (t.vencimento < hoje) erros.push(`${t.descricao}: vencimento já passou (altere o vencimento do título antes de cobrar)`);
     else if (!t.hospital || falta.length) erros.push(`${t.descricao}: falta no cadastro do hospital ${falta.join(", ")}`);

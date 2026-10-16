@@ -194,3 +194,20 @@ test("retorno de conta não cadastrada para cobrança é recusado", async () => 
   const txt = simular(remessa, [{ nn, cod: "02" }]).replace(/^(.{26})0099/, "$10098");
   await assert.rejects(aplicar(txt), /agência 0098|não é uma conta/);
 });
+
+// Varredura funcional (REVISAO §20): boleto baixado pelo banco (decurso de prazo) deixava o título em aberto sem como cobrar de novo.
+test("boleto baixado pelo banco com título ainda em aberto: pode ir numa nova remessa com outro nosso número", async () => {
+  const t = await titulo(450);
+  const r = await gerar([t.id]);
+  const remessa = (await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId } })).conteudo;
+  const n1 = (await lerT(t.id)).nossoNumero!;
+  await aplicar(simular(remessa, [{ nn: n1, cod: "02" }]));
+  await aplicar(simular(remessa, [{ nn: n1, cod: "09" }])); // baixa pelo banco
+  const baixado = await lerT(t.id);
+  assert.equal(baixado.cobrancaStatus, "BAIXADO");
+  assert.equal(baixado.status, "ABERTO");
+  await gerar([t.id]);
+  const novo = await lerT(t.id);
+  assert.notEqual(novo.nossoNumero, n1);
+  assert.equal(novo.cobrancaStatus, "ENVIADO");
+});

@@ -4,6 +4,7 @@ import { ErroNegocio } from "@/lib/erros";
 import { localDoHospital, movimentar } from "@/lib/estoque";
 import { toNumber } from "@/lib/format";
 import { hojeUTC } from "@/lib/datas";
+import { travarCirurgia } from "./trava-cirurgia";
 
 /** Status em que a cirurgia aceita consumo. FATURADA e CANCELADA são recusadas (consumo ali não seria faturado). */
 const ACEITAM_CONSUMO = ["AGENDADA", "CONFIRMADA", "REALIZADA"];
@@ -11,6 +12,7 @@ const ACEITAM_CONSUMO = ["AGENDADA", "CONFIRMADA", "REALIZADA"];
 export type ItemConsumo = { produtoId: string; loteId: string; quantidade: number };
 
 async function cirurgiaParaConsumo(tx: Tx, cirurgiaId: string) {
+  await travarCirurgia(tx, cirurgiaId);
   const c = await tx.cirurgia.findUnique({ where: { id: cirurgiaId } });
   if (!c) throw new ErroNegocio("Cirurgia não encontrada.");
   if (!ACEITAM_CONSUMO.includes(c.status)) {
@@ -61,8 +63,12 @@ export async function registrarConsumoDiretoTx(tx: Tx, input: { cirurgiaId: stri
 
 /** Remove uma linha de consumo, devolvendo a quantidade ao estoque consignado do hospital (estorno). Devolve o id da cirurgia. */
 export async function removerConsumoTx(tx: Tx, consumoId: string, usuario: string) {
+  const ref = await tx.cirurgiaConsumo.findUnique({ where: { id: consumoId }, select: { cirurgiaId: true } });
+  if (!ref) throw new ErroNegocio("Consumo não encontrado (já removido?). Atualize a página.");
+  await travarCirurgia(tx, ref.cirurgiaId);
+  // relê sob a trava: um estorno repetido ou um faturamento em paralelo já pode ter mudado tudo
   const consumo = await tx.cirurgiaConsumo.findUnique({ where: { id: consumoId }, include: { cirurgia: true, produto: true } });
-  if (!consumo) throw new ErroNegocio("Consumo não encontrado.");
+  if (!consumo) throw new ErroNegocio("Consumo não encontrado (já removido?). Atualize a página.");
   const c = consumo.cirurgia;
   if (c.status === "FATURADA" || c.status === "CANCELADA") throw new ErroNegocio(`Cirurgia ${c.status.toLowerCase()}: consumo não pode ser removido.`);
   const localId = await localDoHospital(tx, c.hospitalId);

@@ -9,7 +9,7 @@ import { argId, argIdOuNulo } from "@/lib/auth-args";
 import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { checarCnpj } from "@/lib/documentos-br";
-import { addDias, hojeUTC } from "@/lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { alternarAtivoContaTx, excluirLancamentoAvulsoTx, lancarAvulsoTx, salvarContaTx } from "./contas-servico";
 import { estornarTransferencia, transferir } from "./titulos";
 
@@ -19,7 +19,7 @@ const schemaConta = z.object({
   banco: zf.optText(),
   agencia: zf.optText(),
   numero: zf.optText(),
-  saldoInicial: z.coerce.number({ error: "Valor inválido" }),
+  saldoInicial: z.coerce.number({ error: "Valor inválido" }).min(-999_999_999_999.99, "Valor fora do limite").max(999_999_999_999.99, "Valor fora do limite"),
   titularCnpj: zf.optText(),
   titularNome: zf.optText(),
   carteiraCobranca: z.enum(["109"], { error: "Carteira inválida" }).optional().transform((v) => v ?? null),
@@ -83,7 +83,7 @@ export async function lancarAvulso(contaId: string, _: ActionState, fd: FormData
   const parsed = parseForm(schemaAvulso, fd);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
-  if (d.data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
+  if (d.data > hojeUTC()) return { fieldErrors: { data: "Data não pode ser futura (hoje é o limite)" }, error: "Verifique os campos destacados." };
   try {
     const l = await db.$transaction((tx) => lancarAvulsoTx(tx, contaId, d));
     await audit(user.id, "lançar", "Lancamento", l.id, `${d.sentido} ${money(d.valor)} — ${d.descricao}`);
@@ -128,7 +128,7 @@ export async function transferirEntreContas(_: ActionState, fd: FormData): Promi
   const parsed = parseForm(schemaTransferencia, fd);
   if (!parsed.success) return parsed.state;
   const d = parsed.data;
-  if (d.data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
+  if (d.data > hojeUTC()) return { fieldErrors: { data: "Data não pode ser futura (hoje é o limite)" }, error: "Verifique os campos destacados." };
   try {
     const t = await db.$transaction((tx) => transferir(tx, d));
     await audit(user.id, "transferir", "Transferencia", t.id, `${money(d.valor)} de ${d.origemId} para ${d.destinoId}`);

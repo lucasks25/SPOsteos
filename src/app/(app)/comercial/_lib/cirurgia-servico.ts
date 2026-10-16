@@ -1,6 +1,7 @@
 import "server-only";
 import type { Tx } from "@/lib/db";
 import { ErroNegocio } from "@/lib/erros";
+import { travarCirurgia } from "./trava-cirurgia";
 
 /** Troca de hospital recusada: a action converte em erro no campo `hospitalId`. */
 export class HospitalTravadoError extends ErroNegocio {}
@@ -24,6 +25,7 @@ export type DadosCirurgia = {
  */
 export async function salvarCirurgiaTx(tx: Tx, id: string | null, data: DadosCirurgia) {
   if (!id) return { cirurgia: await tx.cirurgia.create({ data }), criada: true };
+  await travarCirurgia(tx, id);
   const atual = await tx.cirurgia.findUnique({ where: { id }, include: { _count: { select: { consumos: true, remessas: true } } } });
   if (!atual) throw new ErroNegocio("Cirurgia não encontrada.");
   if (atual.status === "FATURADA" || atual.status === "CANCELADA") throw new ErroNegocio(`Cirurgia ${atual.status.toLowerCase()} não pode ser editada.`);
@@ -35,6 +37,7 @@ export async function salvarCirurgiaTx(tx: Tx, id: string | null, data: DadosCir
 
 /** AGENDADA → CONFIRMADA. */
 export async function confirmarCirurgiaTx(tx: Tx, id: string) {
+  await travarCirurgia(tx, id);
   const c = await tx.cirurgia.findUnique({ where: { id } });
   if (!c) throw new ErroNegocio("Cirurgia não encontrada.");
   if (c.status !== "AGENDADA") throw new ErroNegocio("Apenas cirurgias agendadas podem ser confirmadas.");
@@ -44,6 +47,7 @@ export async function confirmarCirurgiaTx(tx: Tx, id: string) {
 
 /** Cancela se não estiver FATURADA/CANCELADA, sem consumo e sem pedido de venda ativo. */
 export async function cancelarCirurgiaTx(tx: Tx, id: string) {
+  await travarCirurgia(tx, id);
   const c = await tx.cirurgia.findUnique({ where: { id }, include: { _count: { select: { consumos: true } }, pedido: true } });
   if (!c) throw new ErroNegocio("Cirurgia não encontrada.");
   if (c.status === "FATURADA" || c.status === "CANCELADA") throw new ErroNegocio(`Cirurgia já está ${c.status.toLowerCase()}.`);

@@ -59,7 +59,8 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
   const f = parseFiltros(searchParams, cfg.parceiroParam);
   const [{ rows, totais }, parceiros] = await Promise.all([listarTitulos(tipo, f, hoje), listarParceiros(tipo)]);
   const pagoPeriodo = `${date(totais.pago.de)} a ${date(totais.pago.ate)}`;
-  const totalLista = rows.reduce((s, r) => s + (r.status === "PAGO" ? (r.valorPago ?? 0) : r.saldo || r.valor), 0);
+  // cancelado não entra (antes somava o valor do título cancelado); pago = dinheiro pago; aberto = saldo
+  const totalLista = rows.reduce((s, r) => s + (r.status === "CANCELADO" ? 0 : r.status === "PAGO" ? (r.valorPago ?? 0) : r.saldo || r.valor), 0);
 
   const head = ["Vencimento", "Descrição", cfg.parceiro, "Origem", "Valor", "Situação", cfg.pagoLabel, ""];
   const icone = tipo === "receber" ? "receber" : "pagar";

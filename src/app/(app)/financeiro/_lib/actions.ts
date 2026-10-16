@@ -10,7 +10,7 @@ import { money } from "@/lib/format";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import type { FormaPagamento } from "@/generated/prisma/client";
 import { FORMAS, TIPOS, isTipo, type Tipo } from "./config";
-import { addDias, hojeUTC } from "@/lib/datas";
+import { hojeUTC } from "@/lib/datas";
 import { lerBoleto } from "./boleto";
 import { estornarBaixa, estornarGlosa, registrarBaixa, registrarGlosa, registrarRecurso } from "./titulos";
 import { CATEGORIAS_GLOSA } from "./glosa-categorias";
@@ -126,7 +126,7 @@ export async function baixarTitulo(tipoArg: Tipo, id: string, _: ActionState, fd
   const parsed = parseForm(schemaBaixa, fd);
   if (!parsed.success) return parsed.state;
   const { contaId, valor, juros, multa, desconto, data, forma } = parsed.data;
-  if (data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
+  if (data > hojeUTC()) return { fieldErrors: { data: "Data não pode ser futura (hoje é o limite)" }, error: "Verifique os campos destacados." };
   try {
     await db.$transaction((tx) => registrarBaixa(tx, { tipo, tituloId: id, contaId, data, valor, juros, multa, desconto, forma }));
     await audit(user.id, "baixar", TIPOS[tipo].entidade, id, `${money(valor)} em ${data.toISOString().slice(0, 10)}`);
@@ -205,7 +205,7 @@ export async function glosarTitulo(id: string, _: ActionState, fd: FormData): Pr
   const parsed = parseForm(schemaGlosa, fd);
   if (!parsed.success) return parsed.state;
   const { valor, data, motivo, categoria } = parsed.data;
-  if (data > addDias(hojeUTC(), 1)) return { fieldErrors: { data: "Data não pode ser futura" }, error: "Verifique os campos destacados." };
+  if (data > hojeUTC()) return { fieldErrors: { data: "Data não pode ser futura (hoje é o limite)" }, error: "Verifique os campos destacados." };
   try {
     const g = await db.$transaction((tx) => registrarGlosa(tx, { tituloId: id, valor, data, motivo, categoria }));
     await audit(user.id, "glosar", "ContaReceber", id, `${money(valor)} — ${categoria} — ${motivo} (glosa ${g.id})`);
