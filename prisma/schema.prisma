@@ -53,6 +53,7 @@ model LogAuditoria {
   criadoEm   DateTime @default(now())
 
   @@index([entidade, entidadeId])
+  @@index([criadoEm]) // admin/auditoria: página ordenada por data (tabela que mais cresce)
 }
 
 // ───────────────────────── Cadastros ─────────────────────────
@@ -364,6 +365,8 @@ model Remessa {
   conferidaEm DateTime?
   criadoEm    DateTime      @default(now())
   itens       RemessaItem[]
+
+  @@index([cirurgiaId]) // remessas da cirurgia, _count da lista, cirurgias aguardando vale
 }
 
 model RemessaItem {
@@ -377,6 +380,8 @@ model RemessaItem {
   quantidade Int
   devolvido  Int     @default(0)
   consumido  Int     @default(0)
+
+  @@index([remessaId]) // itens da remessa; FK em cascata
 }
 
 // ───────────────────────── Comercial ─────────────────────────
@@ -435,6 +440,8 @@ model Cirurgia {
   anexos                Anexo[]
   recolhimentoPacientes RecolhimentoPaciente[]
   autorizacoes          AutorizacaoConvenio[]
+
+  @@index([dataHora]) // lista (dataHora desc), agenda, painel, comissões (ARQ-13)
 }
 
 // Material efetivamente utilizado na cirurgia (folha de consumo / pós-cirúrgico)
@@ -447,6 +454,9 @@ model CirurgiaConsumo {
   loteId     String
   lote       Lote     @relation(fields: [loteId], references: [id])
   quantidade Int
+
+  @@index([cirurgiaId]) // detalhe e _count da lista de cirurgias; FK em cascata
+  @@index([loteId]) // rastreabilidade e recall: lote -> paciente
 }
 
 // ── Autorização prévia / guia do convênio ligada à cirurgia. O convênio é o da própria cirurgia (Cirurgia.convenioId).
@@ -554,6 +564,8 @@ model PedidoVenda {
   centroCusto     CentroCusto?      @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
   itens           PedidoVendaItem[]
   contasReceber   ContaReceber[]
+
+  @@index([status, faturadoEm]) // painel, comissões, DRE e gestão: faturados no período
 }
 
 model PedidoVendaItem {
@@ -698,6 +710,7 @@ model ContaReceber {
   competencia     DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
 
   @@unique([cobrancaContaId, nossoNumero])
+  @@index([status, vencimento]) // listas (padrão ABERTO), totais, painel, fluxo, aging, conciliação
 }
 
 model ContaPagar {
@@ -727,6 +740,8 @@ model ContaPagar {
   centroCusto       CentroCusto?           @relation(fields: [centroCustoId], references: [id], onDelete: Restrict)
   competencia       DateTime // mês/dia de competência (meia-noite UTC): o DRE usa esta data, não o vencimento
   despesaImportacao PedidoCompraDespesa?
+
+  @@index([status, vencimento]) // idem; aprovações e remessa SISPAG
 }
 
 enum TipoConta {
@@ -808,6 +823,7 @@ model Lancamento {
   @@index([contaReceberId])
   @@index([contaPagarId])
   @@index([transferenciaId])
+  @@index([data]) // painel, fluxo e "pago no período": intervalo de datas sem filtrar conta
 }
 
 // Transferência entre contas próprias: par de lançamentos (SAIDA na origem, ENTRADA no destino).

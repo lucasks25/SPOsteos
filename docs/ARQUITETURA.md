@@ -131,7 +131,7 @@ Decisões de convenção (para acabar com as variações sem renomear meio siste
 | D10 | `db.hospital.findMany({ where: { ativo: true } … })` repetido em `estoque/remessas/page.tsx:43`, `estoque/remessas/nova/page.tsx:15`, `estoque/inventario/page.tsx:27`, `estoque/inventario/novo/page.tsx:10`; produtos ativos em 8 telas | consulta duplicada | ARQ-10 (opcional) |
 | D11 | N+1 em laços dentro de transação: `financeiro/_lib/sispag-servico.ts:73`, `cobranca-servico.ts:137`, `estoque/_lib/remessas.ts:94` | aceitável no volume atual (retornos de dezenas de linhas); rever se um retorno passar de ~500 linhas | nenhuma agora |
 | D12 | arquivos perto do limite de 500 linhas: `financeiro/_lib/cobranca.ts` (478), `sispag.ts` (346) | nenhum passa de 500 | dividir se crescer |
-| D13 | índices ausentes para filtros frequentes (Postgres não indexa FK sozinho): `ContaReceber(status, vencimento)`, `ContaReceber(hospitalId)`, `ContaPagar(status, vencimento)`, `ContaPagar(fornecedorId)`, `ContaPagar(pedidoId)`, `Cirurgia(dataHora)`, `Cirurgia(status)`, `CirurgiaConsumo(loteId)` (recall), `CirurgiaConsumo(cirurgiaId)`, `PedidoVenda(status, faturadoEm)`, `Lote(status)`, `Lote(validade)`, `Saldo(localId)`, `Movimento(origemId)`, `Movimento(destinoId)`, `RemessaItem(remessaId)`, `LogAuditoria(criadoEm)` | irrelevante com centenas de linhas; vira problema com dezenas de milhares | ARQ-13 (não alterei o schema) |
+| D13 | índices ausentes para filtros frequentes (Postgres não indexa FK sozinho): `ContaReceber(status, vencimento)`, `ContaReceber(hospitalId)`, `ContaPagar(status, vencimento)`, `ContaPagar(fornecedorId)`, `ContaPagar(pedidoId)`, `Cirurgia(dataHora)`, `Cirurgia(status)`, `CirurgiaConsumo(loteId)` (recall), `CirurgiaConsumo(cirurgiaId)`, `PedidoVenda(status, faturadoEm)`, `Lote(status)`, `Lote(validade)`, `Saldo(localId)`, `Movimento(origemId)`, `Movimento(destinoId)`, `RemessaItem(remessaId)`, `LogAuditoria(criadoEm)` | irrelevante com centenas de linhas; vira problema com dezenas de milhares | ARQ-13 **feito**: 10 criados, os demais rejeitados com medição (ver §9.1 ARQ-13) |
 
 Pontos positivos verificados: toda Server Action exportada chama `requireUser`, menos as duas legítimas (`login/actions.ts` e `tema-actions.ts`, que só grava o cookie de tema); nenhum arquivo acima de 500 linhas; erro ao usuário uniforme; `server-only` nos serviços; client components enxutos; serviços transacionais já existem e são testados em financeiro, compras, qualidade e estoque.
 
@@ -269,6 +269,30 @@ Cada item: **arquivos**, **mudança**, **validação**, **risco**, **onda**. Val
 
 **ARQ-13 Índices** — onda 4, revisão do arquiteto + migration. `[DIFÍCIL | Opus | medium]`
 - Os índices de D13, numa migration só (`CREATE INDEX CONCURRENTLY` não roda dentro da transação do `migrate`; em produção com tabela grande, aplicar à mão). Medir com `EXPLAIN ANALYZE` nas telas de títulos, kardex e painel antes de decidir a lista final.
+- **Feito (16/10/2026)**, migration `20261016180000_indices_consultas_frequentes`. Medição: Postgres 17, volume sintético de ~5 anos (LogAuditoria 1M, Movimento 600k, CirurgiaConsumo e RemessaItem 200k, Lancamento 120k, títulos 110k, Cirurgia/Remessa/PedidoVenda 25k) num schema descartável, tempos de `EXPLAIN ANALYZE` com cache quente. Critério: só entra índice com ganho claro em consulta que roda a cada abertura de tela (lista padrão, painel, detalhe) ou em rastreabilidade; o resto fica anotado com o gatilho para rever.
+
+  | Índice criado | Consulta (onde) | Antes → depois | Tamanho a 5 anos |
+  |---|---|---|---|
+  | `ContaReceber(status, vencimento)`, `ContaPagar(status, vencimento)` | lista padrão ABERTO por vencimento, totais "vencido", painel (a pagar 15 dias), fluxo, aging, conciliação, aprovações, SISPAG | 4,4 → 0,09 ms (lista); 5,1 → 0,02 ms (painel); 2,0 → 0,4 ms (totais) | 1,5–1,9 MB cada |
+  | `Lancamento(data)` | painel (entradas/saídas do mês), fluxo, "pago no período" das listas: intervalo de datas sem `contaId`, que o `(contaId, data)` não atende | 18,6 → 0,2 ms | 2,7 MB |
+  | `Cirurgia(dataHora)` | lista (dataHora desc, take 300), agenda, painel, comissões | 2,8 → 0,05 ms | 0,6 MB |
+  | `CirurgiaConsumo(cirurgiaId)`, `Remessa(cirurgiaId)` | detalhe da cirurgia, `_count` da lista de cirurgias, cirurgias aguardando vale; FK com cascata | 6,1 → 0,02 ms (detalhe); `_count` 16,7 → 0,7 ms | 1,9 / 0,6 MB |
+  | `CirurgiaConsumo(loteId)` | rastreabilidade lote → paciente e recall (`qualidade/_lib/rastreio.ts`, `recolhimento-servico.ts`) | 5,1 → 0,03 ms | 1,9 MB |
+  | `RemessaItem(remessaId)` | detalhe da remessa; FK com cascata | 7,9 → 0,02 ms | 1,9 MB |
+  | `PedidoVenda(status, faturadoEm)` | painel (vendas do mês e 6 meses), comissões, DRE, gestão | 3,7 → 0,2 ms | 0,8 MB |
+  | `LogAuditoria(criadoEm)` | `admin/auditoria` (página por data desc, com ou sem filtro de entidade) | 57 → 0,02 ms | 21 MB (custo de escrita medido: ~0,5 µs por linha) |
+
+  Rejeitados (com o porquê):
+  - `Movimento(origemId, criadoEm)` + `Movimento(destinoId, criadoEm)`: kardex filtrado só por local foi de 15,5 para 12,5 ms; custaria 40 MB na tabela de maior escrita. O kardex por produto já usa `(produtoId, criadoEm)`.
+  - `Movimento(tipo, criadoEm)`: relatórios de gestão e sugestão de compra, 15 → 2 ms, mas são telas ocasionais e o índice teria 18 MB na tabela mais escrita. Primeiro candidato quando Movimento passar de ~1M linhas.
+  - `Saldo(localId)`: lotes disponíveis no depósito 4,9 → 3,8 ms (o custo está no JOIN com Lote, não no filtro).
+  - `Lote(status)`, `Lote(validade)`: Lote tem ~20k linhas a 5 anos; os contadores do painel custam ~4 ms e pioraram com o índice (o custo é o `EXISTS` em Saldo).
+  - `ContaReceber(hospitalId)`, `ContaPagar(fornecedorId)`: na lista com parceiro o `(status, vencimento)` já resolve (0,4 ms); com status PAGO são 2 ms. `ContaPagar(pedidoId)` / `ContaReceber(pedidoId)`: 6 / 3 ms no detalhe do pedido, tela de baixa frequência. Rever se o detalhe do pedido de compra ficar lento.
+  - `ExtratoLinha` não conciliado: o índice único de `lancamentoId` já atende `lancamentoId IS NULL` (0,15 ms). Índice parcial dispensado.
+  - Busca global (`contains` insensitive → `ILIKE '%q%'`): nenhum btree serve. `pg_trgm` + GIN resolveria, mas exige extensão, índice GIN em cada coluna buscada (descrição, paciente, lote, NF), escrita mais cara e o `migrate diff` não o declara. Hoje são 11 ms (110k títulos) e 5 ms (cirurgias) com `take 5`: não compensa no MVP. Rever se a busca passar de ~100 ms.
+  - Não resolvidos por índice: a página de auditoria ainda faz `count(*)` e `DISTINCT entidade` na tabela inteira (~50 ms cada a 1M linhas). Correção é de aplicação (lista fixa de entidades, contagem estimada), não de índice.
+
+  Para medir de novo (base real ou sintética): `scripts/explain-indices.sql` (só `EXPLAIN` de SELECTs; `-v esquema=public`) e `scripts/explain-indices-seed.sql` (cria o schema descartável `bench_idx` com o volume acima; instruções no cabeçalho). Nenhum índice novo é parcial, então o `migrate diff` não tenta removê-los.
 
 ### 9.2 Remoção de elementos cruzados de UI
 
