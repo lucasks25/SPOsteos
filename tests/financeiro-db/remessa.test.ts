@@ -20,6 +20,7 @@ const CNPJ = "11222333000181";
 async function limpar() {
   const itens = await db.remessaPagamentoItem.findMany({ where: { contaPagar: { descricao: { startsWith: "TESTEDB" } } }, select: { remessaId: true } });
   await db.remessaPagamento.deleteMany({ where: { id: { in: itens.map((i) => i.remessaId) } } });
+  await db.extratoLinha.deleteMany({ where: { conta: { nome: { startsWith: "TESTEDB" } } } });
   await db.lancamento.deleteMany({ where: { descricao: { startsWith: "TESTEDB" } } });
   await db.contaPagar.deleteMany({ where: { descricao: { startsWith: "TESTEDB" } } });
   await db.remessaPagamento.deleteMany({ where: { conta: { nome: { startsWith: "TESTEDB" } } } });
@@ -102,4 +103,39 @@ test("conta a pagar sem aprovação do financeiro não entra em remessa; depois 
   await assert.rejects(gerar([t.id]), /aguardando aprovação/);
   await db.contaPagar.update({ where: { id: t.id }, data: { aprovadoEm: new Date() } });
   await gerar([t.id]);
+});
+
+// REVISAO §22: a conciliação baixou o título antes do retorno SISPAG chegar. Mesmo valor, mesma conta e extrato a ±3 dias
+// = o mesmo pagamento ("já conciliado", sem alerta). Fora disso continua duplicidade.
+async function pagoPelaConciliacao(valorExtrato: number, diasExtrato: number) {
+  const t = await titulo();
+  const r = await gerar([t.id]);
+  await db.$transaction((tx) => registrarBaixa(tx, { tipo: "pagar", tituloId: t.id, contaId: conta.id, data: hoje, valor: valorExtrato, desconto: Math.round((1000 - valorExtrato) * 100) / 100 }));
+  const lanc = await db.lancamento.findFirstOrThrow({ where: { contaPagarId: t.id } });
+  await db.extratoLinha.create({ data: { contaId: conta.id, data: new Date(hoje.getTime() + diasExtrato * 86400000), valor: -valorExtrato, descricao: "TESTEDB debito", fitid: `TESTEDB-${t.id}`, lancamentoId: lanc.id, conciliadoEm: new Date() } });
+  const item = await db.remessaPagamentoItem.findFirstOrThrow({ where: { remessaId: r.remessaId } });
+  return { t, item };
+}
+
+test("retorno SISPAG de título baixado pela conciliação com o mesmo pagamento: 'já conciliado' (CONC), sem DUP", async () => {
+  const { t, item } = await pagoPelaConciliacao(1000, -2);
+  const cont = await aplicar(retornoPago(item.id, 1000));
+  assert.equal(cont.jaConciliados, 1);
+  assert.equal(cont.jaBaixados, 0);
+  assert.equal(await db.lancamento.count({ where: { contaPagarId: t.id } }), 1);
+  const x = await db.remessaPagamentoItem.findUniqueOrThrow({ where: { id: item.id } });
+  assert.match(x.ocorrencias ?? "", /CONC/);
+  assert.doesNotMatch(x.ocorrencias ?? "", /DUP/);
+});
+
+test("retorno SISPAG de título conciliado com outro valor ou data distante continua DUP", async () => {
+  const outroValor = await pagoPelaConciliacao(999, 0);
+  assert.equal((await db.contaPagar.findUniqueOrThrow({ where: { id: outroValor.t.id } })).status, "PAGO"); // 999 + 1,00 de desconto
+  const c1 = await aplicar(retornoPago(outroValor.item.id, 1000));
+  assert.equal(c1.jaBaixados, 1);
+  assert.equal(c1.jaConciliados, 0);
+  const longe = await pagoPelaConciliacao(1000, -10);
+  const c2 = await aplicar(retornoPago(longe.item.id, 1000));
+  assert.equal(c2.jaBaixados, 1);
+  assert.match((await db.remessaPagamentoItem.findUniqueOrThrow({ where: { id: longe.item.id } })).ocorrencias ?? "", /DUP/);
 });

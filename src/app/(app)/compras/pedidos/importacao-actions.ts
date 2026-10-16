@@ -7,6 +7,7 @@ import { requireUser } from "@/lib/auth";
 import { argId, argIdOuNulo, argInt } from "@/lib/auth-args";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { ErroNegocio } from "@/lib/erros";
+import { CAMPO_TOKEN, registrarEnvioTx } from "@/lib/idempotencia";
 import { CRITERIOS_RATEIO, INCOTERMS, MOEDAS, ROTULO_DESPESA, TIPOS_DESPESA } from "../_lib/custo-importacao";
 import { removerDespesaTx, salvarDadosImportacaoTx, salvarDespesaTx, salvarItensImportacaoTx } from "../_lib/importacao-servico";
 import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
@@ -93,9 +94,10 @@ export async function salvarDespesa(pedidoId: number, despesaId: string | null, 
   const { integra, ...d } = parsed.data;
   if (d.gerarConta && !d.vencimento) return { error: "Informe o vencimento da conta a pagar.", fieldErrors: { vencimento: "Obrigatório para gerar a conta" } };
   try {
-    const r = await db.$transaction((tx) =>
-      salvarDespesaTx(tx, pedidoId, despesaId, { ...d, integraCusto: integra === "PADRAO" ? null : integra === "SIM" }, user.id),
-    );
+    const r = await db.$transaction(async (tx) => {
+      await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio do mesmo formulário (outra aba, voltar)
+      return salvarDespesaTx(tx, pedidoId, despesaId, { ...d, integraCusto: integra === "PADRAO" ? null : integra === "SIM" }, user.id);
+    });
     await audit(
       user.id,
       despesaId ? "editar" : "criar",

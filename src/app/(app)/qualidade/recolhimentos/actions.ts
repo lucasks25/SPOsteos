@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { requireUser } from "@/lib/auth";
 import { idInt } from "@/lib/ids";
 import { argId, argInt } from "@/lib/auth-args";
+import { CAMPO_TOKEN, registrarEnvioTx } from "@/lib/idempotencia";
 import { audit, errorMessage, parseForm, zf, type ActionState } from "@/lib/forms";
 import { CLASSES, ORIGENS, PERFIS_OPERAR_RECOLHIMENTO, PERFIS_RECOLHER, docRecolhimento } from "../_lib/recolhimento";
 import {
@@ -48,7 +49,10 @@ export async function abrirRecolhimentoAction(_: ActionState, fd: FormData): Pro
   if (loteIds.length === 0) return { error: "Selecione ao menos um lote." };
   let id: number;
   try {
-    const r = await db.$transaction((tx) => abrirRecolhimento(tx, { ...parsed.data, loteIds, usuario: user.nome }), TX_OPTS);
+    const r = await db.$transaction(async (tx) => {
+      await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio do mesmo formulário (outra aba, voltar)
+      return abrirRecolhimento(tx, { ...parsed.data, loteIds, usuario: user.nome });
+    }, TX_OPTS);
     id = r.recolhimento.id;
     await audit(user.id, "abrir", ENT, id, `${docRecolhimento(id)} ${parsed.data.origem} classe ${parsed.data.classe}; ${loteIds.length} lote(s) bloqueado(s); ${r.foto.alvos} local(is), ${r.foto.pacientes} uso(s) em cirurgia`);
   } catch (e) {

@@ -6,6 +6,7 @@ import { date, num } from "@/lib/format";
 import { Filtros } from "@/components/filtros";
 import { CLASSES, ORIGENS, PERFIS_OPERAR_RECOLHIMENTO, ROTULO_CLASSE, ROTULO_ORIGEM } from "../../_lib/recolhimento";
 import { abrirRecolhimentoAction } from "../actions";
+import { TokenFormulario } from "@/components/token-formulario";
 
 const inputCls = campo;
 
@@ -37,6 +38,7 @@ export default async function NovoRecolhimentoPage({ searchParams }: { searchPar
         <Card><EmptyState text={q ? "Nenhum lote encontrado para a busca." : "Busque o lote ou o produto afetado para continuar."} /></Card>
       ) : (
         <Form action={abrirRecolhimentoAction} submitLabel="Abrir recolhimento e bloquear lotes" className="space-y-3">
+          <TokenFormulario />
           <Card title="Lotes afetados" icon="frasco">
             <ul className="divide-y divide-slate-200">
               {lotes.map((l) => (

@@ -8,14 +8,16 @@ import { gerarRemessaSispag, situacaoRetorno, type Pagamento, type ResultadoPaga
 import { contaEDac, formaPrevista, type ModoRemessa } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
 import { situacaoAprovacao, travarFornecedores } from "./favorecidos-aprovacao";
+import { pagamentoJaConciliado } from "./retorno-conciliado";
 
 /** Regras de remessa e retorno do SISPAG que mexem no banco. Ficam fora de "use server" para serem testadas sem login. */
 const ATIVOS = ["ENVIADO", "AGENDADO"] as const;
 const r2 = (n: number) => Math.round(n * 100) / 100;
 const FORMA_BAIXA: Record<string, FormaPagamento> = { "45": "PIX", "30": "BOLETO", "31": "BOLETO", "01": "TED", "41": "TED" };
 
-export type Contagem = { pagos: number; agendados: number; rejeitados: number; ignorados: number; jaBaixados: number; divergentes: number; canceladasPagas: number };
-export const contagemVazia = (): Contagem => ({ pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0, divergentes: 0, canceladasPagas: 0 });
+/** `jaConciliados`: pago no retorno, mas o título já tinha sido baixado pela conciliação com o mesmo pagamento (não é duplicidade). */
+export type Contagem = { pagos: number; agendados: number; rejeitados: number; ignorados: number; jaBaixados: number; jaConciliados: number; divergentes: number; canceladasPagas: number };
+export const contagemVazia = (): Contagem => ({ pagos: 0, agendados: 0, rejeitados: 0, ignorados: 0, jaBaixados: 0, jaConciliados: 0, divergentes: 0, canceladasPagas: 0 });
 
 type ContaRemessa = { titularCnpj: string | null; titularNome: string | null; agencia: string | null };
 
@@ -90,7 +92,7 @@ export async function gerarRemessaDaContaTx(tx: Tx, a: { contaId: string; modo: 
   return gerarRemessaTx(tx, { conta, cd, modo: a.modo, dataPagto: a.dataPagto, ids: a.ids });
 }
 
-/** Aplica o resultado do retorno: atualiza cada item, baixa os pagos e marca duplicidade (DUP), divergência (DIV) e remessa cancelada paga (CAN). */
+/** Aplica o resultado do retorno: atualiza cada item, baixa os pagos e marca duplicidade (DUP), já conciliado (CONC), divergência (DIV) e remessa cancelada paga (CAN). */
 export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[], cont: Contagem, cabecalho?: { agencia: string; conta: string; dac: string }): Promise<Set<number>> {
   const remessas = new Set<number>();
   for (const r of resultados) {
@@ -150,6 +152,12 @@ export async function aplicarRetornoTx(tx: Tx, resultados: ResultadoPagamento[],
             forma: FORMA_BAIXA[item.forma],
           });
         }
+      } else if (
+        await pagamentoJaConciliado(tx, { tipo: "pagar", tituloId: item.contaPagarId, contaId: item.remessa.contaId, valor: r.valorEfetivo, data: r.dataEfetiva ?? item.remessa.dataPagto })
+      ) {
+        // A conciliação do extrato baixou o título antes do retorno chegar, com o mesmo valor e data próxima: é o mesmo pagamento.
+        cont.jaConciliados++;
+        await tx.remessaPagamentoItem.update({ where: { id: item.id }, data: { ocorrencias: [...r.ocorrencias, ...flags, "CONC"].join(",") } });
       } else {
         // O banco pagou um título que já estava quitado/cancelado aqui: o dinheiro saiu duas vezes. Alerta na remessa e no log.
         cont.jaBaixados++;

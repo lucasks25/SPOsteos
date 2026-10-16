@@ -7,6 +7,7 @@ import { date, inputDate, money, toNumber } from "@/lib/format";
 import { CRITERIOS_RATEIO, INCOTERMS, MOEDAS, reais, ROTULO_CRITERIO, ROTULO_DESPESA, TIPOS_DESPESA, type ResultadoCusto } from "../../_lib/custo-importacao";
 import { cambioDo, custoDoPedido } from "../../_lib/importacao-servico";
 import { removerDespesa, salvarDespesa, salvarImportacao, salvarItensImportacao } from "../importacao-actions";
+import { TokenFormulario } from "@/components/token-formulario";
 
 type Props = { pedidoId: number; editarDespesaId?: string; verFinanceiro?: boolean };
 
@@ -154,6 +155,7 @@ export async function SecaoImportacao({ pedidoId, editarDespesaId, verFinanceiro
         <div id="despesa">
           <Card title={emEdicao ? `Editar despesa: ${ROTULO_DESPESA[emEdicao.tipo]}` : "Incluir despesa"} icon="mais" actions={emEdicao ? <Link href={`/compras/pedidos/${pedido.id}`} className={btn.small}>Cancelar edição</Link> : undefined}>
             <Form key={emEdicao?.id ?? "nova"} action={salvarDespesa.bind(null, pedido.id, emEdicao?.id ?? null)} submitLabel={emEdicao ? "Salvar despesa" : "Incluir despesa"} redirectTo={emEdicao ? `/compras/pedidos/${pedido.id}` : undefined} resetOnSuccess={!emEdicao}>
+              <TokenFormulario />
               <Grid cols={4}>
                 <Select label="Tipo *" name="tipo" options={TIPOS_DESPESA.map((t) => ({ value: t, label: ROTULO_DESPESA[t] }))} defaultValue={emEdicao?.tipo ?? ""} required />
                 <Field label="Valor em reais *" name="valor" type="number" min={0} step="0.01" defaultValue={emEdicao ? toNumber(emEdicao.valor) : ""} required />

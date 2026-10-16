@@ -23,6 +23,7 @@ async function limpar() {
   await db.contaReceber.deleteMany({ where: { descricao: { startsWith: "TESTEDB" } } });
   const contas = await db.contaBancaria.findMany({ where: { nome: { startsWith: "TESTEDB" } }, select: { id: true } });
   await db.cobrancaEvento.deleteMany({ where: { contaId: { in: contas.map((c) => c.id) } } });
+  await db.extratoLinha.deleteMany({ where: { contaId: { in: contas.map((c) => c.id) } } });
   await db.contaBancaria.deleteMany({ where: { nome: { startsWith: "TESTEDB" } } });
   await db.hospital.deleteMany({ where: { razaoSocial: { startsWith: "TESTEDB" } } });
 }
@@ -162,14 +163,13 @@ test("rejeição libera para nova remessa com outro nosso número; pagamento de 
   assert.match(it.motivos ?? "", /DUP/);
 });
 
-test("pedido de baixa só de boleto registrado cujo título foi pago por fora; cancelar remessa libera", async () => {
+test("pedido de baixa só de boleto registrado; cancelar remessa libera", async () => {
   const t = await titulo(400);
   const r = await gerar([t.id]);
   const remessa = (await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId } })).conteudo;
   const nn = (await lerT(t.id)).nossoNumero!;
   await assert.rejects(gerar([], [t.id]), /não tem boleto registrado/);
   await aplicar(simular(remessa, [{ nn, cod: "02" }]));
-  await assert.rejects(gerar([], [t.id]), /ainda está em aberto/);
   await tx(async (x) => {
     const { registrarBaixa } = await import("@/app/(app)/financeiro/_lib/titulos");
     await registrarBaixa(x, { tipo: "receber", tituloId: t.id, contaId, data: hoje, valor: 400 });
@@ -210,4 +210,85 @@ test("boleto baixado pelo banco com título ainda em aberto: pode ir numa nova r
   const novo = await lerT(t.id);
   assert.notEqual(novo.nossoNumero, n1);
   assert.equal(novo.cobrancaStatus, "ENVIADO");
+});
+
+// ─── REVISAO §22: boleto registrado de título em aberto (baixa 02 e alteração de vencimento 06) e "já conciliado" ───
+
+const gerarAlt = (alteracoes: { id: string; vencimento: Date }[], baixaIds: string[] = []) => tx((x) => gerarRemessaCobrancaTx(x, { contaId, ids: [], baixaIds, alteracoes }));
+async function registrado(valor: number) {
+  const t = await titulo(valor);
+  const r = await gerar([t.id]);
+  const remessa = (await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId } })).conteudo;
+  const nn = (await lerT(t.id)).nossoNumero!;
+  await aplicar(simular(remessa, [{ nn, cod: "02" }]));
+  return { t, remessa, nn };
+}
+
+test("alteração de vencimento (06): vai à remessa com o novo vencimento, trava o título e o retorno 14 aplica o vencimento", async () => {
+  const { t, remessa, nn } = await registrado(700);
+  const novo = addDias(hoje, 40);
+  await assert.rejects(gerarAlt([{ id: t.id, vencimento: addDias(hoje, -1) }]), /anterior a hoje/);
+  await assert.rejects(gerarAlt([{ id: t.id, vencimento: t.vencimento }]), /igual ao atual/);
+  await assert.rejects(gerarAlt([{ id: t.id, vencimento: novo }], [t.id]), /mais de uma operação/);
+
+  const r = await gerarAlt([{ id: t.id, vencimento: novo }]);
+  const rem = await db.remessaCobranca.findUniqueOrThrow({ where: { id: r.remessaId }, include: { itens: true } });
+  const det = rem.conteudo.split("\r\n").find((l) => l[0] === "1")!;
+  assert.equal(det.slice(108, 110), "06");
+  assert.equal(det.slice(120, 126), ddmmaa(novo));
+  assert.equal(det.slice(126, 139), v13(700)); // valor registrado
+  assert.equal(rem.itens[0].vencimento?.getTime(), novo.getTime());
+  const pend = await lerT(t.id);
+  assert.equal(pend.cobrancaStatus, "ALTERACAO_ENVIADA");
+  assert.equal(pend.vencimento.getTime(), t.vencimento.getTime(), "só muda quando o banco confirmar");
+
+  const c = await aplicar(simular(remessa, [{ nn, cod: "14", extra: [[147, ddmmaa(novo)]] }]));
+  assert.equal(c.alterados, 1);
+  const depois = await lerT(t.id);
+  assert.equal(depois.vencimento.getTime(), novo.getTime());
+  assert.equal(depois.cobrancaStatus, "REGISTRADO");
+  assert.equal((await db.remessaCobrancaItem.findUniqueOrThrow({ where: { id: rem.itens[0].id } })).status, "CONFIRMADO");
+});
+
+test("alteração recusada pelo banco volta a REGISTRADO sem mudar o vencimento; cancelar remessa de 06 também", async () => {
+  const { t, remessa, nn } = await registrado(260);
+  const r = await gerarAlt([{ id: t.id, vencimento: addDias(hoje, 20) }]);
+  const c = await aplicar(simular(remessa, [{ nn, cod: "16", extra: [[378, "05      "]] }]));
+  assert.equal(c.instrucoesRejeitadas, 1);
+  const x = await lerT(t.id);
+  assert.equal(x.cobrancaStatus, "REGISTRADO");
+  assert.equal(x.vencimento.getTime(), t.vencimento.getTime());
+  assert.equal((await db.remessaCobrancaItem.findFirstOrThrow({ where: { remessaId: r.remessaId } })).status, "REJEITADO");
+  const r2 = await gerarAlt([{ id: t.id, vencimento: addDias(hoje, 25) }]);
+  await tx((y) => cancelarRemessaCobrancaTx(y, r2.remessaId, "enviei errado"));
+  assert.equal((await lerT(t.id)).cobrancaStatus, "REGISTRADO");
+});
+
+test("pedido de baixa (02) de título EM ABERTO: confirmado pelo banco, o título fica livre para boleto novo", async () => {
+  const { t, remessa, nn } = await registrado(330);
+  await gerar([], [t.id]);
+  assert.equal((await lerT(t.id)).cobrancaStatus, "BAIXA_ENVIADA");
+  await aplicar(simular(remessa, [{ nn, cod: "09" }]));
+  const x = await lerT(t.id);
+  assert.equal(x.cobrancaStatus, "BAIXADO");
+  assert.equal(x.status, "ABERTO");
+  await gerar([t.id]);
+  assert.notEqual((await lerT(t.id)).nossoNumero, nn);
+});
+
+test("liquidação de título já baixado pela conciliação com o mesmo pagamento é 'já conciliado', não duplicidade", async () => {
+  const { t, remessa, nn } = await registrado(510);
+  await tx(async (x) => {
+    const { registrarBaixa } = await import("@/app/(app)/financeiro/_lib/titulos");
+    await registrarBaixa(x, { tipo: "receber", tituloId: t.id, contaId, data: hoje, valor: 510 });
+  });
+  const lanc = await db.lancamento.findFirstOrThrow({ where: { contaReceberId: t.id } });
+  await db.extratoLinha.create({ data: { contaId, data: addDias(hoje, -2), valor: 510, descricao: "TESTEDB credito boleto", fitid: `TESTEDB-${t.id}`, lancamentoId: lanc.id, conciliadoEm: new Date() } });
+  const c = await aplicar(simular(remessa, [{ nn, cod: "06", extra: [[153, v13(510)], [254, v13(510)], [296, ddmmaa(hoje)]] }]));
+  assert.equal(c.jaConciliados, 1);
+  assert.equal(c.duplicados, 0);
+  assert.equal(await db.lancamento.count({ where: { contaReceberId: t.id } }), 1);
+  const it = await db.remessaCobrancaItem.findFirstOrThrow({ where: { contaReceberId: t.id, nossoNumero: nn, ocorrencia: "01" } });
+  assert.match(it.motivos ?? "", /CONC/);
+  assert.doesNotMatch(it.motivos ?? "", /DUP/);
 });

@@ -1,3 +1,4 @@
+import { Prisma } from "@/generated/prisma/client";
 import type { Tx } from "@/lib/db";
 import { LOCAIS, localDoHospital, movimentar } from "@/lib/estoque";
 import { toNumber } from "@/lib/format";
@@ -88,9 +89,12 @@ export async function criarRemessa(tx: Tx, input: NovaRemessa) {
     porLote.set(it.loteId, { ...it, quantidade: (atual?.quantidade ?? 0) + it.quantidade });
   }
 
-  const disp = new Map(
-    (await lotesDisponiveis(tx, { produtoIds: [...new Set(input.itens.map((i) => i.produtoId))] })).map((l) => [l.loteId, l]),
-  );
+  // Reserva FEFO: trava os produtos (em ordem de id, sem deadlock entre vales) antes de ler o disponível. Dois vales
+  // simultâneos do mesmo produto serializam aqui e o segundo já desconta a reserva do primeiro (antes a falha só aparecia
+  // no envio). FOR NO KEY UPDATE, como em atualizarCustoMedio: não conflita com o FOR KEY SHARE das chaves estrangeiras.
+  const produtoIds = [...new Set(input.itens.map((i) => i.produtoId))].sort();
+  await tx.$queryRaw`SELECT id FROM "Produto" WHERE id IN (${Prisma.join(produtoIds)}) ORDER BY id FOR NO KEY UPDATE`;
+  const disp = new Map((await lotesDisponiveis(tx, { produtoIds })).map((l) => [l.loteId, l]));
   for (const it of porLote.values()) {
     const lote = await tx.lote.findUnique({ where: { id: it.loteId }, include: { produto: true } });
     if (!lote || lote.produtoId !== it.produtoId) throw new RemessaError("Lote não pertence ao produto informado.");
@@ -124,6 +128,18 @@ function validarLoteParaEnvio(lote: { numero: string; status: string; validade: 
   }
 }
 
+/**
+ * Recusa movimentar o consignado de um hospital com inventário em andamento (ABERTO ou CONTADO): o fechamento compara a
+ * contagem com o saldo atual, então um vale enviado ou conferido no meio geraria falta ou sobra falsa (REVISAO §22).
+ * Trava o local FOR SHARE: a criação do inventário trava o mesmo local FOR UPDATE, então as duas serializam (o vale espera
+ * a foto do inventário e a vê; o inventário espera o vale terminar e fotografa o saldo já movimentado).
+ */
+async function exigirSemInventario(tx: Tx, localId: string) {
+  await tx.$queryRaw`SELECT id FROM "LocalEstoque" WHERE id = ${localId} FOR SHARE`;
+  const inv = await tx.inventarioConsignacao.findFirst({ where: { localId, status: { in: ["ABERTO", "CONTADO"] } }, select: { id: true } });
+  if (inv) throw new RemessaError(`Há inventário em andamento neste hospital (INV-${inv.id}); feche-o ou cancele antes de movimentar consignado.`);
+}
+
 /** Troca o status de forma atômica (protege contra duplo envio/concorrência). */
 async function trocarStatus(tx: Tx, id: number, de: "ABERTA" | "ENVIADA", data: Parameters<Tx["remessa"]["updateMany"]>[0]["data"]) {
   const r = await tx.remessa.updateMany({ where: { id, status: de }, data });
@@ -138,6 +154,7 @@ export async function enviarRemessa(tx: Tx, id: number, usuario: string) {
     include: { cirurgia: { select: { numero: true, status: true } }, itens: { include: { lote: { include: { produto: true } } } } },
   });
   if (remessa.itens.length === 0) throw new RemessaError("Remessa sem itens.");
+  await exigirSemInventario(tx, remessa.localId);
   // mesma regra da criação: material não sai para cirurgia cancelada (não vai acontecer) nem faturada (consumo já fechado)
   if (remessa.cirurgia && (remessa.cirurgia.status === "CANCELADA" || remessa.cirurgia.status === "FATURADA")) {
     throw new RemessaError(`Cirurgia nº ${remessa.cirurgia.numero} está ${remessa.cirurgia.status.toLowerCase()}: cancele este vale em vez de enviá-lo.`);
@@ -172,6 +189,7 @@ export async function conferirRemessa(tx: Tx, id: number, retornos: RetornoItem[
     where: { id },
     include: { cirurgia: true, itens: { include: { produto: true } } },
   });
+  await exigirSemInventario(tx, remessa.localId);
   const porItem = new Map(retornos.map((r) => [r.itemId, r]));
   // Vale de cirurgia conferido com tudo zero fecha o vale sem consumo nem devolução e não tem volta (a tela vem com 0
   // preenchido: um clique em "Concluir" bastava). Sem cirurgia (material que fica consignado no hospital), zero vale.

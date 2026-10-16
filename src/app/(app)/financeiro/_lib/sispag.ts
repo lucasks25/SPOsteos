@@ -329,6 +329,7 @@ export const OCORRENCIAS: Record<string, string> = {
   DUP: "PAGO EM DUPLICIDADE: o título já estava quitado; peça a devolução",
   CAN: "Remessa cancelada no sistema, mas o banco pagou: o dinheiro saiu",
   DIV: "Valor pago diferente do saldo do título: concilie pelo extrato",
+  CONC: "Já conciliado: o título foi baixado pelo extrato com o mesmo pagamento antes do retorno (não é duplicidade)",
 };
 
 export const descreverOcorrencias = (codigos: string[]) => codigos.map((c) => `${c} — ${OCORRENCIAS[c] ?? "ver nota 8 do manual SISPAG"}`).join("; ");

@@ -7,6 +7,7 @@ import { db } from "@/lib/db";
 import { date, inputDate, money, toNumber } from "@/lib/format";
 import { documentoPedido, PERFIS_COMPRAS } from "../../_lib/perfis";
 import { cancelarPedidoCompra, receberItem } from "../actions";
+import { TokenFormulario } from "@/components/token-formulario";
 import { SecaoImportacao } from "./importacao";
 import { idInt } from "@/lib/ids";
 
@@ -93,6 +94,7 @@ export default async function PedidoCompraPage({ params, searchParams }: { param
             .map((i) => (
               <Card key={i.id} title={`Receber: ${i.produto.codigo} — ${i.produto.descricao} (pendente ${i.quantidade - i.recebido})`} icon="pacote">
                 <Form action={receberItem.bind(null, pedido.id, i.id)} submitLabel="Registrar recebimento" resetOnSuccess>
+                  <TokenFormulario />
                   <Grid cols={4}>
                     <Field label="Quantidade *" name="quantidade" type="number" min={1} max={i.quantidade - i.recebido} defaultValue={i.quantidade - i.recebido} required />
                     <Field label="Lote *" name="lote" required maxLength={60} />

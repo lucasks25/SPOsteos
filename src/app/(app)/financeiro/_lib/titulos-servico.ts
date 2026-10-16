@@ -13,7 +13,7 @@ type DadosReceber = { descricao: string; hospitalId: string | null; planoContaId
 type DadosPagar = { descricao: string; fornecedorId: string | null; planoContaId: string; centroCustoId: string | null; competencia: Date; codigoBarras: string | null; valor: number; vencimento: Date };
 
 /** Situações do boleto em que o banco tem (ou vai ter) o título registrado com valor e vencimento: o título não pode divergir dele. */
-const BOLETO_NO_BANCO = ["ENVIADO", "REGISTRADO", "BAIXA_ENVIADA"];
+const BOLETO_NO_BANCO = ["ENVIADO", "REGISTRADO", "BAIXA_ENVIADA", "ALTERACAO_ENVIADA"];
 const cent = (n: number) => Math.round(n * 100);
 
 /** Competência atual do título (para recusar mudanças em mês fechado). */
@@ -62,7 +62,7 @@ export async function salvarContaReceberTx(tx: Tx, id: string | null, data: Dado
     if (mudou) {
       throw new ErroNegocio(
         "Este título tem boleto no banco (cobrança): valor, vencimento e hospital não podem mudar aqui, senão o boleto cobraria um valor diferente do título. " +
-          "Peça a baixa do boleto na tela de cobrança e gere um novo depois (descrição e classificação podem ser alteradas).",
+          "Para mudar só o vencimento, peça a alteração de vencimento na tela de cobrança (vale quando o banco confirmar); para o resto, peça a baixa do boleto e gere um novo depois (descrição e classificação podem ser alteradas).",
       );
     }
   }

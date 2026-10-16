@@ -66,7 +66,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
       "processar retorno SISPAG",
       "RemessaPagamento",
       [...remessas].join(","),
-      `pagos ${cont.pagos} (PAGAMENTO EM DUPLICIDADE, título já quitado antes: ${cont.jaBaixados}; remessa cancelada mas paga pelo banco: ${cont.canceladasPagas}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}; arquivo sha256 ${sha}`,
+      `pagos ${cont.pagos} (PAGAMENTO EM DUPLICIDADE, título já quitado antes: ${cont.jaBaixados}; remessa cancelada mas paga pelo banco: ${cont.canceladasPagas}), agendados ${cont.agendados}, rejeitados ${cont.rejeitados}, não reconhecidos ${cont.ignorados}, valor divergente (não baixados, concilie pelo extrato) ${cont.divergentes}, já conciliados pelo extrato antes do retorno ${cont.jaConciliados}; arquivo sha256 ${sha}`,
     );
   } catch (e) {
     return { error: errorMessage(e) };
@@ -81,6 +81,7 @@ export async function processarRetornoSispag(_: ActionState, fd: FormData): Prom
     ].filter(Boolean);
     return { ok: true, aviso: `Retorno processado, mas atenção: ${partes.join("; ")}.` };
   }
+  if (cont.jaConciliados > 0) return { ok: true, aviso: `Retorno processado. ${cont.jaConciliados} pagamento(s) já tinham sido baixados pela conciliação do extrato (mesmo valor e data): nada a fazer.` };
   if (remessas.size === 0) return { error: `Nenhum pagamento do arquivo pertence a remessas deste sistema (${cont.ignorados} não reconhecido(s)).` };
   return { ok: true };
 }

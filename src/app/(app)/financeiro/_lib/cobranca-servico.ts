@@ -7,6 +7,7 @@ import { gerarRemessaCobranca, type EventoCobranca, type ItemRemessaCobranca, ty
 import { diaBrasilia } from "@/lib/datas";
 import { contaEDac } from "./sispag-regras";
 import { registrarBaixa, saldoTitulo } from "./titulos";
+import { pagamentoJaConciliado } from "./retorno-conciliado";
 
 /**
  * Regras de cobrança dos hospitais que mexem no banco (remessa CNAB 400 Itaú, carteira 109).
@@ -16,8 +17,19 @@ const r2 = (n: number) => Math.round(n * 100) / 100;
 const cent = (n: number) => Math.round(n * 100);
 const pad8 = (n: number) => String(n).padStart(8, "0");
 
-export type ContagemCobranca = { registrados: number; rejeitados: number; liquidados: number; baixados: number; duplicados: number; divergentes: number; ignorados: number; jaProcessados: number };
-export const contagemCobrancaVazia = (): ContagemCobranca => ({ registrados: 0, rejeitados: 0, liquidados: 0, baixados: 0, duplicados: 0, divergentes: 0, ignorados: 0, jaProcessados: 0 });
+export type ContagemCobranca = {
+  registrados: number; rejeitados: number; liquidados: number; baixados: number; duplicados: number; divergentes: number; ignorados: number; jaProcessados: number;
+  /** vencimento alterado pelo banco (retorno 14) e aplicado ao título */
+  alterados: number;
+  /** pedido de baixa/alteração recusado pelo banco (15–18, 24, 74): o boleto continua registrado como estava */
+  instrucoesRejeitadas: number;
+  /** liquidação de título que a conciliação já tinha baixado com o mesmo pagamento (não é duplicidade) */
+  jaConciliados: number;
+};
+export const contagemCobrancaVazia = (): ContagemCobranca => ({ registrados: 0, rejeitados: 0, liquidados: 0, baixados: 0, duplicados: 0, divergentes: 0, ignorados: 0, jaProcessados: 0, alterados: 0, instrucoesRejeitadas: 0, jaConciliados: 0 });
+
+/** Instrução (02 baixa ou 06 alteração) enviada e ainda sem resposta do banco. */
+const INSTRUCAO_PENDENTE = ["BAIXA_ENVIADA", "ALTERACAO_ENVIADA"];
 
 /** Dados do hospital que o boleto exige; devolve o que falta. */
 export function faltaNoPagador(h: { razaoSocial: string; cnpj: string; endereco: string | null; bairro: string | null; cep: string | null; cidade: string | null; uf: string | null }): string[] {
@@ -31,14 +43,20 @@ export function faltaNoPagador(h: { razaoSocial: string; cnpj: string; endereco:
 }
 
 /**
- * Gera a remessa de cobrança: entrada (ocorrência 01) dos títulos em `ids` e pedido de baixa (02) dos em `baixaIds`
- * (boleto registrado cujo título foi pago por outro meio ou cancelado). Trava a conta (sequência do nosso número) e os títulos.
+ * Gera a remessa de cobrança: entrada (ocorrência 01) dos títulos em `ids`, pedido de baixa (02) dos em `baixaIds` (boleto
+ * registrado: título pago/cancelado por outro meio ou em aberto que vai ser renegociado) e alteração de vencimento (06) dos em
+ * `alteracoes`. Trava a conta (sequência do nosso número) e os títulos.
  */
-export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: string[]; baixaIds?: string[]; agora?: Date }) {
+export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: string[]; baixaIds?: string[]; alteracoes?: { id: string; vencimento: Date }[]; agora?: Date }) {
   const agora = a.agora ?? new Date();
   const hoje = diaBrasilia(agora);
   const baixaIds = a.baixaIds ?? [];
-  if (a.ids.length + baixaIds.length === 0) throw new ErroNegocio("Selecione ao menos um título.");
+  const alteracoes = a.alteracoes ?? [];
+  if (a.ids.length + baixaIds.length + alteracoes.length === 0) throw new ErroNegocio("Selecione ao menos um título.");
+  const novoVenc = new Map(alteracoes.map((x) => [x.id, x.vencimento]));
+  if ([...a.ids, ...baixaIds].some((id) => novoVenc.has(id)) || a.ids.some((id) => baixaIds.includes(id))) {
+    throw new ErroNegocio("O mesmo título foi marcado para mais de uma operação (boleto novo, baixa ou alteração de vencimento). Escolha uma.");
+  }
   await tx.$queryRaw`SELECT id FROM "ContaBancaria" WHERE id = ${a.contaId} FOR UPDATE`;
   const conta = await tx.contaBancaria.findUnique({ where: { id: a.contaId } });
   if (!conta?.ativo || conta.tipo !== "BANCO") throw new ErroNegocio("Conta bancária inexistente ou inativa.");
@@ -47,17 +65,23 @@ export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: 
   if (!conta.titularCnpj || !conta.titularNome || !conta.agencia || !cd) throw new ErroNegocio("Complete a conta bancária (agência, conta com dígito, CNPJ e razão social do titular) antes de gerar a cobrança.");
   const benef = { agencia: conta.agencia.replace(/\D/g, "").padStart(4, "0"), conta: cd.conta.replace(/^0+/, "").padStart(5, "0"), dac: cd.dac, nome: conta.titularNome, cnpj: conta.titularCnpj, carteira: "109" as const };
 
-  const todos = [...a.ids, ...baixaIds];
+  const todos = [...a.ids, ...baixaIds, ...novoVenc.keys()];
   await tx.$queryRaw`SELECT id FROM "ContaReceber" WHERE id IN (${Prisma.join(todos)}) ORDER BY id FOR UPDATE`;
   const titulos = await tx.contaReceber.findMany({ where: { id: { in: todos } }, include: { hospital: true, pedido: { select: { id: true } } } });
   if (titulos.length !== new Set(todos).size) throw new ErroNegocio("Algum título selecionado não existe mais. Recarregue a página.");
 
   const erros: string[] = [];
   const itens: ItemRemessaCobranca[] = [];
-  const registros: { contaReceberId: string; ocorrencia: "01" | "02"; nossoNumero: string; valor: number }[] = [];
+  const registros: { contaReceberId: string; ocorrencia: "01" | "02" | "06"; nossoNumero: string; valor: number; vencimento?: Date }[] = [];
   let proximo = conta.proximoNossoNumero;
   const entradas = titulos.filter((t) => a.ids.includes(t.id));
   const baixas = titulos.filter((t) => baixaIds.includes(t.id));
+  const alterar = titulos.filter((t) => novoVenc.has(t.id));
+  // valor do boleto como foi registrado (entrada 01): a nota 6 (A) pede o valor do título nas instruções 02 e 06
+  const valorRegistrado = async (t: { id: string; nossoNumero: string | null; valor: Prisma.Decimal }) => {
+    const ent = await tx.remessaCobrancaItem.findFirst({ where: { contaReceberId: t.id, nossoNumero: t.nossoNumero!, ocorrencia: "01" }, orderBy: { id: "desc" }, select: { valor: true } });
+    return toNumber(ent?.valor ?? t.valor);
+  };
 
   for (const t of entradas) {
     const saldo = r2(toNumber(t.valor) - toNumber(t.valorBaixado));
@@ -86,12 +110,26 @@ export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: 
       registros.push({ contaReceberId: t.id, ocorrencia: "01", nossoNumero: nn, valor: saldo });
     }
   }
+  // Baixa de título em aberto é permitida (REVISAO §22): é o caminho para mudar valor/vencimento/hospital de título com boleto
+  // registrado; quando o banco confirma a baixa (BAIXADO), o título em aberto pode ganhar boleto novo.
   for (const t of baixas) {
     if (t.cobrancaContaId !== conta.id || !t.nossoNumero || t.cobrancaStatus !== "REGISTRADO") erros.push(`${t.descricao}: não tem boleto registrado nesta conta`);
-    else if (t.status === "ABERTO") erros.push(`${t.descricao}: ainda está em aberto (pedir baixa só de título pago por outro meio ou cancelado)`);
     else {
-      itens.push({ ocorrencia: "02", nossoNumero: t.nossoNumero, valorCentavos: cent(toNumber(t.valor)) });
-      registros.push({ contaReceberId: t.id, ocorrencia: "02", nossoNumero: t.nossoNumero, valor: toNumber(t.valor) });
+      const v = await valorRegistrado(t);
+      itens.push({ ocorrencia: "02", nossoNumero: t.nossoNumero, valorCentavos: cent(v) });
+      registros.push({ contaReceberId: t.id, ocorrencia: "02", nossoNumero: t.nossoNumero, valor: v });
+    }
+  }
+  for (const t of alterar) {
+    const venc = novoVenc.get(t.id)!;
+    if (t.cobrancaContaId !== conta.id || !t.nossoNumero || t.cobrancaStatus !== "REGISTRADO") erros.push(`${t.descricao}: não tem boleto registrado nesta conta`);
+    else if (t.status !== "ABERTO") erros.push(`${t.descricao}: não está em aberto (peça a baixa do boleto em vez de alterar o vencimento)`);
+    else if (Number.isNaN(venc.getTime()) || venc < hoje) erros.push(`${t.descricao}: o novo vencimento não pode ser anterior a hoje`);
+    else if (venc.getTime() === t.vencimento.getTime()) erros.push(`${t.descricao}: o novo vencimento é igual ao atual`);
+    else {
+      const v = await valorRegistrado(t);
+      itens.push({ ocorrencia: "06", nossoNumero: t.nossoNumero, valorCentavos: cent(v), vencimento: venc });
+      registros.push({ contaReceberId: t.id, ocorrencia: "06", nossoNumero: t.nossoNumero, valor: v, vencimento: venc });
     }
   }
   if (erros.length) throw new ErroNegocio(`Corrija antes de gerar: ${erros.slice(0, 5).join("; ")}${erros.length > 5 ? ` (+${erros.length - 5})` : ""}.`);
@@ -99,9 +137,9 @@ export async function gerarRemessaCobrancaTx(tx: Tx, a: { contaId: string; ids: 
   const conteudo = gerarRemessaCobranca(benef, itens, agora);
   const rem = await tx.remessaCobranca.create({ data: { contaId: conta.id, conteudo } });
   for (const r of registros) {
-    await tx.remessaCobrancaItem.create({ data: { remessaId: rem.id, contaReceberId: r.contaReceberId, ocorrencia: r.ocorrencia, nossoNumero: r.nossoNumero, valor: r.valor } });
+    await tx.remessaCobrancaItem.create({ data: { remessaId: rem.id, contaReceberId: r.contaReceberId, ocorrencia: r.ocorrencia, nossoNumero: r.nossoNumero, valor: r.valor, vencimento: r.vencimento ?? null } });
     if (r.ocorrencia === "01") await tx.contaReceber.update({ where: { id: r.contaReceberId }, data: { cobrancaContaId: conta.id, nossoNumero: r.nossoNumero, cobrancaStatus: "ENVIADO" } });
-    else await tx.contaReceber.update({ where: { id: r.contaReceberId }, data: { cobrancaStatus: "BAIXA_ENVIADA" } });
+    else await tx.contaReceber.update({ where: { id: r.contaReceberId }, data: { cobrancaStatus: r.ocorrencia === "02" ? "BAIXA_ENVIADA" : "ALTERACAO_ENVIADA" } });
   }
   await tx.contaBancaria.update({ where: { id: conta.id }, data: { proximoNossoNumero: proximo } });
   return { remessaId: rem.id, qtd: registros.length };
@@ -150,8 +188,12 @@ export async function aplicarRetornoCobrancaTx(tx: Tx, ret: RetornoCobranca, con
       cont.ignorados++;
       continue;
     }
-    const item = await tx.remessaCobrancaItem.findFirst({ where: { contaReceberId: titulo.id, nossoNumero: e.nossoNumero }, orderBy: { id: "desc" } });
-    if (item) remessas.add(item.remessaId);
+    const ultimo = await tx.remessaCobrancaItem.findFirst({ where: { contaReceberId: titulo.id, nossoNumero: e.nossoNumero }, orderBy: { id: "desc" } });
+    if (ultimo) remessas.add(ultimo.remessaId);
+    // registro, rejeição e liquidação dizem respeito à entrada (01); baixa e rejeição de instrução, ao último pedido (02/06)
+    const entrada = ultimo?.ocorrencia === "01" ? ultimo : await tx.remessaCobrancaItem.findFirst({ where: { contaReceberId: titulo.id, nossoNumero: e.nossoNumero, ocorrencia: "01" }, orderBy: { id: "desc" } });
+    const instrucao = ultimo && ultimo.ocorrencia !== "01" && ultimo.status === "ENVIADO" ? ultimo : null;
+    let item = entrada ?? ultimo;
     const marcar = async (status: string, itemStatus?: "CONFIRMADO" | "REJEITADO" | "LIQUIDADO" | "BAIXADO", extra?: string) => {
       await tx.contaReceber.update({ where: { id: titulo.id }, data: { cobrancaStatus: status } });
       if (item && itemStatus) await tx.remessaCobrancaItem.update({ where: { id: item.id }, data: { status: itemStatus, motivos: [item.motivos, extra].filter(Boolean).join(",") || null } });
@@ -169,11 +211,30 @@ export async function aplicarRetornoCobrancaTx(tx: Tx, ret: RetornoCobranca, con
         cont.rejeitados++;
         break;
       case "LIQUIDACAO":
-        await liquidar(tx, conta.id, titulo, e, item, cont, marcar);
+        await liquidar(tx, conta.id, titulo, e, entrada, cont, marcar);
         break;
       case "BAIXA":
+        item = ultimo;
         await marcar("BAIXADO", item?.ocorrencia === "02" ? "BAIXADO" : undefined);
         cont.baixados++;
+        break;
+      case "ALTERACAO":
+        if (e.ocorrencia.codigo === "14" && titulo.cobrancaStatus === "ALTERACAO_ENVIADA" && instrucao?.ocorrencia === "06" && instrucao.vencimento) {
+          // vale o vencimento pedido; se o banco informar outro, aplica o pedido e marca DIV para conferência
+          const div = e.vencimento && e.vencimento.getTime() !== instrucao.vencimento.getTime() ? "DIV" : undefined;
+          await tx.contaReceber.update({ where: { id: titulo.id }, data: { vencimento: instrucao.vencimento } });
+          item = instrucao;
+          await marcar("REGISTRADO", "CONFIRMADO", div);
+          cont.alterados++;
+        } else cont.ignorados++;
+        break;
+      case "REJEICAO_INSTRUCAO":
+        if (instrucao && titulo.cobrancaStatus && INSTRUCAO_PENDENTE.includes(titulo.cobrancaStatus)) {
+          // o banco recusou a baixa/alteração: o boleto continua registrado como estava
+          item = instrucao;
+          await marcar("REGISTRADO", "REJEITADO", e.motivosRejeicao.map((m) => m.codigo).join("+") || e.ocorrencia.codigo);
+          cont.instrucoesRejeitadas++;
+        } else cont.ignorados++;
         break;
       default:
         cont.ignorados++;
@@ -194,6 +255,13 @@ async function liquidar(
   marcar: (status: string, itemStatus?: "CONFIRMADO" | "REJEITADO" | "LIQUIDADO" | "BAIXADO", extra?: string) => Promise<void>,
 ) {
   const pago = e.centavos.pago / 100;
+  const dataPagto = e.dataCredito ?? e.dataOcorrencia ?? diaBrasilia(new Date());
+  if (titulo.status !== "ABERTO" && (await pagamentoJaConciliado(tx, { tipo: "receber", tituloId: titulo.id, contaId, valor: pago, data: dataPagto }))) {
+    // a conciliação do extrato baixou o título antes do retorno, com o mesmo valor e data próxima: é o mesmo dinheiro
+    await marcar("LIQUIDADO", "LIQUIDADO", "CONC");
+    cont.jaConciliados++;
+    return;
+  }
   if (titulo.status !== "ABERTO") {
     // o hospital pagou um boleto de título já quitado/cancelado aqui: o dinheiro entrou duas vezes (ou sem cobrança devida)
     await marcar("LIQUIDADO", "LIQUIDADO", "DUP");

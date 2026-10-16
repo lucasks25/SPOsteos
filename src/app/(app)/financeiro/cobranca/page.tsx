@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { Field, Form, Grid, Select } from "@/components/form";
-import { Aviso, Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle, Table, Td } from "@/components/ui";
+import { Aviso, Badge, campo, Card, EmptyState, LinkButton, PageHeader, SectionTitle, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { date, money, toNumber } from "@/lib/format";
+import { date, inputDate, money, toNumber } from "@/lib/format";
 import { gerarCobranca, processarRetornoCobranca } from "../_lib/cobranca-actions";
 import { faltaNoPagador } from "../_lib/cobranca-servico";
 import { hojeUTC } from "@/lib/datas";
@@ -11,15 +11,16 @@ import { hojeUTC } from "@/lib/datas";
 export default async function CobrancaPage() {
   await requireUser(["FINANCEIRO"]);
   const hoje = hojeUTC();
-  const [contas, abertos, registrados, remessas] = await Promise.all([
+  const [contas, abertos, registrados, registradosAbertos, remessas] = await Promise.all([
     db.contaBancaria.findMany({ where: { ativo: true, tipo: "BANCO", carteiraCobranca: "109" }, orderBy: { nome: "asc" }, select: { id: true, nome: true } }),
     db.contaReceber.findMany({
-      where: { status: "ABERTO", OR: [{ cobrancaStatus: null }, { cobrancaStatus: "REJEITADO" }] },
+      where: { status: "ABERTO", OR: [{ cobrancaStatus: null }, { cobrancaStatus: { in: ["REJEITADO", "BAIXADO", "LIQUIDADO"] } }] },
       orderBy: { vencimento: "asc" },
       take: 300,
       include: { hospital: true },
     }),
     db.contaReceber.findMany({ where: { cobrancaStatus: "REGISTRADO", status: { not: "ABERTO" } }, take: 100, include: { hospital: { select: { razaoSocial: true, nomeFantasia: true } } } }),
+    db.contaReceber.findMany({ where: { cobrancaStatus: "REGISTRADO", status: "ABERTO" }, orderBy: { vencimento: "asc" }, take: 200, include: { hospital: { select: { razaoSocial: true, nomeFantasia: true } } } }),
     db.remessaCobranca.findMany({ orderBy: { id: "desc" }, take: 30, include: { conta: { select: { nome: true } }, itens: { select: { status: true } } } }),
   ]);
 
@@ -76,6 +77,30 @@ export default async function CobrancaPage() {
                     </label>
                   ))}
                 </Aviso>
+              )}
+              {registradosAbertos.length > 0 && (
+                <>
+                  <SectionTitle>Boletos registrados de títulos em aberto</SectionTitle>
+                  <Table head={["Título", "Hospital", "Vencimento", "Pedir baixa (02)", "Alterar vencimento (06)"]}>
+                    {registradosAbertos.map((t) => (
+                      <tr key={t.id}>
+                        <Td className="max-w-xs truncate">
+                          <Link href={`/financeiro/receber/${t.id}`} className="hover:underline">{t.descricao}</Link>
+                        </Td>
+                        <Td className="max-w-[14rem] truncate">{t.hospital ? t.hospital.nomeFantasia || t.hospital.razaoSocial : "—"}</Td>
+                        <Td>{date(t.vencimento)}</Td>
+                        <Td>
+                          <input type="checkbox" name="baixaId" value={t.id} className="h-4 w-4" aria-label={`Pedir baixa do boleto de ${t.descricao}`} />
+                        </Td>
+                        <Td className="whitespace-nowrap">
+                          <input type="checkbox" name="alterarId" value={t.id} className="mr-2 h-4 w-4" aria-label={`Alterar vencimento de ${t.descricao}`} />
+                          <input type="date" name={`vencimento_${t.id}`} min={inputDate(hoje)} className={`${campo} w-40`} aria-label={`Novo vencimento de ${t.descricao}`} />
+                        </Td>
+                      </tr>
+                    ))}
+                  </Table>
+                  <p className="text-xs text-slate-500">Baixa: o banco cancela o boleto; depois de confirmada no retorno, o título fica livre para editar e gerar boleto novo. Alteração: o título passa a ter o novo vencimento quando o banco confirmar (retorno 14).</p>
+                </>
               )}
               <p className="text-xs text-slate-500">Os dados de endereço do hospital saem do cadastro. Multa e juros por atraso seguem o configurado na conta. Só imprima o boleto depois que o banco confirmar o registro (retorno).</p>
             </Form>

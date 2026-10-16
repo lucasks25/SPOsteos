@@ -1019,16 +1019,17 @@ model RemessaCobranca {
   itens           RemessaCobrancaItem[]
 }
 
-// ocorrencia: 01 entrada de título, 02 pedido de baixa. `id` não vai ao banco: o "seu número" é CR<contaReceberId> truncado em 10, então a ligação é pelo nosso número.
+// ocorrencia: 01 entrada de título, 02 pedido de baixa, 06 alteração de vencimento. `id` não vai ao banco: o "seu número" é CR<contaReceberId> truncado em 10, então a ligação é pelo nosso número.
 model RemessaCobrancaItem {
   id             Int                @id @default(autoincrement())
   remessaId      Int
   remessa        RemessaCobranca    @relation(fields: [remessaId], references: [id], onDelete: Cascade)
   contaReceberId String
   contaReceber   ContaReceber       @relation(fields: [contaReceberId], references: [id])
-  ocorrencia     String // 01 | 02
+  ocorrencia     String // 01 | 02 | 06
   nossoNumero    String
   valor          Decimal            @db.Decimal(14, 2)
+  vencimento     DateTime? // 06: novo vencimento pedido; vai para o título quando o banco confirma (retorno 14)
   status         StatusCobrancaItem @default(ENVIADO)
   motivos        String?
 
@@ -1294,4 +1295,14 @@ model RecolhimentoAcao {
   descricao      String
 
   @@index([recolhimentoId, criadoEm])
+}
+
+// Token de idempotência de formulário (campo oculto gerado na renderização): o segundo envio do mesmo token é recusado.
+// Gravado na mesma transação da mutação (se ela falha, o token fica livre). Linhas com mais de 7 dias são apagadas.
+model FormularioEnviado {
+  token     String   @id
+  usuarioId String?
+  criadoEm  DateTime @default(now())
+
+  @@index([criadoEm])
 }

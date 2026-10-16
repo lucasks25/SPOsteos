@@ -13,6 +13,7 @@ import { documentoPedido, PERFIS_COMPRAS } from "../_lib/perfis";
 import { receberItemTx } from "../_lib/recebimento";
 import { cancelarPedidoCompraTx } from "../_lib/cancelamento-servico";
 import { ErroNegocio } from "@/lib/erros";
+import { CAMPO_TOKEN, registrarEnvioTx } from "@/lib/idempotencia";
 
 const schemaPedido = z.object({
   fornecedorId: zf.text("Selecione o fornecedor"),
@@ -74,6 +75,7 @@ export async function receberItem(pedidoId: number, itemId: string, _: ActionSta
   if (!parsed.success) return parsed.state;
   try {
     await db.$transaction(async (tx) => {
+      await registrarEnvioTx(tx, fd.get(CAMPO_TOKEN), user.id); // reenvio do mesmo formulário (outra aba, voltar)
       const item = await tx.pedidoCompraItem.findUnique({ where: { id: itemId }, select: { pedidoId: true } });
       if (item?.pedidoId !== pedidoId) throw new ErroNegocio("Item não pertence a este pedido.");
       await receberItemTx(tx, { itemId, ...parsed.data, usuario: user.nome, usuarioId: user.id });

@@ -3,7 +3,8 @@ import "dotenv/config";
 import assert from "node:assert/strict";
 import { after, before, test } from "node:test";
 import { db } from "@/lib/db";
-import { localDoHospital, movimentar } from "@/lib/estoque";
+import { LOCAIS, localDoHospital, movimentar } from "@/lib/estoque";
+import { conferirRemessa, criarRemessa, enviarRemessa } from "@/app/(app)/estoque/_lib/remessas";
 import {
   cancelarInventario,
   concluirContagem,
@@ -223,3 +224,36 @@ test("travas do banco: contado negativo, justificada sem texto e cobrar sem valo
   await assert.rejects(db.$executeRaw`UPDATE "InventarioConsignacaoItem" SET "resolucao" = 'COBRAR_HOSPITAL'::"ResolucaoInventario" WHERE id = ${item.id}`, /cobrar_check|check/i);
   await assert.rejects(db.$executeRaw`UPDATE "InventarioConsignacaoItem" SET "saldoSistema" = -1 WHERE id = ${item.id}`, /check/i);
 });
+
+// REVISAO §22 (decisão do coordenador): com inventário em andamento no hospital, enviar ou conferir vale é recusado.
+test("inventário em andamento bloqueia enviar e conferir vale do hospital; cancelado, o vale segue", async () => {
+  const c = await cenario([2]);
+  const l = await mkLote(c.p.id);
+  await tx((t) => movimentar(t, { tipo: "ENTRADA", produtoId: c.p.id, loteId: l.id, quantidade: 5, destinoId: LOCAIS.DEPOSITO, custoUnit: 10 }));
+  const rem = await tx((t) => criarRemessa(t, { hospitalId: c.hospital.id, itens: [{ produtoId: c.p.id, loteId: l.id, quantidade: 3 }] }));
+  const msg = /Há inventário em andamento neste hospital \(INV-\d+\); feche-o ou cancele antes de movimentar consignado\./;
+
+  const inv = await criar(c.hospital.id);
+  await assert.rejects(tx((t) => enviarRemessa(t, rem.id, "teste")), msg);
+  assert.equal((await db.remessa.findUniqueOrThrow({ where: { id: rem.id } })).status, "ABERTA", "recusa não deixa rastro");
+  await tx((t) => cancelarInventario(t, inv.id));
+  await tx((t) => enviarRemessa(t, rem.id, "teste"));
+
+  const inv2 = await criar(c.hospital.id);
+  await concluirOuNao(inv2.id);
+  const item = await db.remessaItem.findFirstOrThrow({ where: { remessaId: rem.id } });
+  await assert.rejects(tx((t) => conferirRemessa(t, rem.id, [{ itemId: item.id, devolvido: 3, consumido: 0 }], "teste")), msg);
+  assert.equal(await saldoDe(l.id, c.localId), 3);
+  await tx((t) => cancelarInventario(t, inv2.id));
+  await tx((t) => conferirRemessa(t, rem.id, [{ itemId: item.id, devolvido: 3, consumido: 0 }], "teste"));
+  assert.equal(await saldoDe(l.id, LOCAIS.DEPOSITO), 5);
+  await conferirKardex(l.id);
+});
+
+/** Leva o inventário a CONTADO (também "em andamento"). */
+async function concluirOuNao(invId: number) {
+  const itens = await db.inventarioConsignacaoItem.findMany({ where: { inventarioId: invId } });
+  await tx((t) => salvarContagem(t, invId, itens.map((i) => ({ itemId: i.id, contado: i.saldoSistema }))));
+  await tx((t) => concluirContagem(t, invId));
+  assert.equal((await db.inventarioConsignacao.findUniqueOrThrow({ where: { id: invId } })).status, "CONTADO");
+}
