@@ -35,7 +35,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         actions={
           <>
             {!conta.ativo && <Badge>inativa</Badge>}
-            <ActionButton action={alternarAtivoConta.bind(null, id)}>{conta.ativo ? "Inativar" : "Ativar"}</ActionButton>
+            <ActionButton action={alternarAtivoConta.bind(null, id)} confirm={conta.ativo ? `Inativar a conta ${conta.nome}? Ela deixa de aparecer para novas baixas, transferências e lançamentos; o histórico é mantido.` : undefined}>{conta.ativo ? "Inativar" : "Ativar"}</ActionButton>
           </>
         }
       />
@@ -70,12 +70,12 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
                   <Td>{m.extrato ? <Badge color="green">conciliado</Badge> : <Badge>pendente</Badge>}</Td>
                   <Td>
                     {m.transferenciaId && (
-                      <ActionButton variant="small" action={estornarTransferenciaAction} hidden={{ id: m.transferenciaId }} confirm="Estornar a transferência inteira (as duas contas)?">
+                      <ActionButton variant="small" action={estornarTransferenciaAction} hidden={{ id: m.transferenciaId }} confirm={`Estornar a transferência de ${money(toNumber(m.valor))} de ${date(m.data)} (${m.descricao})? As duas contas voltam ao saldo anterior.`}>
                         Estornar
                       </ActionButton>
                     )}
                     {!tituloHref && !m.transferenciaId && !m.extrato && (
-                      <ActionButton variant="small" action={excluirAvulso} hidden={{ id: m.id }} confirm="Excluir este lançamento?">
+                      <ActionButton variant="small" action={excluirAvulso} hidden={{ id: m.id }} confirm={`Excluir o lançamento "${m.descricao}" de ${money(toNumber(m.valor))} em ${date(m.data)}?`}>
                         Excluir
                       </ActionButton>
                     )}
@@ -86,7 +86,10 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         </Table>
 
         {conta.ativo && (
-          <Card title="Lançamento avulso (tarifa, rendimento, transferência...)" icon="mais">
+          <Card title="Lançamento avulso (tarifa, rendimento, outros)" icon="mais">
+            <p className="mb-3 text-sm text-slate-600">
+              Para mover dinheiro entre contas use <Link href="/financeiro/contas" className="font-semibold text-teal-700 hover:underline">Transferência</Link>.
+            </p>
             <Form action={lancarAvulso.bind(null, id)} submitLabel="Lançar" resetOnSuccess>
               <Grid cols={4}>
                 <Select

@@ -18,7 +18,7 @@ export default async function AprovacoesPage() {
     <>
       <PageHeader title="Aprovar contas a pagar" subtitle="Contas geradas pelo recebimento de compra esperam a aprovação do financeiro e só então entram em remessa de pagamento. Confira valor e fornecedor com o pedido." />
       {pendentes.length === 0 ? (
-        <Table head={["Vencimento", "Descrição", "Fornecedor", "Valor"]} empty emptyText="Nada aguardando aprovação." emptyAction={<LinkButton href="/financeiro/pagar" variant="secondary">Ver contas a pagar</LinkButton>}>
+        <Table head={["Vencimento", "Descrição", "Fornecedor", "Valor"]} empty emptyText="Nada aguardando aprovação. Contas lançadas à mão pelo financeiro já nascem aprovadas; aqui ficam as geradas pelo recebimento de compras." emptyAction={<LinkButton href="/financeiro/pagar" variant="secondary">Ver contas a pagar</LinkButton>}>
           {null}
         </Table>
       ) : (

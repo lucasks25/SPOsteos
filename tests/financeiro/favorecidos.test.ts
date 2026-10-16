@@ -36,3 +36,12 @@ test("validação de formato", () => {
     assert.equal(schemaDadosPagamento.safeParse(ruim).success, false, JSON.stringify(ruim));
   }
 });
+
+test("conta digitada com hífen separa o dígito; com dígito já informado continua inválida", () => {
+  const base = { bancoCodigo: "341", agencia: "1234" };
+  const ok = schemaDadosPagamento.safeParse({ ...base, conta: "22222-3" });
+  assert.ok(ok.success && ok.data.conta === "22222" && ok.data.contaDigito === "3");
+  const x = schemaDadosPagamento.safeParse({ ...base, conta: "22222-x" });
+  assert.ok(x.success && x.data.contaDigito === "X");
+  assert.equal(schemaDadosPagamento.safeParse({ ...base, conta: "22222-3", contaDigito: "4" }).success, false);
+});

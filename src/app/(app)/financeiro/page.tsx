@@ -76,8 +76,8 @@ export default async function PainelFinanceiroPage() {
       <KpiGrid>
         <Tile href="/financeiro/conciliacao" label="Extrato a conciliar" value={num(pend.extrato)} tone={pend.extrato ? "warn" : "default"} hint="linhas importadas sem vínculo" />
         <Tile href="/financeiro/conciliacao" label="Baixas sem extrato" value={num(pend.semExtrato)} hint="ainda não vistas no banco (contas bancárias)" />
-        <Tile href="/financeiro/remessas" label="Pagamentos aguardando banco" value={num(pend.remessaAguardando)} tone={pend.remessaAguardando ? "warn" : "default"} hint="remessas SISPAG sem retorno ou agendadas" />
-        <Tile href="/financeiro/remessas" label="Pagamentos rejeitados" value={num(pend.remessaRejeitada)} tone={pend.remessaRejeitada ? "danger" : "default"} hint="o banco recusou; corrigir e reenviar" />
+        <Tile href="/financeiro/remessas" label="Pagamentos em remessa sem retorno" value={num(pend.remessaAguardando)} tone={pend.remessaAguardando ? "warn" : "default"} hint="itens de remessas SISPAG enviados ou agendados, sem confirmação do banco" />
+        <Tile href="/financeiro/remessas" label="Pagamentos rejeitados em remessa" value={num(pend.remessaRejeitada)} tone={pend.remessaRejeitada ? "danger" : "default"} hint="o banco recusou; corrigir e reenviar" />
       </KpiGrid>
 
       <div className="grid gap-4 lg:grid-cols-2">

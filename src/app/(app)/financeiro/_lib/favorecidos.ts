@@ -12,13 +12,24 @@ export type DadosPagamento = Record<CampoPagamento, string | null>;
 /** "…1234": mostra só o final de dado sensível na auditoria. */
 export const mascarar = (v: string | null | undefined) => (v ? `…${v.slice(-4)}` : "vazio");
 
+/** "22222-3" no campo conta, com o dígito vazio: separa o dígito automaticamente. */
+export function separarDigitoConta(entrada: unknown): unknown {
+  if (!entrada || typeof entrada !== "object") return entrada;
+  const d = entrada as Record<string, unknown>;
+  const m = typeof d.conta === "string" ? /^\s*(\d{1,12})\s*-\s*([0-9Xx]{1,2})\s*$/.exec(d.conta) : null;
+  if (!m || d.contaDigito) return entrada;
+  return { ...d, conta: m[1], contaDigito: m[2] };
+}
+
 /** Validação de formato (campos vazios viram null e limpam o valor). Conta bancária é tudo-ou-nada. */
-export const schemaDadosPagamento = z
+export const schemaDadosPagamento = z.preprocess(
+  separarDigitoConta,
+  z
   .object({
     bancoCodigo: z.string().regex(/^\d{3}$/, "Código do banco com 3 dígitos (ex.: 341)").optional().transform((v) => v ?? null),
-    agencia: z.string().regex(/^\d{1,5}$/, "Agência só com números, sem dígito").optional().transform((v) => v ?? null),
-    conta: z.string().regex(/^\d{1,12}$/, "Conta só com números, sem dígito").optional().transform((v) => v ?? null),
-    contaDigito: z.string().regex(/^[0-9Xx]{1,2}$/, "Dígito da conta inválido").optional().transform((v) => v?.toUpperCase() ?? null),
+    agencia: z.string().regex(/^\d{1,5}$/, "Campo Agência: só números, sem dígito").optional().transform((v) => v ?? null),
+    conta: z.string().regex(/^\d{1,12}$/, "Campo Conta: só números. O dígito vai no campo Dígito (ou digite 22222-3 e o sistema separa)").optional().transform((v) => v ?? null),
+    contaDigito: z.string().regex(/^[0-9Xx]{1,2}$/, "Campo Dígito: use 1 ou 2 caracteres (número ou X)").optional().transform((v) => v?.toUpperCase() ?? null),
     chavePix: z
       .string()
       .max(77, "Chave Pix muito longa")
@@ -39,7 +50,8 @@ export const schemaDadosPagamento = z
       const msg = "Informe banco, agência, conta e dígito juntos (ou deixe os quatro vazios).";
       for (const k of ["bancoCodigo", "agencia", "conta", "contaDigito"] as const) if (!d[k]) ctx.addIssue({ code: "custom", path: [k], message: msg });
     }
-  });
+  }),
+);
 
 export type SituacaoPagamento = "COMPLETO" | "SO_CONTA" | "SO_PIX" | "SEM_DADOS";
 

@@ -51,7 +51,7 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
       <KpiGrid cols={3}>
         <Stat label="Boletos" value={money(total)} hint={`${r.itens.filter((i) => i.ocorrencia === "01").length} título(s)`} />
         <Stat label="Gerada em" value={dateTime(r.criadaEm)} />
-        <Stat label="Retorno" value={r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
+        <Stat label="Retorno" value={r.canceladaEm ? "Cancelada" : r.retornoEm ? dateTime(r.retornoEm) : "aguardando"} />
       </KpiGrid>
       {r.canceladaEm && <p className="mb-4 rounded border border-slate-300 bg-slate-100 px-3 py-2 text-sm text-slate-700">Remessa cancelada em {dateTime(r.canceladaEm)}: {r.canceladaMotivo}. Não envie este arquivo ao banco.</p>}
       {alertas.length > 0 && (
@@ -70,18 +70,20 @@ export default async function RemessaCobrancaPage({ params }: { params: Promise<
         {podeCancelar && (
           <Card title="Cancelar remessa" icon="alerta">
             <p className="mb-3 text-sm text-slate-600">Use se o banco recusou o arquivo ou se ele nunca foi enviado. Os títulos voltam a poder entrar em outra remessa.</p>
-            <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa">
+            <Form action={cancelarRemessaCobranca.bind(null, r.id)} submitLabel="Cancelar remessa" confirm={`Cancelar a remessa de cobrança #${r.id}? Os boletos voltam a poder entrar em outra remessa. Não envie este arquivo ao banco.`}>
               <Field label="Motivo *" name="motivo" required minLength={5} maxLength={200} />
             </Form>
           </Card>
         )}
-        <Card title="Como enviar" icon="info">
+        {!r.canceladaEm && (
+          <Card title="Como enviar" icon="info">
           <ol className="list-decimal space-y-1 pl-5 text-sm text-slate-700">
             <li>Itaú Empresas &gt; Transmissão de arquivos &gt; Validação: valide o layout antes do primeiro envio.</li>
             <li>Transmissão de arquivos: envie o arquivo (ambiente de teste na implantação, depois produção).</li>
             <li>Baixe o retorno do banco e importe em <Link href="/financeiro/cobranca" className="text-teal-700 hover:underline">Cobrança</Link>. Quando o registro for confirmado, o boleto fica disponível na conta a receber.</li>
           </ol>
         </Card>
+        )}
         <Table titulo="Boletos da remessa" icone="receber" contagem={r.itens.length} head={["Nosso número", "Operação", "Título", "Valor", "Situação", "Observações"]}>
           {r.itens.map((i) => (
             <tr key={i.id}>

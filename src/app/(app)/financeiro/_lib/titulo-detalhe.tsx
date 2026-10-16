@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ActionButton } from "@/components/form";
-import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
+import { Badge, Card, Dl, EmptyState, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td, btn } from "@/components/ui";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
 import { FORMAS_PAGAMENTO, TIPOS, type Tipo } from "./config";
@@ -57,7 +57,13 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         <Stat
           label={cfg.pagoLabel}
           value={money(titulo.valorPago ?? 0)}
-          hint={titulo.pagoEm ? `dinheiro movimentado; última baixa em ${date(titulo.pagoEm)}` : undefined}
+          hint={
+            (titulo.valorPago ?? 0) > 0 && titulo.pagoEm
+              ? `dinheiro movimentado; última baixa em ${date(titulo.pagoEm)}`
+              : glosas.some((g) => g.recurso !== "REVERTIDA")
+                ? `nenhum dinheiro ainda; glosa de ${money(glosas.filter((g) => g.recurso !== "REVERTIDA").reduce((a, g) => a + toNumber(g.valor), 0))} em ${date(glosas.filter((g) => g.recurso !== "REVERTIDA").at(-1)!.data)}`
+                : undefined
+          }
         />
         <Stat label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
         <Stat label="Vencimento" value={date(titulo.vencimento)} />
@@ -71,9 +77,6 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
               ["Conta do plano", titulo.categoria ?? "Não classificado"],
               ["Centro de custo", titulo.centroNome],
               ["Competência", date(titulo.competencia)],
-              ...(tipo === "receber" && titulo.cobrancaStatus
-                ? ([["Cobrança", <span key="c">{titulo.cobrancaStatus.toLowerCase()} · nosso nº {titulo.nossoNumero}{titulo.cobrancaStatus === "REGISTRADO" && titulo.status === "ABERTO" && (<> · <Link href={`/financeiro/receber/${titulo.id}/boleto`} className="text-teal-700 hover:underline">imprimir boleto</Link></>)}</span>]] as [string, React.ReactNode][])
-                : []),
               [
                 "Origem",
                 titulo.pedidoId ? (
@@ -89,6 +92,35 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
           />
         </Card>
 
+        {tipo === "receber" && titulo.cobrancaStatus && (
+          <Card title="Cobrança bancária" icon="documento">
+            <Dl
+              items={[
+                ["Status", <Badge key="s" color={titulo.cobrancaStatus === "REGISTRADO" ? "green" : "blue"}>{titulo.cobrancaStatus.toLowerCase()}</Badge>],
+                ["Nosso número", titulo.nossoNumero ?? "—"],
+              ]}
+            />
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              {titulo.cobrancaStatus === "REGISTRADO" && titulo.status === "ABERTO" ? (
+                <Link href={`/financeiro/receber/${titulo.id}/boleto`} className={btn.secondary}>
+                  Imprimir boleto
+                </Link>
+              ) : (
+                <>
+                  <button type="button" disabled className={btn.secondary}>
+                    Imprimir boleto
+                  </button>
+                  <span className="text-xs text-slate-600">
+                    {titulo.cobrancaStatus === "ENVIADO"
+                      ? "Disponível quando o banco confirmar o registro: importe o arquivo de retorno em Cobrança."
+                      : "Só é possível imprimir com o título em aberto e o registro confirmado pelo banco."}
+                  </span>
+                </>
+              )}
+            </div>
+          </Card>
+        )}
+
           <Table titulo="Baixas" icone="ok" contagem={baixas.length} head={["Data", "Dinheiro", "Principal", "Juros", "Multa", "Desconto", "Conta", "Forma", "Conciliação", ""]} empty={semBaixas} emptyText="Nenhuma baixa registrada neste título.">
             {baixas.map((b) => (
               <tr key={b.id}>
@@ -103,7 +135,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 <Td>{b.extrato ? <Badge color="green">conciliada</Badge> : <Badge>pendente</Badge>}</Td>
                 <Td>
                   {!b.extrato && (
-                    <ActionButton action={estornarBaixaAction.bind(null, tipo)} hidden={{ id: b.id }} variant="small" confirm="Estornar esta baixa?">
+                    <ActionButton action={estornarBaixaAction.bind(null, tipo)} hidden={{ id: b.id }} variant="small" confirm={`Estornar a baixa de ${money(toNumber(b.valor))} de ${date(b.data)}?`}>
                       Estornar
                     </ActionButton>
                   )}
@@ -142,7 +174,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                       </>
                     )}
                     {g.recurso !== "REVERTIDA" && (
-                      <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="small" confirm="Estornar esta glosa? (use só para corrigir um lançamento errado; se o hospital aceitou pagar, use Marcar revertida)">
+                      <ActionButton action={estornarGlosaAction} hidden={{ id: g.id }} variant="small" confirm={`Estornar a glosa de ${money(toNumber(g.valor))} de ${date(g.data)}? (use só para corrigir um lançamento errado; se o hospital aceitou pagar, use Marcar revertida)`}>
                         Estornar
                       </ActionButton>
                     )}

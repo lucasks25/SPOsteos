@@ -20,15 +20,18 @@ export async function importarExtrato(_: ActionState, fd: FormData): Promise<Act
   if (typeof contaId !== "string" || !contaId) return { error: "Escolha a conta." };
   if (!(file instanceof File) || file.size === 0) return { error: "Selecione o arquivo do extrato." };
   if (file.size > OFX_MAX_BYTES) return { error: "Arquivo maior que 5 MB. Exporte um período menor." };
+  let aviso: string;
   try {
     const texto = decodificarOfx(new Uint8Array(await file.arrayBuffer()));
     const r = await importarExtratoTexto(contaId, texto);
+    const plural = (n: number, um: string, varios: string) => `${n} ${n === 1 ? um : varios}`;
+    aviso = `${plural(r.novas, "linha importada", "linhas importadas")}, ${r.existentes} já ${r.existentes === 1 ? "existia" : "existiam"} (${r.existentes === 1 ? "ignorada" : "ignoradas"}).`;
     await audit(user.id, "importar extrato", "ContaBancaria", contaId, `${r.origem}: ${r.novas} nova(s), ${r.existentes} já existente(s)${r.detalhe}`);
   } catch (e) {
     return { error: errorMessage(e) };
   }
   revalidar();
-  return { ok: true };
+  return { ok: true, aviso };
 }
 
 /** Concilia a linha com um lançamento já existente (mesma conta, sentido e valor). */

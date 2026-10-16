@@ -37,7 +37,7 @@ export default async function PlanoContasPage() {
                 <Badge color={c.ativo ? "green" : "gray"}>{c.ativo ? "Ativa" : "Inativa"}</Badge>
               </Td>
               <Td>
-                <ActionButton action={alternarContaPlano} hidden={{ id: c.id }} variant="small">
+                <ActionButton action={alternarContaPlano} hidden={{ id: c.id }} variant="small" confirm={c.ativo ? `Inativar a conta ${c.codigo} ${c.nome}? Ela deixa de aceitar novos títulos e lançamentos; o histórico e o DRE passados são mantidos.` : undefined}>
                   {c.ativo ? "Inativar" : "Reativar"}
                 </ActionButton>
               </Td>
@@ -68,7 +68,7 @@ export default async function PlanoContasPage() {
                   <Badge color={c.ativo ? "green" : "gray"}>{c.ativo ? "Ativo" : "Inativo"}</Badge>
                 </Td>
                 <Td>
-                  <ActionButton action={alternarCentroCusto} hidden={{ id: c.id }} variant="small">
+                  <ActionButton action={alternarCentroCusto} hidden={{ id: c.id }} variant="small" confirm={c.ativo ? `Inativar o centro de custo ${c.codigo} ${c.nome}? Ele deixa de aceitar novos títulos e lançamentos; o histórico é mantido.` : undefined}>
                     {c.ativo ? "Inativar" : "Reativar"}
                   </ActionButton>
                 </Td>

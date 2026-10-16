@@ -17,9 +17,9 @@ export default async function FechamentoPage() {
 
   return (
     <>
-      <PageHeader title="Fechamento de mês" subtitle="Mês fechado fica congelado: ninguém cria, altera ou estorna baixa, glosa, transferência, lançamento avulso ou título com data nele." />
+      <PageHeader title="Fechamento de mês" subtitle="Só meses já encerrados aparecem aqui: o mês corrente não pode ser fechado. Mês fechado fica congelado: ninguém cria, altera ou estorna baixa, glosa, transferência, lançamento avulso ou título com data nele." />
       <div className="space-y-4">
-        <Table titulo="Meses encerrados e em aberto" icone="calendario" contagem={meses.length} head={["Mês", "Situação", "Ações"]}>
+        <Table titulo="Meses encerrados e em aberto" icone="calendario" head={["Mês", "Situação", "Ações"]}>
           {meses.map((m) => {
             const f = fechados.get(m);
             return (
@@ -28,12 +28,12 @@ export default async function FechamentoPage() {
                 <Td>{f ? <Badge color="gray">Fechado em {dateTime(f.fechadoEm)}</Badge> : <Badge color="green">Aberto</Badge>}</Td>
                 <Td className="whitespace-normal">
                   {f ? (
-                    <Form action={reabrirMes} submitLabel="Reabrir" resetOnSuccess>
+                    <Form action={reabrirMes} submitLabel="Reabrir" resetOnSuccess confirm={`Reabrir o mês ${rotuloMes(m)}? Baixas, glosas e lançamentos com data nele voltam a poder ser criados e estornados, e o DRE do mês pode mudar.`}>
                       <input type="hidden" name="mes" value={m} />
                       <Field label="Motivo da reabertura *" name="motivo" required minLength={5} maxLength={200} />
                     </Form>
                   ) : (
-                    <Form action={fecharMes} submitLabel="Fechar mês">
+                    <Form action={fecharMes} submitLabel="Fechar mês" confirm={`Fechar o mês ${rotuloMes(m)}? Depois disso nenhuma baixa, glosa ou lançamento com data nesse mês poderá ser criado ou estornado.`}>
                       <input type="hidden" name="mes" value={m} />
                     </Form>
                   )}

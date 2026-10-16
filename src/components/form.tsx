@@ -25,6 +25,15 @@ const PendingCtx = createContext(false);
  * React 19 limpa os campos não controlados após toda action de formulário — inclusive quando o
  * servidor devolve erro de validação, o que faria o usuário perder o que digitou.
  */
+/** Envolve a action para avisar o sucesso assim que o servidor responde (o formulário pode sumir da tela logo depois). */
+function comToast(action: Action, redirectTo?: string): Action {
+  return async (prev, fd) => {
+    const r = await action(prev, fd);
+    if (r?.ok && !redirectTo) toast(r.aviso ?? "Salvo com sucesso.");
+    return r;
+  };
+}
+
 export function Form({
   action,
   children,
@@ -43,7 +52,7 @@ export function Form({
   /** pede confirmação (diálogo) antes de enviar; use para avisos que o usuário decide */
   confirm?: string;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const [state, formAction] = useActionState(comToast(action, redirectTo), undefined);
   const [pending, startTransition] = useTransition();
   const formRef = useRef<HTMLFormElement>(null);
   const router = useRouter();
@@ -51,7 +60,6 @@ export function Form({
   useEffect(() => {
     if (state?.ok && redirectTo) router.push(redirectTo);
     if (state?.ok && resetOnSuccess) formRef.current?.reset();
-    if (state?.ok && !state.aviso && !redirectTo) toast("Salvo com sucesso.");
     if (state && !state.ok) {
       sujo.current = true; // os dados continuam na tela, ainda não salvos
       formRef.current?.querySelector<HTMLElement>('[aria-invalid="true"]')?.focus();
@@ -281,7 +289,7 @@ export function ActionButton({
   confirm?: string;
   hidden?: Record<string, string | number>;
 }) {
-  const [state, formAction] = useActionState(action, undefined);
+  const [state, formAction] = useActionState(comToast(action), undefined);
   return (
     <form action={formAction} className="inline-flex flex-col items-start gap-1">
       {hidden && Object.entries(hidden).map(([k, v]) => <input key={k} type="hidden" name={k} value={v} />)}
