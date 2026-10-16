@@ -334,3 +334,5 @@ Feita pelo `arquiteto` sobre todas as 37 arquivos `"use server"` (≈120 actions
 - O CNPJ trocado em Cadastros não registra quem trocou em `pagamentoAlteradoPor` (o cadastro não escreve colunas do financeiro); qualquer pessoa do financeiro aprova nesse caso.
 
 **Testes novos:** `tests/seguranca/` (actions-guarda 5, auth-args 5, auth-config 2, usuarios 4; no `npm test`), `tests/negocio-db/favorecidos-aprovacao.test.ts` (4), `tests/negocio-db/login.test.ts` (5). Resultado: `npm test` 169/169, `npm run test:db` 211/211, `tsc` limpo, `lint` 0 erros, `arquitetura` 0 violações.
+
+**Commit:** o código desta seção está em `3410a9d`. A mensagem desse commit saiu trocada ("Visão geral do financeiro: ícones nos indicadores") porque outro agente rodou `git commit` enquanto meus arquivos estavam no índice; o conteúdo foi conferido (78 arquivos desta seção e o `financeiro/page.tsx` do design). Para evitar de novo: commitar com pathspec (`git commit -m "..." -- <arquivos>`), que ignora o que outros deixaram no índice.
