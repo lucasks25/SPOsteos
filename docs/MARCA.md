@@ -1,6 +1,6 @@
 # Marca SP OSTEOS
 
-Logotipos oficiais instalados em 16/10/2026 a partir do site público sp-osteos.com.br: `public/marca/logo.png` (colorido, fundo claro), `logo-escuro.png` (branco, menu lateral e tema escuro), `isotipo.png` (símbolo roxo/azul, marca d'água do login) e `src/app/icon.png` (favicon). As cores da marca são roxo (#4b2a85) e azul (#1b7fc4) com texto azul-marinho; o design system atual usa verde-petróleo — alinhar a paleta é decisão pendente do dono. Se faltar algum arquivo, o sistema volta ao monograma "SPO" em texto.
+Logotipos oficiais instalados em 16/10/2026 a partir do site público sp-osteos.com.br: `public/marca/logo.png` (colorido, fundo claro), `logo-escuro.png` (branco, menu lateral e tema escuro), `isotipo.png` (símbolo roxo/azul, marca d'água do login) e `src/app/icon.png` (favicon). As cores da marca são roxo (#4b2a85) e azul (#1b7fc4) com texto azul-marinho; a paleta do sistema já foi alinhada a elas (commit b18ab55, tokens em `docs/DESIGN-SYSTEM.md`). Se faltar algum arquivo, o sistema volta ao monograma "SPO" em texto.
 
 ## Onde colocar o logotipo
 
@@ -22,16 +22,17 @@ A detecção (`fs.existsSync`) é feita no servidor em `src/components/marca.tsx
 
 ## Dados cadastrais da empresa
 
-Um lugar só: `src/lib/empresa.ts`, lido das variáveis de ambiente (ver `.env.example`):
+Um lugar só: `src/lib/empresa.ts`, lido das variáveis de ambiente (ver `.env.example`). Os padrões são os dados públicos do CNPJ na Receita Federal (consulta de 16/10/2026; fontes em `docs/ALINHAMENTO-SPOSTEOS.md` §1), isto é, o endereço fiscal que a NF-e tem de levar:
 
 | Variável | Padrão |
 |---|---|
-| `EMPRESA_NOME` | `SP OSTEOS` |
-| `EMPRESA_RAZAO_SOCIAL` | vazio |
-| `EMPRESA_CNPJ` | vazio |
-| `EMPRESA_ENDERECO` | vazio |
+| `EMPRESA_NOME` | `SP OSTEOS` (nome fantasia) |
+| `EMPRESA_RAZAO_SOCIAL` | `SP OSTEOS Distribuidora de Produtos para a Saúde Ltda` |
+| `EMPRESA_CNPJ` | `19.966.249/0001-84` |
+| `EMPRESA_ENDERECO` | `Rua Alegre, 470, sala 1001 - Santa Paula` |
+| `EMPRESA_CEP` | `09550-250` |
 | `EMPRESA_CIDADE` | `São Caetano do Sul - SP` |
-| `EMPRESA_TELEFONE` | vazio |
-| `EMPRESA_EMAIL` | vazio |
+| `EMPRESA_TELEFONE` | vazio (o público no site é (11) 2311-0730, já no `.env.example`) |
+| `EMPRESA_EMAIL` | vazio (o público no site é comercial@sp-osteos.com.br, já no `.env.example`) |
 
-Campo vazio não aparece no impresso. Nenhum CNPJ é inventado: preencha o `.env` com os dados reais.
+Variável vazia usa o padrão; telefone e e-mail vazios não aparecem no impresso. O site institucional mostra "10º andar, Barcelona" e o LinkedIn "CJ 1301"; nos documentos vale o cadastro da Receita (sala 1001, bairro Santa Paula). Confirme com o financeiro/contabilidade antes de emitir NF-e.
