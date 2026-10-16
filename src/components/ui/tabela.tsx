@@ -8,6 +8,7 @@ import { cx } from "./base";
  * linhas de 32 px sem zebra, hover cinza; número com `text-right` (o cabeçalho acompanha sozinho).
  * - `rodape`: uma ou mais <tr> de totais, no <tfoot> (fundo cinza, negrito).
  * - `paginacao`: faixa no pé do cartão (use <Paginacao/>).
+ * - `relatorio`: sem altura máxima e com a primeira coluna fixa (tabelas largas por período, como o DRE).
  * Linha clicável inteira: use <Celula href> (ou a classe `link-linha` num link) na primeira coluna.
  * `head` aceita texto ou { label, className?, hideOnMobile? }: `hideOnMobile` esconde a coluna inteira (th e td)
  * abaixo de 768 px, para listas largas não rolarem no celular; `className` vai só no <th>.
@@ -28,6 +29,7 @@ export function Table({
   acoes,
   rodape,
   paginacao,
+  relatorio,
 }: {
   head: Coluna[];
   children: ReactNode;
@@ -42,6 +44,8 @@ export function Table({
   acoes?: ReactNode;
   rodape?: ReactNode;
   paginacao?: ReactNode;
+  /** relatório (DRE, fluxo): sem rolagem interna (a página rola inteira, nenhuma linha fica escondida) e 1ª coluna fixa ao rolar na horizontal */
+  relatorio?: boolean;
 }) {
   const cols = head.map((h) => (ehColuna(h) ? h : { label: h }));
   const ocultar = cols.flatMap((c, i) => (c.hideOnMobile ? [String(i + 1)] : [])).join(" ");
@@ -60,7 +64,7 @@ export function Table({
           {acoes && <div className="flex shrink-0 flex-wrap items-center gap-2">{acoes}</div>}
         </div>
       )}
-      <div className="tabela-rolagem">
+      <div className="tabela-rolagem" data-relatorio={relatorio || undefined}>
         <table className="min-w-full text-sm" data-ocultar={ocultar || undefined}>
           <thead>
             <tr>

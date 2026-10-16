@@ -105,7 +105,7 @@ export function Form({
           onInput={() => (sujo.current = true)}
           onChange={() => (sujo.current = true)}
           onReset={() => (sujo.current = false)}
-          className={cx("space-y-4", className)}>
+          className={cx("@container space-y-4", className)}>
           {state?.error && (
             <div role="alert" className="flex items-start gap-2.5 rounded-md border border-l-[3px] border-slate-200 border-l-rose-600 bg-white px-3.5 py-2.5 text-sm text-slate-800">
               <Icon name="alerta" size={16} className="mt-0.5 shrink-0 text-rose-700" />
@@ -294,9 +294,17 @@ export function TextArea({ label, name, className, ...rest }: AreaProps) {
   );
 }
 
+/**
+ * Grade de campos. As colunas seguem a largura do FORMULÁRIO (container query), não a da tela: o mesmo formulário
+ * fica em 3–4 colunas num cartão largo e em 1 coluna num painel estreito. Fora de um <Form>/<Card>, sem container, fica em 1 coluna.
+ */
 export function Grid({ children, cols = 3 }: { children: ReactNode; cols?: 2 | 3 | 4 }) {
-  const c = { 2: "sm:grid-cols-2", 3: "sm:grid-cols-2 lg:grid-cols-3", 4: "sm:grid-cols-2 lg:grid-cols-4" }[cols];
-  return <div className={cx("grid grid-cols-1 gap-x-4 gap-y-3", c)}>{children}</div>;
+  const c = { 2: "@lg:grid-cols-2", 3: "@lg:grid-cols-2 @2xl:grid-cols-3", 4: "@lg:grid-cols-2 @3xl:grid-cols-4" }[cols];
+  return (
+    <div className={cx("grade-campos grid grid-cols-1 gap-x-4 gap-y-3", c)} data-cols={cols}>
+      {children}
+    </div>
+  );
 }
 
 /**

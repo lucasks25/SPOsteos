@@ -8,7 +8,7 @@ import { btn, campo, cx } from "./base";
  * - `barra` (padrão): faixa compacta de uma linha acima da tabela, como a barra de filtros do ERPNext
  *   ("ID · Company · Customer · Status · Filter"). Os 4 primeiros campos ficam à vista; os demais
  *   aparecem em "Mais filtros". Embaixo, os chips dos filtros ativos, cada um removível.
- * - `lateral`: painel à esquerda da tabela, como no Bling (a partir de 1280 px; abaixo disso vira a barra).
+ * - `lateral`: painel à esquerda da tabela, como no Bling (a partir de 1536 px; abaixo disso vira a barra).
  *   Use dentro de <ListaComFiltros filtros={<Filtros layout="lateral">…</Filtros>}>.
  * Os chips leem os rótulos do próprio formulário (filtros-ativos.tsx).
  */
@@ -41,7 +41,7 @@ export function FilterBar({ children, className, layout = "barra" }: { children:
   );
 }
 
-/** Lista com painel de filtros à esquerda (Bling): a partir de 1280 px os filtros ficam numa coluna de 15rem, fixa ao rolar. */
+/** Lista com painel de filtros à esquerda (Bling): a partir de 1536 px os filtros ficam numa coluna de 15rem, fixa ao rolar. */
 export function ListaComFiltros({ filtros, children }: { filtros: ReactNode; children: ReactNode }) {
   return (
     <div className="lista-com-filtros">

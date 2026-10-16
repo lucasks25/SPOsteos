@@ -58,15 +58,19 @@ export function AcaoIcone({ href, icon, label, download }: { href: string; icon:
 /**
  * Ajuda em "i" pequeno (padrão do Bling e do ERPNext): o texto aparece ao passar o mouse ou focar pelo teclado,
  * em vez de um parágrafo explicativo fixo na tela. O texto também fica disponível para leitor de tela.
+ * `alinhar="direita"` quando o "i" fica no canto direito (ações de cartão), para a dica abrir para dentro da tela.
  */
-export function Dica({ children, className }: { children: ReactNode; className?: string }) {
+export function Dica({ children, className, alinhar = "esquerda" }: { children: ReactNode; className?: string; alinhar?: "esquerda" | "direita" }) {
   return (
     <span tabIndex={0} className={cx("group relative inline-flex h-5 w-5 shrink-0 cursor-help items-center justify-center rounded-full text-slate-400 hover:text-slate-600 focus-visible:text-slate-600 print:hidden", className)}>
       <Icon name="info" size={15} aria-hidden="true" />
       <span className="sr-only">Ajuda: </span>
       <span
         role="tooltip"
-        className="pointer-events-none invisible absolute left-1/2 top-full z-40 mt-1.5 w-max max-w-[min(20rem,80vw)] -translate-x-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-xs font-normal leading-snug text-white opacity-0 shadow-lg transition-opacity group-hover:visible group-hover:opacity-100 group-focus-visible:visible group-focus-visible:opacity-100"
+        className={cx(
+          "pointer-events-none absolute top-full z-40 mt-1.5 hidden w-max max-w-[min(20rem,80vw)] rounded-md bg-slate-900 px-2.5 py-1.5 text-left text-xs font-normal leading-snug text-white shadow-lg group-hover:block group-focus-visible:block",
+          alinhar === "direita" ? "right-0" : "-left-1",
+        )}
       >
         {children}
       </span>
