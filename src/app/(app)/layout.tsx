@@ -23,7 +23,8 @@ export default async function AppLayout({ children }: { children: ReactNode }) {
       nome={user.nome}
       perfil={user.perfil.toLowerCase()}
       sair={logout}
-      marca={<Marca variante="topo" sobreEscuro />}
+      // menu lateral claro e barra do topo: a mesma logo, que troca sozinha para a versão branca no tema escuro
+      marca={<Marca variante="topo" />}
       marcaClara={<Marca variante="topo" />}
       recolhidaInicial={recolhida}
       posicaoInicial={posicao}
