@@ -25,7 +25,7 @@ export function ContaForm({ conta }: { conta?: Conta }) {
         <Field label="Titular — razão social" name="titularNome" defaultValue={conta?.titularNome ?? ""} maxLength={60} />
         <Field label="Saldo inicial (R$)" name="saldoInicial" type="number" step="0.01" defaultValue={conta ? conta.saldoInicial.toFixed(2) : "0.00"} hint="Saldo antes do primeiro lançamento no sistema" />
       </Grid>
-      <fieldset className="rounded border border-slate-200 p-3">
+      <fieldset className="rounded-xl border border-slate-200 p-3">
         <legend className="px-1 text-xs font-bold text-slate-600">Cobrança dos hospitais (boleto Itaú, CNAB 400)</legend>
         <Grid cols={3}>
           <Select label="Carteira de cobrança" name="carteiraCobranca" defaultValue={conta?.carteiraCobranca ?? ""} options={[{ value: "109", label: "109 — simples, boleto impresso por você" }]} placeholder="(sem cobrança)" hint="Precisa de convênio de cobrança contratado no Itaú" />

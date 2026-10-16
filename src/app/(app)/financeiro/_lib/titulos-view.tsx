@@ -41,7 +41,7 @@ function FiltrosForm({ tipo, f, parceiros }: { tipo: Tipo; f: Filtros; parceiros
       <Field label="Vencimento de" name="de" type="date" defaultValue={f.de ? ymd(f.de) : ""} className="w-40" />
       <Field label="Vencimento até" name="ate" type="date" defaultValue={f.ate ? ymd(f.ate) : ""} className="w-40" />
       <label className="flex h-8 items-center gap-2 text-sm text-slate-700">
-        <input type="checkbox" name="vencidos" value="1" defaultChecked={f.vencidos} className="h-4 w-4 rounded-sm border-slate-300" />
+        <input type="checkbox" name="vencidos" value="1" defaultChecked={f.vencidos} className="h-4 w-4 rounded border-slate-300" />
         Somente vencidos
       </label>
       <button className={btn.secondary}>Filtrar</button>
@@ -72,9 +72,9 @@ export async function TitulosLista({ tipo, searchParams }: { tipo: Tipo; searchP
         actions={<LinkButton href={`${cfg.path}/novo`} icon="mais">Novo título</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
+        <Stat icon="documento" label="Em aberto" value={money(totais.aberto.valor)} hint={`${totais.aberto.qtd} título(s)`} />
         <Link href={`${cfg.path}?vencidos=1`} className="block">
-          <Stat label="Vencido" value={money(totais.vencido.valor)} hint={<span className={totais.vencido.qtd ? "text-rose-600" : undefined}>{totais.vencido.qtd} título(s) — ver vencidos</span>} tone={totais.vencido.qtd ? "danger" : "default"} />
+          <Stat icon="calendario" label="Vencido" value={money(totais.vencido.valor)} hint={<span className={totais.vencido.qtd ? "text-rose-600" : undefined}>{totais.vencido.qtd} título(s) — ver vencidos</span>} tone={totais.vencido.qtd ? "danger" : "default"} />
         </Link>
         <Stat label={`${cfg.pagoLabel} no período`} value={money(totais.pago.valor)} hint={<span className="text-emerald-700">{totais.pago.qtd} baixa(s) — {pagoPeriodo}</span>} />
       </KpiGrid>

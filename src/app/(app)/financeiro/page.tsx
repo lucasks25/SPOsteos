@@ -31,7 +31,7 @@ function Faixas({ titulo, href, f, cor }: { titulo: string; href: string; f: Fai
       <div className={cx("tnum mb-3 text-2xl font-bold", cor === "emerald" ? "text-emerald-700" : "text-rose-700")}>
         {money(f.total.valor)} <span className="text-sm font-normal text-slate-500">em aberto ({f.total.qtd})</span>
       </div>
-      <dl className="divide-y divide-slate-100 text-[13px] [&>div]:py-1.5">
+      <dl className="divide-y divide-slate-100 text-sm [&>div]:py-1.5">
         {linhas.map(([nome, v, classe]) => (
           <div key={nome} className="flex items-baseline justify-between gap-3">
             <dt className="text-slate-600">{nome}</dt>

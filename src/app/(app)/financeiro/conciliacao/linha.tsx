@@ -20,8 +20,8 @@ export function LinhaPendente({ linha, sugLanc, exatos, titulos, planos, centros
     <div className="px-3 py-3">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <div className="min-w-0">
-          <div className="text-[13px] font-medium text-slate-900">{linha.descricao}</div>
-          <div className="text-[11px] text-slate-500">{date(linha.data)} · {entrada ? "entrada" : "saída"} sem vínculo</div>
+          <div className="text-sm font-medium text-slate-900">{linha.descricao}</div>
+          <div className="text-xs text-slate-500">{date(linha.data)} · {entrada ? "entrada" : "saída"} sem vínculo</div>
         </div>
         <div className={`tnum text-sm font-bold ${entrada ? "text-emerald-700" : "text-rose-600"}`}>{entrada ? "+ " : "− "}{money(Math.abs(linha.valor))}</div>
       </div>

@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, EmptyState, LinkButton, PageHeader, Table, Td } from "@/components/ui";
+import { Abas, Badge, Card, EmptyState, LinkButton, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -45,14 +45,12 @@ export default async function RemessasPage({ searchParams }: { searchParams: Pro
           <Form action={gerarRemessaPagamentos} submitLabel="Gerar arquivo de remessa" className="space-y-3">
             <input type="hidden" name="modo" value={modo} />
             <Card title="Nova remessa" icon="pagar">
-              <div className="mb-3 flex gap-2 text-xs">
-                <Link href="/financeiro/remessas" className={modo === "TED_BOLETO" ? "rounded border border-teal-700 bg-teal-50 px-2 py-1 font-semibold text-teal-800" : "rounded border border-slate-300 px-2 py-1 text-slate-700 hover:bg-slate-50"}>
-                  TED, crédito em conta e boletos
-                </Link>
-                <Link href="/financeiro/remessas?modo=PIX" className={modo === "PIX" ? "rounded border border-teal-700 bg-teal-50 px-2 py-1 font-semibold text-teal-800" : "rounded border border-slate-300 px-2 py-1 text-slate-700 hover:bg-slate-50"}>
-                  Pix (arquivo separado, exigência do Itaú)
-                </Link>
-              </div>
+              <Abas
+                itens={[
+                  { href: "/financeiro/remessas", label: "TED, crédito em conta e boletos", ativo: modo === "TED_BOLETO" },
+                  { href: "/financeiro/remessas?modo=PIX", label: "Pix (arquivo separado, exigência do Itaú)", ativo: modo === "PIX" },
+                ]}
+              />
               <Grid cols={3}>
                 <Select label="Conta a debitar *" name="contaId" options={contas.map((c) => ({ value: c.id, label: c.nome }))} defaultValue={contas.length === 1 ? contas[0].id : ""} required />
                 <Field label="Data do pagamento *" name="dataPagto" type="date" defaultValue={ymd(hoje)} min={ymd(hoje)} required />

@@ -20,7 +20,7 @@ export default async function ContasPage() {
         actions={<LinkButton href="/financeiro/contas/nova">Nova conta</LinkButton>}
       />
       <KpiGrid cols={3}>
-        <Stat label="Disponibilidade total" value={money(total)} hint={`${contas.filter((c) => c.ativo).length} conta(s) ativa(s)`} tone={total < 0 ? "danger" : "default"} />
+        <Stat icon="banco" label="Disponibilidade total" value={money(total)} hint={`${contas.filter((c) => c.ativo).length} conta(s) ativa(s)`} tone={total < 0 ? "danger" : "default"} />
       </KpiGrid>
       <Table titulo="Contas" icone="banco" contagem={contas.length} head={["Conta", "Tipo", "Saldo", "Situação", ""]} empty={contas.length === 0} emptyText="Nenhuma conta cadastrada ainda." emptyAction={<LinkButton href="/financeiro/contas/nova" variant="secondary">Cadastrar a primeira conta</LinkButton>}>
         {contas.map((c) => (

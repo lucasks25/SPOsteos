@@ -30,6 +30,7 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
   return (
     <>
       <PageHeader
+        voltar={{ href: "/financeiro/contas", label: "Contas bancárias" }}
         title={conta.nome}
         subtitle={[conta.banco, conta.agencia, conta.numero].filter(Boolean).join(" / ") || undefined}
         actions={
@@ -40,10 +41,10 @@ export default async function ContaPage({ params }: { params: Promise<{ id: stri
         }
       />
       <KpiGrid>
-        <Stat label="Saldo" value={money(conta.saldo)} tone={conta.saldo < 0 ? "danger" : "default"} />
-        <Stat label="Saldo inicial" value={money(conta.saldoInicial)} />
-        <Stat label="Entradas" value={money(conta.entradas)} />
-        <Stat label="Saídas" value={money(conta.saidas)} />
+        <Stat icon="banco" label="Saldo" value={money(conta.saldo)} tone={conta.saldo < 0 ? "danger" : "default"} />
+        <Stat icon="banco" label="Saldo inicial" value={money(conta.saldoInicial)} />
+        <Stat icon="receber" label="Entradas" value={money(conta.entradas)} />
+        <Stat icon="pagar" label="Saídas" value={money(conta.saidas)} />
       </KpiGrid>
 
       <div className="space-y-4">

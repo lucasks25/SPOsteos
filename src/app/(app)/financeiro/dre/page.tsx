@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { Fragment } from "react";
 import { Field, Select } from "@/components/form";
-import { Card, FilterBar, PageHeader, Table, Td, btn, cx } from "@/components/ui";
+import { Aviso, Card, FilterBar, PageHeader, Table, Td, btn, cx } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { money } from "@/lib/format";
@@ -65,9 +65,9 @@ export default async function DrePage({ searchParams }: { searchParams: Promise<
       </FilterBar>
 
       {semClass && (
-        <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <Aviso tom="alerta" className="mb-3">
           Há lançamentos sem conta do plano. Eles somam no resultado na linha “Não classificado”; classifique-os em <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.
-        </p>
+        </Aviso>
       )}
       {centroId && <p className="mb-3 text-xs text-slate-500">Com o filtro de centro de custo, perdas e ajustes de estoque ficam de fora (o estoque não tem centro de custo).</p>}
 

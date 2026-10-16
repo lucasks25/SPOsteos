@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ActionButton, Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, PageHeader, Table, Td } from "@/components/ui";
+import { Aviso, Badge, Card, PageHeader, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { alternarCentroCusto, alternarContaPlano, criarCentroCusto, criarContaPlano } from "../_lib/plano-actions";
@@ -21,7 +21,7 @@ export default async function PlanoContasPage() {
   return (
     <>
       <PageHeader title="Plano de contas e centros de custo" subtitle="Classificação usada pelo DRE gerencial. Só contas analíticas recebem títulos e lançamentos." />
-      {uso > 0 && <p className="mb-3 rounded border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-800">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</p>}
+      {uso > 0 && <Aviso tom="alerta" className="mb-3">{uso} título(s) ainda sem conta do plano. Use <Link href="/financeiro/classificar" className="font-semibold underline">Classificar pendentes</Link>.</Aviso>}
       <div className="space-y-4">
         <Table titulo="Plano de contas" icone="livro" contagem={ordenadas.length} head={["Código", "Conta", "Tipo", "Natureza", "Situação", ""]} empty={ordenadas.length === 0} emptyText="Nenhuma conta no plano. Crie a primeira abaixo.">
           {ordenadas.map((c) => (

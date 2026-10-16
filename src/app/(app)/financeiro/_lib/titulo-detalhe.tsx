@@ -41,6 +41,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
   return (
     <>
       <PageHeader
+        voltar={{ href: `/financeiro/${tipo}`, label: tipo === "receber" ? "Contas a receber" : "Contas a pagar" }}
         title={titulo.descricao}
         subtitle={cfg.singular}
         actions={
@@ -55,7 +56,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
         }
       />
       <KpiGrid>
-        <Stat label="Valor" value={money(titulo.valor)} />
+        <Stat icon="banco" label="Valor" value={money(titulo.valor)} />
         <Stat
           label={cfg.pagoLabel}
           value={money(titulo.valorPago ?? 0)}
@@ -67,8 +68,8 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 : undefined
           }
         />
-        <Stat label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
-        <Stat label="Vencimento" value={date(titulo.vencimento)} />
+        <Stat icon="banco" label="Saldo" value={money(titulo.saldo)} tone={titulo.saldo > 0 && titulo.vencimento < hoje ? "danger" : "default"} />
+        <Stat icon="calendario" label="Vencimento" value={date(titulo.vencimento)} />
       </KpiGrid>
 
       <div className="space-y-4">
@@ -94,9 +95,9 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 ? ([
                     [
                       "Boleto (linha digitável)",
-                      <span key="b" className="break-all font-mono text-[12px]">
+                      <span key="b" className="break-all font-mono text-xs">
                         {linhaDigitavel(titulo.codigoBarras)}
-                        <span className="block text-[11px] text-slate-500">código de barras {titulo.codigoBarras} · valor no boleto {Number(titulo.codigoBarras.slice(9, 19)) ? money(Number(titulo.codigoBarras.slice(9, 19)) / 100) : "não informado"}</span>
+                        <span className="block text-xs text-slate-500">código de barras {titulo.codigoBarras} · valor no boleto {Number(titulo.codigoBarras.slice(9, 19)) ? money(Number(titulo.codigoBarras.slice(9, 19)) / 100) : "não informado"}</span>
                       </span>,
                     ],
                   ] as [string, ReactNode][])
@@ -167,7 +168,7 @@ export async function TituloDetalhe({ tipo, id }: { tipo: Tipo; id: string }) {
                 <Td className="max-w-md whitespace-normal">{g.motivo}</Td>
                 <Td>
                   {g.recurso === "NENHUM" ? <span className="text-slate-500">—</span> : <StatusBadge status={g.recurso} />}
-                  {g.recursoEm && g.recurso !== "NENHUM" && <div className="text-[11px] text-slate-500">{date(g.recursoEm)}</div>}
+                  {g.recursoEm && g.recurso !== "NENHUM" && <div className="text-xs text-slate-500">{date(g.recursoEm)}</div>}
                 </Td>
                 <Td>
                   <div className="flex flex-wrap gap-1">

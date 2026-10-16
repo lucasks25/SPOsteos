@@ -41,9 +41,9 @@ export default async function ConciliacaoPage({ searchParams }: { searchParams: 
       </FilterBar>
 
       <KpiGrid cols={3}>
-        <Stat label="Para conciliar" value={num(d.pendTotal)} tone={d.pendTotal > 0 ? "warn" : "default"} hint="linhas do extrato sem vínculo" />
-        <Stat label="Conciliadas" value={num(d.concTotal)} />
-        <Stat label="Lançamentos sem extrato" value={num(d.semExtrato)} hint="baixas ainda não vistas no banco" />
+        <Stat icon="conciliar" label="Para conciliar" value={num(d.pendTotal)} tone={d.pendTotal > 0 ? "warn" : "default"} hint="linhas do extrato sem vínculo" />
+        <Stat icon="ok" label="Conciliadas" value={num(d.concTotal)} />
+        <Stat icon="banco" label="Lançamentos sem extrato" value={num(d.semExtrato)} hint="baixas ainda não vistas no banco" />
       </KpiGrid>
 
       <div className="space-y-3">

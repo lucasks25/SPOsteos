@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Field, Form, Grid, Select } from "@/components/form";
-import { Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle, Table, Td } from "@/components/ui";
+import { Aviso, Badge, Card, EmptyState, LinkButton, PageHeader, SectionTitle, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { date, money, toNumber } from "@/lib/format";
@@ -67,15 +67,15 @@ export default async function CobrancaPage() {
                 })}
               </Table>
               {registrados.length > 0 && (
-                <div className="rounded border border-amber-200 bg-amber-50 p-3">
-                  <p className="mb-2 text-sm font-medium text-amber-900">Boletos registrados cujo título foi pago ou cancelado por outro meio: peça baixa para o hospital não pagar de novo.</p>
+                <Aviso tom="alerta">
+                  <p className="mb-2 font-medium">Boletos registrados cujo título foi pago ou cancelado por outro meio: peça baixa para o hospital não pagar de novo.</p>
                   {registrados.map((t) => (
-                    <label key={t.id} className="flex items-center gap-2 py-0.5 text-sm text-amber-900">
+                    <label key={t.id} className="flex items-center gap-2 py-0.5">
                       <input type="checkbox" name="baixaId" value={t.id} className="h-4 w-4" />
                       {t.descricao} — {t.hospital ? t.hospital.nomeFantasia || t.hospital.razaoSocial : "—"} ({t.status.toLowerCase()})
                     </label>
                   ))}
-                </div>
+                </Aviso>
               )}
               <p className="text-xs text-slate-500">Os dados de endereço do hospital saem do cadastro. Multa e juros por atraso seguem o configurado na conta. Só imprima o boleto depois que o banco confirmar o registro (retorno).</p>
             </Form>
