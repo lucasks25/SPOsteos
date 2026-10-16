@@ -118,7 +118,10 @@ test("recebimentos simultâneos do mesmo produto em pedidos diferentes não perd
   const r = await Promise.allSettled(pedidos.map((p, i) => receber(p.itemId, 10, `LK${i}`)));
   assert.deepEqual(r.filter((x) => x.status === "rejected"), [], "nenhum recebimento pode falhar (nem por deadlock)");
   const esperado = Math.round((custos.reduce((a, c) => a + c * 10, 0) / (custos.length * 10)) * 100) / 100; // 17
-  assert.equal(num((await db.produto.findUniqueOrThrow({ where: { id: prod.id } })).custoMedio), esperado);
+  // O custo médio é guardado com 2 casas e arredondado a cada recebimento: a ORDEM da fila pode mudar o resultado em 1 centavo
+  // (16,99 ou 17,00). Atualização perdida daria um valor muito mais distante (dezenas de centavos ou reais).
+  const custo = num((await db.produto.findUniqueOrThrow({ where: { id: prod.id } })).custoMedio);
+  assert.ok(Math.abs(custo - esperado) <= 0.02, `custo médio ${custo} longe do esperado ${esperado}`);
   const agg = await db.saldo.aggregate({ where: { produtoId: prod.id }, _sum: { quantidade: true } });
   assert.equal(agg._sum.quantidade, 80);
 });
