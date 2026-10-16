@@ -261,7 +261,8 @@ export function KpiGrid({ children, cols = 4 }: { children: ReactNode; cols?: 3 
           "-mb-px -mr-px grid grid-cols-2",
           // célula = filho direto; quando o indicador vem embrulhado num Link, o Stat interno também perde borda, raio e sombra
           "[&>*]:rounded-none [&>*]:border-0 [&>*]:border-b [&>*]:border-r [&>*]:border-slate-200 [&>*]:bg-white [&>*]:shadow-none",
-          "[&>a>*]:h-full [&>a>*]:rounded-none [&>a>*]:border-0 [&>a>*]:shadow-none [&>a]:transition-colors [&>a:hover>*]:bg-slate-50",
+          // sem h-full: o filho do Link pode ser um Stat ou os divs soltos do Indicador do painel
+          "[&>a>*]:rounded-none [&>a>*]:border-0 [&>a>*]:shadow-none [&>a]:transition-colors [&>a:hover]:bg-slate-50 [&>a:hover>*]:bg-slate-50",
           c,
         )}
       >
