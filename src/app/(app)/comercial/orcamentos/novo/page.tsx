@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { Card, PageHeader } from "@/components/ui";
-import { opcoesConvenios, opcoesHospitais } from "../../_lib/opcoes";
+import { opcoesConvenios, opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 import { OrcamentoForm } from "../orcamento-form";
 
 export default async function NovoOrcamentoPage() {

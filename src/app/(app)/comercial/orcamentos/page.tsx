@@ -4,7 +4,7 @@ import Link from "next/link";
 import { Badge, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, diasAte, money, toNumber } from "@/lib/format";
 import { Filtros, FiltroSelect } from "@/components/filtros";
-import { nomeHospital, opcoesHospitais } from "../_lib/opcoes";
+import { nomeHospital, opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 
 const STATUS = ["RASCUNHO", "ENVIADO", "APROVADO", "RECUSADO"] as const;
 

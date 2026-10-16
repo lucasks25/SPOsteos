@@ -5,7 +5,7 @@ import { requireUser } from "@/lib/auth";
 import { ActionButton, Field, Form, Select } from "@/components/form";
 import { Badge, Card, Dl, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/ui";
 import { date, dateTime, money, num } from "@/lib/format";
-import { nomeHospital } from "../../_lib/opcoes";
+import { nomeHospital } from "@/app/(app)/cadastros/_lib/publico";
 import { hojeUTC } from "@/lib/datas";
 import { cancelarCirurgia, confirmarCirurgia, faturar, registrarConsumo, removerConsumo } from "../actions";
 import { enviarAnexo, excluirAnexo } from "../anexos";

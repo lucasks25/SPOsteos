@@ -2,7 +2,7 @@ import { KpiGrid, PageHeader, Stat, StatusBadge, Table, Td } from "@/components/
 import { requireUser } from "@/lib/auth";
 import { money, num } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
-import { opcoesConvenios, opcoesHospitais } from "../../comercial/_lib/opcoes";
+import { opcoesConvenios, opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 import { CATEGORIAS_GLOSA, ROTULO_CATEGORIA_GLOSA } from "../../financeiro/_lib/publico";
 import { glosasDados, type SP } from "../_lib/consultas";
 import type { LinhaOrigem } from "../_lib/glosas";

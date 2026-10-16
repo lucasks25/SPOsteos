@@ -3,7 +3,7 @@ import { KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { money, num } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
-import { opcoesHospitais, opcoesRepresentantes } from "../../comercial/_lib/opcoes";
+import { opcoesHospitais, opcoesRepresentantes } from "@/app/(app)/cadastros/_lib/publico";
 import { margemDados, type SP } from "../_lib/consultas";
 import type { LinhaMargem } from "../_lib/margens";
 import { ThOrdenavel, ordenar, parseOrdem } from "../_lib/ordenar";

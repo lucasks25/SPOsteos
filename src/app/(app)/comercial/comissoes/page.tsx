@@ -5,7 +5,7 @@ import { KpiGrid, PageHeader, Stat, Table, Td, btn } from "@/components/ui";
 import { money, num, toNumber } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
 import { diaSP, periodo } from "@/lib/datas";
-import { nomeHospital, opcoesRepresentantes } from "../_lib/opcoes";
+import { nomeHospital, opcoesRepresentantes } from "@/app/(app)/cadastros/_lib/publico";
 
 type Linha = { nome: string; pedidos: number; total: number; custo: number; comissao: number };
 const pct = (m: number, t: number) => (t > 0 ? `${((m / t) * 100).toFixed(1)}%` : "—");

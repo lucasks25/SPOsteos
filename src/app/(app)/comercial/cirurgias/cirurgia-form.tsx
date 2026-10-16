@@ -1,7 +1,7 @@
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { inputDateTime } from "@/lib/format";
 import type { Cirurgia } from "@/generated/prisma/client";
-import type { Opcao } from "../_lib/opcoes";
+import type { Opcao } from "@/app/(app)/cadastros/_lib/publico";
 import { salvarCirurgia } from "./actions";
 
 export type CirurgiaOpcoes = {

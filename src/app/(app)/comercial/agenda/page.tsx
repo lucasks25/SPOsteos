@@ -5,7 +5,7 @@ import { Icon } from "@/components/icons";
 import { KpiGrid, LinkButton, PageHeader, Stat, btn, cx } from "@/components/ui";
 import { Filtros, FiltroSelect } from "@/components/filtros";
 import { diaSP, inicioDiaSP, segundaDaSemana, somaDias } from "@/lib/datas";
-import { nomeHospital, opcoesHospitais, opcoesRepresentantes } from "../_lib/opcoes";
+import { nomeHospital, opcoesHospitais, opcoesRepresentantes } from "@/app/(app)/cadastros/_lib/publico";
 
 const DIAS = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
 const COR: Record<string, string> = {

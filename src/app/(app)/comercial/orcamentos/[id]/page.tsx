@@ -6,7 +6,7 @@ import { ActionButton } from "@/components/form";
 import { ItemAdder, produtoOptions } from "@/components/item-adder";
 import { PrintButton } from "@/components/print-button";
 import { date, dateTime, diasAte, money, toNumber } from "@/lib/format";
-import { opcoesConvenios, opcoesHospitais } from "../../_lib/opcoes";
+import { opcoesConvenios, opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 import { OrcamentoForm } from "../orcamento-form";
 import { adicionarItemOrcamento, mudarStatusOrcamento, removerItemOrcamento } from "../actions";
 

@@ -5,7 +5,7 @@ import { Badge, KpiGrid, LinkButton, PageHeader, Stat, StatusBadge, Table, Td } 
 import { dateTime, num } from "@/lib/format";
 import type { Prisma, StatusCirurgia } from "@/generated/prisma/client";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
-import { nomeHospital, opcoesHospitais, opcoesMedicos } from "../_lib/opcoes";
+import { nomeHospital, opcoesHospitais, opcoesMedicos } from "@/app/(app)/cadastros/_lib/publico";
 import { periodo } from "@/lib/datas";
 
 const STATUS: StatusCirurgia[] = ["AGENDADA", "CONFIRMADA", "REALIZADA", "FATURADA", "CANCELADA"];

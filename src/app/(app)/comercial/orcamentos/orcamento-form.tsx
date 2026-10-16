@@ -1,7 +1,7 @@
 import { Field, Form, Grid, Select, TextArea } from "@/components/form";
 import { diasAtras, inputDate } from "@/lib/format";
 import type { Orcamento } from "@/generated/prisma/client";
-import type { Opcao } from "../_lib/opcoes";
+import type { Opcao } from "@/app/(app)/cadastros/_lib/publico";
 import { salvarOrcamento } from "./actions";
 
 export function OrcamentoForm({ orc, hospitais, convenios }: { orc?: Orcamento; hospitais: Opcao[]; convenios: Opcao[] }) {

@@ -2,7 +2,7 @@ import { Card, KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { money, num } from "@/lib/format";
 import { Filtros, FiltroSelect } from "@/components/filtros";
-import { opcoesHospitais } from "../../comercial/_lib/opcoes";
+import { opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 import { mesAno } from "@/lib/datas";
 import { vendasDados, type SP } from "../_lib/consultas";
 import { BotaoCsv, fmtPct, PERFIS_GESTAO } from "../_lib/visual";

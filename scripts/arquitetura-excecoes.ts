@@ -11,9 +11,4 @@
 export type Excecao = { regra: string; de: string; para: string; item: string };
 
 export const EXCECOES: readonly Excecao[] = [
-  { regra: "modulo-cruzado", de: "src/app/(app)/gestao/_lib/dados.ts", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
-  { regra: "modulo-cruzado", de: "src/app/(app)/gestao/abc/page.tsx", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
-  { regra: "modulo-cruzado", de: "src/app/(app)/gestao/glosas/page.tsx", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
-  { regra: "modulo-cruzado", de: "src/app/(app)/gestao/margem/page.tsx", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
-  { regra: "modulo-cruzado", de: "src/app/(app)/gestao/vendas/page.tsx", para: "src/app/(app)/comercial/_lib/opcoes.ts", item: "ARQ-10" },
 ];

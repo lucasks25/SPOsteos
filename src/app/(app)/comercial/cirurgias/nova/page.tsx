@@ -1,6 +1,6 @@
 import { requireUser } from "@/lib/auth";
 import { Card, PageHeader } from "@/components/ui";
-import { opcoesCirurgia } from "../../_lib/opcoes";
+import { opcoesCirurgia } from "@/app/(app)/cadastros/_lib/publico";
 import { CirurgiaForm } from "../cirurgia-form";
 
 export default async function NovaCirurgiaPage() {

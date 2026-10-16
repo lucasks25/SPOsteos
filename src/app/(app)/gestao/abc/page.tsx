@@ -3,7 +3,7 @@ import { KpiGrid, PageHeader, Stat, Table, Td } from "@/components/ui";
 import { requireUser } from "@/lib/auth";
 import { money, num } from "@/lib/format";
 import { Filtros, FiltroInput, FiltroSelect } from "@/components/filtros";
-import { opcoesHospitais } from "../../comercial/_lib/opcoes";
+import { opcoesHospitais } from "@/app/(app)/cadastros/_lib/publico";
 import { abcDados } from "../_lib/consultas";
 import { BadgeClasse, BotaoCsv, fmtPct, PERFIS_GESTAO } from "../_lib/visual";
 

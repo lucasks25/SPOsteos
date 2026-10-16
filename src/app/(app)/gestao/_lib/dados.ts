@@ -1,7 +1,7 @@
 import "server-only";
 import { db } from "@/lib/db";
 import { toNumber } from "@/lib/format";
-import { nomeHospital } from "../../comercial/_lib/opcoes";
+import { nomeHospital } from "@/app/(app)/cadastros/_lib/publico";
 import { DIAS_CONSUMO, type EntradaGiro } from "./giro";
 import type { PedidoMargem } from "./margens";
 import type { SaldoLote } from "./vencimentos";
